@@ -147,12 +147,16 @@ export function DotGridSpotlight({ className, style, dimmed }: { className?: str
   }, [dimmed]);
 
   return (
-    <canvas
-      ref={canvasRef}
+    <div
       aria-hidden
       style={style}
-      className={`pointer-events-none absolute inset-0 ${className ?? ''}`}
-    />
+      className={className}
+    >
+      <canvas
+        ref={canvasRef}
+        className="pointer-events-none block h-full w-full"
+      />
+    </div>
   );
 }
 
