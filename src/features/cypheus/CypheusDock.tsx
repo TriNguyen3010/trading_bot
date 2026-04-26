@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useCypheusStore } from './store/cypheus.store';
@@ -56,10 +56,40 @@ export function CypheusDock() {
     return `${completedSteps} of ${totalSteps} steps configured`;
   }, [cypheusState, activeStepId, completedSteps, allDone, totalSteps]);
 
+  // Measure the dock's actual rendered height (progress dots + pill +
+  // gaps) and expose it via the `--dock-height` CSS var so the canvas
+  // can reserve exactly that much padding-bottom — independent of any
+  // hardcoded buffer. ResizeObserver re-fires when the status text grows
+  // shorter/longer or the drawer width changes the wrapper bounds.
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (phase !== 'active') {
+      document.documentElement.style.setProperty('--dock-height', '0px');
+      return;
+    }
+    const el = wrapperRef.current;
+    if (!el) return;
+    // wrapper bottom: 32px is set in CypheusDock.module.css. Add it so the
+    // canvas's content stops 32px above the dock instead of touching it.
+    const BOTTOM_OFFSET = 32;
+    const update = () => {
+      const h = el.offsetHeight + BOTTOM_OFFSET;
+      document.documentElement.style.setProperty('--dock-height', `${h}px`);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.setProperty('--dock-height', '0px');
+    };
+  }, [phase]);
+
   return (
     <AnimatePresence>
       {phase === 'active' && (
         <motion.div
+          ref={wrapperRef}
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}

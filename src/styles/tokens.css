@@ -99,6 +99,7 @@
   --layout-step-list: 720px;
   --layout-right-drawer: 720px;
   --drawer-width: 0px;
+  --dock-height: 0px;
   --layout-header: 56px;
 
   /* === EFFECTS (dot-grid spotlight) === */

@@ -19,10 +19,8 @@ export function BuilderPage() {
   const openStep = useBuilderStore((s) => s.openStep);
   const drawerWidth = useBuilderStore((s) => s.drawerWidth);
   const cypheusDrawerMode = useCypheusStore((s) => s.drawerMode);
-  const cypheusPhase = useCypheusStore((s) => s.phase);
 
   const drawerVisible = openStep !== null || cypheusDrawerMode !== 'closed';
-  const dockVisible = cypheusPhase === 'active';
 
   useEffect(() => {
     document.documentElement.style.setProperty(
@@ -31,15 +29,8 @@ export function BuilderPage() {
     );
   }, [drawerVisible, drawerWidth]);
 
-  useEffect(() => {
-    // Reserve space at the bottom of the canvas so the fixed dock never
-    // overlaps the last step card. ~140px = dock height (~96px) + the 32px
-    // bottom gap + a little breathing room.
-    document.documentElement.style.setProperty(
-      '--dock-height',
-      dockVisible ? '140px' : '0px',
-    );
-  }, [dockVisible]);
+  // `--dock-height` is owned by <CypheusDock> via ResizeObserver — it knows
+  // its own measured height. The canvas just reads the CSS var below.
 
   return (
     <div className="flex h-screen w-screen flex-col bg-canvas text-fg">
