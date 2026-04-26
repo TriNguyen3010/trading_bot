@@ -26,6 +26,7 @@ export function CypheusDock() {
   const cypheusState = useCypheusStore((s) => s.state);
   const activeStepId = useCypheusStore((s) => s.cypheusActiveStepId);
   const stepStatus = useBuilderStore((s) => s.stepStatus);
+  const openStep = useBuilderStore((s) => s.openStep);
   const totalSteps = 4;
 
   // Always reflect actual configured count — works for both Cypheus magic build
@@ -33,6 +34,15 @@ export function CypheusDock() {
   const completedSteps = useMemo(() => {
     return STEP_ORDER.filter((id) => stepStatus[id] === 'configured').length;
   }, [stepStatus]);
+
+  // Index of the step currently being configured (Cypheus pinned step takes
+  // priority; otherwise whichever step the user has opened manually). −1 when
+  // nothing is active.
+  const activeIndex = useMemo(() => {
+    const id = activeStepId ?? openStep;
+    if (!id) return -1;
+    return STEP_ORDER.indexOf(id);
+  }, [activeStepId, openStep]);
 
   const allDone = completedSteps === totalSteps;
 
@@ -59,10 +69,15 @@ export function CypheusDock() {
           <div className={styles.progressDots} aria-hidden="true">
             {Array.from({ length: totalSteps }).map((_, i) => {
               const isCompleted = i < completedSteps;
+              const isActive = !isCompleted && i === activeIndex;
               return (
                 <motion.span
                   key={i}
-                  className={cn(styles.dot, isCompleted && styles.dotFilled)}
+                  className={cn(
+                    styles.dot,
+                    isCompleted && styles.dotFilled,
+                    isActive && styles.dotActive,
+                  )}
                   animate={i === completedSteps - 1 ? { scale: [1, 1.2, 1] } : { scale: 1 }}
                   transition={{ duration: 0.3 }}
                 />
