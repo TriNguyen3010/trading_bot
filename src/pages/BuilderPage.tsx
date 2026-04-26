@@ -19,8 +19,10 @@ export function BuilderPage() {
   const openStep = useBuilderStore((s) => s.openStep);
   const drawerWidth = useBuilderStore((s) => s.drawerWidth);
   const cypheusDrawerMode = useCypheusStore((s) => s.drawerMode);
+  const cypheusPhase = useCypheusStore((s) => s.phase);
 
   const drawerVisible = openStep !== null || cypheusDrawerMode !== 'closed';
+  const dockVisible = cypheusPhase === 'active';
 
   useEffect(() => {
     document.documentElement.style.setProperty(
@@ -28,6 +30,16 @@ export function BuilderPage() {
       drawerVisible ? `${drawerWidth}px` : '0px',
     );
   }, [drawerVisible, drawerWidth]);
+
+  useEffect(() => {
+    // Reserve space at the bottom of the canvas so the fixed dock never
+    // overlaps the last step card. ~140px = dock height (~96px) + the 32px
+    // bottom gap + a little breathing room.
+    document.documentElement.style.setProperty(
+      '--dock-height',
+      dockVisible ? '140px' : '0px',
+    );
+  }, [dockVisible]);
 
   return (
     <div className="flex h-screen w-screen flex-col bg-canvas text-fg">
@@ -53,7 +65,13 @@ export function BuilderPage() {
               transition: 'padding-right 250ms cubic-bezier(0.2, 0.8, 0.2, 1)',
             }}
           >
-            <div className="relative z-10 min-h-full px-6 py-10">
+            <div
+              className="relative z-10 min-h-full px-6 py-10"
+              style={{
+                paddingBottom: 'calc(var(--dock-height, 0px) + 2.5rem)',
+                transition: 'padding-bottom 250ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+              }}
+            >
               {allPending ? (
                 <div className="mx-auto mb-6 flex max-w-[var(--layout-step-list)] flex-col items-center gap-2 text-fg-muted">
                   <p className="text-sm">
