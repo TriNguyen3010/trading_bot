@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { ArrowRight, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { useExportDialogStore } from '@/features/export-import/export-dialog.store';
 import { validateBuilder, type BuilderIssue } from '@/lib/validator';
 import { strings } from '@/i18n/en';
@@ -45,6 +46,8 @@ export function SetupProgress() {
   const openStep = useBuilderStore((s) => s.openStep);
   const setOpenStep = useBuilderStore((s) => s.setOpenStep);
   const setExportOpen = useExportDialogStore((s) => s.setOpen);
+  const cypheusState = useCypheusStore((s) => s.state);
+  const isBuilding = cypheusState === 'building';
 
   // Re-derive issues whenever any builder field changes. We deliberately read
   // the full state below so this memo invalidates on patches (zustand returns
@@ -148,6 +151,7 @@ export function SetupProgress() {
       className={cn(
         'border-t border-border-subtle bg-canvas px-4 py-2.5',
         mode === 'ready' && 'bg-bullish-subtle/30',
+        isBuilding && 'pointer-events-none opacity-60',
       )}
     >
       <div className="flex items-center gap-3">
