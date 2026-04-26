@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { useExportDialogStore } from '@/features/export-import/export-dialog.store';
 import { SetupProgress } from './SetupProgress';
 
@@ -64,6 +65,7 @@ describe('SetupProgress', () => {
   beforeEach(() => {
     useBuilderStore.getState().resetAll();
     useExportDialogStore.setState({ open: false });
+    useCypheusStore.getState().resetAll();
   });
 
   it('renders empty state when nothing configured', () => {
@@ -150,9 +152,32 @@ describe('SetupProgress', () => {
     expect(within(container).queryByRole('button', { name: /open bot step/i })).toBeNull();
 
     // in_progress: pills shown
-    fillValidBotConfig();
-    useBuilderStore.getState().setStepStatus('bot-config', 'configured');
+    act(() => {
+      fillValidBotConfig();
+      useBuilderStore.getState().setStepStatus('bot-config', 'configured');
+    });
     rerender(<SetupProgress />);
     expect(within(container).getByRole('button', { name: /open bot step/i })).toBeInTheDocument();
+  });
+
+  it('disables interactions when Cypheus is building', () => {
+    fillValidBotConfig();
+    useBuilderStore.getState().setStepStatus('bot-config', 'configured');
+    useCypheusStore.setState({ state: 'building' });
+
+    const { container } = render(<SetupProgress />);
+    const wrapper = container.firstElementChild as HTMLElement;
+    expect(wrapper.className).toContain('pointer-events-none');
+    expect(wrapper.className).toContain('opacity-60');
+  });
+
+  it('enables interactions when Cypheus is not building', () => {
+    fillValidBotConfig();
+    useBuilderStore.getState().setStepStatus('bot-config', 'configured');
+    useCypheusStore.setState({ state: 'idle' });
+
+    const { container } = render(<SetupProgress />);
+    const wrapper = container.firstElementChild as HTMLElement;
+    expect(wrapper.className).not.toContain('pointer-events-none');
   });
 });
