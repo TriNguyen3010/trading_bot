@@ -53,6 +53,7 @@ export function CypheusAvatar({
     const isHello = state === 'hello';
     return (
       <div className={wrapperClass} aria-hidden>
+        <ChromaKeyDef />
         <video
           ref={videoRef}
           src={isHello ? '/cypheus/hello.webm' : '/cypheus/coding.webm'}
@@ -63,6 +64,7 @@ export function CypheusAvatar({
           onEnded={() => {
             if (isHello) setAvatar('idle');
           }}
+          style={{ filter: 'url(#cypheus-chroma-green)' }}
           className={cn('h-full w-full object-cover', sizeClass)}
         />
       </div>
@@ -78,5 +80,54 @@ export function CypheusAvatar({
         className={cn('h-full w-full object-cover', sizeClass)}
       />
     </div>
+  );
+}
+
+/**
+ * Chroma-key SVG filter that subtracts a saturated green background from
+ * the avatar webm in real time. Two-stage matrix:
+ *   1) compute alpha = 2*(G − max(R,B)) clamped via the original alpha → punches
+ *      out solid green pixels.
+ *   2) zero-out the green channel so any residual halo turns neutral instead
+ *      of greenish.
+ */
+function ChromaKeyDef() {
+  return (
+    <svg
+      width="0"
+      height="0"
+      style={{ position: 'absolute', pointerEvents: 'none' }}
+      aria-hidden
+    >
+      <defs>
+        <filter
+          id="cypheus-chroma-green"
+          colorInterpolationFilters="sRGB"
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+        >
+          <feColorMatrix
+            type="matrix"
+            values="
+              1 0 0 0 0
+              0 1 0 0 0
+              0 0 1 0 0
+              -2 2 -2 0 -0.4
+            "
+          />
+          <feColorMatrix
+            type="matrix"
+            values="
+              1   0   0   0 0
+              0.5 0   0.5 0 0
+              0   0   1   0 0
+              0   0   0   1 0
+            "
+          />
+        </filter>
+      </defs>
+    </svg>
   );
 }
