@@ -84,12 +84,15 @@ export function CypheusAvatar({
 }
 
 /**
- * Chroma-key SVG filter that subtracts a saturated green background from
- * the avatar webm in real time. Two-stage matrix:
- *   1) compute alpha = 2*(G − max(R,B)) clamped via the original alpha → punches
- *      out solid green pixels.
- *   2) zero-out the green channel so any residual halo turns neutral instead
- *      of greenish.
+ * Chroma-key SVG filter for solid-green-screen webm.
+ *
+ * Alpha row: alpha = 2*R - 2*G + 2*B
+ *   pure green   (0, 1, 0)   → -2  → clamped to 0  (transparent)
+ *   pure white   (1, 1, 1)   →  2  → clamped to 1  (opaque)
+ *   skin/orange  (.9,.7,.5)  →  1.0 → opaque
+ *   blue / red               → opaque
+ *   yellow (1,1,0) is the casualty — turned transparent, but the
+ *   avatar shouldn't contain pure yellow.
  */
 function ChromaKeyDef() {
   return (
@@ -114,16 +117,7 @@ function ChromaKeyDef() {
               1 0 0 0 0
               0 1 0 0 0
               0 0 1 0 0
-              -2 2 -2 0 -0.4
-            "
-          />
-          <feColorMatrix
-            type="matrix"
-            values="
-              1   0   0   0 0
-              0.5 0   0.5 0 0
-              0   0   1   0 0
-              0   0   0   1 0
+              2 -2 2 0 0
             "
           />
         </filter>
