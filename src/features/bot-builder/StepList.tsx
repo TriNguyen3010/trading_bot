@@ -7,7 +7,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { StepCard } from './components/StepCard';
 import { StepConnector } from './components/StepConnector';
 import { StepDrawer, type StepContentMap } from './components/StepDrawer';
@@ -98,6 +98,46 @@ export function StepList() {
   const setStepStatus = useBuilderStore((s) => s.setStepStatus);
   const closeCypheusDrawer = useCypheusStore((s) => s.closeCypheusDrawer);
   const setPanelTab = useCypheusStore((s) => s.setPanelTab);
+  const cypheusActiveStepId = useCypheusStore((s) => s.cypheusActiveStepId);
+
+  // Map of step id → its <li> wrapper. Used to scroll the currently
+  // active card into view whenever:
+  //   1) the active step changes (Cypheus moves to step N+1, or user opens
+  //      a different card manually), or
+  //   2) the active card grows (e.g. a summary just appeared because the
+  //      step finished configuring) and now sits below the visible area.
+  // Combined with the `--dock-height` CSS var (used as scroll-margin-bottom
+  // on each card) this keeps the active card inside the show area without
+  // ever sliding under the dock.
+  const cardRefs = useRef<Partial<Record<StepId, HTMLLIElement | null>>>({});
+  const activeStepId: StepId | null = cypheusActiveStepId ?? openStep;
+
+  // Trigger 1: active step changed → smooth-scroll into view (no-op if
+  // already visible thanks to `block: 'nearest'` + scroll-margin).
+  useEffect(() => {
+    if (!activeStepId) return;
+    const el = cardRefs.current[activeStepId];
+    if (!el) return;
+    // Defer one frame so the browser has applied any class/border changes
+    // that came with the activeStepId switch (those alter card height).
+    const id = window.requestAnimationFrame(() => {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [activeStepId]);
+
+  // Trigger 2: active card resized (its content grew). Re-scroll so it
+  // doesn't end up partially obscured by the dock.
+  useEffect(() => {
+    if (!activeStepId) return;
+    const el = cardRefs.current[activeStepId];
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [activeStepId]);
 
   const closeManualDrawer = () => setOpenStep(null);
 
@@ -138,7 +178,21 @@ export function StepList() {
         {STEP_DEFS.map((step, idx) => {
           const next = STEP_DEFS[idx + 1];
           return (
-            <li key={step.id} className="group flex flex-col">
+            <li
+              key={step.id}
+              ref={(el) => {
+                cardRefs.current[step.id] = el;
+              }}
+              className="group flex flex-col"
+              style={{
+                // Define a "show area" by reserving header height at the
+                // top and the live dock height at the bottom for
+                // scroll-into-view computations. The browser will avoid
+                // landing this card behind the header or under the dock.
+                scrollMarginTop: 'calc(var(--layout-header) + 0.5rem)',
+                scrollMarginBottom: 'calc(var(--dock-height, 0px) + 0.5rem)',
+              }}
+            >
               <StepCard
                 stepId={step.id}
                 index={step.index}
