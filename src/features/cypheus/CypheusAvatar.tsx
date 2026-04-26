@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { useCypheusStore, type AvatarState } from './store/cypheus.store';
 
 export interface CypheusAvatarProps {
+  /** When omitted, the component subscribes to the cypheus store. */
   state?: AvatarState;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -21,11 +22,13 @@ const sizeMap = {
  *  - coding → coding.webm (loops while Cypheus builds)
  */
 export function CypheusAvatar({
-  state = 'idle',
+  state: stateProp,
   size = 'md',
   className,
 }: CypheusAvatarProps) {
   const setAvatar = useCypheusStore((s) => s.setAvatar);
+  const storeState = useCypheusStore((s) => s.avatar);
+  const state: AvatarState = stateProp ?? storeState;
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Replay from the start whenever the source changes so a re-trigger

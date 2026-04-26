@@ -12,9 +12,16 @@ import type {
   StepStatus,
 } from '@/types/builder.types';
 
-const DEFAULT_DRAWER_WIDTH = 720;
 const MIN_DRAWER_WIDTH = 480;
-const MAX_DRAWER_WIDTH = 1200;
+const MAX_DRAWER_WIDTH = 1600;
+// Default to half the viewport, clamped to [720, 1280]. Falls back to 720
+// during SSR / non-browser contexts where `window` is unavailable.
+const computeDefaultDrawerWidth = (): number => {
+  if (typeof window === 'undefined') return 720;
+  const half = Math.floor(window.innerWidth * 0.5);
+  return Math.min(Math.max(half, 720), 1280);
+};
+const DEFAULT_DRAWER_WIDTH = computeDefaultDrawerWidth();
 
 const emptyConditionGroup: ConditionGroup = {
   logic: { type: 'AND', threshold: null },
@@ -165,7 +172,7 @@ export const useBuilderStore = create<BuilderStore>()(
     }),
     {
       name: 'trading-bot-builder',
-      version: 1,
+      version: 2,
       partialize: (state) => ({
         botName: state.botName,
         botConfig: state.botConfig,
