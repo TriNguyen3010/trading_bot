@@ -54,11 +54,7 @@ export function CypheusDock() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className={cn(styles.wrapper, 'left-1/2 -translate-x-1/2')}
-          style={{
-            left: 'calc(var(--layout-left-panel) + (100vw - var(--layout-left-panel) - var(--drawer-width)) / 2)',
-            transition: 'left 250ms cubic-bezier(0.2, 0.8, 0.2, 1)',
-          }}
+          className={styles.wrapper}
         >
           <div className={styles.progressDots} aria-hidden="true">
             {Array.from({ length: totalSteps }).map((_, i) => {
