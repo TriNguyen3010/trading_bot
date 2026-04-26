@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Check, CircleDashed, AlertTriangle, ArrowRight, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
@@ -130,33 +131,49 @@ export function StepCard({
             {title}
           </h3>
         </div>
-        {isStep1Idle ? (
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-xs text-fg-muted">
-              Tap to configure
-              <ArrowRight className="h-3 w-3" />
-            </span>
-            <CypheusAvatar size="xl" layoutId="cypheus-avatar" />
-          </div>
-        ) : (
-          <>
-            {status === 'pending' && (
+        <AnimatePresence mode="wait" initial={false}>
+          {isStep1Idle ? (
+            <motion.div
+              key="anchor"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="flex items-center gap-3"
+            >
               <span className="flex items-center gap-1 text-xs text-fg-muted">
                 Tap to configure
                 <ArrowRight className="h-3 w-3" />
               </span>
-            )}
-            <div
-              className={cn(
-                'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full',
-                statusIcon[visualStatus].tone,
-              )}
-              aria-label={statusIcon[visualStatus].label}
+              <CypheusAvatar size="xl" />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="status"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="flex items-center gap-3"
             >
-              <StatusIcon className="h-4 w-4" />
-            </div>
-          </>
-        )}
+              {status === 'pending' && (
+                <span className="flex items-center gap-1 text-xs text-fg-muted">
+                  Tap to configure
+                  <ArrowRight className="h-3 w-3" />
+                </span>
+              )}
+              <div
+                className={cn(
+                  'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full',
+                  statusIcon[visualStatus].tone,
+                )}
+                aria-label={statusIcon[visualStatus].label}
+              >
+                <StatusIcon className="h-4 w-4" />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       {(visualStatus === 'configured' || visualStatus === 'error') && (

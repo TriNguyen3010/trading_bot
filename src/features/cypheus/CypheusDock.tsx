@@ -63,7 +63,10 @@ export function CypheusDock() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
+          // Slight delay so the Step 1 anchor finishes fading out (~180ms)
+          // before the dock fades in. Avoids the cross-fade ghost where
+          // both avatars are visible at once.
+          transition={{ duration: 0.28, ease: 'easeOut', delay: 0.18 }}
           className={styles.wrapper}
         >
           <div className={styles.progressDots} aria-hidden="true">
@@ -90,7 +93,7 @@ export function CypheusDock() {
               {statusText}
             </span>
             <div className="h-12 w-12 flex-shrink-0">
-              <CypheusAvatar size="lg" layoutId="cypheus-avatar" />
+              <CypheusAvatar size="lg" />
             </div>
           </div>
         </motion.div>
