@@ -90,7 +90,7 @@ export function StepCard({
         visualStatus === 'editing' && 'border-brand shadow-glow',
         visualStatus === 'error' && 'border-danger',
         visualStatus === 'pending' && 'border-border',
-        isCypheusActive && 'border-brand shadow-glow animate-pulse',
+        isCypheusActive && 'border-brand shadow-glow',
         isPinned && !isCypheusActive && 'cursor-not-allowed opacity-60',
       )}
     >

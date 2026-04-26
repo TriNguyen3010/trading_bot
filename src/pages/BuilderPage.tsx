@@ -6,6 +6,7 @@ import { HeaderToolbar } from '@/features/bot-builder/components/HeaderToolbar';
 import { StepList } from '@/features/bot-builder/StepList';
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 export function BuilderPage() {
@@ -15,13 +16,16 @@ export function BuilderPage() {
   );
   const openStep = useBuilderStore((s) => s.openStep);
   const drawerWidth = useBuilderStore((s) => s.drawerWidth);
+  const cypheusDrawerMode = useCypheusStore((s) => s.drawerMode);
+
+  const drawerVisible = openStep !== null || cypheusDrawerMode !== 'closed';
 
   useEffect(() => {
     document.documentElement.style.setProperty(
       '--drawer-width',
-      openStep ? `${drawerWidth}px` : '0px',
+      drawerVisible ? `${drawerWidth}px` : '0px',
     );
-  }, [openStep, drawerWidth]);
+  }, [drawerVisible, drawerWidth]);
 
   return (
     <div className="flex h-screen w-screen flex-col bg-canvas text-fg">
@@ -37,7 +41,7 @@ export function BuilderPage() {
             bottom: 0,
             transition: 'right 250ms cubic-bezier(0.2, 0.8, 0.2, 1)',
           }}
-          dimmed={openStep !== null}
+          dimmed={drawerVisible}
         />
         <main
           className="relative z-10 flex-1 overflow-y-auto"
