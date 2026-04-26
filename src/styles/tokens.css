@@ -61,6 +61,17 @@
   --color-edge-short: var(--color-bearish);
   --color-edge-signal: var(--brand-primary);
 
+  /* === STAGE COLORS (yellow-only card-status palette) ===
+   * Per Spec/Phase 1/card_yellow_stages_plan.md — all 4 step-card stages
+   * collapse onto the brand hue, differentiated by opacity + icon shape +
+   * ring/glow. Trading semantics (bullish/bearish) MUST keep their own
+   * hues elsewhere — these tokens are only for the StepCard / StepConnector
+   * / SetupProgress dot-and-pill status surfaces. */
+  --color-stage-pending: rgba(240, 185, 11, 0.15);
+  --color-stage-active:  var(--brand-primary);
+  --color-stage-done:    rgba(240, 185, 11, 0.50);
+  --color-stage-error:   var(--brand-primary); /* same hue, ring differentiates */
+
   /* === RADIUS === */
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -93,6 +104,6 @@
   /* === EFFECTS (dot-grid spotlight) === */
   --fx-dot-color: rgba(255, 210, 80, 0.14);
   --fx-dot-color-bright: rgba(255, 210, 80, 0.95);
-  --fx-spacing: 22px;
-  --fx-radius: 240px;
+  --fx-spacing: 17px;
+  --fx-radius: 120px;
 }

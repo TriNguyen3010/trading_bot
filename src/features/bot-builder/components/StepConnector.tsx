@@ -32,12 +32,15 @@ export function StepConnector({ fromStep, toStep }: StepConnectorProps) {
         ? 'brand'
         : 'muted';
 
+  // Brand-only palette per Spec/Phase 1/card_yellow_stages_plan.md.
+  // Marching-ants animation (kept on `success`) is what signals "flow
+  // complete" rather than a hue swap to bullish green.
   const stroke =
     tone === 'success'
-      ? 'var(--color-bullish)'
+      ? 'var(--color-stage-active)'
       : tone === 'brand'
-        ? 'var(--brand-primary)'
-        : 'var(--color-edge-default)';
+        ? 'var(--color-stage-active)'
+        : 'var(--color-stage-pending)';
 
   return (
     <TooltipProvider delayDuration={400}>

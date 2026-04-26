@@ -13,25 +13,27 @@ import {
 } from '@/components/ui/tooltip';
 import { StepCardSummary } from './summaries/StepCardSummary';
 
+// All 4 statuses share the brand hue — differentiated by opacity + icon
+// shape + glow/ring. See Spec/Phase 1/card_yellow_stages_plan.md.
 const statusIcon: Record<StepStatus, { icon: LucideIcon; tone: string; label: string }> = {
   pending: {
     icon: CircleDashed,
-    tone: 'text-fg-muted',
+    tone: 'text-brand/40',
     label: 'Pending',
   },
   editing: {
     icon: CircleDashed,
-    tone: 'text-brand animate-pulse',
+    tone: 'text-brand motion-safe:animate-pulse',
     label: 'Editing',
   },
   configured: {
     icon: Check,
-    tone: 'text-bullish',
+    tone: 'text-brand',
     label: 'Configured',
   },
   error: {
     icon: AlertTriangle,
-    tone: 'text-danger',
+    tone: 'text-brand',
     label: 'Has errors',
   },
 };
@@ -84,12 +86,12 @@ export function StepCard({
       aria-disabled={isPinned}
       className={cn(
         'group relative flex w-full flex-col items-stretch overflow-hidden rounded-xl border bg-surface text-left transition-all duration-fast ease-out-quick',
-        'hover:bg-surface-hover hover:border-border-strong',
+        'hover:bg-surface-hover hover:border-brand/60',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-        visualStatus === 'configured' && 'border-bullish/40',
+        visualStatus === 'pending' && 'border-brand/15',
         visualStatus === 'editing' && 'border-brand shadow-glow',
-        visualStatus === 'error' && 'border-danger',
-        visualStatus === 'pending' && 'border-border',
+        visualStatus === 'configured' && 'border-brand/50',
+        visualStatus === 'error' && 'border-brand ring-2 ring-brand/40',
         isCypheusActive && 'border-brand shadow-glow',
         isPinned && !isCypheusActive && 'cursor-not-allowed opacity-60',
       )}
@@ -98,9 +100,14 @@ export function StepCard({
         <div
           className={cn(
             'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border',
-            visualStatus === 'configured'
-              ? 'border-bullish/40 bg-bullish/10 text-bullish'
-              : 'border-border bg-canvas text-fg-secondary',
+            visualStatus === 'pending' &&
+              'border-brand/15 bg-canvas text-fg-secondary',
+            visualStatus === 'editing' &&
+              'border-brand/40 bg-brand-subtle text-brand',
+            visualStatus === 'configured' &&
+              'border-brand/50 bg-brand-subtle text-brand',
+            visualStatus === 'error' &&
+              'border-brand bg-brand-subtle text-brand',
           )}
         >
           <Icon className="h-4 w-4" />

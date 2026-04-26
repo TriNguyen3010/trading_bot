@@ -6,11 +6,12 @@ export interface ProgressDotsProps {
   statusByStep: Record<StepId, ProgressStepStatus>;
 }
 
+// Brand-only palette per Spec/Phase 1/card_yellow_stages_plan.md.
 const dotClassByStatus: Record<ProgressStepStatus, string> = {
-  pending: 'bg-surface-active',
+  pending: 'bg-brand/15',
   editing: 'bg-brand-subtle motion-safe:animate-pulse',
-  configured: 'bg-bullish',
-  error: 'bg-bearish',
+  configured: 'bg-brand',
+  error: 'bg-brand ring-1 ring-brand/40',
 };
 
 export function ProgressDots({ statusByStep }: ProgressDotsProps) {

@@ -18,14 +18,15 @@ const iconByStatus: Record<ProgressStepStatus, LucideIcon> = {
   error: AlertTriangle,
 };
 
+// Brand-only palette per Spec/Phase 1/card_yellow_stages_plan.md.
 const pillClassByStatus: Record<ProgressStepStatus, string> = {
-  pending: 'bg-surface text-fg-muted border-border-subtle hover:bg-surface-hover',
+  pending: 'bg-surface text-fg-muted border-brand/15 hover:bg-surface-hover',
   editing:
-    'bg-brand-subtle text-brand border-brand-subtle hover:bg-brand-subtle',
+    'bg-brand-subtle text-brand border-brand/40 hover:bg-brand-subtle',
   configured:
-    'bg-bullish-subtle text-bullish border-bullish-subtle hover:bg-bullish-subtle',
+    'bg-brand-subtle text-brand border-brand/50 hover:bg-brand-subtle',
   error:
-    'bg-bearish-subtle text-bearish border-bearish-subtle hover:bg-bearish-subtle',
+    'bg-brand-subtle text-brand border-brand ring-1 ring-brand/40 hover:bg-brand-subtle',
 };
 
 export function StepProgressPill({

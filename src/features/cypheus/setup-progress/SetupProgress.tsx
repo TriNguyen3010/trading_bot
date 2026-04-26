@@ -107,10 +107,12 @@ export function SetupProgress() {
     }
   })();
 
+  // Brand-only palette per Spec/Phase 1/card_yellow_stages_plan.md — ready
+  // and error both speak in brand; tone difference comes from the CTA shape
+  // and dot-row state, not from green/red label hue.
   const labelClass = cn(
     'flex-1 truncate text-xs',
-    mode === 'ready' && 'text-bullish font-medium',
-    mode === 'error' && 'text-bearish font-medium',
+    (mode === 'ready' || mode === 'error') && 'text-brand font-medium',
     (mode === 'empty' || mode === 'in_progress') && 'text-fg-secondary',
   );
 
@@ -137,7 +139,7 @@ export function SetupProgress() {
           size="sm"
           variant="ghost"
           onClick={() => setOpenStep(firstErrorStep)}
-          className="text-bearish hover:bg-bearish-subtle"
+          className="text-brand hover:bg-brand-subtle"
         >
           {strings.cypheus.progress.fix}
         </Button>
@@ -150,7 +152,7 @@ export function SetupProgress() {
     <div
       className={cn(
         'border-t border-border-subtle bg-canvas px-4 py-2.5',
-        mode === 'ready' && 'bg-bullish-subtle/30',
+        mode === 'ready' && 'bg-brand-subtle',
         isBuilding && 'pointer-events-none opacity-60',
       )}
     >
@@ -187,7 +189,7 @@ export function SetupProgress() {
           onClick={() =>
             firstErrorStep ? setOpenStep(firstErrorStep) : undefined
           }
-          className="mt-1.5 block w-full truncate text-left text-2xs text-bearish/80 hover:text-bearish focus-visible:outline-none focus-visible:underline"
+          className="mt-1.5 block w-full truncate text-left text-2xs text-brand/80 hover:text-brand focus-visible:outline-none focus-visible:underline"
           title={firstIssueMessage}
         >
           → {firstIssueMessage}
