@@ -3,6 +3,7 @@ import { Check, CircleDashed, AlertTriangle, ArrowRight, type LucideIcon } from 
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
+import { CypheusAvatar } from '@/features/cypheus/CypheusAvatar';
 import { validateBuilder } from '@/lib/validator';
 import type { StepId, StepStatus } from '@/types/builder.types';
 import {
@@ -12,6 +13,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { StepCardSummary } from './summaries/StepCardSummary';
+import styles from './StepCard.module.css';
 
 // All 4 statuses share the brand hue — differentiated by opacity + icon
 // shape + glow/ring. See Spec/Phase 1/card_yellow_stages_plan.md.
@@ -56,9 +58,13 @@ export function StepCard({
   const setOpenStep = useBuilderStore((s) => s.setOpenStep);
   const drawerMode = useCypheusStore((s) => s.drawerMode);
   const cypheusActiveStepId = useCypheusStore((s) => s.cypheusActiveStepId);
+  const phase = useCypheusStore((s) => s.phase);
+  const setPhase = useCypheusStore((s) => s.setPhase);
   const isPinned = drawerMode === 'cypheus-pinned';
   const isCypheusActive = isPinned && cypheusActiveStepId === stepId;
   const state = useBuilderStore();
+
+  const isStep1Idle = stepId === 'bot-config' && phase === 'idle';
 
   // Derive visual error state without mutating the store: if this step has
   // a "configured" stamp but the validator finds issues for it, surface the
@@ -75,20 +81,24 @@ export function StepCard({
     isOpen && baseStatus === 'pending' ? 'editing' : baseStatus;
   const StatusIcon = statusIcon[visualStatus].icon;
 
+  const handleClick = () => {
+    if (isPinned) return;
+    if (phase === 'idle') setPhase('active');
+    setOpenStep(stepId);
+  };
+
   const cardButton = (
     <button
       type="button"
-      onClick={() => {
-        if (isPinned) return;
-        setOpenStep(stepId);
-      }}
+      onClick={handleClick}
       aria-pressed={isOpen}
       aria-disabled={isPinned}
       className={cn(
         'group relative flex w-full flex-col items-stretch overflow-hidden rounded-xl border bg-surface text-left transition-all duration-fast ease-out-quick',
         'hover:bg-surface-hover hover:border-brand/60',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-        visualStatus === 'pending' && 'border-brand/15',
+        isStep1Idle && styles.highlighted,
+        !isStep1Idle && visualStatus === 'pending' && 'border-brand/15',
         visualStatus === 'editing' && 'border-brand shadow-glow',
         visualStatus === 'configured' && 'border-brand/50',
         visualStatus === 'error' && 'border-brand ring-2 ring-brand/40',
@@ -120,21 +130,33 @@ export function StepCard({
             {title}
           </h3>
         </div>
-        {status === 'pending' && (
-          <span className="flex items-center gap-1 text-xs text-fg-muted">
-            Tap to configure
-            <ArrowRight className="h-3 w-3" />
-          </span>
+        {isStep1Idle ? (
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1 text-xs text-fg-muted">
+              Tap to configure
+              <ArrowRight className="h-3 w-3" />
+            </span>
+            <CypheusAvatar size="xl" layoutId="cypheus-avatar" />
+          </div>
+        ) : (
+          <>
+            {status === 'pending' && (
+              <span className="flex items-center gap-1 text-xs text-fg-muted">
+                Tap to configure
+                <ArrowRight className="h-3 w-3" />
+              </span>
+            )}
+            <div
+              className={cn(
+                'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full',
+                statusIcon[visualStatus].tone,
+              )}
+              aria-label={statusIcon[visualStatus].label}
+            >
+              <StatusIcon className="h-4 w-4" />
+            </div>
+          </>
         )}
-        <div
-          className={cn(
-            'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full',
-            statusIcon[visualStatus].tone,
-          )}
-          aria-label={statusIcon[visualStatus].label}
-        >
-          <StatusIcon className="h-4 w-4" />
-        </div>
       </header>
 
       {(visualStatus === 'configured' || visualStatus === 'error') && (

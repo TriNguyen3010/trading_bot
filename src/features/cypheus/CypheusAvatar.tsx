@@ -1,18 +1,22 @@
 import { useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useCypheusStore, type AvatarState } from './store/cypheus.store';
 
 export interface CypheusAvatarProps {
   /** When omitted, the component subscribes to the cypheus store. */
   state?: AvatarState;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+  /** Framer Motion layoutId for shared element transitions. */
+  layoutId?: string;
 }
 
 const sizeMap = {
   sm: 'h-6 w-6',
   md: 'h-10 w-10',
   lg: 'h-12 w-12',
+  xl: 'h-16 w-16',
 } as const;
 
 /**
@@ -25,6 +29,7 @@ export function CypheusAvatar({
   state: stateProp,
   size = 'md',
   className,
+  layoutId,
 }: CypheusAvatarProps) {
   const setAvatar = useCypheusStore((s) => s.setAvatar);
   const storeState = useCypheusStore((s) => s.avatar);
@@ -49,10 +54,15 @@ export function CypheusAvatar({
     className,
   );
 
+  const Wrapper = layoutId ? motion.div : 'div';
+  const wrapperProps = layoutId
+    ? { layoutId, transition: { duration: 0.4, ease: 'easeOut' as const } }
+    : {};
+
   if (state === 'hello' || state === 'coding') {
     const isHello = state === 'hello';
     return (
-      <div className={wrapperClass} aria-hidden>
+      <Wrapper className={wrapperClass} aria-hidden {...wrapperProps}>
         <ChromaKeyDef />
         <video
           ref={videoRef}
@@ -67,19 +77,19 @@ export function CypheusAvatar({
           style={{ filter: 'url(#cypheus-chroma-green)' }}
           className={cn('h-full w-full object-cover', sizeClass)}
         />
-      </div>
+      </Wrapper>
     );
   }
 
   return (
-    <div className={wrapperClass} aria-hidden>
+    <Wrapper className={wrapperClass} aria-hidden {...wrapperProps}>
       <img
         src="/cypheus/avatar.png"
         alt=""
         loading="eager"
         className={cn('h-full w-full object-cover', sizeClass)}
       />
-    </div>
+    </Wrapper>
   );
 }
 

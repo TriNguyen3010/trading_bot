@@ -1,0 +1,51 @@
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.highlighted {
+  position: relative;
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.3);
+  border-color: transparent !important;
+}
+
+.highlighted::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 0deg,
+    var(--brand-primary) 90deg,
+    transparent 180deg
+  );
+  animation: rotate-border-step 3s linear infinite;
+  z-index: -1;
+}
+
+.highlighted::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-bg-surface);
+  z-index: -1;
+}
+
+@keyframes rotate-border-step {
+  to { --border-angle: 360deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .highlighted::before {
+    animation: none;
+    background: var(--brand-primary);
+    opacity: 0.4;
+  }
+
+  .highlighted {
+    box-shadow: none;
+  }
+}

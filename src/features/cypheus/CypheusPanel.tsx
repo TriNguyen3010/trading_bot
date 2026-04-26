@@ -29,6 +29,8 @@ export function CypheusPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const setPhase = useCypheusStore((s) => s.setPhase);
+
   const handleUserSubmit = (text: string) => {
     pushMessage({ role: 'user', text });
     if (state === 'building' || state === 'thinking') {
@@ -40,6 +42,7 @@ export function CypheusPanel() {
       pushMessage({ role: 'cypheus', text: strings.cypheus.afterDone });
       return;
     }
+    setPhase('active');
     void runMagicBuild();
   };
 

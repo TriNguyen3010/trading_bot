@@ -8,6 +8,8 @@ export type CypheusState =
   | 'building'
   | 'done';
 
+export type Phase = 'idle' | 'active';
+
 export type AvatarState = 'idle' | 'hello' | 'coding';
 
 export type LeftPanelTab = 'cypheus' | 'json';
@@ -29,6 +31,7 @@ export interface ChatMessage {
 
 interface CypheusStore {
   panelTab: LeftPanelTab;
+  phase: Phase;
   state: CypheusState;
   avatar: AvatarState;
   messages: ChatMessage[];
@@ -36,6 +39,7 @@ interface CypheusStore {
   cypheusActiveStepId: StepId | null;
 
   setPanelTab: (tab: LeftPanelTab) => void;
+  setPhase: (phase: Phase) => void;
   setState: (state: CypheusState) => void;
   setAvatar: (avatar: AvatarState) => void;
   pushMessage: (msg: Omit<ChatMessage, 'id' | 'ts'>) => string;
@@ -52,6 +56,7 @@ interface CypheusStore {
 
 export const useCypheusStore = create<CypheusStore>((set) => ({
   panelTab: 'cypheus',
+  phase: 'idle',
   state: 'idle',
   avatar: 'idle',
   messages: [],
@@ -59,6 +64,7 @@ export const useCypheusStore = create<CypheusStore>((set) => ({
   cypheusActiveStepId: null,
 
   setPanelTab: (panelTab) => set({ panelTab }),
+  setPhase: (phase) => set({ phase }),
   setState: (state) => set({ state }),
   setAvatar: (avatar) => set({ avatar }),
 
@@ -90,6 +96,7 @@ export const useCypheusStore = create<CypheusStore>((set) => ({
   resetAll: () =>
     set({
       panelTab: 'cypheus',
+      phase: 'idle',
       state: 'idle',
       avatar: 'idle',
       messages: [],
