@@ -1,0 +1,98 @@
+/*
+ * Design tokens — derived from Spec/Phase 1/DESIGN_GUIDELINES.md
+ * + complementary Spec/Phase 1/design_guideline.md
+ *
+ * Naming follows the design_guideline.md semantic scheme (--color-bg-*, --color-text-*)
+ * with brand + trading + status palettes from DESIGN_GUIDELINES.md.
+ *
+ * Dark theme only (MVP). Tokens are placed under :root so CSS variables
+ * remain available even before adding `class="dark"` toggling.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* === BACKGROUND === */
+  --color-bg-canvas: #0a0a0b;
+  --color-bg-base: #0b0e11;
+  --color-bg-surface: #14181f;
+  --color-bg-surface-hover: #1f1f23;
+  --color-bg-surface-active: #2b3139;
+  --color-bg-elevated: #1e2329;
+  --color-bg-input: #181c22;
+  --color-bg-overlay: rgba(0, 0, 0, 0.6);
+
+  /* === BORDER === */
+  --color-border-subtle: #1e2329;
+  --color-border-default: #2b3139;
+  --color-border-strong: #474d57;
+  --color-border-focus: var(--brand-primary);
+
+  /* === TEXT === */
+  --color-text-primary: #eaecef;
+  --color-text-secondary: #b7bdc6;
+  --color-text-muted: #848e9c;
+  --color-text-disabled: #5e6673;
+  --color-text-inverse: #0b0e11;
+
+  /* === BRAND (placeholder yellow until user provides) === */
+  --brand-primary: #f0b90b;
+  --brand-hover: #fcd535;
+  --brand-active: #d9a400;
+  --brand-subtle: rgba(240, 185, 11, 0.1);
+
+  /* === TRADING (Bullish / Bearish) === */
+  --color-bullish: #0ecb81;
+  --color-bullish-hover: #2ebd85;
+  --color-bullish-subtle: rgba(14, 203, 129, 0.12);
+  --color-bearish: #f6465d;
+  --color-bearish-hover: #f6647b;
+  --color-bearish-subtle: rgba(246, 70, 93, 0.12);
+
+  /* === STATUS === */
+  --color-success: #0ecb81;
+  --color-warning: #f0b90b;
+  --color-danger: #f6465d;
+  --color-info: #3b82f6;
+
+  /* === EDGE / FLOW (for step connectors) === */
+  --color-edge-default: #3f3f46;
+  --color-edge-long: var(--color-bullish);
+  --color-edge-short: var(--color-bearish);
+  --color-edge-signal: var(--brand-primary);
+
+  /* === RADIUS === */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* === SHADOW === */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+  --shadow-glow-brand: 0 0 24px rgba(240, 185, 11, 0.25);
+
+  /* === MOTION === */
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --ease-out-quick: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out-snap: cubic-bezier(0.6, 0, 0.4, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* === LAYOUT (3-column) === */
+  --layout-left-panel: 400px;
+  --layout-step-list: 720px;
+  --layout-right-drawer: 720px;
+  --drawer-width: 0px;
+  --layout-header: 56px;
+
+  /* === EFFECTS (dot-grid spotlight) === */
+  --fx-dot-color: rgba(255, 210, 80, 0.14);
+  --fx-dot-color-bright: rgba(255, 210, 80, 0.95);
+  --fx-spacing: 22px;
+  --fx-radius: 240px;
+}

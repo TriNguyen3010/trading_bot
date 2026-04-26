@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dot Grid Spotlight — Yellow</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #050507;
+    color: #e8e8ee;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .subtitle {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .demo {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #1a1a22;
+    height: 70vh;
+    min-height: 480px;
+    background: #0a0a0f;
+  }
+
+  .demo canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .demo-label {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 10;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.08);
+    pointer-events: none;
+  }
+
+  .demo-hint {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    z-index: 10;
+    color: rgba(255,255,255,0.4);
+    font-size: 12px;
+    pointer-events: none;
+  }
+
+  .footer {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: #0e0e14;
+    border: 1px solid #1a1a22;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #aaa;
+    line-height: 1.6;
+  }
+  .footer code {
+    background: #1a1a22;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #ffd957;
+  }
+</style>
+</head>
+<body>
+
+<h1>Dot Grid Spotlight — Yellow</h1>
+<p class="subtitle">Di chuột để hiệu ứng vàng từ từ hiện ra. Để yên một lúc → từ từ tắt đi.</p>
+
+<div class="demo" id="demo">
+  <div class="demo-label">Canvas · Motion-driven fade</div>
+  <div class="demo-hint">Hiện khi chuột chuyển động · Tắt khi chuột đứng yên</div>
+  <canvas id="canvasDots"></canvas>
+</div>
+
+<div class="footer">
+  <strong>Tham số:</strong>
+  Color <code>rgba(255, 210, 80)</code> ·
+  Spacing <code>22px</code> ·
+  Radius <code>240px</code> ·
+  Fade-in <code>~350ms</code> ·
+  Fade-out <code>~900ms</code> ·
+  Idle threshold <code>80ms</code>
+</div>
+
+<script>
+(function() {
+  const container = document.getElementById('demo');
+  const canvas = document.getElementById('canvasDots');
+  const ctx = canvas.getContext('2d');
+
+  // ===== Config =====
+  const SPACING        = 22;
+  const DOT_SIZE       = 1.2;
+  const RADIUS         = 240;
+  const BASE_OPACITY   = 0.14;   // độ sáng dot ở trạng thái "tắt"
+  const MAX_OPACITY    = 0.95;   // độ sáng tối đa khi gần cursor
+  const COLOR          = '255, 210, 80';   // vàng ấm
+
+  // Quy luật fade theo chuyển động
+  const IDLE_MS        = 80;     // chuột không cử động > 80ms → coi như "đứng yên"
+  const FADE_IN_RATE   = 0.06;   // ~ 350ms để fade-in (ở 60fps)
+  const FADE_OUT_RATE  = 0.022;  // ~ 900ms để fade-out (chậm hơn để cảm giác "từ từ")
+  const CURSOR_LERP    = 0.18;   // smoothing vị trí cursor
+
+  // ===== State =====
+  let dots = [];
+  let mouseX = -9999, mouseY = -9999;
+  let smoothX = -9999, smoothY = -9999;
+  let lastMoveTime = -Infinity;
+  let isInside = false;
+  let strength = 0;       // 0 → 1, drives fade-in / fade-out
+  const dpr = window.devicePixelRatio || 1;
+
+  function resize() {
+    const rect = container.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+
+    // Build grid
+    dots = [];
+    const cols = Math.ceil(rect.width / SPACING) + 1;
+    const rows = Math.ceil(rect.height / SPACING) + 1;
+    const offsetX = (rect.width  - (cols - 1) * SPACING) / 2;
+    const offsetY = (rect.height - (rows - 1) * SPACING) / 2;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        dots.push({ x: offsetX + c * SPACING, y: offsetY + r * SPACING });
+      }
+    }
+  }
+
+  function draw() {
+    const rect = container.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+
+    // Smooth cursor
+    smoothX += (mouseX - smoothX) * CURSOR_LERP;
+    smoothY += (mouseY - smoothY) * CURSOR_LERP;
+
+    // ===== Quy luật tắt / hiện =====
+    // Target = 1 khi chuột đang ở trong vùng VÀ vừa cử động
+    // Target = 0 khi chuột rời đi HOẶC đứng yên quá IDLE_MS
+    const idle = (performance.now() - lastMoveTime) > IDLE_MS;
+    const target = (isInside && !idle) ? 1 : 0;
+
+    // Tween bất đối xứng: fade-in nhanh hơn fade-out
+    const rate = target > strength ? FADE_IN_RATE : FADE_OUT_RATE;
+    strength += (target - strength) * rate;
+    if (Math.abs(target - strength) < 0.001) strength = target;
+
+    // ===== Vẽ dots =====
+    for (const d of dots) {
+      const dx = d.x - smoothX;
+      const dy = d.y - smoothY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      let opacity = BASE_OPACITY;
+      if (dist < RADIUS && strength > 0) {
+        const t = 1 - dist / RADIUS;        // 0..1, gần cursor → 1
+        const falloff = t * t;              // smooth falloff
+        const boost = (MAX_OPACITY - BASE_OPACITY) * falloff * strength;
+        opacity = BASE_OPACITY + boost;
+      }
+
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, DOT_SIZE, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${COLOR}, ${opacity})`;
+      ctx.fill();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  // ===== Events =====
+  container.addEventListener('mouseenter', () => {
+    isInside = true;
+  });
+
+  container.addEventListener('mousemove', (e) => {
+    const rect = container.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
+    lastMoveTime = performance.now();   // reset idle timer
+  });
+
+  container.addEventListener('mouseleave', () => {
+    isInside = false;
+  });
+
+  window.addEventListener('resize', resize);
+  resize();
+  draw();
+})();
+</script>
+
+</body>
+</html>

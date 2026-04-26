@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Bot — Design Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-base:        #0B0E11;
+  --bg-surface:     #14181F;
+  --bg-elevated:    #1E2329;
+  --bg-hover:       #2B3139;
+  --bg-active:      #363C45;
+  --bg-input:       #181C22;
+
+  --border-subtle:  #1E2329;
+  --border-default: #2B3139;
+  --border-strong:  #474D57;
+
+  --text-primary:   #EAECEF;
+  --text-secondary: #B7BDC6;
+  --text-tertiary:  #848E9C;
+  --text-disabled:  #5E6673;
+  --text-inverse:   #0B0E11;
+
+  --brand-primary:  #F0B90B;
+  --brand-hover:    #FCD535;
+  --brand-active:   #D9A400;
+  --brand-subtle:   rgba(240, 185, 11, 0.1);
+
+  --bullish:        #0ECB81;
+  --bullish-hover:  #2EBD85;
+  --bullish-subtle: rgba(14, 203, 129, 0.12);
+  --bearish:        #F6465D;
+  --bearish-hover:  #F6647B;
+  --bearish-subtle: rgba(246, 70, 93, 0.12);
+
+  --success:        #0ECB81;
+  --warning:        #F0B90B;
+  --danger:         #F6465D;
+  --info:           #3B82F6;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.up { color: var(--bullish); }
+.down { color: var(--bearish); }
+
+/* LAYOUT */
+.app { display: grid; grid-template-columns: 240px 1fr; grid-template-rows: 56px 1fr; min-height: 100vh; }
+.topbar {
+  grid-column: 1 / -1;
+  display: flex; align-items: center;
+  padding: 0 24px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky; top: 0; z-index: 10;
+}
+.logo { font-weight: 700; font-size: 16px; color: var(--brand-primary); margin-right: 32px; letter-spacing: -0.3px; }
+.topbar nav { display: flex; gap: 4px; flex: 1; }
+.topbar nav a { padding: 8px 14px; color: var(--text-secondary); text-decoration: none; font-size: 14px; border-radius: var(--radius-md); }
+.topbar nav a.active { color: var(--text-primary); background: var(--bg-hover); }
+.topbar nav a:hover { color: var(--text-primary); }
+.topbar .user { display: flex; align-items: center; gap: 12px; color: var(--text-secondary); font-size: 13px; }
+.avatar { width: 32px; height: 32px; border-radius: 999px; background: linear-gradient(135deg, #F0B90B, #FCD535); display: flex; align-items: center; justify-content: center; color: #0B0E11; font-weight: 700; }
+
+.sidebar { background: var(--bg-surface); border-right: 1px solid var(--border-subtle); padding: 16px 12px; }
+.side-group { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); padding: 12px 12px 8px; font-weight: 600; }
+.side-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; color: var(--text-secondary); text-decoration: none; border-radius: var(--radius-md); font-size: 14px; position: relative; cursor: pointer; }
+.side-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.side-item.active { background: var(--brand-subtle); color: var(--brand-primary); }
+.side-item.active::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; background: var(--brand-primary); border-radius: 0 2px 2px 0; }
+.side-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
+
+.main { padding: 24px 32px 64px; max-width: 1440px; width: 100%; }
+.page-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.page-sub { color: var(--text-tertiary); font-size: 14px; margin-bottom: 32px; }
+
+/* SECTION */
+section { margin-bottom: 48px; }
+.sec-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.sec-desc { color: var(--text-tertiary); font-size: 13px; margin-bottom: 16px; }
+.hr { height: 1px; background: var(--border-subtle); margin: 48px 0; }
+
+/* ========= COLORS ========= */
+.swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.swatch { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; }
+.swatch .chip { height: 64px; border-bottom: 1px solid var(--border-subtle); }
+.swatch .meta { padding: 10px 12px; }
+.swatch .name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+.swatch .hex { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+/* ========= TYPOGRAPHY ========= */
+.type-row { display: flex; align-items: baseline; gap: 24px; padding: 10px 0; border-bottom: 1px solid var(--border-subtle); }
+.type-row:last-child { border-bottom: 0; }
+.type-tag { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); min-width: 96px; }
+
+/* ========= BUTTONS ========= */
+.btn-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid transparent; border-radius: var(--radius-md);
+  font-family: inherit; font-weight: 600; font-size: 14px; line-height: 1;
+  padding: 0 16px; height: 36px;
+  cursor: pointer; transition: background 120ms ease-out, border-color 120ms ease-out, color 120ms ease-out;
+  white-space: nowrap;
+}
+.btn:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
+.btn-primary { background: var(--brand-primary); color: var(--text-inverse); }
+.btn-primary:hover { background: var(--brand-hover); }
+.btn-primary:active { background: var(--brand-active); }
+.btn-secondary { background: var(--bg-elevated); color: var(--text-primary); border-color: var(--border-default); }
+.btn-secondary:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
+.btn-destructive { background: var(--bearish); color: #fff; }
+.btn-destructive:hover { background: var(--bearish-hover); }
+.btn-success { background: var(--bullish); color: #fff; }
+.btn-success:hover { background: var(--bullish-hover); }
+.btn-link { background: transparent; color: var(--brand-primary); padding: 0 4px; }
+.btn-link:hover { text-decoration: underline; }
+.btn-sm { height: 28px; padding: 0 12px; font-size: 12px; }
+.btn-lg { height: 44px; padding: 0 20px; font-size: 16px; }
+.btn[disabled] { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+.btn .icon { width: 14px; height: 14px; }
+
+/* ========= INPUT ========= */
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; max-width: 320px; }
+.label { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.input, .select, .textarea {
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 0 12px; height: 40px;
+  font-family: inherit; font-size: 14px;
+  transition: border-color 120ms, box-shadow 120ms;
+  width: 100%;
+}
+.input:focus, .select:focus, .textarea:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px var(--brand-subtle);
+}
+.input::placeholder { color: var(--text-tertiary); }
+.helper { font-size: 11px; color: var(--text-tertiary); }
+.field.error .input { border-color: var(--danger); }
+.field.error .helper { color: var(--danger); }
+
+.input-group { display: flex; align-items: stretch; }
+.input-group .input { border-radius: var(--radius-md) 0 0 var(--radius-md); }
+.input-group .suffix {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default); border-left: 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: 0 12px; display: flex; align-items: center;
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary);
+}
+
+/* Switch */
+.switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch-slider {
+  position: absolute; inset: 0; cursor: pointer;
+  background: var(--bg-active); border-radius: 999px;
+  transition: background 150ms;
+}
+.switch-slider::before {
+  content: ""; position: absolute; width: 14px; height: 14px; left: 3px; bottom: 3px;
+  background: #fff; border-radius: 999px; transition: transform 150ms;
+}
+.switch input:checked + .switch-slider { background: var(--brand-primary); }
+.switch input:checked + .switch-slider::before { transform: translateX(16px); }
+
+/* Checkbox */
+.checkbox { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+.checkbox input { appearance: none; width: 16px; height: 16px; border: 1px solid var(--border-strong); background: var(--bg-input); border-radius: var(--radius-sm); position: relative; cursor: pointer; }
+.checkbox input:checked { background: var(--brand-primary); border-color: var(--brand-primary); }
+.checkbox input:checked::after { content: "✓"; color: var(--text-inverse); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+
+/* Slider */
+.range { -webkit-appearance: none; width: 100%; height: 4px; background: var(--bg-active); border-radius: 2px; outline: none; }
+.range::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 999px; background: var(--brand-primary); cursor: pointer; border: 2px solid var(--bg-base); }
+
+/* ========= CARD ========= */
+.card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; }
+.card-header { padding: 16px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-size: 15px; font-weight: 600; }
+.card-body { padding: 16px; }
+.card-footer { padding: 12px 16px; border-top: 1px solid var(--border-subtle); display: flex; justify-content: flex-end; gap: 8px; }
+
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.stat { }
+.stat-label { font-size: 12px; color: var(--text-tertiary); margin-bottom: 8px; }
+.stat-value { font-family: var(--font-mono); font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-delta { font-size: 12px; font-family: var(--font-mono); margin-top: 4px; }
+
+/* ========= TABLE ========= */
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table thead { background: var(--bg-elevated); }
+.table th { text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); font-weight: 600; border-bottom: 1px solid var(--border-default); }
+.table td { padding: 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
+.table tr:hover td { background: var(--bg-hover); }
+.table .num-cell { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* ========= BADGE ========= */
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; height: 20px; font-size: 11px; font-weight: 600; border-radius: var(--radius-sm); }
+.badge::before { content: "●"; font-size: 8px; }
+.badge-success { background: var(--bullish-subtle); color: var(--bullish); }
+.badge-warning { background: var(--brand-subtle); color: var(--brand-primary); }
+.badge-neutral { background: var(--bg-hover); color: var(--text-tertiary); }
+.badge-danger { background: var(--bearish-subtle); color: var(--bearish); }
+.badge-info { background: rgba(59, 130, 246, 0.12); color: var(--info); }
+.badge-solid { padding: 3px 8px; height: 22px; border-radius: var(--radius-sm); }
+.badge-solid::before { display: none; }
+.tag-long { background: var(--bullish-subtle); color: var(--bullish); padding: 2px 8px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 600; font-family: var(--font-mono); }
+.tag-short { background: var(--bearish-subtle); color: var(--bearish); padding: 2px 8px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 600; font-family: var(--font-mono); }
+
+/* ========= TABS ========= */
+.tabs { display: flex; border-bottom: 1px solid var(--border-default); gap: 0; margin-bottom: 16px; }
+.tab { padding: 10px 16px; cursor: pointer; color: var(--text-secondary); font-size: 14px; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab:hover { color: var(--text-primary); }
+.tab.active { color: var(--text-primary); border-bottom-color: var(--brand-primary); }
+
+/* ========= ALERT ========= */
+.alert { display: flex; gap: 12px; padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid; font-size: 13px; margin-bottom: 12px; }
+.alert-icon { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+.alert-title { font-weight: 600; margin-bottom: 2px; }
+.alert-body { color: var(--text-secondary); }
+.alert-warning { background: rgba(240, 185, 11, 0.08); border-color: rgba(240, 185, 11, 0.3); }
+.alert-warning .alert-title { color: var(--warning); }
+.alert-danger { background: rgba(246, 70, 93, 0.08); border-color: rgba(246, 70, 93, 0.3); }
+.alert-danger .alert-title { color: var(--danger); }
+.alert-success { background: rgba(14, 203, 129, 0.08); border-color: rgba(14, 203, 129, 0.3); }
+.alert-success .alert-title { color: var(--success); }
+.alert-info { background: rgba(59, 130, 246, 0.08); border-color: rgba(59, 130, 246, 0.3); }
+.alert-info .alert-title { color: var(--info); }
+
+/* ========= MODAL DEMO ========= */
+.modal-demo { position: relative; background: var(--bg-base); border: 1px dashed var(--border-default); border-radius: var(--radius-lg); padding: 48px; display: flex; align-items: center; justify-content: center; min-height: 280px; }
+.modal {
+  background: var(--bg-elevated); border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  width: 440px; box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+}
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border-subtle); }
+.modal-title { font-size: 16px; font-weight: 600; }
+.modal-body { padding: 20px 24px; color: var(--text-secondary); font-size: 14px; }
+.modal-footer { padding: 16px 24px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--border-subtle); }
+
+/* ========= TOAST ========= */
+.toast { display: flex; gap: 12px; padding: 14px 16px; background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-lg); width: 360px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); margin-bottom: 12px; }
+.toast-icon { width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; }
+.toast-title { font-weight: 600; font-size: 14px; }
+.toast-desc { color: var(--text-tertiary); font-size: 12px; margin-top: 2px; }
+.icon-success { color: var(--success); } .icon-danger { color: var(--danger); } .icon-warning { color: var(--warning); } .icon-info { color: var(--info); }
+
+/* ========= JSON PREVIEW ========= */
+.code { background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px; font-family: var(--font-mono); font-size: 13px; line-height: 1.55; overflow-x: auto; position: relative; }
+.code .k { color: #79C0FF; }
+.code .s { color: #A5D6FF; }
+.code .n { color: var(--brand-primary); }
+.code .b { color: #FF7B72; }
+.code .nul { color: var(--text-tertiary); }
+
+/* ========= CONFIG LAYOUT DEMO ========= */
+.config-layout { display: grid; grid-template-columns: 1fr 420px; gap: 16px; }
+
+/* ========= FOOTER OF DEMO ========= */
+.foot { color: var(--text-tertiary); font-size: 12px; text-align: center; margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border-subtle); }
+
+/* Grid for layouts */
+.flex { display: flex; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .mt-2 { margin-top: 8px; } .mt-4 { margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="logo">⚡ TradeBot</div>
+    <nav>
+      <a href="#" class="active">Dashboard</a>
+      <a href="#">Bots</a>
+      <a href="#">Strategies</a>
+      <a href="#">Orders</a>
+      <a href="#">Analytics</a>
+    </nav>
+    <div class="user">
+      <span>Tri Nguyen</span>
+      <div class="avatar">TN</div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="side-group">Main</div>
+    <a class="side-item active"><span class="side-icon">◐</span>Dashboard</a>
+    <a class="side-item"><span class="side-icon">▤</span>My Bots</a>
+    <a class="side-item"><span class="side-icon">✦</span>Strategies</a>
+    <a class="side-item"><span class="side-icon">⇵</span>Orders</a>
+    <a class="side-item"><span class="side-icon">∑</span>Analytics</a>
+
+    <div class="side-group" style="margin-top:16px;">Config</div>
+    <a class="side-item"><span class="side-icon">⚙</span>Settings</a>
+    <a class="side-item"><span class="side-icon">🔔</span>Notifications</a>
+    <a class="side-item"><span class="side-icon">🔑</span>API Keys</a>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <h1 class="page-title">🎨 Design System Preview</h1>
+    <p class="page-sub">Tham chiếu trực quan cho toàn bộ component — mở file <code style="font-family:var(--font-mono); color:var(--brand-primary)">DESIGN_GUIDELINES.md</code> để xem chi tiết tokens & rules.</p>
+
+    <!-- COLOR PALETTE -->
+    <section>
+      <h2 class="sec-title">1. Color Palette</h2>
+      <p class="sec-desc">Background & surface (dùng layered bg để tạo depth, không shadow đậm).</p>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="chip" style="background:#0B0E11"></div><div class="meta"><div class="name">bg-base</div><div class="hex">#0B0E11</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#14181F"></div><div class="meta"><div class="name">bg-surface</div><div class="hex">#14181F</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#1E2329"></div><div class="meta"><div class="name">bg-elevated</div><div class="hex">#1E2329</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#2B3139"></div><div class="meta"><div class="name">bg-hover</div><div class="hex">#2B3139</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#363C45"></div><div class="meta"><div class="name">bg-active</div><div class="hex">#363C45</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#181C22"></div><div class="meta"><div class="name">bg-input</div><div class="hex">#181C22</div></div></div>
+      </div>
+
+      <p class="sec-desc" style="margin-top:24px">Brand & Trading — gold CTA + bull/bear tài chính.</p>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="chip" style="background:#F0B90B"></div><div class="meta"><div class="name">brand-primary</div><div class="hex">#F0B90B</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#FCD535"></div><div class="meta"><div class="name">brand-hover</div><div class="hex">#FCD535</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#0ECB81"></div><div class="meta"><div class="name">bullish (long/buy)</div><div class="hex">#0ECB81</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#F6465D"></div><div class="meta"><div class="name">bearish (short/sell)</div><div class="hex">#F6465D</div></div></div>
+      </div>
+
+      <p class="sec-desc" style="margin-top:24px">Status — cho UI feedback chung (toast, alert, badge).</p>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="chip" style="background:#0ECB81"></div><div class="meta"><div class="name">success</div><div class="hex">#0ECB81</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#F0B90B"></div><div class="meta"><div class="name">warning</div><div class="hex">#F0B90B</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#F6465D"></div><div class="meta"><div class="name">danger</div><div class="hex">#F6465D</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#3B82F6"></div><div class="meta"><div class="name">info</div><div class="hex">#3B82F6</div></div></div>
+      </div>
+
+      <p class="sec-desc" style="margin-top:24px">Text — 5 cấp độ hierarchy.</p>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="chip" style="background:#EAECEF"></div><div class="meta"><div class="name">text-primary</div><div class="hex">#EAECEF</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#B7BDC6"></div><div class="meta"><div class="name">text-secondary</div><div class="hex">#B7BDC6</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#848E9C"></div><div class="meta"><div class="name">text-tertiary</div><div class="hex">#848E9C</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#5E6673"></div><div class="meta"><div class="name">text-disabled</div><div class="hex">#5E6673</div></div></div>
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <!-- TYPOGRAPHY -->
+    <section>
+      <h2 class="sec-title">2. Typography</h2>
+      <p class="sec-desc">Inter cho UI — JetBrains Mono cho số.</p>
+      <div class="card"><div class="card-body">
+        <div class="type-row"><span class="type-tag">3xl · 32/40</span><span style="font-size:32px;font-weight:700">$124,532.80</span></div>
+        <div class="type-row"><span class="type-tag">2xl · 24/32</span><span style="font-size:24px;font-weight:700">Trading Dashboard</span></div>
+        <div class="type-row"><span class="type-tag">xl · 20/28</span><span style="font-size:20px;font-weight:600">Active Strategies</span></div>
+        <div class="type-row"><span class="type-tag">lg · 18/28</span><span style="font-size:18px;font-weight:600">Risk Management</span></div>
+        <div class="type-row"><span class="type-tag">md · 16/24</span><span style="font-size:16px;font-weight:500">Bot Configuration</span></div>
+        <div class="type-row"><span class="type-tag">base · 14/20</span><span style="font-size:14px">Body text — default cho paragraph, form, table.</span></div>
+        <div class="type-row"><span class="type-tag">sm · 12/18</span><span style="font-size:12px;color:var(--text-secondary)">Helper text, table row, label</span></div>
+        <div class="type-row"><span class="type-tag">xs · 11/16</span><span style="font-size:11px;color:var(--text-tertiary)">Metadata, timestamp, caption</span></div>
+        <div class="type-row"><span class="type-tag">mono · num</span><span class="num" style="font-size:16px">BTC/USDT · 67,524.83 · <span class="up">+2.34%</span></span></div>
+      </div></div>
+    </section>
+
+    <div class="hr"></div>
+
+    <!-- BUTTONS -->
+    <section>
+      <h2 class="sec-title">3. Buttons</h2>
+      <p class="sec-desc">Primary (gold) cho CTA chính · Success/Danger dành riêng cho Buy/Sell.</p>
+
+      <div class="card"><div class="card-body">
+        <div style="color:var(--text-tertiary); font-size:12px; margin-bottom:8px">Variants</div>
+        <div class="btn-row">
+          <button class="btn btn-primary">Save Configuration</button>
+          <button class="btn btn-secondary">Cancel</button>
+          <button class="btn btn-ghost">Reset</button>
+          <button class="btn btn-success">▲ Buy / Long</button>
+          <button class="btn btn-destructive">▼ Sell / Short</button>
+          <button class="btn btn-link">View details →</button>
+          <button class="btn btn-primary" disabled>Disabled</button>
+        </div>
+
+        <div style="color:var(--text-tertiary); font-size:12px; margin:16px 0 8px">Sizes</div>
+        <div class="btn-row" style="align-items:center">
+          <button class="btn btn-primary btn-sm">Small</button>
+          <button class="btn btn-primary">Medium</button>
+          <button class="btn btn-primary btn-lg">Large</button>
+        </div>
+
+        <div style="color:var(--text-tertiary); font-size:12px; margin:16px 0 8px">With icon</div>
+        <div class="btn-row">
+          <button class="btn btn-primary">⏵ Start Bot</button>
+          <button class="btn btn-destructive">⏹ Stop Bot</button>
+          <button class="btn btn-secondary">↻ Refresh</button>
+          <button class="btn btn-secondary">📋 Copy JSON</button>
+        </div>
+      </div></div>
+    </section>
+
+    <div class="hr"></div>
+
+    <!-- FORM -->
+    <section>
+      <h2 class="sec-title">4. Form Controls</h2>
+      <p class="sec-desc">Input 40px default — Number input dùng mono + suffix unit.</p>
+
+      <div class="card"><div class="card-body">
+        <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 20px 24px">
+
+          <div class="field">
+            <label class="label">Bot name</label>
+            <input class="input" value="BTC Scalper v2" />
+            <div class="helper">Dùng để phân biệt bot trong dashboard.</div>
+          </div>
+
+          <div class="field">
+            <label class="label">Exchange</label>
+            <select class="select">
+              <option>Binance Futures</option>
+              <option>Bybit</option>
+              <option>OKX</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="label">Leverage</label>
+            <div class="input-group">
+              <input class="input num" value="10" style="text-align:right" />
+              <span class="suffix">x</span>
+            </div>
+            <div class="helper">Khuyến nghị: ≤ 10x cho chiến lược trung hạn.</div>
+          </div>
+
+          <div class="field">
+            <label class="label">Position size</label>
+            <div class="input-group">
+              <input class="input num" value="100.00" style="text-align:right" />
+              <span class="suffix">USDT</span>
+            </div>
+          </div>
+
+          <div class="field error">
+            <label class="label">Stop loss</label>
+            <div class="input-group">
+              <input class="input num" value="-1" style="text-align:right" />
+              <span class="suffix">%</span>
+            </div>
+            <div class="helper">Giá trị phải lớn hơn 0.</div>
+          </div>
+
+          <div class="field">
+            <label class="label">Risk per trade: <span class="num" style="color:var(--brand-primary)">2.5%</span></label>
+            <input type="range" class="range" min="0" max="10" step="0.5" value="2.5" />
+            <div class="helper">% balance chấp nhận rủi ro mỗi lệnh.</div>
+          </div>
+
+          <div class="field" style="max-width:none">
+            <label class="label">Bot enabled</label>
+            <label class="switch"><input type="checkbox" checked><span class="switch-slider"></span></label>
+          </div>
+
+          <div class="field" style="max-width:none">
+            <label class="label">Features</label>
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <label class="checkbox"><input type="checkbox" checked> Trailing stop-loss</label>
+              <label class="checkbox"><input type="checkbox" checked> Auto re-entry</label>
+              <label class="checkbox"><input type="checkbox"> DCA (Dollar-cost averaging)</label>
+            </div>
+          </div>
+
+        </div>
+      </div></div>
+    </section>
+
+    <div class="hr"></div>
+
+    <!-- CARDS / STATS -->
+    <section>
+      <h2 class="sec-title">5. Stat Cards</h2>
+      <p class="sec-desc">Số tiền dùng mono + tabular — màu bullish/bearish cho % change.</p>
+
+      <div class="grid-3">
+        <div class="card"><div class="card-body stat">
+          <div class="stat-label">Total Equity</div>
+          <div class="stat-value">$124,532.80</div>
+          <div class="stat-delta up">▲ +$2,341.20 (+1.91%)</div>
+        </div></div>
+        <div class="card"><div class="card-body stat">
+          <div class="stat-label">24h P&L</div>
+          <div class="stat-value down">-$1,205.43</div>
+          <div class="stat-delta down">▼ -0.96% today</div>
+        </div></div>
+        <div class="card"><div class="card-body stat">
+          <div class="stat-label">Active Positions</div>
+          <div class="stat-value">7</div>
+          <div class="stat-delta" style="color:var(--text-tertiary)">3 long · 4 short</div>
+        </div></div>
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <!-- TABLE -->
+    <section>
+      <h2 class="sec-title">6. Table — Orders</h2>
+      <p class="sec-desc">Row 48px · header uppercase xs · số căn phải mono.</p>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Recent Orders</div>
+          <div class="flex gap-2">
+            <button class="btn btn-ghost btn-sm">↻ Refresh</button>
+            <button class="btn btn-secondary btn-sm">⤓ Export CSV</button>
+          </div>
+        </div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Symbol</th>
+              <th>Side</th>
+              <th>Type</th>
+              <th class="num-cell">Price</th>
+              <th class="num-cell">Size</th>
+              <th class="num-cell">P&L</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="num" style="color:var(--text-tertiary)">14:32:18</td><td>BTC/USDT</td><td><span class="tag-long">LONG</span></td><td>Market</td><td class="num-cell">67,524.83</td><td class="num-cell">0.150</td><td class="num-cell up">+$142.31</td><td><span class="badge badge-success">Filled</span></td></tr>
+            <tr><td class="num" style="color:var(--text-tertiary)">14:28:05</td><td>ETH/USDT</td><td><span class="tag-short">SHORT</span></td><td>Limit</td><td class="num-cell">3,412.50</td><td class="num-cell">2.000</td><td class="num-cell down">-$84.20</td><td><span class="badge badge-success">Filled</span></td></tr>
+            <tr><td class="num" style="color:var(--text-tertiary)">14:20:41</td><td>SOL/USDT</td><td><span class="tag-long">LONG</span></td><td>Limit</td><td class="num-cell">184.32</td><td class="num-cell">25.00</td><td class="num-cell" style="color:var(--text-tertiary)">—</td><td><span class="badge badge-warning">Pending</span></td></tr>
+            <tr><td class="num" style="color:var(--text-tertiary)">14:15:12</td><td>BNB/USDT</td><td><span class="tag-short">SHORT</span></td><td>Market</td><td class="num-cell">612.80</td><td class="num-cell">5.00</td><td class="num-cell down">-$24.10</td><td><span class="badge badge-danger">Rejected</span></td></tr>
+            <tr><td class="num" style="color:var(--text-tertiary)">14:02:38</td><td>XRP/USDT</td><td><span class="tag-long">LONG</span></td><td>Market</td><td class="num-cell">2.4820</td><td class="num-cell">1,000</td><td class="num-cell up">+$58.80</td><td><span class="badge badge-success">Filled</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <!-- BADGES -->
+    <section>
+      <h2 class="sec-title">7. Badges & Status</h2>
+
+      <div class="card"><div class="card-body">
+        <div style="color:var(--text-tertiary); font-size:12px; margin-bottom:8px">Bot status</div>
+        <div class="flex gap-3" style="flex-wrap:wrap">
+          <span class="badge badge-success">Running</span>
+          <span class="badge badge-warning">Paused</span>
+          <span class="badge badge-neutral">Stopped</span>
+          <span class="badge badge-danger">Error</span>
+          <span class="badge badge-info">Syncing</span>
+        </div>
+
+        <div style="color:var(--text-tertiary); font-size:12px; margin:20px 0 8px">Trading side</div>
+        <div class="flex gap-3" style="flex-wrap:wrap">
+          <span class="tag-long">LONG</span>
+          <span class="tag-short">SHORT</span>
+          <span class="tag-long">BUY</span>
+          <span class="tag-short">SELL</span>
+        </div>
+      </div></div>
+    </section>
+
+    <div class="hr"></div>
+
+    <!-- TABS -->
+    <section>
+      <h2 class="sec-title">8. Tabs</h2>
+      <div class="card"><div class="card-body">
+        <div class="tabs">
+          <div class="tab active">General</div>
+          <div class="tab">Strategy</div>
+          <div class="tab">Risk Management</div>
+          <div class="tab">Notifications</div>
+          <div class="tab">Advanced</div>
+        </div>
+        <p style="color:var(--text-secondary); font-size:13px">Nội dung tab hiển thị ở đây — underline vàng 2px chỉ tab active.</p>
+      </div></div>
+    </section>
+
+    <div class="hr"></div>
+
+    <!-- ALERTS -->
+    <section>
+      <h2 class="sec-title">9. Alerts / Banners</h2>
+      <p class="sec-desc">Dùng inline trong form để cảnh báo risk params.</p>
+
+      <div class="alert alert-danger">
+        <span class="alert-icon icon-danger">⚠</span>
+        <div><div class="alert-title">Không có Stop-loss</div><div class="alert-body">Bot có thể mất toàn bộ vốn khi giá đi ngược. Khuyến nghị bật stop-loss tối thiểu −2%.</div></div>
+      </div>
+      <div class="alert alert-warning">
+        <span class="alert-icon icon-warning">⚡</span>
+        <div><div class="alert-title">Leverage cao (10x)</div><div class="alert-body">Rủi ro thanh lý tăng mạnh. Xem lại position size và stop-loss.</div></div>
+      </div>
+      <div class="alert alert-success">
+        <span class="alert-icon icon-success">✓</span>
+        <div><div class="alert-title">Config hợp lệ</div><div class="alert-body">Sẵn sàng gửi lên server.</div></div>
+      </div>
+      <div class="alert alert-info">
+        <span class="alert-icon icon-info">ⓘ</span>
+        <div><div class="alert-title">Testnet mode</div><div class="alert-body">Bot đang chạy trên testnet — không sử dụng tiền thật.</div></div>
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <!-- MODAL -->
+    <section>
+      <h2 class="sec-title">10. Modal</h2>
+      <p class="sec-desc">Confirmation cho hành động nguy hiểm (Stop, Delete).</p>
+
+      <div class="modal-demo">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title">⚠ Stop bot "BTC Scalper v2"?</div>
+            <button class="btn btn-ghost btn-sm" aria-label="Close">✕</button>
+          </div>
+          <div class="modal-body">
+            Bot đang có <strong style="color:var(--text-primary)">3 vị thế mở</strong> với tổng giá trị <span class="num">$4,521.80</span>.
+            Dừng bot sẽ không đóng các vị thế — bạn cần đóng thủ công.
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary">Cancel</button>
+            <button class="btn btn-destructive">Stop Bot</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <!-- TOASTS -->
+    <section>
+      <h2 class="sec-title">11. Toasts</h2>
+      <div class="flex" style="gap:16px; flex-wrap:wrap">
+        <div class="toast">
+          <span class="toast-icon icon-success">✓</span>
+          <div><div class="toast-title">Config đã lưu</div><div class="toast-desc">File JSON đã gửi tới server thành công.</div></div>
+        </div>
+        <div class="toast">
+          <span class="toast-icon icon-danger">✕</span>
+          <div><div class="toast-title">Không kết nối được exchange</div><div class="toast-desc">Kiểm tra lại API key và IP whitelist.</div></div>
+        </div>
+        <div class="toast">
+          <span class="toast-icon icon-warning">⚠</span>
+          <div><div class="toast-title">Leverage vượt ngưỡng an toàn</div><div class="toast-desc">Giá trị 20x có thể dẫn đến thanh lý.</div></div>
+        </div>
+        <div class="toast">
+          <span class="toast-icon icon-info">ⓘ</span>
+          <div><div class="toast-title">Đang đồng bộ orders</div><div class="toast-desc">Dự kiến hoàn thành sau 10s.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <!-- CONFIG LAYOUT -->
+    <section>
+      <h2 class="sec-title">12. Layout đặc thù: Config + JSON Preview</h2>
+      <p class="sec-desc">Pattern chuẩn cho trang config bot — form trái, JSON realtime phải.</p>
+
+      <div class="config-layout">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Bot Configuration</div></div>
+          <div class="card-body">
+            <div class="field"><label class="label">Strategy</label>
+              <select class="select"><option>Grid Trading</option><option>DCA</option><option>Scalping</option></select>
+            </div>
+            <div class="field"><label class="label">Symbol</label>
+              <input class="input" value="BTC/USDT" />
+            </div>
+            <div class="field"><label class="label">Timeframe</label>
+              <select class="select"><option>1m</option><option>5m</option><option selected>15m</option><option>1h</option></select>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+              <div class="field" style="max-width:none"><label class="label">Take profit (%)</label>
+                <input class="input num" value="2.5" style="text-align:right" />
+              </div>
+              <div class="field" style="max-width:none"><label class="label">Stop loss (%)</label>
+                <input class="input num" value="1.0" style="text-align:right" />
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-secondary">Reset</button>
+            <button class="btn btn-primary">Send to Server</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">JSON Preview</div>
+            <button class="btn btn-ghost btn-sm">📋 Copy</button>
+          </div>
+          <div class="card-body" style="padding:0">
+<pre class="code" style="border:0; border-radius:0; margin:0">{
+  <span class="k">"bot_id"</span>: <span class="s">"btc-scalper-v2"</span>,
+  <span class="k">"enabled"</span>: <span class="b">true</span>,
+  <span class="k">"exchange"</span>: <span class="s">"binance-futures"</span>,
+  <span class="k">"symbol"</span>: <span class="s">"BTC/USDT"</span>,
+  <span class="k">"timeframe"</span>: <span class="s">"15m"</span>,
+  <span class="k">"strategy"</span>: {
+    <span class="k">"type"</span>: <span class="s">"grid"</span>,
+    <span class="k">"params"</span>: {
+      <span class="k">"grid_size"</span>: <span class="n">10</span>,
+      <span class="k">"spacing_pct"</span>: <span class="n">0.5</span>
+    }
+  },
+  <span class="k">"risk"</span>: {
+    <span class="k">"leverage"</span>: <span class="n">10</span>,
+    <span class="k">"position_size"</span>: <span class="n">100</span>,
+    <span class="k">"take_profit_pct"</span>: <span class="n">2.5</span>,
+    <span class="k">"stop_loss_pct"</span>: <span class="n">1.0</span>
+  },
+  <span class="k">"notifications"</span>: {
+    <span class="k">"telegram"</span>: <span class="b">true</span>,
+    <span class="k">"email"</span>: <span class="b">false</span>,
+    <span class="k">"webhook"</span>: <span class="nul">null</span>
+  }
+}</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="foot">
+      Trading Bot Design System · v1.0 · 2026-04-24 · Reference: DESIGN_GUIDELINES.md
+    </div>
+
+  </main>
+</div>
+
+</body>
+</html>

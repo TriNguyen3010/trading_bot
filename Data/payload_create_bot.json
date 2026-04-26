@@ -1,0 +1,35 @@
+{
+  "bot_name": "multi_timeframe",
+  "exchange_name": "binance",
+  "strategy_name": "MultiTimeframe",
+  "dry_run": true,
+  "stake_currency": "USDT",
+  "stake_amount": 100.0,
+  "max_open_trades": 10,
+  "timeframe": "5m",
+  "pair": "BTC/USDT:USDT",
+  "dry_run_wallet": 1000.0,
+  "trading_mode": "futures",
+  "margin_mode": "cross",
+  "liquidation_buffer": 0.05,
+  "leverage": 10,
+  "can_short": true,
+  "position_adjustment_enable": true,
+  "max_entry_position_adjustment": -1,
+  "cancel_open_orders_on_exit": true,
+  "process_only_new_candles": false,
+  "force_entry_enable": false,
+  "telegram": {
+    "enabled": true,
+    "token": "***",
+    "chat_id": "6041589302",
+    "allow_custom_messages": false,
+    "notification_settings": {
+      "entry_fill": "off",
+      "exit_fill": "on",
+      "protection_trigger": "on",
+      "protection_trigger_global": "on"
+    }
+  },
+  "process_throttle_secs": 60
+}

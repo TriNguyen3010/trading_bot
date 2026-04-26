@@ -1,0 +1,342 @@
+import type { BotPayload } from '@/schemas/bot.schema';
+import type {
+  ConditionItem,
+  SignalGroup,
+  StrategyPayload,
+} from '@/schemas/strategy.schema';
+import type {
+  BuilderState,
+  CloseMethodForm,
+  ConditionGroup,
+  ConditionRow,
+  IndicatorItem,
+} from '@/types/builder.types';
+import type { Bundle } from '@/schemas/bundle.schema';
+import { uiPairToJson, jsonPairToUi } from './pair-format';
+import {
+  INDICATOR_REGISTRY,
+  indicatorOutputId,
+} from '@/features/indicators/indicator-registry';
+
+const APP_VERSION = '0.1.0';
+
+const EMPTY_GROUP: SignalGroup = {
+  logic: { type: 'AND', threshold: null },
+  conditions: [],
+};
+
+function serializeConditionRow(row: ConditionRow): ConditionItem {
+  const out: ConditionItem = {
+    left: row.left,
+    op: row.op,
+    right_type: row.right_type,
+    right_number: row.right_type === 'number' ? row.right_number : null,
+    right_indicator:
+      row.right_type === 'indicator' ? row.right_indicator : null,
+    lookback: row.lookback,
+  };
+  if (row.percentage !== undefined) out.percentage = row.percentage;
+  if (row.operator) out.operator = row.operator;
+  return out;
+}
+
+function serializeGroup(group: ConditionGroup): SignalGroup {
+  return {
+    logic: { type: group.logic.type, threshold: group.logic.threshold },
+    conditions: group.conditions.map(serializeConditionRow),
+  };
+}
+
+function serializeIndicators(indicators: IndicatorItem[]) {
+  return indicators.map((ind) => ({
+    name: ind.name,
+    type: ind.type,
+    parameters: ind.parameters,
+  }));
+}
+
+interface RiskShape {
+  stoploss: number;
+  trailing_stop: boolean;
+  trailing_stop_positive: number;
+  trailing_stop_positive_offset: number;
+  trailing_only_offset_is_reached: boolean;
+}
+
+interface CustomExitShape {
+  duration_enabled: boolean;
+  profit_ratio_enabled: boolean;
+  profit_ratio: number;
+  max_duration_enabled: boolean;
+  time_window_enabled: boolean;
+  partial_enabled: boolean;
+  partial_levels: { profit: number; amount: number }[];
+}
+
+function buildRisk(close: CloseMethodForm): RiskShape {
+  // SL value in % (e.g. -3) -> ratio (-0.03). Default to -0.4 (=−40%) when
+  // SL is disabled for the manual / indicator close methods.
+  const sloss =
+    close.type === 'tp_sl' && close.slEnabled
+      ? close.slValue / 100
+      : -0.4;
+  return {
+    stoploss: sloss,
+    trailing_stop: close.type === 'tp_sl' && close.trailingEnabled,
+    trailing_stop_positive: close.trailingPositive / 100,
+    trailing_stop_positive_offset: close.trailingOffset / 100,
+    trailing_only_offset_is_reached: true,
+  };
+}
+
+function buildCustomExit(close: CloseMethodForm): CustomExitShape {
+  return {
+    duration_enabled: false,
+    profit_ratio_enabled: false,
+    profit_ratio: 2.0,
+    max_duration_enabled: false,
+    time_window_enabled: false,
+    partial_enabled: close.type === 'tp_sl' && close.tpEnabled,
+    partial_levels:
+      close.type === 'tp_sl'
+        ? close.tpLevels.map((l) => ({ profit: l.profit, amount: l.amount }))
+        : [],
+  };
+}
+
+export function buildBotPayload(state: BuilderState): BotPayload {
+  const c = state.botConfig;
+  const market = c.marketType;
+  const dryRun = c.tradingMode === 'dry-run';
+
+  return {
+    bot_name: state.botName,
+    exchange_name: c.exchange,
+    strategy_name: state.strategy.name || state.botName,
+    dry_run: dryRun,
+    stake_currency: c.stakeCurrency,
+    stake_amount: c.stakeAmount,
+    max_open_trades: c.maxOpenTrades,
+    timeframe: c.timeframe,
+    pair: uiPairToJson(c.pair, market),
+    dry_run_wallet: c.dryRunWallet,
+    trading_mode: market,
+    margin_mode: c.marginMode,
+    liquidation_buffer: 0.05,
+    leverage: c.leverage,
+    can_short: state.directionForm.direction === 'short',
+    position_adjustment_enable: false,
+    max_entry_position_adjustment: -1,
+    cancel_open_orders_on_exit: true,
+    process_only_new_candles: false,
+    force_entry_enable: false,
+    telegram: {
+      enabled: false,
+      token: '',
+      chat_id: '',
+      allow_custom_messages: false,
+      notification_settings: {
+        entry_fill: 'off',
+        exit_fill: 'on',
+        protection_trigger: 'on',
+        protection_trigger_global: 'on',
+      },
+    },
+    process_throttle_secs: 60,
+    order_type: state.directionForm.orderType,
+    limit_offset_pct:
+      state.directionForm.orderType === 'limit'
+        ? state.directionForm.limitOffsetPct
+        : null,
+    close_method_type: state.closeMethod.type,
+  };
+}
+
+export function buildStrategyPayload(state: BuilderState): StrategyPayload {
+  const dir = state.directionForm.direction;
+  const isShort = dir === 'short';
+
+  const entryGroup = serializeGroup(state.strategy.entryConditions);
+  const exitGroup =
+    state.closeMethod.type === 'indicator'
+      ? serializeGroup(state.closeMethod.exitConditions)
+      : EMPTY_GROUP;
+
+  return {
+    name: state.strategy.name || state.botName,
+    description: null,
+    strategy_type: 'statistical',
+    configurations: {
+      strategy_type: 'statistical',
+      startup_candle_count: state.strategy.startupCandleCount,
+      informative_timeframes: state.strategy.informativeTimeframes,
+      risk: buildRisk(state.closeMethod),
+      roi_steps:
+        state.closeMethod.type === 'roi'
+          ? state.closeMethod.roiSteps.map((s) => ({
+              minutes: s.minutes,
+              roi: s.roi / 100,
+            }))
+          : [],
+      use_exit_signal: state.closeMethod.type === 'indicator',
+      exit_profit_only: false,
+      exit_profit_offset: 0,
+      ignore_roi_if_entry_signal: false,
+      max_open_trades: -1,
+      signals: {
+        candlestick: state.strategy.candlestick,
+        indicators: serializeIndicators(state.strategy.indicators),
+        entry_long: isShort ? EMPTY_GROUP : entryGroup,
+        exit_long: isShort ? EMPTY_GROUP : exitGroup,
+        entry_short: isShort ? entryGroup : EMPTY_GROUP,
+        exit_short: isShort ? exitGroup : EMPTY_GROUP,
+      },
+      custom_indicator_items: [],
+      informative_ohlcv_items: [],
+      custom_exit: buildCustomExit(state.closeMethod),
+    },
+    bot_id: 0,
+    ai_powered: false,
+  };
+}
+
+export function buildBundle(state: BuilderState): Bundle {
+  return {
+    bot: buildBotPayload(state),
+    strategy: buildStrategyPayload(state),
+    meta: {
+      schema_version: 1,
+      exported_at: new Date().toISOString(),
+      builder_version: APP_VERSION,
+    },
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Deserializer (Bundle → BuilderState patch)                                 */
+/* -------------------------------------------------------------------------- */
+
+import type {
+  Direction,
+  TpLevel,
+} from '@/types/builder.types';
+import type { BotConfigForm, EntryStrategyForm } from '@/types/builder.types';
+
+interface DeserializedState {
+  botName: string;
+  botConfig: BotConfigForm;
+  strategy: EntryStrategyForm;
+  directionForm: BuilderState['directionForm'];
+  closeMethod: CloseMethodForm;
+}
+
+function deserializeGroup(g: SignalGroup): ConditionGroup {
+  return {
+    logic: { type: g.logic.type, threshold: g.logic.threshold },
+    conditions: g.conditions.map((c) => ({
+      id: crypto.randomUUID(),
+      left: c.left,
+      op: c.op,
+      right_type: c.right_type,
+      right_number: c.right_number,
+      right_indicator: c.right_indicator,
+      lookback: c.lookback ?? 0,
+      percentage: c.percentage,
+      operator: c.operator,
+    })),
+  };
+}
+
+function deserializeIndicators(
+  list: { name: string; type: string; parameters: Record<string, number | string> }[],
+): IndicatorItem[] {
+  return list.map((i) => ({
+    id: crypto.randomUUID(),
+    name: i.name,
+    type: (INDICATOR_REGISTRY[i.name]?.type ?? 'custom') as
+      | 'talib'
+      | 'pandas_ta'
+      | 'custom',
+    parameters: i.parameters,
+  }));
+}
+
+export function deserializeBundle(bundle: Bundle): DeserializedState {
+  const { bot, strategy } = bundle;
+  const direction: Direction =
+    strategy.configurations.signals.entry_short.conditions.length > 0
+      ? 'short'
+      : 'long';
+  const isShort = direction === 'short';
+
+  const entryGroup = isShort
+    ? strategy.configurations.signals.entry_short
+    : strategy.configurations.signals.entry_long;
+  const exitGroup = isShort
+    ? strategy.configurations.signals.exit_short
+    : strategy.configurations.signals.exit_long;
+
+  const closeType = bot.close_method_type ?? 'tp_sl';
+  const customExit = strategy.configurations.custom_exit;
+  const risk = strategy.configurations.risk;
+  const roiSteps = strategy.configurations.roi_steps.map((s) => ({
+    minutes: s.minutes,
+    roi: s.roi * 100,
+  }));
+  const tpLevels: TpLevel[] = customExit.partial_levels.map((l) => ({
+    profit: l.profit,
+    amount: l.amount,
+  }));
+
+  return {
+    botName: bot.bot_name,
+    botConfig: {
+      pair: jsonPairToUi(bot.pair),
+      timeframe: bot.timeframe,
+      tradingMode: bot.dry_run ? 'dry-run' : 'live',
+      leverage: bot.leverage,
+      exchange: bot.exchange_name,
+      marketType: bot.trading_mode,
+      marginMode: bot.margin_mode,
+      maxOpenTrades: bot.max_open_trades,
+      stakeCurrency: bot.stake_currency,
+      stakeAmount: bot.stake_amount,
+      dryRunWallet: bot.dry_run_wallet,
+    },
+    strategy: {
+      id: 'strategy-1',
+      name: strategy.name,
+      candlestick: strategy.configurations.signals.candlestick.filter(
+        (c): c is 'open' | 'close' | 'high' | 'low' | 'volume' =>
+          ['open', 'close', 'high', 'low', 'volume'].includes(c),
+      ),
+      indicators: deserializeIndicators(
+        strategy.configurations.signals.indicators,
+      ),
+      entryConditions: deserializeGroup(entryGroup),
+      startupCandleCount: strategy.configurations.startup_candle_count,
+      informativeTimeframes: strategy.configurations.informative_timeframes,
+    },
+    directionForm: {
+      direction,
+      orderType: bot.order_type ?? 'market',
+      limitOffsetPct: bot.limit_offset_pct ?? null,
+      slippageTolerance: 0.5,
+    },
+    closeMethod: {
+      type: closeType,
+      tpEnabled: customExit.partial_enabled,
+      tpLevels,
+      slEnabled: risk.stoploss > -0.4 || closeType === 'tp_sl',
+      slValue: risk.stoploss * 100,
+      trailingEnabled: risk.trailing_stop,
+      trailingPositive: risk.trailing_stop_positive * 100,
+      trailingOffset: risk.trailing_stop_positive_offset * 100,
+      roiSteps,
+      exitConditions: deserializeGroup(exitGroup),
+    },
+  };
+}
+
+// Use indicatorOutputId during validation/lints later.
+void indicatorOutputId;
