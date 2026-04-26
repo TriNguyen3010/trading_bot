@@ -11,10 +11,26 @@ import {
 } from '@/lib/serializer';
 import { copyToClipboard, downloadJson } from '@/features/export-import/file-utils';
 import { cn } from '@/lib/utils';
+import { JsonEmptyState } from './JsonEmptyState';
+import type { StepStatus } from '@/types/builder.types';
 
 type SubTab = 'bot' | 'strategy';
 
 export function JsonLiveView() {
+  const stepStatus = useBuilderStore((s) => s.stepStatus);
+  const hasAnyConfigured = useMemo(
+    () => (Object.values(stepStatus) as StepStatus[]).some((s) => s === 'configured'),
+    [stepStatus],
+  );
+
+  if (!hasAnyConfigured) {
+    return <JsonEmptyState />;
+  }
+
+  return <JsonLiveViewActive />;
+}
+
+function JsonLiveViewActive() {
   const [tab, setTab] = useState<SubTab>('bot');
   const state = useBuilderStore();
 

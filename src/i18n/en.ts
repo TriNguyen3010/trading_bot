@@ -61,6 +61,12 @@ export const strings = {
     },
     afterDone:
       'Demo complete. Click Create new bot to start over, or explore the configuration manually.',
+    json: {
+      emptyTitle: "Your bot's JSON will live here",
+      emptySubtitle: 'Configure any step to see the live preview.',
+      emptyCtaConfig: 'Open Bot Config',
+      emptyCtaAsk: 'Ask Cypheus',
+    },
     progress: {
       empty: 'Set up your bot to get started',
       configured: (n: number) => `${n} / 4 steps configured`,
