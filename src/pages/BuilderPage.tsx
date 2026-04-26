@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { ArrowDown } from 'lucide-react';
+import { LayoutGroup } from 'framer-motion';
 import { CypheusPanel } from '@/features/cypheus/CypheusPanel';
 import { HeaderToolbar } from '@/features/bot-builder/components/HeaderToolbar';
 import { CypheusDock } from '@/features/cypheus/CypheusDock';
@@ -44,27 +45,29 @@ export function BuilderPage() {
           }}
           dimmed={drawerVisible}
         />
-        <main
-          className="relative z-10 flex-1 overflow-y-auto"
-          style={{
-            paddingRight: 'var(--drawer-width)',
-            transition: 'padding-right 250ms cubic-bezier(0.2, 0.8, 0.2, 1)',
-          }}
-        >
-          <div className="relative z-10 min-h-full px-6 py-10">
-            {allPending ? (
-              <div className="mx-auto mb-6 flex max-w-[var(--layout-step-list)] flex-col items-center gap-2 text-fg-muted">
-                <p className="text-sm">
-                  Send a message to Cypheus, or click any step below to start
-                  building.
-                </p>
-                <ArrowDown className="h-4 w-4 animate-bounce" />
-              </div>
-            ) : null}
-            <StepList />
-          </div>
-        </main>
-        <CypheusDock />
+        <LayoutGroup>
+          <main
+            className="relative z-10 flex-1 overflow-y-auto"
+            style={{
+              paddingRight: 'var(--drawer-width)',
+              transition: 'padding-right 250ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+            }}
+          >
+            <div className="relative z-10 min-h-full px-6 py-10">
+              {allPending ? (
+                <div className="mx-auto mb-6 flex max-w-[var(--layout-step-list)] flex-col items-center gap-2 text-fg-muted">
+                  <p className="text-sm">
+                    Send a message to Cypheus, or click any step below to start
+                    building.
+                  </p>
+                  <ArrowDown className="h-4 w-4 animate-bounce" />
+                </div>
+              ) : null}
+              <StepList />
+            </div>
+          </main>
+          <CypheusDock />
+        </LayoutGroup>
       </div>
       <Toaster
         theme="dark"

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useCypheusStore } from './store/cypheus.store';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
@@ -22,6 +22,7 @@ const STEP_ORDER: StepId[] = [
 ];
 
 export function CypheusDock() {
+  const phase = useCypheusStore((s) => s.phase);
   const cypheusState = useCypheusStore((s) => s.state);
   const activeStepId = useCypheusStore((s) => s.cypheusActiveStepId);
   const stepStatus = useBuilderStore((s) => s.stepStatus);
@@ -46,35 +47,43 @@ export function CypheusDock() {
   }, [cypheusState, activeStepId, completedSteps, allDone, totalSteps]);
 
   return (
-    <div
-      className={cn(styles.wrapper, 'left-1/2 -translate-x-1/2')}
-      style={{
-        left: 'calc(var(--layout-left-panel) + (100vw - var(--layout-left-panel) - var(--drawer-width)) / 2)',
-        transition: 'left 250ms cubic-bezier(0.2, 0.8, 0.2, 1)',
-      }}
-    >
-      <div className={styles.progressDots} aria-hidden="true">
-        {Array.from({ length: totalSteps }).map((_, i) => {
-          const isCompleted = i < completedSteps;
-          return (
-            <motion.span
-              key={i}
-              className={cn(styles.dot, isCompleted && styles.dotFilled)}
-              animate={i === completedSteps - 1 ? { scale: [1, 1.2, 1] } : { scale: 1 }}
-              transition={{ duration: 0.3 }}
-            />
-          );
-        })}
-      </div>
+    <AnimatePresence>
+      {phase === 'active' && (
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 20, opacity: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className={cn(styles.wrapper, 'left-1/2 -translate-x-1/2')}
+          style={{
+            left: 'calc(var(--layout-left-panel) + (100vw - var(--layout-left-panel) - var(--drawer-width)) / 2)',
+            transition: 'left 250ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+          }}
+        >
+          <div className={styles.progressDots} aria-hidden="true">
+            {Array.from({ length: totalSteps }).map((_, i) => {
+              const isCompleted = i < completedSteps;
+              return (
+                <motion.span
+                  key={i}
+                  className={cn(styles.dot, isCompleted && styles.dotFilled)}
+                  animate={i === completedSteps - 1 ? { scale: [1, 1.2, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              );
+            })}
+          </div>
 
-      <div className={styles.dock}>
-        <span className="text-sm font-medium text-fg-secondary whitespace-nowrap">
-          {statusText}
-        </span>
-        <div className="h-12 w-12 flex-shrink-0">
-          <CypheusAvatar size="lg" />
-        </div>
-      </div>
-    </div>
+          <div className={styles.dock}>
+            <span className="text-sm font-medium text-fg-secondary whitespace-nowrap">
+              {statusText}
+            </span>
+            <div className="h-12 w-12 flex-shrink-0">
+              <CypheusAvatar size="lg" layoutId="cypheus-avatar" />
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
