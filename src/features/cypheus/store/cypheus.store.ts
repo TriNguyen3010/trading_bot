@@ -37,6 +37,10 @@ interface CypheusStore {
   messages: ChatMessage[];
   drawerMode: DrawerMode;
   cypheusActiveStepId: StepId | null;
+  /** Timestamp of the last time the JSON tab was opened. Used by the
+   *  Cypheus tab to compare against builder.lastSavedAt and decide whether
+   *  to show an "unread updates" red badge. */
+  jsonViewedAt: number | null;
 
   setPanelTab: (tab: LeftPanelTab) => void;
   setPhase: (phase: Phase) => void;
@@ -62,8 +66,10 @@ export const useCypheusStore = create<CypheusStore>((set) => ({
   messages: [],
   drawerMode: 'closed',
   cypheusActiveStepId: null,
+  jsonViewedAt: null,
 
-  setPanelTab: (panelTab) => set({ panelTab }),
+  setPanelTab: (panelTab) =>
+    set(panelTab === 'json' ? { panelTab, jsonViewedAt: Date.now() } : { panelTab }),
   setPhase: (phase) => set({ phase }),
   setState: (state) => set({ state }),
   setAvatar: (avatar) => set({ avatar }),
@@ -102,5 +108,6 @@ export const useCypheusStore = create<CypheusStore>((set) => ({
       messages: [],
       drawerMode: 'closed',
       cypheusActiveStepId: null,
+      jsonViewedAt: null,
     }),
 }));

@@ -9,6 +9,7 @@ import {
   useCypheusStore,
   type LeftPanelTab,
 } from './store/cypheus.store';
+import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { runGreeting } from './script/greeting.script';
 import { runMagicBuild } from './script/magic-build.script';
 import { strings } from '@/i18n/en';
@@ -19,6 +20,15 @@ export function CypheusPanel() {
   const state = useCypheusStore((s) => s.state);
   const messages = useCypheusStore((s) => s.messages);
   const pushMessage = useCypheusStore((s) => s.pushMessage);
+  const jsonViewedAt = useCypheusStore((s) => s.jsonViewedAt);
+  const lastSavedAt = useBuilderStore((s) => s.lastSavedAt);
+
+  // Show a red dot on the JSON tab when the user has unviewed builder
+  // changes. Suppressed while the JSON tab is already active.
+  const hasJsonUpdates =
+    tab !== 'json' &&
+    lastSavedAt !== null &&
+    lastSavedAt > (jsonViewedAt ?? 0);
 
   // Auto-run greeting when the panel renders without messages yet (fresh
   // session or after "Create new bot" reset).
@@ -64,9 +74,18 @@ export function CypheusPanel() {
               <Sparkles className="h-3.5 w-3.5" />
               <span>{strings.cypheus.tabLabel}</span>
             </TabsTrigger>
-            <TabsTrigger value="json" className="flex-1 justify-start">
+            <TabsTrigger
+              value="json"
+              className="relative flex-1 justify-start"
+            >
               <Braces className="h-3.5 w-3.5" />
               <span>{strings.cypheus.jsonTabLabel}</span>
+              {hasJsonUpdates ? (
+                <span
+                  aria-label="Unviewed JSON changes"
+                  className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-bearish ring-2 ring-bearish/30 motion-safe:animate-pulse"
+                />
+              ) : null}
             </TabsTrigger>
           </TabsList>
         </div>
