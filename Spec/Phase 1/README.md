@@ -26,8 +26,9 @@ Phase 1/
 │
 ├── 🤖 Cypheus AI ⭐ NEW
 │   └── cypheus/
-│       ├── cypheus_spec.md             ← Identity + visual + magic build script
-│       └── drawer_persistence_spec.md  ← Fix UX: drawer pinned during build
+│       ├── cypheus_spec.md              ← Identity + visual + magic build script
+│       ├── drawer_persistence_spec.md   ← Fix UX: drawer pinned during build
+│       └── avatar_animation_plan.md     ← Plan dùng 2 anim hello + đang code
 │
 └── 🧩 Effect specs (sub-folder)
     ├── dot-grid-spotlight/        ← Hover spotlight grid effect
@@ -75,6 +76,14 @@ Bản spec gốc – mô tả toàn bộ tính năng dạng node/canvas (vision 
 - Backdrop dim giữ nguyên, không nháy
 - Drawer summary view trước khi đóng
 - Timeline mới: 32 giây (giảm từ 45 giây)
+
+👉 [`cypheus/avatar_animation_plan.md`](./cypheus/avatar_animation_plan.md)
+
+- Mapping 2 animation `hello` + `đang code` theo từng app state
+- Timeline 32s với phase animation đầy đủ
+- Transition crossfade 200-300ms
+- Size variant (24/32/48/64), speed tuning
+- 6 câu cần xác nhận với designer (segment, loop, transparent…)
 
 ### 4. Design Guidelines (2 file – complementary)
 
