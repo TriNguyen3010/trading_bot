@@ -3,13 +3,14 @@ import {
   LineChart,
   ArrowUpRight,
   Target,
+  Plus,
   type LucideIcon,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { ReactNode } from 'react';
 import { StepCard } from './components/StepCard';
 import { StepConnector } from './components/StepConnector';
 import { StepDrawer, type StepContentMap } from './components/StepDrawer';
-import { AddStrategyButton } from './components/AddStrategyButton';
 import {
   BotConfigSetup,
   BotConfigConfigure,
@@ -100,7 +101,13 @@ export function StepList() {
 
   const closeManualDrawer = () => setOpenStep(null);
 
-  const handleSave = () => {
+  // Single save handler for all "save & close" intents triggered by the
+  // wizard footer: regular Save, Skip & Save (from Setup tab when setup
+  // passes), and Save & Finish (final step). All three currently share the
+  // same effect — mark step configured and close drawer — but kept as
+  // separate modes for future divergence (e.g. analytics, post-save toast
+  // copy that varies by intent).
+  const handleSave = (_mode: 'save' | 'skip-save' | 'save-and-finish') => {
     if (!openStep) return;
     setStepStatus(openStep, 'configured');
     closeManualDrawer();
@@ -138,16 +145,46 @@ export function StepList() {
                 icon={step.icon}
                 title={step.title}
               />
-              {next ? (
+              {/* For bot-config: skip StepConnector, use Add Strategy row as the sole connector */}
+              {next && step.id !== 'bot-config' ? (
                 <StepConnector fromStep={step.id} toStep={next.id} />
               ) : null}
+              {/* Add Strategy slot: single centered + with text, replaces connector gap */}
+              {step.id === 'bot-config' && (
+                <button
+                  type="button"
+                  onClick={() => toast.info('Add Strategy — coming soon')}
+                  aria-label="Add strategy (coming soon)"
+                  className="group/add relative flex h-20 w-full items-center text-left appearance-none bg-transparent focus:outline-none active:bg-transparent"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                >
+                  {/* Vertical dashed line */}
+                  <svg aria-hidden className="pointer-events-none absolute inset-0 h-full w-full">
+                    <line
+                      x1="50%" y1="0" x2="50%" y2="100%"
+                      stroke="var(--color-edge-default)"
+                      strokeWidth={2}
+                      strokeDasharray="8 4"
+                      strokeLinecap="round"
+                      style={{ vectorEffect: 'non-scaling-stroke' }}
+                    />
+                  </svg>
+                  {/* Left spacer — pushes dot to exact 50% */}
+                  <span className="flex-1" />
+                  {/* Single big + centered on the axis */}
+                  <span className="relative z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border-strong bg-canvas text-fg-muted shadow-sm transition-all duration-fast group-hover/add:border-brand group-hover/add:text-brand">
+                    <Plus className="h-4 w-4" />
+                  </span>
+                  {/* Label to the right */}
+                  <span className="flex-1 pl-4 text-sm text-fg-muted transition-colors duration-fast group-hover/add:text-brand">
+                    Add Strategy
+                  </span>
+                </button>
+              )}
             </li>
           );
         })}
       </ol>
-      <div className="mt-6">
-        <AddStrategyButton />
-      </div>
 
       <StepDrawer
         contentByStep={CONTENT_BY_STEP}

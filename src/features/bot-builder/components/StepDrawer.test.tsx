@@ -54,12 +54,30 @@ describe('StepDrawer integration', () => {
     useCypheusStore.getState().resetAll();
   });
 
-  it('renders the manual footer with Cancel/Save when openStep is set', async () => {
+  it('Phase 1 (setup tab, !setupComplete): renders Cancel + Continue disabled', async () => {
+    // pristine bot-config has empty pair → setup incomplete.
     useBuilderStore.getState().setOpenStep('bot-config');
     render(<StepDrawer {...baseProps} />);
     expect(await screen.findByText('Cancel')).toBeInTheDocument();
-    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled();
+    // Phase 1 shows neither Save nor Skip & Save.
+    expect(screen.queryByRole('button', { name: /^save$/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /skip & save/i })).toBeNull();
     expect(screen.getByTestId('bot-config-setup')).toBeInTheDocument();
+  });
+
+  it('Phase 2 (setup tab, setupComplete): renders Cancel + Skip & Save + Continue', async () => {
+    useBuilderStore.getState().patchBotConfig({
+      pair: 'BTC-USDC',
+      timeframe: '5m',
+      leverage: 1,
+    });
+    useBuilderStore.getState().setOpenStep('bot-config');
+    render(<StepDrawer {...baseProps} />);
+    expect(await screen.findByText('Cancel')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /skip & save/i })).toBeInTheDocument();
+    const cont = screen.getByRole('button', { name: /continue/i });
+    expect(cont).not.toBeDisabled();
   });
 
   it('shows the pinned footer and the cypheus active step content', async () => {

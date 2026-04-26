@@ -101,7 +101,24 @@ export const strings = {
     cancel: 'Cancel',
     save: 'Save',
     saveAndNext: 'Save & Next →',
+    saveAndFinish: 'Save & Finish',
+    skipSave: 'Skip & Save',
+    continueLabel: 'Continue →',
+    back: '← Back',
     close: 'Close',
+    stepLabel: (n: number) => `Step ${n}`,
+    progressLabels: {
+      setup: 'Setup',
+      configure: 'Configure',
+    },
+    tooltips: {
+      configureLocked: 'Complete Setup first to unlock Configure',
+      continueDisabled: 'Fill all required fields in Setup',
+      skipSave: 'Save with default Configure values. You can edit later.',
+    },
+    toasts: {
+      configureLocked: 'Complete Setup first to unlock Configure',
+    },
   },
 } as const;
 

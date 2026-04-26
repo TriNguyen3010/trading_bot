@@ -82,7 +82,7 @@ export function HeaderToolbar() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [canExport]);
+  }, [canExport, setExportOpen]);
 
   const commit = () => {
     const trimmed = draft.trim();

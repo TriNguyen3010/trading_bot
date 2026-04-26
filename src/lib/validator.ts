@@ -125,3 +125,47 @@ export function validateBuilder(state: BuilderState): BuilderIssue[] {
 
   return issues;
 }
+
+/**
+ * Per-step "setup gate" — returns true when the **required** Setup-tab fields
+ * for `stepId` are filled to a level that lets the wizard unlock the
+ * Configure tab and enable the primary CTA in the drawer footer.
+ *
+ * NOTE: this is intentionally looser than {@link validateBuilder} (which is
+ * the export-time check). The wizard only blocks tab progression — it doesn't
+ * enforce that *every* downstream constraint is satisfied. Example:
+ * Close Method's setup is just "pick a method"; the per-method TP / ROI
+ * details live in the Configure tab and are checked by `validateBuilder` at
+ * export time.
+ */
+export function isStepSetupComplete(
+  stepId: StepId,
+  state: BuilderState,
+): boolean {
+  switch (stepId) {
+    case 'bot-config': {
+      const c = state.botConfig;
+      if (!c.pair.trim()) return false;
+      if (!parseUiPair(c.pair)) return false;
+      if (!c.timeframe) return false;
+      if (c.leverage < 1 || c.leverage > 125) return false;
+      return true;
+    }
+    case 'entry-strategy': {
+      const s = state.strategy;
+      const hasSource = s.candlestick.length > 0 || s.indicators.length > 0;
+      const hasCondition = s.entryConditions.conditions.length > 0;
+      return hasSource && hasCondition;
+    }
+    case 'direction': {
+      const d = state.directionForm;
+      return Boolean(d.direction) && Boolean(d.orderType);
+    }
+    case 'close-method': {
+      // Setup gate = a method has been picked. Per-method specifics
+      // (TP levels, ROI rows, exit conditions) live in Configure and are
+      // checked at export time by validateBuilder.
+      return Boolean(state.closeMethod.type);
+    }
+  }
+}
