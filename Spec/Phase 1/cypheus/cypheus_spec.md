@@ -186,6 +186,8 @@ Khi tất cả step còn pending:
 
 User gõ bất cứ gì → Cypheus chạy script này không thay đổi nội dung.
 
+> ⚠️ **Cập nhật 2026-04-25:** Timeline bên dưới (5.2) là **bản cũ với drawer slide open/close mỗi step**. Bản mới giữ drawer **luôn mở** xuyên suốt – xem [`drawer_persistence_spec.md`](./drawer_persistence_spec.md) để có timeline đã fix. Tổng thời lượng giảm từ 45s xuống ~32s, không bị "giật" giữa các step.
+
 ### 5.1 Phase 1 – Greeting (auto khi load page)
 
 ```

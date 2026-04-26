@@ -11,12 +11,11 @@ import {
 import { strings } from '@/i18n/en';
 
 /**
- * The 39-second hardcoded demo: any user message triggers this, regardless
- * of content. Mirrors the kịch bản in `Spec/Phase 1/cypheus/cypheus_spec.md`.
+ * Hardcoded magic-build demo. The drawer is opened ONCE at the start of step 1
+ * and closed by the summary view's auto-close after step 4; intermediate steps
+ * swap the drawer's content via switchCypheusStep so the Sheet stays mounted.
  *
- * This function reads the latest store state on every step, so external
- * edits (or a "Create new bot" reset) take effect immediately when the
- * abort token flips.
+ * See Spec/Phase 1/cypheus/drawer_persistence_spec.md for the timeline.
  */
 export async function runMagicBuild(): Promise<void> {
   const ctx = startScript();
@@ -24,11 +23,10 @@ export async function runMagicBuild(): Promise<void> {
   const builder = () => useBuilderStore.getState();
 
   cy().setState('thinking');
-  cy().setAvatar('thinking');
+  cy().setAvatar('coding');
   await sleep(1000, ctx);
   if (!isCurrent(ctx)) return;
 
-  cy().setAvatar('speaking');
   cy().setState('building');
   await typewriterMessage(strings.cypheus.magicBuild.ack, ctx);
   if (!isCurrent(ctx)) return;
@@ -40,8 +38,8 @@ export async function runMagicBuild(): Promise<void> {
   /* ────────── Step 1: Bot Config ────────── */
   builder().setBotName('Bollinger Breakout');
   builder().setStepStatus('bot-config', 'editing');
-  builder().setOpenStep('bot-config');
   builder().setDrawerTab('setup');
+  cy().startCypheusDrawer('bot-config');
   await sleep(500, ctx);
   if (!isCurrent(ctx)) return;
   await typewriterMessage(strings.cypheus.magicBuild.step1, ctx);
@@ -71,13 +69,11 @@ export async function runMagicBuild(): Promise<void> {
   await typewriterMessage(strings.cypheus.magicBuild.step1Comment, ctx);
   await sleep(800, ctx);
   builder().setStepStatus('bot-config', 'configured');
-  builder().setOpenStep(null);
-  await sleep(500, ctx);
   if (!isCurrent(ctx)) return;
 
   /* ────────── Step 2: Entry Strategy ────────── */
   builder().setStepStatus('entry-strategy', 'editing');
-  builder().setOpenStep('entry-strategy');
+  cy().switchCypheusStep('entry-strategy');
   await sleep(500, ctx);
   if (!isCurrent(ctx)) return;
   await typewriterMessage(strings.cypheus.magicBuild.step2, ctx);
@@ -112,13 +108,11 @@ export async function runMagicBuild(): Promise<void> {
   await typewriterMessage(strings.cypheus.magicBuild.step2Comment, ctx);
   await sleep(800, ctx);
   builder().setStepStatus('entry-strategy', 'configured');
-  builder().setOpenStep(null);
-  await sleep(500, ctx);
   if (!isCurrent(ctx)) return;
 
   /* ────────── Step 3: Direction & Order ────────── */
   builder().setStepStatus('direction', 'editing');
-  builder().setOpenStep('direction');
+  cy().switchCypheusStep('direction');
   await sleep(500, ctx);
   if (!isCurrent(ctx)) return;
   await typewriterMessage(strings.cypheus.magicBuild.step3, ctx);
@@ -127,14 +121,12 @@ export async function runMagicBuild(): Promise<void> {
   builder().patchDirection({ orderType: 'market' });
   await sleep(800, ctx);
   builder().setStepStatus('direction', 'configured');
-  builder().setOpenStep(null);
-  await sleep(500, ctx);
   if (!isCurrent(ctx)) return;
 
   /* ────────── Step 4: Close Method ────────── */
   builder().setStepStatus('close-method', 'editing');
-  builder().setOpenStep('close-method');
   builder().setDrawerTab('setup');
+  cy().switchCypheusStep('close-method');
   await sleep(500, ctx);
   if (!isCurrent(ctx)) return;
   await typewriterMessage(strings.cypheus.magicBuild.step4, ctx);
@@ -160,15 +152,15 @@ export async function runMagicBuild(): Promise<void> {
   await typewriterMessage(strings.cypheus.magicBuild.step4Comment, ctx);
   await sleep(800, ctx);
   builder().setStepStatus('close-method', 'configured');
-  builder().setOpenStep(null);
-  await sleep(500, ctx);
   if (!isCurrent(ctx)) return;
 
-  /* ────────── Done ────────── */
+  /* ────────── Summary + close ────────── */
   await typewriterMessage(strings.cypheus.magicBuild.doneA, ctx);
+  cy().showCypheusSummary();
   await sleep(400, ctx);
   await typewriterMessage(strings.cypheus.magicBuild.doneB, ctx);
 
   cy().setAvatar('idle');
   cy().setState('done');
+  // Drawer dismissal handled by CypheusSummaryView's auto-close timer (2s).
 }

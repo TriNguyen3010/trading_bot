@@ -8,7 +8,7 @@ import {
 import type { ReactNode } from 'react';
 import { StepCard } from './components/StepCard';
 import { StepConnector } from './components/StepConnector';
-import { StepDrawer } from './components/StepDrawer';
+import { StepDrawer, type StepContentMap } from './components/StepDrawer';
 import { AddStrategyButton } from './components/AddStrategyButton';
 import {
   BotConfigSetup,
@@ -24,6 +24,7 @@ import {
   CloseMethodConfigure,
 } from './steps/CloseMethodStep';
 import { useBuilderStore } from './store/builder.store';
+import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { strings } from '@/i18n/en';
 import type { StepId } from '@/types/builder.types';
 
@@ -76,24 +77,52 @@ const STEP_DEFS: StepDef[] = [
   },
 ];
 
+const CONTENT_BY_STEP: Record<StepId, StepContentMap> = STEP_DEFS.reduce(
+  (acc, s) => {
+    acc[s.id] = {
+      setup: s.setup,
+      configure: s.configure,
+      title: s.title,
+      description: s.description,
+      index: s.index,
+    };
+    return acc;
+  },
+  {} as Record<StepId, StepContentMap>,
+);
+
 export function StepList() {
   const openStep = useBuilderStore((s) => s.openStep);
   const setOpenStep = useBuilderStore((s) => s.setOpenStep);
   const setStepStatus = useBuilderStore((s) => s.setStepStatus);
+  const closeCypheusDrawer = useCypheusStore((s) => s.closeCypheusDrawer);
+  const setPanelTab = useCypheusStore((s) => s.setPanelTab);
 
-  const closeDrawer = () => setOpenStep(null);
+  const closeManualDrawer = () => setOpenStep(null);
 
-  const handleSave = (id: StepId) => {
-    setStepStatus(id, 'configured');
-    closeDrawer();
+  const handleSave = () => {
+    if (!openStep) return;
+    setStepStatus(openStep, 'configured');
+    closeManualDrawer();
   };
 
-  const handleSaveAndNext = (id: StepId) => {
-    setStepStatus(id, 'configured');
-    const idx = STEP_DEFS.findIndex((s) => s.id === id);
+  const handleSaveAndNext = () => {
+    if (!openStep) return;
+    setStepStatus(openStep, 'configured');
+    const idx = STEP_DEFS.findIndex((s) => s.id === openStep);
     const next = STEP_DEFS[idx + 1];
     if (next) setOpenStep(next.id);
-    else closeDrawer();
+    else closeManualDrawer();
+  };
+
+  const hasNext = openStep
+    ? STEP_DEFS.findIndex((s) => s.id === openStep) < STEP_DEFS.length - 1
+    : false;
+
+  const handleSummaryDismiss = () => closeCypheusDrawer();
+  const handleSummaryReviewJson = () => {
+    closeCypheusDrawer();
+    setPanelTab('json');
   };
 
   return (
@@ -120,21 +149,15 @@ export function StepList() {
         <AddStrategyButton />
       </div>
 
-      {STEP_DEFS.map((step, idx) => (
-        <StepDrawer
-          key={step.id}
-          stepId={step.id}
-          title={step.title}
-          description={step.description}
-          setupContent={step.setup}
-          configureContent={step.configure}
-          open={openStep === step.id}
-          onClose={closeDrawer}
-          onSave={() => handleSave(step.id)}
-          onSaveAndNext={() => handleSaveAndNext(step.id)}
-          hasNext={idx < STEP_DEFS.length - 1}
-        />
-      ))}
+      <StepDrawer
+        contentByStep={CONTENT_BY_STEP}
+        onManualClose={closeManualDrawer}
+        onManualSave={handleSave}
+        onManualSaveAndNext={handleSaveAndNext}
+        hasNext={hasNext}
+        onSummaryDismiss={handleSummaryDismiss}
+        onSummaryReviewJson={handleSummaryReviewJson}
+      />
     </div>
   );
 }

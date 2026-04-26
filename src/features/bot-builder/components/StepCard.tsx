@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Check, CircleDashed, AlertTriangle, ArrowRight, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { validateBuilder } from '@/lib/validator';
 import type { StepId, StepStatus } from '@/types/builder.types';
 import {
@@ -51,6 +52,10 @@ export function StepCard({
   const status = useBuilderStore((s) => s.stepStatus[stepId]);
   const openStep = useBuilderStore((s) => s.openStep);
   const setOpenStep = useBuilderStore((s) => s.setOpenStep);
+  const drawerMode = useCypheusStore((s) => s.drawerMode);
+  const cypheusActiveStepId = useCypheusStore((s) => s.cypheusActiveStepId);
+  const isPinned = drawerMode === 'cypheus-pinned';
+  const isCypheusActive = isPinned && cypheusActiveStepId === stepId;
   const state = useBuilderStore();
 
   // Derive visual error state without mutating the store: if this step has
@@ -71,8 +76,12 @@ export function StepCard({
   const cardButton = (
     <button
       type="button"
-      onClick={() => setOpenStep(stepId)}
+      onClick={() => {
+        if (isPinned) return;
+        setOpenStep(stepId);
+      }}
       aria-pressed={isOpen}
+      aria-disabled={isPinned}
       className={cn(
         'group relative flex w-full flex-col items-stretch overflow-hidden rounded-xl border bg-surface text-left transition-all duration-fast ease-out-quick',
         'hover:bg-surface-hover hover:border-border-strong',
@@ -81,6 +90,8 @@ export function StepCard({
         visualStatus === 'editing' && 'border-brand shadow-glow',
         visualStatus === 'error' && 'border-danger',
         visualStatus === 'pending' && 'border-border',
+        isCypheusActive && 'border-brand shadow-glow animate-pulse',
+        isPinned && !isCypheusActive && 'cursor-not-allowed opacity-60',
       )}
     >
       <header className="flex w-full items-center gap-4 px-5 py-3">

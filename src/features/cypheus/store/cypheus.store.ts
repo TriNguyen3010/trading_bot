@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { StepId } from '@/types/builder.types';
 
 export type CypheusState =
   | 'idle'
@@ -7,9 +8,15 @@ export type CypheusState =
   | 'building'
   | 'done';
 
-export type AvatarState = 'idle' | 'thinking' | 'speaking';
+export type AvatarState = 'idle' | 'hello' | 'coding';
 
 export type LeftPanelTab = 'cypheus' | 'json';
+
+export type DrawerMode =
+  | 'closed'
+  | 'manual'
+  | 'cypheus-pinned'
+  | 'cypheus-summary';
 
 export interface ChatMessage {
   id: string;
@@ -25,6 +32,8 @@ interface CypheusStore {
   state: CypheusState;
   avatar: AvatarState;
   messages: ChatMessage[];
+  drawerMode: DrawerMode;
+  cypheusActiveStepId: StepId | null;
 
   setPanelTab: (tab: LeftPanelTab) => void;
   setState: (state: CypheusState) => void;
@@ -32,6 +41,12 @@ interface CypheusStore {
   pushMessage: (msg: Omit<ChatMessage, 'id' | 'ts'>) => string;
   updateMessage: (id: string, patch: Partial<Omit<ChatMessage, 'id'>>) => void;
   clearMessages: () => void;
+
+  startCypheusDrawer: (stepId: StepId) => void;
+  switchCypheusStep: (stepId: StepId) => void;
+  showCypheusSummary: () => void;
+  closeCypheusDrawer: () => void;
+
   resetAll: () => void;
 }
 
@@ -40,6 +55,8 @@ export const useCypheusStore = create<CypheusStore>((set) => ({
   state: 'idle',
   avatar: 'idle',
   messages: [],
+  drawerMode: 'closed',
+  cypheusActiveStepId: null,
 
   setPanelTab: (panelTab) => set({ panelTab }),
   setState: (state) => set({ state }),
@@ -59,6 +76,24 @@ export const useCypheusStore = create<CypheusStore>((set) => ({
 
   clearMessages: () => set({ messages: [] }),
 
+  startCypheusDrawer: (stepId) =>
+    set({ drawerMode: 'cypheus-pinned', cypheusActiveStepId: stepId }),
+
+  switchCypheusStep: (stepId) =>
+    set({ drawerMode: 'cypheus-pinned', cypheusActiveStepId: stepId }),
+
+  showCypheusSummary: () => set({ drawerMode: 'cypheus-summary' }),
+
+  closeCypheusDrawer: () =>
+    set({ drawerMode: 'closed', cypheusActiveStepId: null }),
+
   resetAll: () =>
-    set({ panelTab: 'cypheus', state: 'idle', avatar: 'idle', messages: [] }),
+    set({
+      panelTab: 'cypheus',
+      state: 'idle',
+      avatar: 'idle',
+      messages: [],
+      drawerMode: 'closed',
+      cypheusActiveStepId: null,
+    }),
 }));

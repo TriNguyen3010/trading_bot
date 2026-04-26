@@ -48,6 +48,16 @@ export const strings = {
       doneA: 'All set.',
       doneB:
         'Review the JSON in the {} JSON tab, then click Export when ready.',
+      pinnedFooter: 'Cypheus is configuring...',
+      closeDisabledTooltip:
+        "Cypheus is building. Click 'Create new bot' to stop.",
+      progressLabel: (current: number, total: number) =>
+        `Step ${current} of ${total}`,
+      summary: {
+        title: 'All set ✓',
+        reviewJson: 'Review JSON',
+        close: 'Close',
+      },
     },
     afterDone:
       'Demo complete. Click Create new bot to start over, or explore the configuration manually.',
