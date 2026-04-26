@@ -15,11 +15,12 @@ Phase 1/
 ├── README.md                      ← Bạn đang đọc file này
 │
 ├── 📄 Spec & plan
-│   ├── ux_design_spec.md          ← UX (3-cột, Cypheus chat, JSON view, drawer)
-│   ├── design_guideline.md        ← Design system architecture
-│   ├── DESIGN_GUIDELINES.md       ← Visual design tokens (color, typography)
-│   ├── implementation_plan.md     ← Tech stack + folder + sprint roadmap
-│   └── ui_json_gap_analysis.md    ← Đối chiếu UI ↔ JSON
+│   ├── ux_design_spec.md                        ← UX (3-cột, Cypheus chat, JSON view, drawer)
+│   ├── design_guideline.md                      ← Design system architecture
+│   ├── DESIGN_GUIDELINES.md                     ← Visual design tokens (color, typography)
+│   ├── implementation_plan.md                   ← Tech stack + folder + sprint roadmap
+│   ├── drawer_sequential_progression_plan.md    ← Setup → Configure tuần tự, lock & gate
+│   └── ui_json_gap_analysis.md                  ← Đối chiếu UI ↔ JSON
 │
 ├── 🎨 Design assets
 │   └── design-preview.html        ← Static HTML preview
@@ -28,7 +29,11 @@ Phase 1/
 │   └── cypheus/
 │       ├── cypheus_spec.md              ← Identity + visual + magic build script
 │       ├── drawer_persistence_spec.md   ← Fix UX: drawer pinned during build
-│       └── avatar_animation_plan.md     ← Plan dùng 2 anim hello + đang code
+│       ├── avatar_animation_plan.md     ← Plan dùng 2 anim hello + đang code
+│       ├── cypheus_dock_plan.md         ← Group avatar + progress thành floating dock (v1)
+│       ├── cypheus_dock_v2_plan.md      ← Layout mới: dots top + animated yellow border
+│       ├── cypheus_avatar_anchor_plan.md ← Avatar idle ở Step 1 → fly sang Dock khi active
+│       └── Asset/                       ← avatar.png + hello.webm + coding.webm
 │
 └── 🧩 Effect specs (sub-folder)
     ├── dot-grid-spotlight/        ← Hover spotlight grid effect

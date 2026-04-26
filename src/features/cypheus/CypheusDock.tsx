@@ -1,0 +1,80 @@
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { useCypheusStore } from './store/cypheus.store';
+import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import { CypheusAvatar } from './CypheusAvatar';
+import type { StepId } from '@/types/builder.types';
+import styles from './CypheusDock.module.css';
+
+const BUILDING_TEXT: Record<StepId, string> = {
+  'bot-config': 'Configuring bot…',
+  'entry-strategy': 'Defining entry conditions…',
+  'direction': 'Setting direction & order…',
+  'close-method': 'Configuring exit method…',
+};
+
+const STEP_ORDER: StepId[] = [
+  'bot-config',
+  'entry-strategy',
+  'direction',
+  'close-method',
+];
+
+export function CypheusDock() {
+  const cypheusState = useCypheusStore((s) => s.state);
+  const activeStepId = useCypheusStore((s) => s.cypheusActiveStepId);
+  const stepStatus = useBuilderStore((s) => s.stepStatus);
+  const totalSteps = 4;
+
+  // Always reflect actual configured count — works for both Cypheus magic build
+  // and manual user setup.
+  const completedSteps = useMemo(() => {
+    return STEP_ORDER.filter((id) => stepStatus[id] === 'configured').length;
+  }, [stepStatus]);
+
+  const allDone = completedSteps === totalSteps;
+
+  const statusText = useMemo(() => {
+    if (cypheusState === 'thinking') return 'Thinking…';
+    if (cypheusState === 'building') {
+      return activeStepId ? BUILDING_TEXT[activeStepId] : 'Building…';
+    }
+    if (allDone) return 'All set – ready to export';
+    if (completedSteps === 0) return 'Set up your bot to get started';
+    return `${completedSteps} of ${totalSteps} steps configured`;
+  }, [cypheusState, activeStepId, completedSteps, allDone, totalSteps]);
+
+  return (
+    <div
+      className={cn(styles.wrapper, 'left-1/2 -translate-x-1/2')}
+      style={{
+        left: 'calc(var(--layout-left-panel) + (100vw - var(--layout-left-panel) - var(--drawer-width)) / 2)',
+        transition: 'left 250ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+      }}
+    >
+      <div className={styles.progressDots} aria-hidden="true">
+        {Array.from({ length: totalSteps }).map((_, i) => {
+          const isCompleted = i < completedSteps;
+          return (
+            <motion.span
+              key={i}
+              className={cn(styles.dot, isCompleted && styles.dotFilled)}
+              animate={i === completedSteps - 1 ? { scale: [1, 1.2, 1] } : { scale: 1 }}
+              transition={{ duration: 0.3 }}
+            />
+          );
+        })}
+      </div>
+
+      <div className={styles.dock}>
+        <span className="text-sm font-medium text-fg-secondary whitespace-nowrap">
+          {statusText}
+        </span>
+        <div className="h-12 w-12 flex-shrink-0">
+          <CypheusAvatar size="lg" />
+        </div>
+      </div>
+    </div>
+  );
+}

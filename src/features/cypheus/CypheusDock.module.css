@@ -1,0 +1,82 @@
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.wrapper {
+  position: fixed;
+  bottom: 32px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.progressDots {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border-default);
+  transition: background 200ms ease-out;
+}
+
+.dotFilled {
+  background: var(--brand-primary);
+}
+
+.dock {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 9999px;
+  background: var(--color-bg-surface);
+  border: 0.5px solid var(--brand-primary);
+  pointer-events: auto;
+}
+
+.dock::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 0deg,
+    var(--brand-primary) 60deg,
+    var(--brand-primary) 168deg,
+    transparent 240deg
+  );
+  animation: rotate-border 3s linear infinite;
+  z-index: -1;
+}
+
+.dock::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-bg-surface);
+  z-index: -1;
+}
+
+@keyframes rotate-border {
+  to { --border-angle: 360deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock::before {
+    animation: none;
+    background: var(--brand-primary);
+    opacity: 0.4;
+  }
+}

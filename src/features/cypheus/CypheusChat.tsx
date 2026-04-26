@@ -1,8 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { useCypheusStore } from './store/cypheus.store';
-import { CypheusAvatar } from './CypheusAvatar';
-
 export function CypheusChat() {
   const messages = useCypheusStore((s) => s.messages);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -15,9 +13,6 @@ export function CypheusChat() {
 
   return (
     <>
-      <div className="flex items-center justify-center border-b border-border-subtle bg-canvas px-4 py-4">
-        <CypheusAvatar size="lg" className="h-20 w-20" />
-      </div>
       {messages.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
           <p className="text-sm font-medium text-fg">

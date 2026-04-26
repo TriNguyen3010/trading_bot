@@ -3,6 +3,7 @@ import { Toaster } from 'sonner';
 import { ArrowDown } from 'lucide-react';
 import { CypheusPanel } from '@/features/cypheus/CypheusPanel';
 import { HeaderToolbar } from '@/features/bot-builder/components/HeaderToolbar';
+import { CypheusDock } from '@/features/cypheus/CypheusDock';
 import { StepList } from '@/features/bot-builder/StepList';
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
@@ -63,6 +64,7 @@ export function BuilderPage() {
             <StepList />
           </div>
         </main>
+        <CypheusDock />
       </div>
       <Toaster
         theme="dark"

@@ -12,8 +12,8 @@ import { useEffect, useRef } from 'react';
  * Mounted as `pointer-events: none` so it never blocks UI clicks.
  */
 
-const SPACING = 26;
-const RADIUS = 240;
+const SPACING = 17;
+const RADIUS = 120;
 const FADE_IN_RATE = 0.06; // strength gain per frame when active
 const FADE_OUT_RATE = 0.022; // strength loss per frame when idle
 const IDLE_MS = 80;

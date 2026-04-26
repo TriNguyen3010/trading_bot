@@ -5,7 +5,6 @@ import { CypheusChat } from './CypheusChat';
 import { CypheusInput } from './CypheusInput';
 import { CreateNewBotButton } from './CreateNewBotButton';
 import { JsonLiveView } from './JsonLiveView';
-import { SetupProgress } from './setup-progress/SetupProgress';
 import {
   useCypheusStore,
   type LeftPanelTab,
@@ -74,7 +73,6 @@ export function CypheusPanel() {
         >
           <CypheusChat />
           <div className="bg-canvas">
-            <SetupProgress />
             <CypheusInput
               onSubmit={handleUserSubmit}
               disabled={inputDisabled}
