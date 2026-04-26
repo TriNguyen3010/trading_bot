@@ -24,11 +24,10 @@ export async function runMagicBuild(): Promise<void> {
   const builder = () => useBuilderStore.getState();
 
   cy().setState('thinking');
-  cy().setAvatar('thinking');
+  cy().setAvatar('coding');
   await sleep(1000, ctx);
   if (!isCurrent(ctx)) return;
 
-  cy().setAvatar('speaking');
   cy().setState('building');
   await typewriterMessage(strings.cypheus.magicBuild.ack, ctx);
   if (!isCurrent(ctx)) return;

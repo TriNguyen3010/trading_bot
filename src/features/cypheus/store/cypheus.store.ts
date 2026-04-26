@@ -8,7 +8,7 @@ export type CypheusState =
   | 'building'
   | 'done';
 
-export type AvatarState = 'idle' | 'thinking' | 'speaking';
+export type AvatarState = 'idle' | 'hello' | 'coding';
 
 export type LeftPanelTab = 'cypheus' | 'json';
 

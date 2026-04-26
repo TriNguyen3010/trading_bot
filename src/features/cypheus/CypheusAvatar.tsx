@@ -1,5 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import type { AvatarState } from './store/cypheus.store';
+import { useCypheusStore, type AvatarState } from './store/cypheus.store';
 
 export interface CypheusAvatarProps {
   state?: AvatarState;
@@ -14,41 +15,64 @@ const sizeMap = {
 } as const;
 
 /**
- * Single-image avatar with CSS-driven state animations:
- *  - idle      : subtle pulse glow
- *  - thinking  : faster pulse + slight rotation
- *  - speaking  : strong pulse + brand-colored halo
+ * Avatar with three asset variants:
+ *  - idle   → static avatar.png
+ *  - hello  → hello.webm (one-shot; auto-reverts to idle on end)
+ *  - coding → coding.webm (loops while Cypheus builds)
  */
 export function CypheusAvatar({
   state = 'idle',
   size = 'md',
   className,
 }: CypheusAvatarProps) {
+  const setAvatar = useCypheusStore((s) => s.setAvatar);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Replay from the start whenever the source changes so a re-trigger
+  // (idle → hello → idle → hello) doesn't show the last frame first.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.currentTime = 0;
+    void v.play().catch(() => {
+      /* autoplay may be blocked; static fallback already covers it */
+    });
+  }, [state]);
+
+  const sizeClass = sizeMap[size];
+  const wrapperClass = cn(
+    'relative flex select-none items-center justify-center overflow-hidden rounded-full',
+    sizeClass,
+    className,
+  );
+
+  if (state === 'hello' || state === 'coding') {
+    const isHello = state === 'hello';
+    return (
+      <div className={wrapperClass} aria-hidden>
+        <video
+          ref={videoRef}
+          src={isHello ? '/cypheus/hello.webm' : '/cypheus/coding.webm'}
+          autoPlay
+          muted
+          playsInline
+          loop={!isHello}
+          onEnded={() => {
+            if (isHello) setAvatar('idle');
+          }}
+          className={cn('h-full w-full object-cover', sizeClass)}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={cn(
-        'relative flex items-center justify-center rounded-full',
-        'before:pointer-events-none before:absolute before:inset-0 before:rounded-full',
-        sizeMap[size],
-        state === 'idle' &&
-          'before:animate-pulse before:bg-brand/10 before:[animation-duration:2400ms]',
-        state === 'thinking' &&
-          'before:animate-pulse before:bg-brand/15 before:[animation-duration:1100ms]',
-        state === 'speaking' &&
-          'before:animate-pulse before:bg-brand/30 before:[animation-duration:700ms] before:shadow-glow',
-        className,
-      )}
-      aria-hidden
-    >
+    <div className={wrapperClass} aria-hidden>
       <img
         src="/cypheus/avatar.png"
         alt=""
         loading="eager"
-        className={cn(
-          'relative z-10 select-none rounded-full object-cover',
-          sizeMap[size],
-          state === 'thinking' && 'animate-spin [animation-duration:6s]',
-        )}
+        className={cn('h-full w-full object-cover', sizeClass)}
       />
     </div>
   );

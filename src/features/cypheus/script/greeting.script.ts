@@ -12,11 +12,10 @@ export async function runGreeting(): Promise<void> {
   const cy = useCypheusStore.getState();
 
   cy.setState('greeting');
-  cy.setAvatar('idle');
+  cy.setAvatar('hello');
   await sleep(500, ctx);
   if (!isCurrent(ctx)) return;
 
-  cy.setAvatar('speaking');
   await typewriterMessage(strings.cypheus.greeting.hello, ctx);
   if (!isCurrent(ctx)) return;
   await sleep(400, ctx);
