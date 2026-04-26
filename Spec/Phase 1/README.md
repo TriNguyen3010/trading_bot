@@ -26,7 +26,8 @@ Phase 1/
 │
 ├── 🤖 Cypheus AI ⭐ NEW
 │   └── cypheus/
-│       └── cypheus_spec.md        ← Identity + visual + magic build script 45s
+│       ├── cypheus_spec.md             ← Identity + visual + magic build script
+│       └── drawer_persistence_spec.md  ← Fix UX: drawer pinned during build
 │
 └── 🧩 Effect specs (sub-folder)
     ├── dot-grid-spotlight/        ← Hover spotlight grid effect
@@ -62,10 +63,18 @@ Bản spec gốc – mô tả toàn bộ tính năng dạng node/canvas (vision 
 - Identity: tên, tagline, tone, voice example do/don't
 - Visual: avatar 3 state, color yellow brand
 - Layout: left panel 400px với 2 tab Cypheus / JSON live view
-- **Magic build script 45 giây** – kịch bản chi tiết từng giây
+- **Magic build script** – kịch bản chi tiết
 - State machine + off-script fallback handling
 - Asset checklist (designer cần cung cấp gì)
 - Tech implementation (folder, script runner, libs)
+
+👉 [`cypheus/drawer_persistence_spec.md`](./cypheus/drawer_persistence_spec.md) ⭐ **fix UX**
+
+- Drawer **luôn mở** trong magic build (không slide ra/vào giữa các step)
+- Content swap mượt giữa step (cross-fade 250ms)
+- Backdrop dim giữ nguyên, không nháy
+- Drawer summary view trước khi đóng
+- Timeline mới: 32 giây (giảm từ 45 giây)
 
 ### 4. Design Guidelines (2 file – complementary)
 
