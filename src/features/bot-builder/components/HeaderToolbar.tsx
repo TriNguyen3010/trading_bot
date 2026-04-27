@@ -93,9 +93,12 @@ export function HeaderToolbar() {
   return (
     <header className="flex h-[var(--layout-header)] flex-shrink-0 items-center justify-between border-b border-border-subtle bg-canvas px-6">
       <div className="flex items-center gap-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-brand text-fg-inverse font-bold">
-          S
-        </div>
+        <img
+          src="/logo.png"
+          alt="Strategy Builder"
+          className="h-8 w-8 select-none object-contain"
+          draggable={false}
+        />
         {isEditing ? (
           <Input
             ref={inputRef}
