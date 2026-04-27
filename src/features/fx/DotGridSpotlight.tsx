@@ -13,14 +13,14 @@ import { useEffect, useRef } from 'react';
  */
 
 const SPACING = 17;
-const RADIUS = 120;
+const RADIUS = 150;
 const FADE_IN_RATE = 0.06; // strength gain per frame when active
 const FADE_OUT_RATE = 0.022; // strength loss per frame when idle
 const IDLE_MS = 80;
 const LERP = 0.18;
 const COLOR = [255, 210, 80] as const;
 const BASE_ALPHA = 0.22;
-const PEAK_ALPHA = 0.95;
+const PEAK_ALPHA = 0.8;
 
 export function DotGridSpotlight({ className, style, dimmed }: { className?: string, style?: React.CSSProperties, dimmed?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
