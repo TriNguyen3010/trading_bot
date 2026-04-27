@@ -65,7 +65,12 @@ export function StepCard({
   const isCypheusActive = isPinned && cypheusActiveStepId === stepId;
   const state = useBuilderStore();
 
-  const isStep1Idle = stepId === 'bot-config' && phase === 'idle';
+  // Step 1 anchor only kicks in for a brand-new session (phase still
+  // 'idle') AND while bot-config has not been touched yet. Once the user
+  // (or Cypheus) has configured/edited it, defer to the normal status-icon
+  // rendering so the green check, summary, and editing pulse all show.
+  const isStep1Idle =
+    stepId === 'bot-config' && phase === 'idle' && status === 'pending';
 
   // Derive visual error state without mutating the store: if this step has
   // a "configured" stamp but the validator finds issues for it, surface the
