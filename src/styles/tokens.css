@@ -96,7 +96,12 @@
 
   /* === LAYOUT (3-column) === */
   --layout-left-panel: 400px;
-  --layout-step-list: 720px;
+  /*
+   * Adaptive width: 480px floor on narrow viewports, 38% of viewport
+   * on mid-range, capped at 680px on wide screens. Keeps cards
+   * comfortable to scan without leaving large empty horizontal gutters.
+   */
+  --layout-step-list: clamp(480px, 38vw, 680px);
   --layout-right-drawer: 720px;
   --drawer-width: 0px;
   --dock-height: 0px;

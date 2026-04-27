@@ -57,7 +57,7 @@ export function BotConfigSummary() {
       </ReadOnlyChip>
 
       <span
-        className="ml-auto font-mono tabular-nums text-xs text-fg-secondary"
+        className="font-mono tabular-nums text-xs text-fg-secondary"
         title={`Stake amount ${formattedStake}`}
       >
         ${stakeAmount.toLocaleString()}
