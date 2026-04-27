@@ -209,13 +209,19 @@ export function StepList() {
                   type="button"
                   onClick={() => toast.info('Add Strategy — coming soon')}
                   aria-label="Add strategy (coming soon)"
-                  className="group/add relative flex h-20 w-full items-center text-left appearance-none bg-transparent focus:outline-none active:bg-transparent"
+                  className="group/add relative flex h-20 w-full appearance-none bg-transparent text-left focus:outline-none active:bg-transparent"
                   style={{ WebkitTapHighlightColor: 'transparent' }}
                 >
-                  {/* Vertical dashed line */}
-                  <svg aria-hidden className="pointer-events-none absolute inset-0 h-full w-full">
+                  {/* Vertical dashed line — exactly down the middle */}
+                  <svg
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 h-full w-full"
+                  >
                     <line
-                      x1="50%" y1="0" x2="50%" y2="100%"
+                      x1="50%"
+                      y1="0"
+                      x2="50%"
+                      y2="100%"
                       stroke="var(--color-edge-default)"
                       strokeWidth={2}
                       strokeDasharray="8 4"
@@ -223,14 +229,14 @@ export function StepList() {
                       style={{ vectorEffect: 'non-scaling-stroke' }}
                     />
                   </svg>
-                  {/* Left spacer — pushes dot to exact 50% */}
-                  <span className="flex-1" />
-                  {/* Single big + centered on the axis */}
-                  <span className="relative z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border-strong bg-canvas text-fg-muted shadow-sm transition-all duration-fast group-hover/add:border-brand group-hover/add:text-brand">
+                  {/* + circle: absolutely centered on the line, guaranteed
+                       to share its centroid with the SVG x="50%" axis */}
+                  <span className="absolute left-1/2 top-1/2 z-10 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border-strong bg-canvas text-fg-muted shadow-sm transition-all duration-fast group-hover/add:border-brand group-hover/add:text-brand">
                     <Plus className="h-4 w-4" />
                   </span>
-                  {/* Label to the right */}
-                  <span className="flex-1 pl-4 text-sm text-fg-muted transition-colors duration-fast group-hover/add:text-brand">
+                  {/* Label sits to the right of the circle. Offset = 50%
+                       (centroid) + 16px (circle radius) + 12px (gap). */}
+                  <span className="pointer-events-none absolute left-[calc(50%+1.75rem)] top-1/2 -translate-y-1/2 text-sm text-fg-muted transition-colors duration-fast group-hover/add:text-brand">
                     Add Strategy
                   </span>
                 </button>

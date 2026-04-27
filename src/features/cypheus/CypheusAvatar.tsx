@@ -31,7 +31,6 @@ export function CypheusAvatar({
   className,
   layoutId,
 }: CypheusAvatarProps) {
-  const setAvatar = useCypheusStore((s) => s.setAvatar);
   const storeState = useCypheusStore((s) => s.avatar);
   const state: AvatarState = stateProp ?? storeState;
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -70,10 +69,10 @@ export function CypheusAvatar({
           autoPlay
           muted
           playsInline
-          loop={!isHello}
-          onEnded={() => {
-            if (isHello) setAvatar('idle');
-          }}
+          // Both webms loop continuously — the avatar state is what
+          // decides which clip is showing. Scripts (greeting / magic
+          // build) flip the state explicitly when they're done.
+          loop
           style={{ filter: 'url(#cypheus-chroma-green)' }}
           className={cn('h-full w-full object-cover', sizeClass)}
         />

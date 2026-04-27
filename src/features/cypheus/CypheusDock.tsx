@@ -23,6 +23,7 @@ const STEP_ORDER: StepId[] = [
 
 export function CypheusDock() {
   const phase = useCypheusStore((s) => s.phase);
+  const setPhase = useCypheusStore((s) => s.setPhase);
   const cypheusState = useCypheusStore((s) => s.state);
   const activeStepId = useCypheusStore((s) => s.cypheusActiveStepId);
   const stepStatus = useBuilderStore((s) => s.stepStatus);
@@ -55,6 +56,20 @@ export function CypheusDock() {
     if (completedSteps === 0) return 'Set up your bot to get started';
     return `${completedSteps} of ${totalSteps} steps configured`;
   }, [cypheusState, activeStepId, completedSteps, allDone, totalSteps]);
+
+  // Auto-dismiss the dock 3s after the user finishes configuring all
+  // four steps and the build is no longer in flight. If the user opens a
+  // step manually during the grace window (which un-completes them) the
+  // condition flips back and the timer is cleared. Keeping the dock
+  // around for ~3s lets the celebratory "All set – ready to export"
+  // status text register before it disappears.
+  useEffect(() => {
+    if (phase !== 'active') return;
+    if (!allDone) return;
+    if (cypheusState === 'thinking' || cypheusState === 'building') return;
+    const t = window.setTimeout(() => setPhase('idle'), 3000);
+    return () => window.clearTimeout(t);
+  }, [phase, allDone, cypheusState, setPhase]);
 
   // Measure the dock's actual rendered height (progress dots + pill +
   // gaps) and expose it via the `--dock-height` CSS var so the canvas

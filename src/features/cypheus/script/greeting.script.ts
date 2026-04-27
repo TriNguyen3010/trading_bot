@@ -22,6 +22,9 @@ export async function runGreeting(): Promise<void> {
   await typewriterMessage(strings.cypheus.greeting.pitch, ctx);
   if (!isCurrent(ctx)) return;
 
-  useCypheusStore.getState().setAvatar('idle');
+  // Stay on 'hello' so the avatar keeps looping while the user reads the
+  // greeting. The magic-build script flips it to 'coding' on first
+  // interaction, and CreateNewBotButton resets back to 'hello' when the
+  // user starts over.
   useCypheusStore.getState().setState('idle');
 }
