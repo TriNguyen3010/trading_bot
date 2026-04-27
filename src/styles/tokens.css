@@ -97,11 +97,12 @@
   /* === LAYOUT (3-column) === */
   --layout-left-panel: 400px;
   /*
-   * Adaptive width: 480px floor on narrow viewports, 38% of viewport
-   * on mid-range, capped at 680px on wide screens. Keeps cards
-   * comfortable to scan without leaving large empty horizontal gutters.
+   * Adaptive width (≈30% tighter than the previous clamp):
+   *   floor   360px  – guarantees the chip row stays single-line
+   *   prefer  27vw   – tracks viewport on mid screens
+   *   cap     480px  – caps card density on ultra-wide displays
    */
-  --layout-step-list: clamp(480px, 38vw, 680px);
+  --layout-step-list: clamp(360px, 27vw, 480px);
   --layout-right-drawer: 720px;
   --drawer-width: 0px;
   --dock-height: 0px;
