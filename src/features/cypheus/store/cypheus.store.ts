@@ -8,7 +8,16 @@ export type CypheusState =
   | 'building'
   | 'done';
 
-export type Phase = 'idle' | 'active';
+/**
+ * Lifecycle of the floating Cypheus dock + Step 1 anchor:
+ *   idle      – fresh session, nothing started. Step 1 anchor visible.
+ *   active    – user has interacted at least once and the build is in
+ *               progress (or paused mid-config). Dock visible.
+ *   completed – all 4 steps configured. Dock auto-dismissed; clicking a
+ *               step to re-edit must NOT bring the dock back. Only
+ *               `resetAll()` (Create new bot) returns the phase to idle.
+ */
+export type Phase = 'idle' | 'active' | 'completed';
 
 export type AvatarState = 'idle' | 'hello' | 'coding';
 

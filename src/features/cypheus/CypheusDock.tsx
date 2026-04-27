@@ -58,16 +58,17 @@ export function CypheusDock() {
   }, [cypheusState, activeStepId, completedSteps, allDone, totalSteps]);
 
   // Auto-dismiss the dock 3s after the user finishes configuring all
-  // four steps and the build is no longer in flight. If the user opens a
-  // step manually during the grace window (which un-completes them) the
-  // condition flips back and the timer is cleared. Keeping the dock
-  // around for ~3s lets the celebratory "All set – ready to export"
-  // status text register before it disappears.
+  // four steps and the build is no longer in flight. We move to the
+  // 'completed' phase (NOT 'idle') so subsequent step clicks don't bring
+  // the dock back — only resetAll (Create new bot) returns to 'idle'.
+  // If the user opens a step during the grace window the timer is
+  // cleared, but allDone stays true so the timer re-arms on next render
+  // unless the user undoes a configuration (rare).
   useEffect(() => {
     if (phase !== 'active') return;
     if (!allDone) return;
     if (cypheusState === 'thinking' || cypheusState === 'building') return;
-    const t = window.setTimeout(() => setPhase('idle'), 3000);
+    const t = window.setTimeout(() => setPhase('completed'), 3000);
     return () => window.clearTimeout(t);
   }, [phase, allDone, cypheusState, setPhase]);
 
