@@ -106,7 +106,10 @@ export function StepCard({
         isStep1Idle && styles.highlighted,
         !isStep1Idle && visualStatus === 'pending' && 'border-brand/15',
         visualStatus === 'editing' && 'border-brand shadow-glow',
-        visualStatus === 'configured' && 'border-brand/50',
+        // Boosted from brand/50 → brand/80 + tinted background so the
+        // "done" state reads clearly on dark canvas instead of the
+        // washed-out near-white edge it had before.
+        visualStatus === 'configured' && 'border-brand/80 bg-brand-subtle/20',
         visualStatus === 'error' && 'border-brand ring-2 ring-brand/40',
         isCypheusActive && 'border-brand shadow-glow',
         isPinned && !isCypheusActive && 'cursor-not-allowed opacity-60',
@@ -121,7 +124,7 @@ export function StepCard({
             visualStatus === 'editing' &&
               'border-brand/40 bg-brand-subtle text-brand',
             visualStatus === 'configured' &&
-              'border-brand/50 bg-brand-subtle text-brand',
+              'border-brand/60 bg-brand-subtle text-brand',
             visualStatus === 'error' &&
               'border-brand bg-brand-subtle text-brand',
           )}
