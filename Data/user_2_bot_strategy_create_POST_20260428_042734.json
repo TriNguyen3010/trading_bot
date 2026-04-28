@@ -1,0 +1,161 @@
+{
+  "timestamp": "2026-04-28T04:27:34.688403",
+  "user_id": 2,
+  "api_endpoint": "bot_strategy_create",
+  "method": "POST",
+  "status_code": 201,
+  "request": {
+    "bot_name": "my_bot",
+    "exchange_name": "hyperliquid",
+    "strategy_name": "asdasd",
+    "dry_run": true,
+    "stake_currency": "USDT",
+    "stake_amount": 10.0,
+    "max_open_trades": 7,
+    "timeframe": "5m",
+    "pair": "BTC/USDT:USDT",
+    "dry_run_wallet": 1000.0,
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "liquidation_buffer": 0.05,
+    "leverage": 8,
+    "can_short": true,
+    "position_adjustment_enable": false,
+    "cancel_open_orders_on_exit": false,
+    "process_only_new_candles": true,
+    "force_entry_enable": false,
+    "strategy_description": null,
+    "strategy_type": "statistical",
+    "configurations": {
+      "strategy_type": "statistical",
+      "startup_candle_count": 20,
+      "informative_timeframes": [],
+      "risk": {
+        "stoploss": -0.1,
+        "trailing_stop": false
+      },
+      "roi_steps": [
+        {
+          "minutes": 0,
+          "roi": 0.01
+        }
+      ],
+      "use_exit_signal": true,
+      "exit_profit_only": false,
+      "exit_profit_offset": 0.0,
+      "ignore_roi_if_entry_signal": false,
+      "max_open_trades": -1,
+      "signals": {
+        "candlestick": [
+          "close"
+        ],
+        "indicators": [
+          {
+            "name": "ADX",
+            "type": "talib",
+            "parameters": {
+              "timeperiod": 14
+            }
+          },
+          {
+            "name": "BBANDS",
+            "type": "talib",
+            "output": "upperband",
+            "parameters": {
+              "timeperiod": 14,
+              "nbdevup": 2.0,
+              "nbdevdn": 2.0
+            }
+          },
+          {
+            "name": "OBV",
+            "type": "talib",
+            "parameters": {}
+          }
+        ],
+        "entry_long": {
+          "logic": {
+            "type": "AND",
+            "threshold": null
+          },
+          "conditions": [
+            {
+              "left": "candle.close",
+              "op": "crossed_above",
+              "right_type": "indicator",
+              "right_number": null,
+              "right_indicator": "BBANDS (Upper Band) - 2.0, 2.0, 14",
+              "lookback": 0
+            },
+            {
+              "left": "ADX-14",
+              "op": "is_going_up",
+              "right_type": "none",
+              "right_number": null,
+              "right_indicator": null,
+              "lookback": 0,
+              "percentage": 0.0,
+              "operator": "AND"
+            }
+          ]
+        },
+        "exit_long": {
+          "logic": {
+            "type": "AND",
+            "threshold": null
+          },
+          "conditions": []
+        },
+        "entry_short": {
+          "logic": {
+            "type": "AND",
+            "threshold": null
+          },
+          "conditions": []
+        },
+        "exit_short": {
+          "logic": {
+            "type": "AND",
+            "threshold": null
+          },
+          "conditions": []
+        }
+      },
+      "custom_indicator_items": [],
+      "informative_ohlcv_items": [],
+      "custom_exit": {
+        "duration_enabled": true,
+        "duration_value": 24.0,
+        "duration_unit": "hours",
+        "profit_ratio_enabled": true,
+        "profit_ratio": 2.0,
+        "max_duration_enabled": true,
+        "max_duration_value": 72.0,
+        "max_duration_unit": "hours",
+        "time_window_enabled": true,
+        "time_start": "23:00",
+        "time_end": "23:59",
+        "partial_enabled": true,
+        "partial_levels": [
+          {
+            "profit": 2.0,
+            "amount": 50.0
+          }
+        ]
+      }
+    },
+    "ai_powered": false
+  },
+  "response": {
+    "bot": {
+      "id": 74,
+      "bot_name": "my_bot",
+      "status": "stopped"
+    },
+    "strategy": {
+      "id": 18,
+      "name": "asdasd"
+    }
+  },
+  "error": null
+}

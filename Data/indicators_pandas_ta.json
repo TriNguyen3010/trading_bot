@@ -1,0 +1,3040 @@
+{
+  "source": "pandas_ta",
+  "total": 227,
+  "categories": [
+    {
+      "name": "Momentum",
+      "count": 35,
+      "indicators": [
+        {
+          "name": "rsi",
+          "description": "Relative Strength Index",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "RSI value (0-100)"
+            }
+          ]
+        },
+        {
+          "name": "mom",
+          "description": "Momentum",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 12
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Price change"
+            }
+          ]
+        },
+        {
+          "name": "apo",
+          "description": "Absolute Price Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 12
+              },
+              {
+                "name": "slow",
+                "default": 26
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "APO oscillator"
+            }
+          ]
+        },
+        {
+          "name": "ppo",
+          "description": "Percentage Price Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 12
+              },
+              {
+                "name": "slow",
+                "default": 26
+              },
+              {
+                "name": "signal",
+                "default": 9
+              }
+            ]
+          },
+          "returns_count": 3,
+          "outputs": [
+            {
+              "key": "ppo",
+              "description": "PPO"
+            },
+            {
+              "key": "pposignal",
+              "description": "Signal"
+            },
+            {
+              "key": "ppohist",
+              "description": "Histogram"
+            }
+          ]
+        },
+        {
+          "name": "macd",
+          "description": "MACD - Moving Average Convergence/Divergence",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 12
+              },
+              {
+                "name": "slow",
+                "default": 26
+              },
+              {
+                "name": "signal",
+                "default": 9
+              }
+            ]
+          },
+          "returns_count": 3,
+          "outputs": [
+            {
+              "key": "macd",
+              "description": "MACD line"
+            },
+            {
+              "key": "macdsignal",
+              "description": "Signal line"
+            },
+            {
+              "key": "macdhist",
+              "description": "MACD Histogram"
+            }
+          ]
+        },
+        {
+          "name": "macdhist",
+          "description": "MACD Histogram only",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 12
+              },
+              {
+                "name": "slow",
+                "default": 26
+              },
+              {
+                "name": "signal",
+                "default": 9
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "MACD histogram"
+            }
+          ]
+        },
+        {
+          "name": "stoch",
+          "description": "Stochastic Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "k",
+                "default": 14
+              },
+              {
+                "name": "d",
+                "default": 3
+              },
+              {
+                "name": "smooth_k",
+                "default": 3
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "stochk",
+              "description": "%K line"
+            },
+            {
+              "key": "stochd",
+              "description": "%D line"
+            }
+          ]
+        },
+        {
+          "name": "stochrsi",
+          "description": "Stochastic RSI",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              },
+              {
+                "name": "rsi_length",
+                "default": 14
+              },
+              {
+                "name": "k",
+                "default": 3
+              },
+              {
+                "name": "d",
+                "default": 3
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "stochrsi_k",
+              "description": "Stochastic %K"
+            },
+            {
+              "key": "stochrsi_d",
+              "description": "Stochastic %D"
+            }
+          ]
+        },
+        {
+          "name": "willr",
+          "description": "Williams' %R",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Williams %R (-100 to 0)"
+            }
+          ]
+        },
+        {
+          "name": "cci",
+          "description": "Commodity Channel Index",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "CCI value"
+            }
+          ]
+        },
+        {
+          "name": "aroon",
+          "description": "Aroon Indicator",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "aroondown",
+              "description": "Aroon Down%"
+            },
+            {
+              "key": "aroonup",
+              "description": "Aroon Up%"
+            }
+          ]
+        },
+        {
+          "name": "aroonosc",
+          "description": "Aroon Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Aroon Up - Aroon Down"
+            }
+          ]
+        },
+        {
+          "name": "ao",
+          "description": "Awesome Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 5
+              },
+              {
+                "name": "slow",
+                "default": 34
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Awesome Oscillator"
+            }
+          ]
+        },
+        {
+          "name": "mfi",
+          "description": "Money Flow Index",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "MFI value (0-100)"
+            }
+          ]
+        },
+        {
+          "name": "cmo",
+          "description": "Chande Momentum Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "CMO (-100 to +100)"
+            }
+          ]
+        },
+        {
+          "name": "uo",
+          "description": "Ultimate Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 7
+              },
+              {
+                "name": "medium",
+                "default": 14
+              },
+              {
+                "name": "slow",
+                "default": 28
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "UO value"
+            }
+          ]
+        },
+        {
+          "name": "kst",
+          "description": "Know Sure Thing",
+          "inputs": {
+            "ohlcv": [
+              "close",
+              "roc1",
+              "roc2",
+              "roc3",
+              "roc4",
+              "sma1",
+              "sma2",
+              "sma3",
+              "sma4"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "KST value"
+            }
+          ]
+        },
+        {
+          "name": "trix",
+          "description": "TRIX - ROC of Triple Smooth EMA",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 15
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "TRIX percentage"
+            }
+          ]
+        },
+        {
+          "name": "tsi",
+          "description": "True Strength Index",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 25
+              },
+              {
+                "name": "slow",
+                "default": 13
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "TSI value"
+            }
+          ]
+        },
+        {
+          "name": "vortex",
+          "description": "Vortex Indicator",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "positive_vi",
+              "description": "Positive VI"
+            },
+            {
+              "key": "negative_vi",
+              "description": "Negative VI"
+            }
+          ]
+        },
+        {
+          "name": "squeeze",
+          "description": "Squeeze Indicator",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "price"
+            ],
+            "params": [
+              {
+                "name": "bb_length",
+                "default": 20
+              },
+              {
+                "name": "kc_length",
+                "default": 11
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "squeeze",
+              "description": "Momentum oscillator"
+            },
+            {
+              "key": "squeeze_on",
+              "description": "Squeeze indicator"
+            }
+          ]
+        },
+        {
+          "name": "dpo",
+          "description": "Detrend Price Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 21
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "DPO value"
+            }
+          ]
+        },
+        {
+          "name": "psl",
+          "description": "Psychological Line",
+          "inputs": {
+            "ohlcv": [
+              "close",
+              "open"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 12
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "PSL ratio"
+            }
+          ]
+        },
+        {
+          "name": "cti",
+          "description": "Correlation Trend Indicator",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "CTI correlation"
+            }
+          ]
+        },
+        {
+          "name": "fisher",
+          "description": "Fisher Transform",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 9
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "fisher",
+              "description": "Fisher Transform"
+            },
+            {
+              "key": "signal",
+              "description": "Signal line"
+            }
+          ]
+        },
+        {
+          "name": "bop",
+          "description": "Balance of Power",
+          "inputs": {
+            "ohlcv": [
+              "open",
+              "high",
+              "low",
+              "close"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "BOP value"
+            }
+          ]
+        },
+        {
+          "name": "cfo",
+          "description": "Chande Forecast Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 9
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "CFO value"
+            }
+          ]
+        },
+        {
+          "name": "cg",
+          "description": "Center of Gravity",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 10
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "COG value"
+            }
+          ]
+        },
+        {
+          "name": "kvo",
+          "description": "Klinger Volume Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 34
+              },
+              {
+                "name": "slow",
+                "default": 55
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "KVO value"
+            }
+          ]
+        },
+        {
+          "name": "obv",
+          "description": "On Balance Volume",
+          "inputs": {
+            "ohlcv": [
+              "close",
+              "volume"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "OBV cumulative volume"
+            }
+          ]
+        },
+        {
+          "name": "adosc",
+          "description": "Chaikin A/D Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 3
+              },
+              {
+                "name": "slow",
+                "default": 10
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "ADOSC value"
+            }
+          ]
+        },
+        {
+          "name": "pvo",
+          "description": "Percentage Volume Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 12
+              },
+              {
+                "name": "slow",
+                "default": 26
+              },
+              {
+                "name": "signal",
+                "default": 9
+              }
+            ]
+          },
+          "returns_count": 3,
+          "outputs": [
+            {
+              "key": "pvo",
+              "description": "PVO"
+            },
+            {
+              "key": "pvosignal",
+              "description": "Signal"
+            },
+            {
+              "key": "pvohist",
+              "description": "Histogram"
+            }
+          ]
+        },
+        {
+          "name": "brar",
+          "description": "BRAR Indicator",
+          "inputs": {
+            "ohlcv": [
+              "open",
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              },
+              {
+                "name": "scalar",
+                "default": 100
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "ar",
+              "description": "AR value"
+            },
+            {
+              "key": "br",
+              "description": "BR value"
+            }
+          ]
+        },
+        {
+          "name": "adx",
+          "description": "Average Directional Index",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 3,
+          "outputs": [
+            {
+              "key": "adx",
+              "description": "ADX value"
+            },
+            {
+              "key": "plus_di",
+              "description": "+DI"
+            },
+            {
+              "key": "minus_di",
+              "description": "-DI"
+            }
+          ]
+        },
+        {
+          "name": "adxr",
+          "description": "ADXR - ADX Rating",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "ADXR value"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Moving Average",
+      "count": 41,
+      "indicators": [
+        {
+          "name": "sma",
+          "description": "Simple Moving Average",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "SMA value"
+            }
+          ]
+        },
+        {
+          "name": "ema",
+          "description": "Exponential Moving Average",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "EMA value"
+            }
+          ]
+        },
+        {
+          "name": "dema",
+          "description": "Double Exponential Moving Average",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "DEMA value"
+            }
+          ]
+        },
+        {
+          "name": "tema",
+          "description": "Triple Exponential Moving Average",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "TEMA value"
+            }
+          ]
+        },
+        {
+          "name": "wma",
+          "description": "Weighted Moving Average",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "WMA value"
+            }
+          ]
+        },
+        {
+          "name": "hma",
+          "description": "Hull Moving Average",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 9
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "HMA value"
+            }
+          ]
+        },
+        {
+          "name": "linreg",
+          "description": "Linear Regression",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Linear regression value"
+            }
+          ]
+        },
+        {
+          "name": "midpoint",
+          "description": "Midpoint",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Midpoint value"
+            }
+          ]
+        },
+        {
+          "name": "midprice",
+          "description": "Midpoint Price",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "(highest + lowest) / 2"
+            }
+          ]
+        },
+        {
+          "name": "pwma",
+          "description": "Parabolic Weighted MA",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "PWMA value"
+            }
+          ]
+        },
+        {
+          "name": "alma",
+          "description": "Arnaud Legoux Moving Average",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              },
+              {
+                "name": "offset",
+                "default": 0.85
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "ALMA value"
+            }
+          ]
+        },
+        {
+          "name": "amat",
+          "description": "Archer Moving Averages Trends",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 8
+              },
+              {
+                "name": "slow",
+                "default": 21
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "aman",
+              "description": "Fast MA"
+            },
+            {
+              "key": "amah",
+              "description": "Slow MA"
+            }
+          ]
+        },
+        {
+          "name": "bbands",
+          "description": "Bollinger Bands",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              },
+              {
+                "name": "std_dev",
+                "default": 2
+              },
+              {
+                "name": "matype",
+                "default": 0
+              }
+            ]
+          },
+          "returns_count": 5,
+          "outputs": [
+            {
+              "key": "bbl",
+              "description": "Lower"
+            },
+            {
+              "key": "bbm",
+              "description": "Middle"
+            },
+            {
+              "key": "bbu",
+              "description": "Upper"
+            },
+            {
+              "key": "bbb",
+              "description": "Bandwidth"
+            },
+            {
+              "key": "bbp",
+              "description": "%B"
+            }
+          ]
+        },
+        {
+          "name": "kc",
+          "description": "Keltner Channels",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              },
+              {
+                "name": "scalar",
+                "default": 2
+              }
+            ]
+          },
+          "returns_count": 3,
+          "outputs": [
+            {
+              "key": "kcl",
+              "description": "Lower"
+            },
+            {
+              "key": "kcm",
+              "description": "Middle"
+            },
+            {
+              "key": "kcu",
+              "description": "Upper"
+            }
+          ]
+        },
+        {
+          "name": "donchian",
+          "description": "Donchian Channels",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "dch",
+              "description": "Highest"
+            },
+            {
+              "key": "dcl",
+              "description": "Lowest"
+            }
+          ]
+        },
+        {
+          "name": "accbands",
+          "description": "Acceleration Bands",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              },
+              {
+                "name": "matype",
+                "default": 0
+              }
+            ]
+          },
+          "returns_count": 3,
+          "outputs": [
+            {
+              "key": "abb",
+              "description": "Upper"
+            },
+            {
+              "key": "abbm",
+              "description": "Middle"
+            },
+            {
+              "key": "abl",
+              "description": "Lower"
+            }
+          ]
+        },
+        {
+          "name": "atr",
+          "description": "Average True Range",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "ATR value"
+            }
+          ]
+        },
+        {
+          "name": "natr",
+          "description": "Normalized ATR",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "NATR %"
+            }
+          ]
+        },
+        {
+          "name": "trange",
+          "description": "True Range",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "True range"
+            }
+          ]
+        },
+        {
+          "name": "bias",
+          "description": "Bias (SMA Deviation)",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              },
+              {
+                "name": "matype",
+                "default": 0
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Bias %"
+            }
+          ]
+        },
+        {
+          "name": "cmf",
+          "description": "Chaikin Money Flow",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "CMF (-1 to +1)"
+            }
+          ]
+        },
+        {
+          "name": "ad",
+          "description": "Accumulation/Distribution",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "volume"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "A/D cumulative"
+            }
+          ]
+        },
+        {
+          "name": "chop",
+          "description": "Choppiness Index",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "CHOP (0-100)"
+            }
+          ]
+        },
+        {
+          "name": "cksp",
+          "description": "Chande Kroll Stop",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 10
+              },
+              {
+                "name": "p",
+                "default": 1
+              },
+              {
+                "name": "x",
+                "default": 1
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "cksp_long",
+              "description": "Long stop"
+            },
+            {
+              "key": "cksp_short",
+              "description": "Short stop"
+            }
+          ]
+        },
+        {
+          "name": "dm",
+          "description": "Directional Movement",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "plus_dm",
+              "description": "+DM"
+            },
+            {
+              "key": "minus_dm",
+              "description": "-DM"
+            }
+          ]
+        },
+        {
+          "name": "efi",
+          "description": "Elder's Force Index",
+          "inputs": {
+            "ohlcv": [
+              "close",
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 13
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "EFI"
+            }
+          ]
+        },
+        {
+          "name": "entropy",
+          "description": "Entropy",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Shannon entropy"
+            }
+          ]
+        },
+        {
+          "name": "er",
+          "description": "Efficiency Ratio",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "ER (0-1)"
+            }
+          ]
+        },
+        {
+          "name": "ebsw",
+          "description": "Even Better Sine Wave",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 10
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "ebsw",
+              "description": "Sine"
+            },
+            {
+              "key": "ebswsignal",
+              "description": "Signal"
+            }
+          ]
+        },
+        {
+          "name": "decreasing",
+          "description": "Decreasing Values",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 5
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Count"
+            }
+          ]
+        },
+        {
+          "name": "swma",
+          "description": "Symmetrical Weighted MA",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "SWMA"
+            }
+          ]
+        },
+        {
+          "name": "rma",
+          "description": "Adjusted MA (EMA)",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "RMA"
+            }
+          ]
+        },
+        {
+          "name": "jma",
+          "description": "Jurik Moving Average",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 7
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "JMA"
+            }
+          ]
+        },
+        {
+          "name": "hwma",
+          "description": "Holt-Winter MA",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "na",
+                "default": 0.2
+              },
+              {
+                "name": "nb",
+                "default": 0.1
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "HWMA"
+            }
+          ]
+        },
+        {
+          "name": "t3",
+          "description": "Tillson T3",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 5
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "T3"
+            }
+          ]
+        },
+        {
+          "name": "vwap",
+          "description": "VWAP - Volume Weighted AP",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "volume"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "VWAP"
+            }
+          ]
+        },
+        {
+          "name": "vwma",
+          "description": "Volume Weighted MA",
+          "inputs": {
+            "ohlcv": [
+              "close",
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "VWMA"
+            }
+          ]
+        },
+        {
+          "name": "typical_price",
+          "description": "Typical Price",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Typical price"
+            }
+          ]
+        },
+        {
+          "name": "hl2",
+          "description": "High-Low 2",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "(high + low) / 2"
+            }
+          ]
+        },
+        {
+          "name": "hlc3",
+          "description": "High-Low-Close 3",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "(high + low + close) / 3"
+            }
+          ]
+        },
+        {
+          "name": "ohlc4",
+          "description": "OHLC 4",
+          "inputs": {
+            "ohlcv": [
+              "open",
+              "high",
+              "low",
+              "close"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "(O + H + L + C) / 4"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Volume",
+      "count": 12,
+      "indicators": [
+        {
+          "name": "obv",
+          "description": "On Balance Volume",
+          "inputs": {
+            "ohlcv": [
+              "close",
+              "volume"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "OBV cumulative"
+            }
+          ]
+        },
+        {
+          "name": "ad",
+          "description": "Accumulation/Distribution",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "volume"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "A/D cumulative"
+            }
+          ]
+        },
+        {
+          "name": "adosc",
+          "description": "Chaikin A/D Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 3
+              },
+              {
+                "name": "slow",
+                "default": 10
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "ADOSC"
+            }
+          ]
+        },
+        {
+          "name": "pvo",
+          "description": "Percentage Volume Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 12
+              },
+              {
+                "name": "slow",
+                "default": 26
+              },
+              {
+                "name": "signal",
+                "default": 9
+              }
+            ]
+          },
+          "returns_count": 3,
+          "outputs": [
+            {
+              "key": "pvo",
+              "description": "PVO"
+            },
+            {
+              "key": "pvosignal",
+              "description": "Signal"
+            },
+            {
+              "key": "pvohist",
+              "description": "Histogram"
+            }
+          ]
+        },
+        {
+          "name": "mfi",
+          "description": "Money Flow Index",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "MFI %"
+            }
+          ]
+        },
+        {
+          "name": "cmf",
+          "description": "Chaikin Money Flow",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "CMF"
+            }
+          ]
+        },
+        {
+          "name": "eom",
+          "description": "Ease of Movement",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "EOM"
+            }
+          ]
+        },
+        {
+          "name": "kvo",
+          "description": "Klinger Volume Oscillator",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "fast",
+                "default": 34
+              },
+              {
+                "name": "slow",
+                "default": 55
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "KVO"
+            }
+          ]
+        },
+        {
+          "name": "nvi",
+          "description": "Negative Volume Index",
+          "inputs": {
+            "ohlcv": [
+              "close",
+              "volume"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "NVI"
+            }
+          ]
+        },
+        {
+          "name": "pvi",
+          "description": "Positive Volume Index",
+          "inputs": {
+            "ohlcv": [
+              "close",
+              "volume"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "PVI"
+            }
+          ]
+        },
+        {
+          "name": "vpt",
+          "description": "Volume Price Trend",
+          "inputs": {
+            "ohlcv": [
+              "close",
+              "volume"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "VPT cumulative"
+            }
+          ]
+        },
+        {
+          "name": "nvol",
+          "description": "Normalized Volume",
+          "inputs": {
+            "ohlcv": [
+              "volume"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "NVOL"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Volatility",
+      "count": 12,
+      "indicators": [
+        {
+          "name": "atr",
+          "description": "Average True Range",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "ATR"
+            }
+          ]
+        },
+        {
+          "name": "natr",
+          "description": "Normalized ATR",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "NATR %"
+            }
+          ]
+        },
+        {
+          "name": "trange",
+          "description": "True Range",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "True range"
+            }
+          ]
+        },
+        {
+          "name": "bbands",
+          "description": "Bollinger Bands",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              },
+              {
+                "name": "std_dev",
+                "default": 2
+              }
+            ]
+          },
+          "returns_count": 5,
+          "outputs": [
+            {
+              "key": "bbl",
+              "description": "Lower"
+            },
+            {
+              "key": "bbm",
+              "description": "Middle"
+            },
+            {
+              "key": "bbu",
+              "description": "Upper"
+            },
+            {
+              "key": "bbb",
+              "description": "Bandwidth"
+            },
+            {
+              "key": "bbp",
+              "description": "%B"
+            }
+          ]
+        },
+        {
+          "name": "kc",
+          "description": "Keltner Channels",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              },
+              {
+                "name": "scalar",
+                "default": 2
+              }
+            ]
+          },
+          "returns_count": 3,
+          "outputs": [
+            {
+              "key": "kcl",
+              "description": "Lower"
+            },
+            {
+              "key": "kcm",
+              "description": "Middle"
+            },
+            {
+              "key": "kcu",
+              "description": "Upper"
+            }
+          ]
+        },
+        {
+          "name": "cksp",
+          "description": "Chande Kroll Stop",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 10
+              },
+              {
+                "name": "p",
+                "default": 1
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "cksp_long",
+              "description": "Long"
+            },
+            {
+              "key": "cksp_short",
+              "description": "Short"
+            }
+          ]
+        },
+        {
+          "name": "accbands",
+          "description": "Acceleration Bands",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 3,
+          "outputs": [
+            {
+              "key": "abb",
+              "description": "Upper"
+            },
+            {
+              "key": "abbm",
+              "description": "Middle"
+            },
+            {
+              "key": "abl",
+              "description": "Lower"
+            }
+          ]
+        },
+        {
+          "name": "chop",
+          "description": "Choppiness Index",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "CHOP"
+            }
+          ]
+        },
+        {
+          "name": "vortex",
+          "description": "Vortex Indicator",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "positive_vi",
+              "description": "+VI"
+            },
+            {
+              "key": "negative_vi",
+              "description": "-VI"
+            }
+          ]
+        },
+        {
+          "name": "squeeze",
+          "description": "Squeeze Indicator",
+          "inputs": {
+            "ohlcv": [
+              "high",
+              "low",
+              "close",
+              "price"
+            ],
+            "params": []
+          },
+          "returns_count": 2,
+          "outputs": [
+            {
+              "key": "squeeze",
+              "description": "Momentum"
+            },
+            {
+              "key": "squeeze_on",
+              "description": "Signal"
+            }
+          ]
+        },
+        {
+          "name": "percent",
+          "description": "Percentage Change",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "%change"
+            }
+          ]
+        },
+        {
+          "name": "log_return",
+          "description": "Log Return",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "ln(close/prev_close)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Other",
+      "count": 21,
+      "indicators": [
+        {
+          "name": "crossover",
+          "description": "Crossover Detection",
+          "inputs": {
+            "ohlcv": [
+              "series1",
+              "series2"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "1 if crossover else 0"
+            }
+          ]
+        },
+        {
+          "name": "crossunder",
+          "description": "Crossunder Detection",
+          "inputs": {
+            "ohlcv": [
+              "series1",
+              "series2"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "1 if crossunder else 0"
+            }
+          ]
+        },
+        {
+          "name": "peaks",
+          "description": "Peak Detection",
+          "inputs": {
+            "ohlcv": [
+              "series"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 5
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "1 if peak else 0"
+            }
+          ]
+        },
+        {
+          "name": "valleys",
+          "description": "Valley Detection",
+          "inputs": {
+            "ohlcv": [
+              "series"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 5
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "1 if valley else 0"
+            }
+          ]
+        },
+        {
+          "name": "trend",
+          "description": "Trend Detection",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "method",
+                "default": "hl2"
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "1 if uptrend else -1"
+            }
+          ]
+        },
+        {
+          "name": "above",
+          "description": "Above Threshold",
+          "inputs": {
+            "ohlcv": [
+              "series",
+              "value"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "1 if above else 0"
+            }
+          ]
+        },
+        {
+          "name": "below",
+          "description": "Below Threshold",
+          "inputs": {
+            "ohlcv": [
+              "series",
+              "value"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "1 if below else 0"
+            }
+          ]
+        },
+        {
+          "name": "above_value",
+          "description": "Above Value Count",
+          "inputs": {
+            "ohlcv": [
+              "series",
+              "value"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Count"
+            }
+          ]
+        },
+        {
+          "name": "below_value",
+          "description": "Below Value Count",
+          "inputs": {
+            "ohlcv": [
+              "series",
+              "value"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Count"
+            }
+          ]
+        },
+        {
+          "name": "returns",
+          "description": "Period Returns",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 1
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Returns %"
+            }
+          ]
+        },
+        {
+          "name": "log_returns",
+          "description": "Log Returns",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 1
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Log returns"
+            }
+          ]
+        },
+        {
+          "name": "cumulative_returns",
+          "description": "Cumulative Returns",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "starting_value",
+                "default": 100
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Cumulative value"
+            }
+          ]
+        },
+        {
+          "name": "rolling_std",
+          "description": "Rolling Std Dev",
+          "inputs": {
+            "ohlcv": [
+              "series"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Std dev"
+            }
+          ]
+        },
+        {
+          "name": "rolling_var",
+          "description": "Rolling Variance",
+          "inputs": {
+            "ohlcv": [
+              "series"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Variance"
+            }
+          ]
+        },
+        {
+          "name": "rolling_covariance",
+          "description": "Rolling Covariance",
+          "inputs": {
+            "ohlcv": [
+              "series1",
+              "series2"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Covariance"
+            }
+          ]
+        },
+        {
+          "name": "rolling_correlation",
+          "description": "Rolling Correlation",
+          "inputs": {
+            "ohlcv": [
+              "series1",
+              "series2"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Correlation (-1 to +1)"
+            }
+          ]
+        },
+        {
+          "name": "skew",
+          "description": "Skewness",
+          "inputs": {
+            "ohlcv": [
+              "series"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Skewness"
+            }
+          ]
+        },
+        {
+          "name": "kurtosis",
+          "description": "Kurtosis",
+          "inputs": {
+            "ohlcv": [
+              "series"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 20
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Kurtosis"
+            }
+          ]
+        },
+        {
+          "name": "zlma",
+          "description": "Zero Lag MA",
+          "inputs": {
+            "ohlcv": [
+              "close"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "ZLMA"
+            }
+          ]
+        },
+        {
+          "name": "ols",
+          "description": "Ordinary Least Squares",
+          "inputs": {
+            "ohlcv": [
+              "y",
+              "x"
+            ],
+            "params": [
+              {
+                "name": "length",
+                "default": 14
+              }
+            ]
+          },
+          "returns_count": 3,
+          "outputs": [
+            {
+              "key": "slope",
+              "description": "OLS slope"
+            },
+            {
+              "key": "intercept",
+              "description": "Intercept"
+            },
+            {
+              "key": "r2",
+              "description": "R-squared"
+            }
+          ]
+        },
+        {
+          "name": "vix",
+          "description": "VIX Calculation (Volatility Index)",
+          "inputs": {
+            "ohlcv": [
+              "close",
+              "high",
+              "low"
+            ],
+            "params": []
+          },
+          "returns_count": 1,
+          "outputs": [
+            {
+              "key": "real",
+              "description": "Volatility index"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "version": "Pandas-TA 0.3.16+"
+}
