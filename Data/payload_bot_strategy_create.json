@@ -1,0 +1,175 @@
+{
+  "bot_name": "multi_timeframe",
+  "exchange_name": "binance",
+  "strategy_name": "MultiTimeframe",
+  "dry_run": true,
+  "stake_currency": "USDT",
+  "stake_amount": 100.0,
+  "max_open_trades": 10,
+  "timeframe": "5m",
+  "pair": "BTC/USDT:USDT",
+
+  "dry_run_wallet": 1000.0,
+  "trading_mode": "futures",
+  "margin_mode": "cross",
+  "liquidation_buffer": 0.05,
+  "leverage": 10,
+  "can_short": true,
+  "position_adjustment_enable": true,
+  "max_entry_position_adjustment": -1,
+  "cancel_open_orders_on_exit": true,
+  "process_only_new_candles": false,
+  "force_entry_enable": false,
+  "process_throttle_secs": 60,
+
+  "telegram": {
+    "enabled": true,
+    "token": "***",
+    "chat_id": "6041589302",
+    "topic_id": null,
+    "authorized_users": null,
+    "allow_custom_messages": false,
+    "balance_dust_level": null,
+    "notification_settings": {
+      "status": "on",
+      "warning": "on",
+      "startup": "on",
+      "entry": "on",
+      "entry_fill": "off",
+      "entry_cancel": "on",
+      "exit": "on",
+      "exit_fill": "on",
+      "exit_cancel": "on",
+      "protection_trigger": "on",
+      "protection_trigger_global": "on"
+    },
+    "reload": null
+  },
+
+  "strategy_description": "Multi-timeframe Bollinger breakout sample — migrated from legacy split payload.",
+  "strategy_type": "statistical",
+
+  "configurations": {
+    "strategy_type": "statistical",
+    "interface_version": 3,
+    "timeframe": "5m",
+    "startup_candle_count": 200,
+    "informative_timeframes": ["1h"],
+    "process_only_new_candles": true,
+    "can_short": true,
+    "leverage": 10.0,
+    "position_adjustment_enable": true,
+    "max_entry_position_adjustment": -1,
+
+    "risk": {
+      "stoploss": -0.4,
+      "trailing_stop": true,
+      "trailing_stop_positive": 0.01,
+      "trailing_stop_positive_offset": 0.015,
+      "trailing_only_offset_is_reached": true
+    },
+
+    "roi_steps": [
+      { "minutes": 0, "roi": 1.5 },
+      { "minutes": 30, "roi": 0.8 },
+      { "minutes": 60, "roi": 0.4 },
+      { "minutes": 120, "roi": 0.2 }
+    ],
+
+    "use_exit_signal": true,
+    "exit_profit_only": true,
+    "exit_profit_offset": 0.05,
+    "ignore_roi_if_entry_signal": false,
+    "max_open_trades": -1,
+
+    "signals": {
+      "candlestick": ["close", "volume"],
+      "indicators": [
+        {
+          "name": "RSI",
+          "type": "talib",
+          "parameters": { "timeperiod": 14 }
+        }
+      ],
+      "entry_long": {
+        "logic": { "type": "AND", "threshold": null },
+        "conditions": [
+          {
+            "left": "candle.close",
+            "op": ">",
+            "right_type": "indicator",
+            "right_number": null,
+            "right_indicator": "custom.MA200_1h",
+            "lookback": 0
+          },
+          {
+            "left": "RSI-14",
+            "op": "<",
+            "right_type": "number",
+            "right_number": 30.0,
+            "right_indicator": null,
+            "lookback": 0,
+            "operator": "AND"
+          },
+          {
+            "left": "candle.volume",
+            "op": "is_going_up",
+            "right_type": "none",
+            "right_number": null,
+            "right_indicator": null,
+            "lookback": 0,
+            "percentage": 20.0,
+            "operator": "AND"
+          }
+        ]
+      },
+      "exit_long": {
+        "logic": { "type": "AND", "threshold": null },
+        "conditions": [
+          {
+            "left": "RSI-14",
+            "op": ">",
+            "right_type": "number",
+            "right_number": 70.0,
+            "right_indicator": null,
+            "lookback": 0
+          }
+        ]
+      },
+      "entry_short": {
+        "logic": { "type": "AND", "threshold": null },
+        "conditions": []
+      },
+      "exit_short": {
+        "logic": { "type": "AND", "threshold": null },
+        "conditions": []
+      }
+    },
+
+    "custom_indicator_items": [
+      {
+        "name": "MA200_1h",
+        "source_type": "ohlcv",
+        "source_col": "close_1h",
+        "source_field": "close",
+        "source_timeframe": "1h",
+        "operation": "rolling_mean",
+        "period": 200
+      }
+    ],
+    "informative_ohlcv_items": [],
+
+    "custom_exit": {
+      "duration_enabled": false,
+      "profit_ratio_enabled": false,
+      "profit_ratio": 2.0,
+      "max_duration_enabled": false,
+      "time_window_enabled": false,
+      "partial_enabled": true,
+      "partial_levels": [
+        { "profit": 20.0, "amount": 50.0 },
+        { "profit": 50.0, "amount": 25.0 }
+      ]
+    }
+  }
+}

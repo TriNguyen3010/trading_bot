@@ -1,7 +1,8 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
-import { buildBundle, deserializeBundle } from './serializer';
+import { buildBundle, buildUnifiedPayload, deserializeBundle } from './serializer';
 import { bundleSchema } from '@/schemas/bundle.schema';
+import { unifiedBotStrategyCreateSchema } from '@/schemas/unified-bot-strategy.schema';
 import { makeIndicator } from '@/features/indicators/indicator-registry';
 
 describe('serializer', () => {
@@ -102,6 +103,31 @@ describe('serializer', () => {
       { profit: 5, amount: 50 },
       { profit: 10, amount: 25 },
     ]);
+  });
+
+  it('buildUnifiedPayload conforms to UnifiedBotStrategyCreate schema', () => {
+    applyBollingerLong();
+    // Direction default in applyBollingerLong is 'long' on 'futures', which
+    // would trip the can_short=true → futures-only refinement only when set
+    // explicitly. Force long to keep can_short=false.
+    useBuilderStore.getState().patchDirection({ direction: 'long' });
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    const result = unifiedBotStrategyCreateSchema.safeParse(payload);
+    if (!result.success) {
+      throw new Error(
+        `buildUnifiedPayload schema check failed: ${JSON.stringify(
+          result.error.issues,
+          null,
+          2,
+        )}`,
+      );
+    }
+    // Sanity checks on key fields.
+    expect(payload.bot_name).toBe('Bollinger Breakout');
+    expect(payload.pair).toBe('BTC/USDC:USDC');
+    expect(payload.trading_mode).toBe('futures');
+    expect(payload.margin_mode).toBe('cross');
+    expect(payload.configurations?.signals.entry_long?.conditions).toHaveLength(1);
   });
 
   it('round-trips a bundle through deserializeBundle', () => {

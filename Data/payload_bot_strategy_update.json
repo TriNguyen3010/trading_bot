@@ -1,0 +1,7 @@
+{
+  "pair": "ETH/USDT:USDT",
+  "stake_amount": 250.0,
+  "strategy_configurations": {
+    "exit_profit_offset": 0.08
+  }
+}
