@@ -340,3 +340,96 @@ export function deserializeBundle(bundle: Bundle): DeserializedState {
 
 // Use indicatorOutputId during validation/lints later.
 void indicatorOutputId;
+
+/* -------------------------------------------------------------------------- */
+/*  Unified payload builder (UnifiedBotStrategyCreate)                        */
+/*                                                                             */
+/*  New entry point per Data/IMPLEMENTATION_PLAN.md Step 3. Produces the      */
+/*  flat unified payload that the BE wants for POST /bot-strategy/create.    */
+/*  The legacy `buildBundle()` above is kept while the Export/Import UI is   */
+/*  still on the old shape; once it migrates this becomes the only           */
+/*  serializer entry point.                                                   */
+/* -------------------------------------------------------------------------- */
+
+import type { UnifiedBotStrategyCreate } from '@/schemas/unified-bot-strategy.schema';
+
+export function buildUnifiedPayload(
+  state: BuilderState,
+): UnifiedBotStrategyCreate {
+  const bot = buildBotPayload(state);
+  const strategy = buildStrategyPayload(state);
+  const close = state.closeMethod;
+
+  // Map the legacy `{bot, strategy}` split into the flat unified shape.
+  // Anything not represented in the BuilderState today is omitted (BE
+  // applies its defaults).
+  return {
+    // ── 9 required ──────────────────────────────────────────────
+    bot_name: bot.bot_name,
+    exchange_name: bot.exchange_name,
+    strategy_name: bot.strategy_name,
+    dry_run: bot.dry_run,
+    stake_currency: bot.stake_currency as UnifiedBotStrategyCreate['stake_currency'],
+    stake_amount: bot.stake_amount,
+    max_open_trades: bot.max_open_trades,
+    timeframe: bot.timeframe as UnifiedBotStrategyCreate['timeframe'],
+    pair: bot.pair,
+
+    // ── Bot runtime fields ──────────────────────────────────────
+    dry_run_wallet: bot.dry_run_wallet,
+    trading_mode: bot.trading_mode,
+    margin_mode: bot.margin_mode,
+    liquidation_buffer: bot.liquidation_buffer,
+    leverage: bot.leverage,
+    can_short: bot.can_short,
+    position_adjustment_enable: bot.position_adjustment_enable,
+    max_entry_position_adjustment: bot.max_entry_position_adjustment,
+    cancel_open_orders_on_exit: bot.cancel_open_orders_on_exit,
+    process_only_new_candles: bot.process_only_new_candles,
+    force_entry_enable: bot.force_entry_enable,
+    process_throttle_secs: bot.process_throttle_secs,
+
+    // Risk fields are also exposed at top-level per UnifiedBotStrategyCreate,
+    // but the Source-of-truth lives inside `configurations.risk`. Lift the
+    // SL setting up so simple BE consumers without StrategyConfigurations
+    // still see it.
+    stoploss:
+      close.type === 'tp_sl' && close.slEnabled ? close.slValue / 100 : null,
+    trailing_stop: close.type === 'tp_sl' && close.trailingEnabled,
+
+    telegram: {
+      enabled: false,
+      token: null,
+      chat_id: null,
+      allow_custom_messages: false,
+      notification_settings: {
+        // Initialise the 11-event matrix with conservative defaults so the
+        // BE doesn't have to pick.
+        status: 'on',
+        warning: 'on',
+        startup: 'on',
+        entry: 'on',
+        entry_fill: 'off',
+        entry_cancel: 'on',
+        exit: 'on',
+        exit_fill: 'on',
+        exit_cancel: 'on',
+        protection_trigger: 'on',
+        protection_trigger_global: 'on',
+      },
+    },
+
+    // ── Strategy fields ─────────────────────────────────────────
+    strategy_description: null,
+    strategy_type: 'statistical',
+
+    // The legacy `buildStrategyPayload()` already returns a configurations
+    // object with the right shape — reuse it. We cast because the Zod
+    // inferred type carries `defaults` whereas the legacy type doesn't, but
+    // the runtime values are equivalent.
+    configurations: strategy.configurations as unknown as UnifiedBotStrategyCreate['configurations'],
+
+    // Deprecated, but the BE accepts it. Emit `false` explicitly for clarity.
+    ai_powered: false,
+  };
+}
