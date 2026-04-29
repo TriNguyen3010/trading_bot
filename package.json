@@ -13,7 +13,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "gen:api": "openapi-typescript Data/openapi.json -o src/types/api.d.ts",
-    "gen:api:watch": "openapi-typescript Data/openapi.json -o src/types/api.d.ts --watch"
+    "gen:api:watch": "openapi-typescript Data/openapi.json -o src/types/api.d.ts --watch",
+    "validate:sample:create": "node scripts/validate-sample.mjs Data/payload_bot_strategy_create.json --schema=UnifiedBotStrategyCreate",
+    "validate:sample:update": "node scripts/validate-sample.mjs Data/payload_bot_strategy_update.json --schema=UnifiedBotStrategyUpdate"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -48,6 +50,8 @@
     "@typescript-eslint/eslint-plugin": "^8.19.0",
     "@typescript-eslint/parser": "^8.19.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^9.1.0",
