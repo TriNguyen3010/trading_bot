@@ -22,6 +22,7 @@ import {
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { isStepSetupComplete } from '@/lib/validator';
+import { STRATEGY_SUB_STEPS } from '@/lib/phase-helpers';
 import { cn } from '@/lib/utils';
 import { strings } from '@/i18n/en';
 import { DrawerResizeHandle } from './DrawerResizeHandle';
@@ -54,6 +55,15 @@ export interface StepDrawerProps {
   onSummaryDismiss: () => void;
   /** Called when the summary view's Review JSON button is clicked. */
   onSummaryReviewJson: () => void;
+  /** Composite body + footer rendered when the active step belongs to the
+   * Strategy phase (entry/direction/close-method). When provided + active,
+   * suppresses the legacy Setup/Configure tabs and the wizard footer.
+   * Pass `null`/`undefined` for the legacy 4-step UI. */
+  strategyCompositeContent?: ReactNode;
+  /** Header copy override for the Strategy phase composite drawer. When
+   * `strategyCompositeContent` is rendered we don't want "Step 2: Entry
+   * Strategy" — we want "Strategy" with the phase description. */
+  strategyHeader?: { title: string; description: string };
 }
 
 const TOTAL_STEPS = 4;
@@ -77,6 +87,8 @@ export function StepDrawer({
   hasNext,
   onSummaryDismiss,
   onSummaryReviewJson,
+  strategyCompositeContent,
+  strategyHeader,
 }: StepDrawerProps) {
   const openStep = useBuilderStore((s) => s.openStep);
   const drawerTab = useBuilderStore((s) => s.drawerTab);
@@ -104,6 +116,18 @@ export function StepDrawer({
   const isPinned =
     effectiveMode === 'cypheus-pinned' || effectiveMode === 'cypheus-summary';
   const isManual = effectiveMode === 'manual';
+
+  // Composite Strategy mode: when the active step belongs to the Strategy
+  // phase (entry / direction / close-method) AND the parent has provided a
+  // composite content node, suppress the legacy Setup/Configure tabs +
+  // wizard footer and render the composite body instead. Applies in both
+  // manual and cypheus-pinned modes (cypheus-summary still uses its own
+  // dedicated view). See Spec/Phase 1/two_phase_ui_plan.md §6.4.
+  const isCompositeStrategy =
+    effectiveMode !== 'cypheus-summary' &&
+    Boolean(strategyCompositeContent) &&
+    activeStepId !== null &&
+    STRATEGY_SUB_STEPS.includes(activeStepId);
 
   const content = useMemo(() => {
     if (!activeStepId) return null;
@@ -185,13 +209,17 @@ export function StepDrawer({
                   <SheetTitle>
                     {effectiveMode === 'cypheus-summary'
                       ? strings.cypheus.magicBuild.summary.title
-                      : isManual && content
-                        ? `${strings.drawer.stepLabel(content.index)}: ${content.title}`
-                        : (content?.title ?? '')}
+                      : isCompositeStrategy && strategyHeader
+                        ? strategyHeader.title
+                        : isManual && content
+                          ? `${strings.drawer.stepLabel(content.index)}: ${content.title}`
+                          : (content?.title ?? '')}
                   </SheetTitle>
                   {effectiveMode !== 'cypheus-summary' && (
                     <SheetDescription>
-                      {content?.description ?? ''}
+                      {isCompositeStrategy && strategyHeader
+                        ? strategyHeader.description
+                        : (content?.description ?? '')}
                       {isPinned && (
                         <span className="ml-2 text-fg-muted">
                           ·{' '}
@@ -203,7 +231,10 @@ export function StepDrawer({
                       )}
                     </SheetDescription>
                   )}
-                  {isManual && content && (
+                  {/* Setup/Configure stepper only applies to the legacy
+                      tabbed mode (Phase 1 Bot Basics). Composite Strategy
+                      drops it per plan D1. */}
+                  {isManual && content && !isCompositeStrategy && (
                     <DrawerProgressIndicator
                       activeTab={drawerTab}
                       setupComplete={setupComplete}
@@ -225,6 +256,14 @@ export function StepDrawer({
             onDismiss={onSummaryDismiss}
             onReviewJson={onSummaryReviewJson}
           />
+        ) : isCompositeStrategy ? (
+          // Composite Strategy phase body — supplied by parent via
+          // `strategyCompositeContent`. Pinned mode keeps the Cypheus
+          // pinned footer; manual mode footer is owned by the composite.
+          <>
+            {strategyCompositeContent}
+            {isPinned && <CypheusPinnedFooter />}
+          </>
         ) : (
           <>
             <Tabs

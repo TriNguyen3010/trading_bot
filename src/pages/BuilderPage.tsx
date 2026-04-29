@@ -5,7 +5,7 @@ import { LayoutGroup } from 'framer-motion';
 import { CypheusPanel } from '@/features/cypheus/CypheusPanel';
 import { HeaderToolbar } from '@/features/bot-builder/components/HeaderToolbar';
 import { CypheusDock } from '@/features/cypheus/CypheusDock';
-import { StepList } from '@/features/bot-builder/StepList';
+import { BotBuilderCanvas } from '@/features/bot-builder/BotBuilderCanvas';
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
@@ -72,7 +72,7 @@ export function BuilderPage() {
                   <ArrowDown className="h-4 w-4 animate-bounce" />
                 </div>
               ) : null}
-              <StepList />
+              <BotBuilderCanvas />
             </div>
           </main>
           <CypheusDock />

@@ -101,6 +101,30 @@ export const strings = {
       comingSoon: 'Coming soon',
     },
   },
+  // 2-phase UI redesign — see Spec/Phase 1/two_phase_ui_plan.md.
+  // Surface strings only; data layer still uses 4 stepStatus IDs.
+  phase: {
+    botBasics: {
+      title: 'Bot Basics',
+      description: 'Pick the market, timeframe and trading mode.',
+    },
+    strategy: {
+      title: 'Strategy',
+      description: 'Entry conditions, direction, and close method.',
+    },
+  },
+  strategyDrawer: {
+    title: 'Strategy',
+    description:
+      'Define when the bot enters, which way it goes, and how it exits.',
+    sections: {
+      entry: 'Entry conditions',
+      action: 'Action',
+      advanced: 'Advanced',
+    },
+    saveDisabledTooltip:
+      'Fill the required fields in Entry conditions and Action to enable Save.',
+  },
   drawer: {
     setupTab: 'Setup',
     configureTab: 'Configure',

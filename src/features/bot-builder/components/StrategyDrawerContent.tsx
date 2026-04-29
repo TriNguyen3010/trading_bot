@@ -1,0 +1,109 @@
+import { SheetBody, SheetFooter } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  EntryStrategySetup,
+  EntryStrategyConfigure,
+} from '@/features/bot-builder/steps/EntryStrategyStep';
+import {
+  DirectionSetup,
+  DirectionConfigure,
+} from '@/features/bot-builder/steps/DirectionStep';
+import {
+  CloseMethodSetup,
+  CloseMethodConfigure,
+} from '@/features/bot-builder/steps/CloseMethodStep';
+import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import { isPhaseSetupComplete } from '@/lib/phase-helpers';
+import { strings } from '@/i18n/en';
+import { StrategySection } from './StrategySection';
+
+export interface StrategyDrawerContentProps {
+  onCancel: () => void;
+  onSave: () => void;
+}
+
+/**
+ * Composite drawer body for the "Strategy" phase. Renders three accordion
+ * sections (Entry / Action / Advanced) instead of the legacy Setup/Configure
+ * tabs — see Spec/Phase 1/two_phase_ui_plan.md §6.4 + decision D1.
+ *
+ * Save calls `onSave` only when the strategy phase setup gate passes
+ * (entry-strategy + direction + close-method all setup-complete). The
+ * caller (BotBuilderCanvas) is responsible for marking all 3 sub-stepStatus
+ * fields as 'configured' in a single batch.
+ */
+export function StrategyDrawerContent({
+  onCancel,
+  onSave,
+}: StrategyDrawerContentProps) {
+  // Read full state so the setup gate re-derives whenever any strategy
+  // sub-form patches.
+  const state = useBuilderStore();
+  const setupComplete = isPhaseSetupComplete(state, 'strategy');
+
+  return (
+    <>
+      <SheetBody>
+        <div className="space-y-0">
+          <StrategySection
+            title={strings.strategyDrawer.sections.entry}
+            defaultOpen
+          >
+            <EntryStrategySetup />
+          </StrategySection>
+
+          <StrategySection
+            title={strings.strategyDrawer.sections.action}
+            defaultOpen
+          >
+            <DirectionSetup />
+            <CloseMethodSetup />
+            <CloseMethodConfigure />
+          </StrategySection>
+
+          <StrategySection
+            title={strings.strategyDrawer.sections.advanced}
+            defaultOpen={false}
+          >
+            <DirectionConfigure />
+            <EntryStrategyConfigure />
+          </StrategySection>
+        </div>
+      </SheetBody>
+
+      <SheetFooter>
+        <Button variant="ghost" onClick={onCancel}>
+          {strings.drawer.cancel}
+        </Button>
+        {setupComplete ? (
+          <Button variant="primary" onClick={onSave}>
+            {strings.drawer.save}
+          </Button>
+        ) : (
+          // Disabled Save needs a wrapper for the tooltip to receive pointer
+          // events; <Button disabled> swallows them.
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span tabIndex={0}>
+                  <Button variant="primary" disabled>
+                    {strings.drawer.save}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs">
+                {strings.strategyDrawer.saveDisabledTooltip}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </SheetFooter>
+    </>
+  );
+}
