@@ -23,11 +23,13 @@ import {
   Shield,
   Target,
   TrendingUp,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { configuredPhaseCount } from '@/lib/phase-helpers';
+import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { strings } from '@/i18n/en';
 import { summarizeBot } from './summarize';
 import type {
@@ -59,6 +61,8 @@ function isComplexBlock(block: SummaryBlock): boolean {
 
 export function BotSummaryCard() {
   const builderState = useBuilderStore();
+  const hidden = useLayoutPrefsStore((s) => s.botSummaryHidden);
+  const setHidden = useLayoutPrefsStore((s) => s.setBotSummaryHidden);
 
   // Layer 1: pristine state → render nothing. Empty-state CTA already
   // covers "what to do next"; we don't want to add a stub here.
@@ -66,6 +70,9 @@ export function BotSummaryCard() {
 
   const result = useMemo(() => summarizeBot(builderState), [builderState]);
 
+  // User dismissed the card → render nothing. Header has a "Show
+  // summary" toggle that flips this back.
+  if (hidden) return null;
   if (phaseCount === 0) return null;
 
   const { blocks, gaps } = result;
@@ -84,9 +91,22 @@ export function BotSummaryCard() {
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-subtle text-brand">
           <BookOpen className="h-4 w-4" aria-hidden="true" />
         </div>
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-fg">
+        <h3 className="flex-1 text-sm font-semibold uppercase tracking-wide text-fg">
           {strings.botSummary.title}
         </h3>
+        <button
+          type="button"
+          onClick={() => setHidden(true)}
+          aria-label={strings.botSummary.dismiss}
+          className={cn(
+            'inline-flex h-6 w-6 items-center justify-center rounded-md text-fg-muted',
+            'transition-colors duration-fast hover:bg-surface-hover hover:text-fg',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
+          )}
+          title={strings.botSummary.dismiss}
+        >
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
       </header>
 
       <div className="space-y-4 px-5 py-4">

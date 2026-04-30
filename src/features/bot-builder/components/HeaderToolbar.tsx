@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Download, FlaskConical, Pencil, Upload } from 'lucide-react';
+import {
+  BookOpen,
+  Download,
+  Eye,
+  EyeOff,
+  FlaskConical,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Pencil,
+  Upload,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -14,6 +24,7 @@ import { useExportDialogStore } from '@/features/export-import/export-dialog.sto
 import { ImportDialog } from '@/features/export-import/ImportDialog';
 import { useTemplatesDialogStore } from '@/features/templates/templates-dialog.store';
 import { AppliedTemplateBadge } from '@/features/templates/AppliedTemplateBadge';
+import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { validateBuilder } from '@/lib/validator';
 import { strings } from '@/i18n/en';
 import { cn } from '@/lib/utils';
@@ -37,6 +48,10 @@ export function HeaderToolbar() {
   const exportOpen = useExportDialogStore((s) => s.open);
   const setExportOpen = useExportDialogStore((s) => s.setOpen);
   const setTemplatesOpen = useTemplatesDialogStore((s) => s.setOpen);
+  const leftPanelCollapsed = useLayoutPrefsStore((s) => s.leftPanelCollapsed);
+  const toggleLeftPanel = useLayoutPrefsStore((s) => s.toggleLeftPanel);
+  const botSummaryHidden = useLayoutPrefsStore((s) => s.botSummaryHidden);
+  const toggleBotSummary = useLayoutPrefsStore((s) => s.toggleBotSummary);
 
   const [isEditing, setEditing] = useState(false);
   const [draft, setDraft] = useState(botName);
@@ -137,6 +152,66 @@ export function HeaderToolbar() {
       </div>
       <TooltipProvider delayDuration={300}>
         <div className="flex items-center gap-2">
+          {/* View toggles — Cypheus left panel + bot summary visibility.
+           * Persisted across reloads via useLayoutPrefsStore so user
+           * preferences survive a refresh. */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleLeftPanel}
+                aria-label={
+                  leftPanelCollapsed
+                    ? strings.layoutToggles.cypheusShowAria
+                    : strings.layoutToggles.cypheusHideAria
+                }
+                aria-pressed={!leftPanelCollapsed}
+              >
+                {leftPanelCollapsed ? (
+                  <PanelLeftOpen className="h-3.5 w-3.5" />
+                ) : (
+                  <PanelLeftClose className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {leftPanelCollapsed
+                ? strings.layoutToggles.cypheusShowTooltip
+                : strings.layoutToggles.cypheusHideTooltip}
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleBotSummary}
+                aria-label={
+                  botSummaryHidden
+                    ? strings.layoutToggles.summaryShowAria
+                    : strings.layoutToggles.summaryHideAria
+                }
+                aria-pressed={!botSummaryHidden}
+              >
+                {botSummaryHidden ? (
+                  <EyeOff className="h-3.5 w-3.5" />
+                ) : (
+                  <Eye className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {botSummaryHidden
+                ? strings.layoutToggles.summaryShowTooltip
+                : strings.layoutToggles.summaryHideTooltip}
+            </TooltipContent>
+          </Tooltip>
+          {/* Visual divider between view toggles and primary actions. */}
+          <span
+            aria-hidden="true"
+            className="mx-1 h-6 w-px bg-border-subtle"
+          />
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

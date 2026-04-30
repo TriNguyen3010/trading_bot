@@ -19,13 +19,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import {
+  FIXED_DRAWER_WIDTH,
+  useBuilderStore,
+} from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { isStepSetupComplete } from '@/lib/validator';
 import { STRATEGY_SUB_STEPS } from '@/lib/phase-helpers';
 import { cn } from '@/lib/utils';
 import { strings } from '@/i18n/en';
-import { DrawerResizeHandle } from './DrawerResizeHandle';
 import { DrawerProgressIndicator } from './DrawerProgressIndicator';
 import { CypheusPinnedFooter } from './CypheusPinnedFooter';
 import { CypheusSummaryView } from './CypheusSummaryView';
@@ -93,8 +95,11 @@ export function StepDrawer({
   const openStep = useBuilderStore((s) => s.openStep);
   const drawerTab = useBuilderStore((s) => s.drawerTab);
   const setDrawerTab = useBuilderStore((s) => s.setDrawerTab);
-  const drawerWidth = useBuilderStore((s) => s.drawerWidth);
-  const setDrawerWidth = useBuilderStore((s) => s.setDrawerWidth);
+  // Drawer width is now fixed (per user request 2026-04-30). The store
+  // still ships drawerWidth + setDrawerWidth for backwards-compat with
+  // imported sessions, but the resize handle is removed and we render
+  // at the canonical width regardless of the persisted value.
+  const drawerWidth = FIXED_DRAWER_WIDTH;
   const builderState = useBuilderStore();
 
   const drawerMode = useCypheusStore((s) => s.drawerMode);
@@ -193,7 +198,8 @@ export function StepDrawer({
         }}
         overlayClassName="left-[var(--layout-left-panel)]"
       >
-        <DrawerResizeHandle currentWidth={drawerWidth} onResize={setDrawerWidth} />
+        {/* DrawerResizeHandle removed 2026-04-30 — drawer is now locked
+         * at FIXED_DRAWER_WIDTH per user request. */}
 
         <SheetHeader>
           <div className="flex items-center justify-between gap-3">

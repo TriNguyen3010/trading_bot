@@ -23,6 +23,7 @@ import {
 import { useBuilderStore } from './store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { configuredPhaseCount } from '@/lib/phase-helpers';
+import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { cn } from '@/lib/utils';
 import { strings } from '@/i18n/en';
 import type { StepId } from '@/types/builder.types';
@@ -170,12 +171,13 @@ export function BotBuilderCanvas() {
     />
   );
 
-  // 2-column layout when at least one phase is configured: BotSummary
-  // on the LEFT, phase cards on the RIGHT — user reads the prose while
-  // glancing at the cards (per user request 2026-04-30). Pristine state
-  // collapses back to a single centred card column so we don't reserve
-  // an empty column.
-  const showSummaryBeside = configuredPhaseCount(builderState) > 0;
+  // 2-column layout when at least one phase is configured AND the user
+  // hasn't dismissed the summary. Same canvas reflows automatically when
+  // they toggle either condition — pristine state OR a dismissed
+  // summary collapses to single-column.
+  const summaryHidden = useLayoutPrefsStore((s) => s.botSummaryHidden);
+  const showSummaryBeside =
+    configuredPhaseCount(builderState) > 0 && !summaryHidden;
 
   // Phase cards block — extracted so we can render it inside either
   // the single-column or 2-column wrapper without duplicating JSX.

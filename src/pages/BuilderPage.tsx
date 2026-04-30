@@ -11,7 +11,11 @@ import { Button } from '@/components/ui/button';
 import { TemplatesDialog } from '@/features/templates/TemplatesDialog';
 import { useTemplatesDialogStore } from '@/features/templates/templates-dialog.store';
 import { strings } from '@/i18n/en';
-import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import {
+  FIXED_DRAWER_WIDTH,
+  useBuilderStore,
+} from '@/features/bot-builder/store/builder.store';
+import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
@@ -21,9 +25,10 @@ export function BuilderPage() {
     Object.values(s.stepStatus).every((status) => status === 'pending'),
   );
   const openStep = useBuilderStore((s) => s.openStep);
-  const drawerWidth = useBuilderStore((s) => s.drawerWidth);
+  const drawerWidth = FIXED_DRAWER_WIDTH;
   const cypheusDrawerMode = useCypheusStore((s) => s.drawerMode);
   const setTemplatesOpen = useTemplatesDialogStore((s) => s.setOpen);
+  const leftPanelCollapsed = useLayoutPrefsStore((s) => s.leftPanelCollapsed);
 
   const drawerVisible = openStep !== null || cypheusDrawerMode !== 'closed';
 
@@ -33,6 +38,17 @@ export function BuilderPage() {
       drawerVisible ? `${drawerWidth}px` : '0px',
     );
   }, [drawerVisible, drawerWidth]);
+
+  // Sync the --layout-left-panel CSS var with the collapsed toggle.
+  // CypheusPanel itself returns null when collapsed; this var lets the
+  // canvas + DotGridSpotlight + drawer overlayClassName all reflow into
+  // the freed space without each component reading the prefs store.
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--layout-left-panel',
+      leftPanelCollapsed ? '0px' : '400px',
+    );
+  }, [leftPanelCollapsed]);
 
   // `--dock-height` is owned by <CypheusDock> via ResizeObserver — it knows
   // its own measured height. The canvas just reads the CSS var below.

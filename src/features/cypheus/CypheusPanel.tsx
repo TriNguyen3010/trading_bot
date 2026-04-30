@@ -10,11 +10,17 @@ import {
   type LeftPanelTab,
 } from './store/cypheus.store';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { runGreeting } from './script/greeting.script';
 import { runMagicBuild } from './script/magic-build.script';
 import { strings } from '@/i18n/en';
 
 export function CypheusPanel() {
+  // Honour the persisted "collapse left panel" toggle (HeaderToolbar
+  // owns the button). When collapsed, BuilderPage drives the
+  // --layout-left-panel CSS var to 0 so the canvas reclaims the space.
+  const leftPanelCollapsed = useLayoutPrefsStore((s) => s.leftPanelCollapsed);
+
   const tab = useCypheusStore((s) => s.panelTab);
   const setTab = useCypheusStore((s) => s.setPanelTab);
   const state = useCypheusStore((s) => s.state);
@@ -57,6 +63,13 @@ export function CypheusPanel() {
   };
 
   const inputDisabled = state === 'thinking' || state === 'building';
+
+  // Bail out entirely when the user has collapsed the panel — keeps
+  // focus order + ARIA tree clean. The HeaderToolbar's "Show Cypheus"
+  // toggle reverses this flag.
+  if (leftPanelCollapsed) {
+    return null;
+  }
 
   return (
     <aside

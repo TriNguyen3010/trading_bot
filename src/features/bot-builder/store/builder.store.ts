@@ -12,16 +12,13 @@ import type {
   StepStatus,
 } from '@/types/builder.types';
 
-const MIN_DRAWER_WIDTH = 480;
-const MAX_DRAWER_WIDTH = 1600;
-// Default to half the viewport, clamped to [720, 1280]. Falls back to 720
-// during SSR / non-browser contexts where `window` is unavailable.
-const computeDefaultDrawerWidth = (): number => {
-  if (typeof window === 'undefined') return 720;
-  const half = Math.floor(window.innerWidth * 0.5);
-  return Math.min(Math.max(half, 720), 1280);
-};
-const DEFAULT_DRAWER_WIDTH = computeDefaultDrawerWidth();
+/** Per user request 2026-04-30: drawer is locked at this width — the
+ * adjustable min/max + DrawerResizeHandle were removed. Exported so
+ * StepDrawer + BuilderPage size their layout to match. */
+export const FIXED_DRAWER_WIDTH = 480;
+const MIN_DRAWER_WIDTH = FIXED_DRAWER_WIDTH;
+const MAX_DRAWER_WIDTH = FIXED_DRAWER_WIDTH;
+const DEFAULT_DRAWER_WIDTH = FIXED_DRAWER_WIDTH;
 
 const emptyConditionGroup: ConditionGroup = {
   logic: { type: 'AND', threshold: null },

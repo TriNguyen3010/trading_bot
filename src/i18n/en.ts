@@ -138,6 +138,20 @@ export const strings = {
     gapsHeader: (n: number) =>
       `Couldn't fully translate (${n} field${n === 1 ? '' : 's'}):`,
     gapsFooter: 'See the JSON tab for full configuration.',
+    dismiss: 'Hide summary',
+  },
+
+  // Layout / view-prefs toggles in the HeaderToolbar — see
+  // `useLayoutPrefsStore`. Persisted across reloads.
+  layoutToggles: {
+    cypheusShowAria: 'Show Cypheus panel',
+    cypheusHideAria: 'Hide Cypheus panel',
+    cypheusShowTooltip: 'Show Cypheus chat panel',
+    cypheusHideTooltip: 'Hide Cypheus chat panel for more canvas room',
+    summaryShowAria: 'Show bot summary',
+    summaryHideAria: 'Hide bot summary',
+    summaryShowTooltip: 'Show "What this bot does" widget',
+    summaryHideTooltip: 'Hide "What this bot does" widget',
   },
 
   // Bot templates feature — see Spec/Phase 1/bot_templates_plan.md.
