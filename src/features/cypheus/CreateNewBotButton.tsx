@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from './store/cypheus.store';
+import { useTemplateTrackingStore } from '@/templates';
 import { abortAllScripts } from './script/script-runner';
 import { runGreeting } from './script/greeting.script';
 import { strings } from '@/i18n/en';
@@ -26,6 +27,10 @@ export function CreateNewBotButton() {
     // back to localStorage automatically — no explicit removeItem needed.
     useBuilderStore.getState().resetAll();
     useCypheusStore.getState().resetAll();
+    // Drop the "Based on …" header badge — the user is starting fresh,
+    // there's no longer a source template to reference. Per plan §11 D3:
+    // template tracking persists until an explicit reset like this.
+    useTemplateTrackingStore.getState().clearApplied();
     setOpen(false);
     // Restart greeting flow.
     void runGreeting();
