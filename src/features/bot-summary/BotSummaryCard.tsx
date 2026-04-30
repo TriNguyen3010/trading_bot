@@ -74,8 +74,9 @@ export function BotSummaryCard() {
     <section
       aria-label={strings.botSummary.title}
       className={cn(
-        'mx-auto mt-8 w-full max-w-[var(--layout-step-list)]',
-        'rounded-xl border border-brand/15 bg-surface',
+        // Sizing is controlled by the parent (BotBuilderCanvas grid). We
+        // only own the chrome here — border, surface bg, transitions.
+        'w-full rounded-xl border border-brand/15 bg-surface',
         'transition-colors duration-fast',
       )}
     >

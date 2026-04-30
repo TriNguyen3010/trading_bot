@@ -22,6 +22,8 @@ import {
 } from './steps/CloseMethodStep';
 import { useBuilderStore } from './store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
+import { configuredPhaseCount } from '@/lib/phase-helpers';
+import { cn } from '@/lib/utils';
 import { strings } from '@/i18n/en';
 import type { StepId } from '@/types/builder.types';
 
@@ -81,6 +83,10 @@ export function BotBuilderCanvas() {
   const closeCypheusDrawer = useCypheusStore((s) => s.closeCypheusDrawer);
   const setPanelTab = useCypheusStore((s) => s.setPanelTab);
   const cypheusActiveStepId = useCypheusStore((s) => s.cypheusActiveStepId);
+  // Full state read used to decide the canvas layout — `configuredPhaseCount`
+  // recomputes whenever stepStatus changes so the layout flips between
+  // single-column (pristine) and 2-column (configured) automatically.
+  const builderState = useBuilderStore();
 
   // Same scroll-into-view pattern as the legacy StepList — keeps the
   // active card visible above the dock and below the header.
@@ -164,51 +170,85 @@ export function BotBuilderCanvas() {
     />
   );
 
+  // 2-column layout when at least one phase is configured: BotSummary
+  // on the LEFT, phase cards on the RIGHT — user reads the prose while
+  // glancing at the cards (per user request 2026-04-30). Pristine state
+  // collapses back to a single centred card column so we don't reserve
+  // an empty column.
+  const showSummaryBeside = configuredPhaseCount(builderState) > 0;
+
+  // Phase cards block — extracted so we can render it inside either
+  // the single-column or 2-column wrapper without duplicating JSX.
+  const phaseCardsBlock = (
+    <ol className="space-y-0">
+      {/* Phase 1 — Bot Basics */}
+      <li
+        ref={(el) => {
+          cardRefs.current['bot-basics'] = el;
+        }}
+        className="group flex flex-col"
+        style={{
+          scrollMarginTop: 'calc(var(--layout-header) + 0.5rem)',
+          scrollMarginBottom: 'calc(var(--dock-height, 0px) + 0.5rem)',
+        }}
+      >
+        <StepCard
+          stepId="bot-config"
+          index={1}
+          icon={Sliders}
+          title={strings.phase.botBasics.title}
+        />
+        {/* Connector between Phase 1 and Phase 2 */}
+        <StepConnector fromStep="bot-config" toStep="entry-strategy" />
+      </li>
+
+      {/* Phase 2 — Strategy (composite) */}
+      <li
+        ref={(el) => {
+          cardRefs.current['strategy'] = el;
+        }}
+        className="group flex flex-col gap-3"
+        style={{
+          scrollMarginTop: 'calc(var(--layout-header) + 0.5rem)',
+          scrollMarginBottom: 'calc(var(--dock-height, 0px) + 0.5rem)',
+        }}
+      >
+        <StrategyCard />
+        <AddStrategyButton />
+      </li>
+    </ol>
+  );
+
   return (
-    <div className="mx-auto flex w-full max-w-[var(--layout-step-list)] flex-col">
-      <ol className="space-y-0">
-        {/* Phase 1 — Bot Basics */}
-        <li
-          ref={(el) => {
-            cardRefs.current['bot-basics'] = el;
-          }}
-          className="group flex flex-col"
-          style={{
-            scrollMarginTop: 'calc(var(--layout-header) + 0.5rem)',
-            scrollMarginBottom: 'calc(var(--dock-height, 0px) + 0.5rem)',
-          }}
+    <div
+      className={cn(
+        'mx-auto w-full',
+        showSummaryBeside
+          ? // Two-column: summary on the LEFT, phase cards on the RIGHT.
+            // Phase cards keep their fixed step-list width so their visual
+            // identity is unchanged; summary takes whatever's left up to
+            // ~480px. Stacks vertically below the `lg` breakpoint so on
+            // narrower viewports cards remain readable.
+            'max-w-[1080px] grid grid-cols-1 gap-6 items-start lg:grid-cols-[minmax(280px,480px)_var(--layout-step-list)]'
+          : // Single column centred — current behaviour for pristine state.
+            'flex flex-col max-w-[var(--layout-step-list)]',
+      )}
+    >
+      {showSummaryBeside && (
+        <aside
+          aria-label="Bot summary sidebar"
+          // Sticky so the summary stays visible while the user scrolls
+          // through the (potentially tall) phase column on the right.
+          // Only sticks at lg+ since below that we stack vertically.
+          className="lg:sticky lg:top-[calc(var(--layout-header)+1rem)]"
         >
-          <StepCard
-            stepId="bot-config"
-            index={1}
-            icon={Sliders}
-            title={strings.phase.botBasics.title}
-          />
-          {/* Connector between Phase 1 and Phase 2 */}
-          <StepConnector fromStep="bot-config" toStep="entry-strategy" />
-        </li>
+          <BotSummaryCard />
+        </aside>
+      )}
 
-        {/* Phase 2 — Strategy (composite) */}
-        <li
-          ref={(el) => {
-            cardRefs.current['strategy'] = el;
-          }}
-          className="group flex flex-col gap-3"
-          style={{
-            scrollMarginTop: 'calc(var(--layout-header) + 0.5rem)',
-            scrollMarginBottom: 'calc(var(--dock-height, 0px) + 0.5rem)',
-          }}
-        >
-          <StrategyCard />
-          <AddStrategyButton />
-        </li>
-      </ol>
-
-      {/* Read-only summary widget — appears once at least one phase is
-       * configured (renders nothing in pristine state). Translates the
-       * live builder state into plain English so users can sanity-check
-       * what they've built before hitting Export. */}
-      <BotSummaryCard />
+      <div>
+        {phaseCardsBlock}
+      </div>
 
       <StepDrawer
         contentByStep={CONTENT_BY_STEP}
