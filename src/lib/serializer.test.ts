@@ -1,6 +1,11 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
-import { buildBundle, buildUnifiedPayload, deserializeBundle } from './serializer';
+import {
+  buildBundle,
+  buildUnifiedPayload,
+  deserializeBundle,
+  deserializeUnifiedPayload,
+} from './serializer';
 import { bundleSchema } from '@/schemas/bundle.schema';
 import { unifiedBotStrategyCreateSchema } from '@/schemas/unified-bot-strategy.schema';
 import { makeIndicator } from '@/features/indicators/indicator-registry';
@@ -140,5 +145,82 @@ describe('serializer', () => {
     expect(restored.directionForm.direction).toBe('long');
     expect(restored.closeMethod.type).toBe('tp_sl');
     expect(restored.closeMethod.tpLevels).toHaveLength(2);
+  });
+
+  it('round-trips a unified payload through deserializeUnifiedPayload', () => {
+    applyBollingerLong();
+    useBuilderStore.getState().patchDirection({ direction: 'long' });
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    // Stringify+parse to mimic export → file → import (verifies the
+    // FE-only fields survive the JSON encoding round-trip).
+    const wire = JSON.parse(JSON.stringify(payload));
+    const restored = deserializeUnifiedPayload(wire);
+
+    expect(restored.botName).toBe('Bollinger Breakout');
+    expect(restored.botConfig.pair).toBe('BTC-USDC');
+    expect(restored.botConfig.timeframe).toBe('5m');
+    expect(restored.botConfig.leverage).toBe(20);
+    expect(restored.botConfig.tradingMode).toBe('dry-run');
+    expect(restored.botConfig.marketType).toBe('futures');
+    expect(restored.directionForm.direction).toBe('long');
+    expect(restored.directionForm.orderType).toBe('market');
+    expect(restored.closeMethod.type).toBe('tp_sl');
+    expect(restored.closeMethod.tpLevels).toEqual([
+      { profit: 5, amount: 50 },
+      { profit: 10, amount: 25 },
+    ]);
+    expect(restored.closeMethod.slEnabled).toBe(true);
+    expect(restored.closeMethod.slValue).toBeCloseTo(-3, 5);
+    expect(restored.strategy.indicators).toHaveLength(1);
+    expect(restored.strategy.entryConditions.conditions).toHaveLength(1);
+  });
+
+  it('preserves limit order details across unified round-trip', () => {
+    applyBollingerLong();
+    useBuilderStore.getState().patchDirection({
+      direction: 'long',
+      orderType: 'limit',
+      limitOffsetPct: 0.25,
+    });
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    const wire = JSON.parse(JSON.stringify(payload));
+    const restored = deserializeUnifiedPayload(wire);
+
+    expect(restored.directionForm.orderType).toBe('limit');
+    expect(restored.directionForm.limitOffsetPct).toBe(0.25);
+  });
+
+  it('flips entry_short and recovers can_short=true direction on unified round-trip', () => {
+    applyBollingerLong();
+    useBuilderStore.getState().patchDirection({ direction: 'short' });
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    const wire = JSON.parse(JSON.stringify(payload));
+    const restored = deserializeUnifiedPayload(wire);
+
+    expect(restored.directionForm.direction).toBe('short');
+    expect(restored.strategy.entryConditions.conditions).toHaveLength(1);
+  });
+
+  it('infers close_method_type=roi when the FE-only field is missing', () => {
+    applyBollingerLong();
+    useBuilderStore.getState().patchCloseMethod({
+      type: 'roi',
+      roiSteps: [
+        { minutes: 0, roi: 5 },
+        { minutes: 60, roi: 2 },
+      ],
+    });
+    useBuilderStore.getState().patchDirection({ direction: 'long' });
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    const wire = JSON.parse(JSON.stringify(payload));
+    // Drop the FE round-trip hint to simulate a non-FE source.
+    delete wire.close_method_type;
+    const restored = deserializeUnifiedPayload(wire);
+
+    expect(restored.closeMethod.type).toBe('roi');
+    expect(restored.closeMethod.roiSteps).toEqual([
+      { minutes: 0, roi: 5 },
+      { minutes: 60, roi: 2 },
+    ]);
   });
 });

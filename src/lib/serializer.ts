@@ -353,9 +353,32 @@ void indicatorOutputId;
 
 import type { UnifiedBotStrategyCreate } from '@/schemas/unified-bot-strategy.schema';
 
+/**
+ * UnifiedBundle = UnifiedBotStrategyCreate + 3 FE-only round-trip fields the
+ * builder needs to re-hydrate state after import. BE ignores them (they're
+ * stripped silently by the unified Zod schema since `z.object` defaults to
+ * stripping unknown keys).
+ *
+ * Why these 3?
+ *   - `order_type` / `limit_offset_pct`: live in DirectionForm. Not part of
+ *     the BE create payload — BE infers via `order_types.entry`.
+ *   - `close_method_type`: a 3-way FE switch (tp_sl | roi | indicator) that
+ *     gates which subset of `configurations` is meaningful.
+ *
+ * Without these the round-trip would lose data the user typed in.
+ */
+export interface UnifiedBundle extends UnifiedBotStrategyCreate {
+  /** FE-only — DirectionForm.orderType. */
+  order_type?: 'market' | 'limit';
+  /** FE-only — DirectionForm.limitOffsetPct (when orderType === 'limit'). */
+  limit_offset_pct?: number | null;
+  /** FE-only — CloseMethodForm.type. Inferred on import if missing. */
+  close_method_type?: 'tp_sl' | 'roi' | 'indicator';
+}
+
 export function buildUnifiedPayload(
   state: BuilderState,
-): UnifiedBotStrategyCreate {
+): UnifiedBundle {
   const bot = buildBotPayload(state);
   const strategy = buildStrategyPayload(state);
   const close = state.closeMethod;
@@ -431,5 +454,140 @@ export function buildUnifiedPayload(
 
     // Deprecated, but the BE accepts it. Emit `false` explicitly for clarity.
     ai_powered: false,
+
+    // ── FE-only round-trip fields ───────────────────────────────
+    // These survive export → import so the builder fully re-hydrates.
+    // Stripped silently by `unifiedBotStrategyCreateSchema.parse` when
+    // BE validates, so they don't pollute the BE create call.
+    order_type: state.directionForm.orderType,
+    limit_offset_pct:
+      state.directionForm.orderType === 'limit'
+        ? state.directionForm.limitOffsetPct
+        : null,
+    close_method_type: state.closeMethod.type,
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Deserializer (UnifiedBundle → BuilderState patch)                          */
+/*                                                                             */
+/*  Mirror of `deserializeBundle` for the unified shape. Once the legacy      */
+/*  Export/Import flow is removed, only this entry point will be used.        */
+/* -------------------------------------------------------------------------- */
+
+const EMPTY_DESERIALIZED_GROUP: ConditionGroup = {
+  logic: { type: 'AND', threshold: null },
+  conditions: [],
+};
+
+export function deserializeUnifiedPayload(
+  payload: UnifiedBundle,
+): DeserializedState {
+  const cfg = payload.configurations;
+  if (!cfg) {
+    throw new Error(
+      'Unified payload missing `configurations`. Cannot reconstruct strategy.',
+    );
+  }
+
+  const direction: Direction =
+    (cfg.signals.entry_short?.conditions.length ?? 0) > 0 ? 'short' : 'long';
+  const isShort = direction === 'short';
+
+  const entryGroup = isShort
+    ? cfg.signals.entry_short
+    : cfg.signals.entry_long;
+  const exitGroup = isShort
+    ? cfg.signals.exit_short
+    : cfg.signals.exit_long;
+
+  // Prefer the explicit FE round-trip field; fall back to inferring from
+  // the strategy configuration so files exported from a non-FE source
+  // (or a future FE that drops the field) still load reasonably.
+  const closeType: CloseMethodForm['type'] =
+    payload.close_method_type ??
+    (cfg.roi_steps.length > 0
+      ? 'roi'
+      : cfg.use_exit_signal
+      ? 'indicator'
+      : 'tp_sl');
+
+  const customExit = cfg.custom_exit;
+  const risk = cfg.risk;
+  const roiSteps = cfg.roi_steps.map((s) => ({
+    minutes: s.minutes,
+    roi: s.roi * 100,
+  }));
+  const tpLevels: TpLevel[] =
+    customExit?.partial_levels.map((l) => ({
+      profit: l.profit,
+      amount: l.amount,
+    })) ?? [];
+
+  const stakeAmount =
+    typeof payload.stake_amount === 'number' ? payload.stake_amount : 0;
+
+  return {
+    botName: payload.bot_name,
+    botConfig: {
+      pair: jsonPairToUi(payload.pair),
+      timeframe: payload.timeframe as BotConfigForm['timeframe'],
+      tradingMode: payload.dry_run ? 'dry-run' : 'live',
+      leverage: payload.leverage ?? 1,
+      exchange: payload.exchange_name,
+      marketType: (payload.trading_mode ??
+        'spot') as BotConfigForm['marketType'],
+      marginMode: (payload.margin_mode ??
+        'cross') as BotConfigForm['marginMode'],
+      maxOpenTrades: payload.max_open_trades,
+      stakeCurrency:
+        payload.stake_currency as BotConfigForm['stakeCurrency'],
+      stakeAmount,
+      dryRunWallet: payload.dry_run_wallet ?? 1000,
+    },
+    strategy: {
+      id: 'strategy-1',
+      name: payload.strategy_name,
+      candlestick: cfg.signals.candlestick.filter(
+        (c): c is 'open' | 'close' | 'high' | 'low' | 'volume' =>
+          ['open', 'close', 'high', 'low', 'volume'].includes(c),
+      ),
+      indicators: deserializeIndicators(
+        cfg.signals.indicators.map((i) => ({
+          name: i.name,
+          type: i.type,
+          parameters: (i.parameters ?? {}) as Record<
+            string,
+            number | string
+          >,
+        })),
+      ),
+      entryConditions: entryGroup
+        ? deserializeGroup(entryGroup)
+        : EMPTY_DESERIALIZED_GROUP,
+      startupCandleCount: cfg.startup_candle_count,
+      informativeTimeframes: cfg.informative_timeframes,
+    },
+    directionForm: {
+      direction,
+      orderType: payload.order_type ?? 'market',
+      limitOffsetPct: payload.limit_offset_pct ?? null,
+      slippageTolerance: 0.5,
+    },
+    closeMethod: {
+      type: closeType,
+      tpEnabled: customExit?.partial_enabled ?? false,
+      tpLevels,
+      slEnabled:
+        (risk?.stoploss ?? -0.4) > -0.4 || closeType === 'tp_sl',
+      slValue: (risk?.stoploss ?? -0.04) * 100,
+      trailingEnabled: risk?.trailing_stop ?? false,
+      trailingPositive: (risk?.trailing_stop_positive ?? 0) * 100,
+      trailingOffset: (risk?.trailing_stop_positive_offset ?? 0) * 100,
+      roiSteps,
+      exitConditions: exitGroup
+        ? deserializeGroup(exitGroup)
+        : EMPTY_DESERIALIZED_GROUP,
+    },
   };
 }
