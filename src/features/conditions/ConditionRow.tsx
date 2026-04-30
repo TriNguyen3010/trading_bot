@@ -1,4 +1,4 @@
-import { X, GripVertical } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Select } from '@/components/ui/select';
 import { NumberInput } from '@/components/ui/number-input';
 import { ToggleGroup } from '@/components/ui/toggle-group';
@@ -68,13 +68,19 @@ export function ConditionRow({
   return (
     <div
       className={cn(
-        'flex flex-col gap-2 rounded-lg border bg-surface p-3 sm:flex-row sm:items-center sm:gap-2',
+        'rounded-lg border bg-surface p-3',
         isInvalid ? 'border-danger/60' : 'border-border',
       )}
     >
-      <GripVertical className="hidden h-4 w-4 shrink-0 text-fg-muted sm:block" aria-hidden />
-      {!isFirst ? (
-        <div className="flex shrink-0">
+      {/* Row 1: glue (AND/OR or IF) · left side · operator
+       *
+       * The drawer is fixed at 480px so trying to fit all 6 controls in
+       * a single line overflowed (the `sm:flex-row` from the previous
+       * design assumed a wider container). 2-row layout fits cleanly
+       * and stays readable even with longer operator labels like
+       * "crosses above". */}
+      <div className="flex items-center gap-2">
+        {!isFirst ? (
           <ToggleGroup
             value={row.operator ?? 'AND'}
             onChange={(v) => onChange({ operator: v as 'AND' | 'OR' })}
@@ -83,113 +89,120 @@ export function ConditionRow({
               { value: 'OR', label: 'OR' },
             ]}
           />
-        </div>
-      ) : (
-        <span className="hidden w-[68px] shrink-0 text-center text-xs uppercase tracking-wide text-fg-muted sm:block">
-          IF
-        </span>
-      )}
-      <Select
-        aria-label="Left side"
-        value={row.left}
-        onChange={(e) => onChange({ left: e.target.value })}
-        className="sm:flex-1"
-      >
-        {leftOptions.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </Select>
-      <Select
-        aria-label="Operator"
-        value={row.op}
-        onChange={(e) => {
-          const newOp = e.target.value as ConditionOp;
-          const meta = ALL_OPS.find((o) => o.value === newOp);
-          if (meta?.rightType === 'none') {
-            onChange({
-              op: newOp,
-              right_type: 'none',
-              right_number: null,
-              right_indicator: null,
-            });
-          } else {
-            onChange({ op: newOp });
-          }
-        }}
-        className="sm:w-44"
-      >
-        {ALL_OPS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </Select>
-      {needsRightValue ? (
-        <div className="flex flex-1 items-center gap-2 sm:flex-[1.4]">
-          <Select
-            aria-label="Right type"
-            value={row.right_type === 'none' ? 'number' : row.right_type}
-            onChange={(e) => {
-              const t = e.target.value as 'number' | 'indicator';
-              onChange({
-                right_type: t,
-                right_number: t === 'number' ? (row.right_number ?? 0) : null,
-                right_indicator:
-                  t === 'indicator'
-                    ? row.right_indicator ?? indicatorChoices[0] ?? null
-                    : null,
-              });
-            }}
-            className="w-32"
-          >
-            <option value="number">Number</option>
-            <option value="indicator" disabled={indicatorChoices.length === 0}>
-              Indicator
+        ) : (
+          <span className="w-12 shrink-0 text-center text-xs font-semibold uppercase tracking-wide text-fg-muted">
+            IF
+          </span>
+        )}
+        <Select
+          aria-label="Left side"
+          value={row.left}
+          onChange={(e) => onChange({ left: e.target.value })}
+          className="min-w-0 flex-1"
+        >
+          {leftOptions.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
             </option>
-          </Select>
-          {row.right_type === 'indicator' ? (
+          ))}
+        </Select>
+        <Select
+          aria-label="Operator"
+          value={row.op}
+          onChange={(e) => {
+            const newOp = e.target.value as ConditionOp;
+            const meta = ALL_OPS.find((o) => o.value === newOp);
+            if (meta?.rightType === 'none') {
+              onChange({
+                op: newOp,
+                right_type: 'none',
+                right_number: null,
+                right_indicator: null,
+              });
+            } else {
+              onChange({ op: newOp });
+            }
+          }}
+          className="w-36 shrink-0"
+        >
+          {ALL_OPS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      {/* Row 2: right type · right value · remove
+       *
+       * Indented to visually align under the left dropdown above (skip
+       * the AND/OR/IF glue width). Helps the eye read "X op Y". */}
+      <div className="mt-2 flex items-center gap-2 pl-12">
+        {needsRightValue ? (
+          <>
             <Select
-              aria-label="Right indicator"
-              value={row.right_indicator ?? ''}
-              onChange={(e) => onChange({ right_indicator: e.target.value })}
-              className="flex-1"
+              aria-label="Right type"
+              value={row.right_type === 'none' ? 'number' : row.right_type}
+              onChange={(e) => {
+                const t = e.target.value as 'number' | 'indicator';
+                onChange({
+                  right_type: t,
+                  right_number: t === 'number' ? (row.right_number ?? 0) : null,
+                  right_indicator:
+                    t === 'indicator'
+                      ? row.right_indicator ?? indicatorChoices[0] ?? null
+                      : null,
+                });
+              }}
+              className="w-28 shrink-0"
             >
-              {indicatorChoices.length === 0 ? (
-                <option value="">—</option>
-              ) : (
-                indicatorChoices.map((id) => (
-                  <option key={id} value={id}>
-                    {id}
-                  </option>
-                ))
-              )}
+              <option value="number">Number</option>
+              <option value="indicator" disabled={indicatorChoices.length === 0}>
+                Indicator
+              </option>
             </Select>
-          ) : (
-            <NumberInput
-              aria-label="Right number"
-              value={row.right_number}
-              onValueChange={(v) => onChange({ right_number: v })}
-              step={0.1}
-              className="flex-1"
-              aria-invalid={row.right_number === null}
-            />
-          )}
-        </div>
-      ) : (
-        <span className="text-xs italic text-fg-muted sm:flex-[1.4]">
-          (no right value)
-        </span>
-      )}
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label="Remove condition"
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bearish/10 hover:text-bearish focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-      >
-        <X className="h-4 w-4" />
-      </button>
+            {row.right_type === 'indicator' ? (
+              <Select
+                aria-label="Right indicator"
+                value={row.right_indicator ?? ''}
+                onChange={(e) => onChange({ right_indicator: e.target.value })}
+                className="min-w-0 flex-1"
+              >
+                {indicatorChoices.length === 0 ? (
+                  <option value="">—</option>
+                ) : (
+                  indicatorChoices.map((id) => (
+                    <option key={id} value={id}>
+                      {id}
+                    </option>
+                  ))
+                )}
+              </Select>
+            ) : (
+              <NumberInput
+                aria-label="Right number"
+                value={row.right_number}
+                onValueChange={(v) => onChange({ right_number: v })}
+                step={0.1}
+                className="min-w-0 flex-1"
+                aria-invalid={row.right_number === null}
+              />
+            )}
+          </>
+        ) : (
+          <span className="flex-1 text-xs italic text-fg-muted">
+            (no right value)
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label="Remove condition"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bearish/10 hover:text-bearish focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }
