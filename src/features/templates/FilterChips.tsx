@@ -7,7 +7,7 @@ import type {
   TemplateDifficulty,
   TemplateRisk,
 } from '@/templates';
-import type { TemplateFilter } from './filter';
+import { computeDimensionCounts, type TemplateFilter } from './filter';
 
 export interface FilterChipsProps {
   filter: TemplateFilter;
@@ -49,6 +49,12 @@ function uniqueTags(templates: readonly BotTemplate[]): string[] {
  *
  * Tags are derived from the catalog metadata at render time so adding a
  * new template automatically extends the tag row.
+ *
+ * GUIDED FILTERING (facet narrowing):
+ *   Pills that would zero the result when combined with the current
+ *   filter are rendered disabled (greyed out). The currently-selected
+ *   pill is never disabled — users always need a way to deselect. This
+ *   prevents the "user clicks a pill and gets 0 results" dead-end.
  */
 export function FilterChips({
   filter,
@@ -56,47 +62,66 @@ export function FilterChips({
   pool = BUILT_IN_TEMPLATES,
 }: FilterChipsProps) {
   const allTags = useMemo(() => uniqueTags(pool), [pool]);
+  const counts = useMemo(
+    () => computeDimensionCounts(pool, filter),
+    [pool, filter],
+  );
 
   const set = (patch: Partial<TemplateFilter>) => onChange({ ...filter, ...patch });
 
   return (
     <div className="space-y-3">
       <Row label={strings.templates.filter.difficulty}>
-        {DIFFICULTIES.map((d) => (
-          <Chip
-            key={d}
-            selected={filter.difficulty === d}
-            onClick={() =>
-              set({ difficulty: filter.difficulty === d ? undefined : d })
-            }
-          >
-            {TITLE_CASE[d]}
-          </Chip>
-        ))}
+        {DIFFICULTIES.map((d) => {
+          const isSelected = filter.difficulty === d;
+          const reachable = counts.difficulty[d] > 0;
+          return (
+            <Chip
+              key={d}
+              selected={isSelected}
+              disabled={!isSelected && !reachable}
+              onClick={() =>
+                set({ difficulty: isSelected ? undefined : d })
+              }
+            >
+              {TITLE_CASE[d]}
+            </Chip>
+          );
+        })}
       </Row>
 
       <Row label={strings.templates.filter.risk}>
-        {RISKS.map((r) => (
-          <Chip
-            key={r}
-            selected={filter.risk === r}
-            onClick={() => set({ risk: filter.risk === r ? undefined : r })}
-          >
-            {TITLE_CASE[r]}
-          </Chip>
-        ))}
+        {RISKS.map((r) => {
+          const isSelected = filter.risk === r;
+          const reachable = counts.risk[r] > 0;
+          return (
+            <Chip
+              key={r}
+              selected={isSelected}
+              disabled={!isSelected && !reachable}
+              onClick={() => set({ risk: isSelected ? undefined : r })}
+            >
+              {TITLE_CASE[r]}
+            </Chip>
+          );
+        })}
       </Row>
 
       <Row label={strings.templates.filter.tag}>
-        {allTags.map((tag) => (
-          <Chip
-            key={tag}
-            selected={filter.tag === tag}
-            onClick={() => set({ tag: filter.tag === tag ? undefined : tag })}
-          >
-            #{tag}
-          </Chip>
-        ))}
+        {allTags.map((tag) => {
+          const isSelected = filter.tag === tag;
+          const reachable = (counts.tag[tag] ?? 0) > 0;
+          return (
+            <Chip
+              key={tag}
+              selected={isSelected}
+              disabled={!isSelected && !reachable}
+              onClick={() => set({ tag: isSelected ? undefined : tag })}
+            >
+              #{tag}
+            </Chip>
+          );
+        })}
       </Row>
     </div>
   );
