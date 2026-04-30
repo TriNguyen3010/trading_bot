@@ -25,6 +25,7 @@ describe('JsonLiveView', () => {
 
   it('shows JSON pane after a step is configured', () => {
     act(() => {
+      useBuilderStore.getState().setBotName('My Bot');
       useBuilderStore.getState().patchBotConfig({
         pair: 'BTC-USDC',
         timeframe: '5m',
@@ -37,9 +38,10 @@ describe('JsonLiveView', () => {
     render(<JsonLiveView />);
     // Empty state should be gone
     expect(screen.queryByText(/Your bot's JSON will live here/i)).toBeNull();
-    // JSON tabs visible
-    expect(screen.getByText('bot.json')).toBeInTheDocument();
-    expect(screen.getByText('strategy.json')).toBeInTheDocument();
+    // Single unified pane: filename header visible, no more two-tab split.
+    expect(screen.getByText(/bot-strategy-my-bot\.json/)).toBeInTheDocument();
+    expect(screen.queryByText('bot.json')).toBeNull();
+    expect(screen.queryByText('strategy.json')).toBeNull();
     // Copy and Download available
     expect(screen.getByRole('button', { name: /copy/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /download/i })).toBeInTheDocument();
