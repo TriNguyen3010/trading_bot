@@ -31,12 +31,10 @@ const pillClassByStatus: Record<ProgressStepStatus, string> = {
 
 /**
  * Compact pill button for each phase in the SetupProgress widget. Click
- * routes the user into the matching drawer (Bot Basics → tabs drawer,
- * Strategy → composite drawer). Renamed from StepProgressPill for the
- * 2-phase UI; the file name is kept for import-stability and will be
- * renamed in PR-4 cleanup.
+ * routes the user into the matching drawer (Bot Basics → legacy tabs
+ * drawer, Strategy → composite drawer).
  */
-export function StepProgressPill({
+export function PhaseProgressPill({
   phaseId,
   shortLabel,
   status,

@@ -6,7 +6,12 @@
 >
 > Reframe: "User chỉ thấy 2 bước, internally vẫn 4 stepStatus."
 >
-> **Status**: Plan (xác nhận 2026-04-30). Decisions D1–D3 đã confirm. Bắt đầu PR-1.
+> **Status**: ✅ **Implemented** (2026-04-30). Decisions D1–D3 confirmed.
+> Branch `feat/2-phase-ui` (4 PRs sequential):
+> - **PR-1** `8c2d3e6` — phase-helpers foundation + 22 tests
+> - **PR-2** `89edf3c` — UI components (BotBuilderCanvas, StrategyCard, StrategyDrawer*)
+> - **PR-3** `362c5bc` — phase-aware widgets + 2-nhịp magic build
+> - **PR-4** `[this commit]` — cleanup (StepList delete, Pill rename, dead-code audit)
 
 ---
 
@@ -353,36 +358,40 @@ Pinned highlight: khi pin `entry-strategy` thì StrategyCard highlight (D3 mappi
 
 ## 7 · Implementation phases
 
-### PR-1 · Phase-helpers + tests (FOUNDATION)
-- `src/lib/phase-helpers.ts` (helpers)
-- `src/lib/phase-helpers.test.ts` (~15 case)
-- **No UI change**, no user-facing impact
-- **Effort**: 2h
+### PR-1 · Phase-helpers + tests (FOUNDATION) ✅ `8c2d3e6`
+- `src/lib/phase-helpers.ts` (5 helpers: stepIdToPhase, derivePhaseStatus,
+  isPhaseSetupComplete, configuredPhaseCount, PROGRESS_PHASES export)
+- `src/lib/phase-helpers.test.ts` (22 cases)
+- **No UI change**, foundation only.
 
-### PR-2 · UI components new (CORE)
-- `BotBuilderCanvas.tsx`
-- `StrategyCard.tsx`
-- `StrategyDrawer.tsx`
-- `StrategySection.tsx`
-- Update `BuilderPage.tsx`
-- Visual smoke: open Phase 2 drawer, fill, save → 3 stepStatus update
-- **Effort**: 5–7h
+### PR-2 · UI components new (CORE) ✅ `89edf3c`
+- `BotBuilderCanvas.tsx` — replaces StepList
+- `StrategyCard.tsx` — composite Phase 2 card
+- `StrategyDrawerContent.tsx` — 3 accordion sections + composite save
+- `StrategySection.tsx` — small accordion wrapper
+- `StepDrawer.tsx` — added `strategyCompositeContent` + `strategyHeader`
+  props for composite-mode dispatch
+- `BuilderPage.tsx` — swap `StepList` → `BotBuilderCanvas`
+- i18n: `strings.phase.*` + `strings.strategyDrawer.*`
 
-### PR-3 · SetupProgress + Cypheus animation
-- `progress.types.ts`: 4 entries → 2 entries
-- `SetupProgress.tsx`: derive from phase-helpers
-- `StepProgressPill.tsx`: 2 pill
-- `magic-build.script.ts`: 2 nhịp animation
-- **Effort**: 3h
+### PR-3 · SetupProgress + Cypheus animation ✅ `362c5bc`
+- `progress.types.ts`: PROGRESS_STEPS (4) → PROGRESS_PHASES (2)
+- `ProgressDots.tsx`: 2 dot, indexed by PhaseId
+- `SetupProgress.tsx`: phase-aware with configured-issue override
+- `CypheusDock.tsx`: 2 dot, per-phase BUILDING_TEXT, configuredPhaseCount
+- `magic-build.script.ts`: 2-nhịp animation (Phase 1 pin tabs drawer once,
+  Phase 2 pin composite drawer once for all 3 sub-step fills)
+- i18n: `progress.configured` "X / 2 phases configured"
 
-### PR-4 · Cleanup + tests + i18n
-- Remove `StepList.tsx`
-- Update existing test assertions (`StepCard text "Step 1"` → adapt)
-- i18n: "Bot Basics", "Strategy" strings
-- Visual final smoke
-- **Effort**: 2h
+### PR-4 · Cleanup ✅ `[this commit]`
+- Delete `src/features/bot-builder/StepList.tsx` (orphaned after PR-2)
+- Rename `StepProgressPill.tsx` → `PhaseProgressPill.tsx` (file + export)
+- Remove `void STRATEGY_SUB_STEPS;` placeholder import noise from
+  `BotBuilderCanvas.tsx`
+- Plan doc updated with PR commit hashes + status
 
-**Tổng**: ~12–14h, ~1.5 ngày focused work.
+**Tổng thực tế**: ~9h focused work (PR-1 2h, PR-2 5h, PR-3 1.5h thực tế
+nhờ reuse, PR-4 30min).
 
 ---
 

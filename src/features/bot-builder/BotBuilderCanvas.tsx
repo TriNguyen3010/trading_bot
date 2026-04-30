@@ -21,7 +21,6 @@ import {
 } from './steps/CloseMethodStep';
 import { useBuilderStore } from './store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
-import { STRATEGY_SUB_STEPS } from '@/lib/phase-helpers';
 import { strings } from '@/i18n/en';
 import type { StepId } from '@/types/builder.types';
 
@@ -221,7 +220,3 @@ export function BotBuilderCanvas() {
     </div>
   );
 }
-
-// Suppress unused-var noise on STRATEGY_SUB_STEPS (re-exported here for tests
-// and future imports — safe to remove if unused elsewhere).
-void STRATEGY_SUB_STEPS;

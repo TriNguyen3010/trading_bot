@@ -17,7 +17,7 @@ import { strings } from '@/i18n/en';
 import { cn } from '@/lib/utils';
 import type { StepId } from '@/types/builder.types';
 import { ProgressDots } from './ProgressDots';
-import { StepProgressPill } from './StepProgressPill';
+import { PhaseProgressPill } from './PhaseProgressPill';
 import {
   PROGRESS_PHASES,
   type ProgressMode,
@@ -173,7 +173,7 @@ export function SetupProgress() {
       {showStepPills && (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {PROGRESS_PHASES.map((phase) => (
-            <StepProgressPill
+            <PhaseProgressPill
               key={phase.id}
               phaseId={phase.id}
               shortLabel={phase.shortLabel}
