@@ -32,6 +32,10 @@ import {
   typewriterMessage,
   typewriterValue,
 } from '@/features/cypheus/script/script-runner';
+import {
+  DRAWER_ANCHORS,
+  scrollDrawerTo,
+} from '@/features/bot-builder/components/drawer-scroll';
 import { useTemplateTrackingStore } from './store';
 import type {
   BotTemplate,
@@ -71,6 +75,11 @@ async function applyBotConfigAnimated(
   ctx: RunContext,
 ): Promise<void> {
   const builder = () => useBuilderStore.getState();
+  // Drawer-follow scroll: bring the Pair group into view before the
+  // typewriter starts. The 100ms delay gives the smooth-scroll
+  // animation time to begin so the user sees motion, not a teleport.
+  scrollDrawerTo(DRAWER_ANCHORS.botConfig.pair);
+  await sleep(100, ctx);
   // Type out `pair` so the user sees the most "human" field appear character
   // by character. Other bot-config fields are radio/select/numeric — snap-set
   // them with mild delays for a sense of work.
@@ -87,6 +96,10 @@ async function applyBotConfigAnimated(
   builder().patchBotConfig({ tradingMode: c.tradingMode });
   await sleep(300, ctx);
 
+  // Scroll to leverage before the next typewriter — Setup fields above
+  // are filled, leverage is what's about to change.
+  scrollDrawerTo(DRAWER_ANCHORS.botConfig.leverage);
+  await sleep(100, ctx);
   // leverage typewriter for drama (it's a small numeric value users tweak
   // a lot in real life)
   await typewriterValue(
@@ -100,6 +113,10 @@ async function applyBotConfigAnimated(
   );
   if (!isCurrent(ctx)) return;
   await sleep(200, ctx);
+  // Scroll to the Configure half (Exchange / Market type / Stake) —
+  // without this the snap-apply happens off-screen on a tall drawer.
+  scrollDrawerTo(DRAWER_ANCHORS.botConfig.exchange);
+  await sleep(100, ctx);
   // Remaining fields snap-applied — no UI advantage to typewriter.
   builder().patchBotConfig({
     exchange: c.exchange,
@@ -265,7 +282,10 @@ export async function runTemplateAnimation(
   const sn = script.phaseNarration?.strategy;
   await playNarration(sn?.pre, ctx);
 
-  // Entry conditions
+  // Entry conditions — scroll to the Entry section so the user sees
+  // candlestick chips + indicators stage in.
+  scrollDrawerTo(DRAWER_ANCHORS.strategy.entry);
+  await sleep(100, ctx);
   await playNarration(sn?.preEntry ?? 'Defining entry conditions…', ctx);
   await applyStrategyAnimated(template.state.strategy, ctx);
   if (!isCurrent(ctx)) return;
@@ -273,14 +293,17 @@ export async function runTemplateAnimation(
   if (!isCurrent(ctx)) return;
   await sleep(400, ctx);
 
-  // Direction
+  // Direction + Close method both live in the "Action" section — one
+  // scroll covers both. Subsequent close-method patches stay in view.
+  scrollDrawerTo(DRAWER_ANCHORS.strategy.action);
+  await sleep(100, ctx);
   await playNarration(sn?.preDirection, ctx);
   await applyDirectionAnimated(template.state.directionForm, ctx);
   if (!isCurrent(ctx)) return;
   await playNarration(sn?.postDirection, ctx);
   await sleep(300, ctx);
 
-  // Close method
+  // Close method — same Action section, no re-scroll needed.
   await playNarration(sn?.preClose, ctx);
   await applyCloseMethodAnimated(template.state.closeMethod, ctx);
   if (!isCurrent(ctx)) return;

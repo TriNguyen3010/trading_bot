@@ -51,21 +51,28 @@ export function StrategyDrawerContent({
     <>
       <SheetBody>
         <div className="space-y-0">
-          <StrategySection
-            title={strings.strategyDrawer.sections.entry}
-            defaultOpen
-          >
-            <EntryStrategySetup />
-          </StrategySection>
+          {/* `data-cy-anchor` lets the Cypheus animation engine scroll
+           *  the drawer body to whichever phase is currently being
+           *  filled. See `components/drawer-scroll.ts`. */}
+          <div data-cy-anchor="strategy:entry">
+            <StrategySection
+              title={strings.strategyDrawer.sections.entry}
+              defaultOpen
+            >
+              <EntryStrategySetup />
+            </StrategySection>
+          </div>
 
-          <StrategySection
-            title={strings.strategyDrawer.sections.action}
-            defaultOpen
-          >
-            <DirectionSetup />
-            <CloseMethodSetup />
-            <CloseMethodConfigure />
-          </StrategySection>
+          <div data-cy-anchor="strategy:action">
+            <StrategySection
+              title={strings.strategyDrawer.sections.action}
+              defaultOpen
+            >
+              <DirectionSetup />
+              <CloseMethodSetup />
+              <CloseMethodConfigure />
+            </StrategySection>
+          </div>
 
           <StrategySection
             title={strings.strategyDrawer.sections.advanced}

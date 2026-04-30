@@ -42,24 +42,29 @@ export function BotConfigSetup() {
 
   return (
     <>
-      <FormField
-        label="Pair"
-        required
-        hint="Format: BASE-QUOTE (e.g. BTC-USDC). CSV converter to Freqtrade format arrives later."
-      >
-        <Input
-          list="pair-suggestions"
-          placeholder="BTC-USDC"
-          value={config.pair}
-          onChange={(e) => patch({ pair: e.target.value.toUpperCase() })}
-          autoFocus
-        />
-        <datalist id="pair-suggestions">
-          {PAIR_SUGGESTIONS.map((p) => (
-            <option key={p} value={p} />
-          ))}
-        </datalist>
-      </FormField>
+      {/* `data-cy-anchor` markers let the Cypheus animation engine
+       *  scroll the drawer body to the section it's currently filling.
+       *  See `components/drawer-scroll.ts`. */}
+      <div data-cy-anchor="bot-config:pair">
+        <FormField
+          label="Pair"
+          required
+          hint="Format: BASE-QUOTE (e.g. BTC-USDC). CSV converter to Freqtrade format arrives later."
+        >
+          <Input
+            list="pair-suggestions"
+            placeholder="BTC-USDC"
+            value={config.pair}
+            onChange={(e) => patch({ pair: e.target.value.toUpperCase() })}
+            autoFocus
+          />
+          <datalist id="pair-suggestions">
+            {PAIR_SUGGESTIONS.map((p) => (
+              <option key={p} value={p} />
+            ))}
+          </datalist>
+        </FormField>
+      </div>
 
       <FormField label="Timeframe" required>
         <Select
@@ -96,21 +101,23 @@ export function BotConfigSetup() {
         />
       </FormField>
 
-      <FormField
-        label="Leverage"
-        hint="Multiplier applied to your stake. ≥10× will warn at export."
-      >
-        <NumberInput
-          value={config.leverage}
-          onValueChange={(v) =>
-            patch({ leverage: Math.max(1, Math.min(125, v ?? 1)) })
-          }
-          min={1}
-          max={125}
-          step={1}
-          suffix="x"
-        />
-      </FormField>
+      <div data-cy-anchor="bot-config:leverage">
+        <FormField
+          label="Leverage"
+          hint="Multiplier applied to your stake. ≥10× will warn at export."
+        >
+          <NumberInput
+            value={config.leverage}
+            onValueChange={(v) =>
+              patch({ leverage: Math.max(1, Math.min(125, v ?? 1)) })
+            }
+            min={1}
+            max={125}
+            step={1}
+            suffix="x"
+          />
+        </FormField>
+      </div>
 
       <Dialog open={pendingLive} onOpenChange={setPendingLive}>
         <DialogContent>
@@ -150,18 +157,24 @@ export function BotConfigConfigure() {
 
   return (
     <>
-      <FormField label="Exchange" required>
-        <Select
-          value={config.exchange}
-          onChange={(e) => patch({ exchange: e.target.value })}
-        >
-          {EXCHANGES.map((ex) => (
-            <option key={ex.value} value={ex.value}>
-              {ex.label}
-            </option>
-          ))}
-        </Select>
-      </FormField>
+      {/* Anchor for Cypheus animation — see drawer-scroll.ts. The
+       *  Configure half of bot-config sits below the fold once Setup
+       *  fields are filled, so we scroll to here right before snapping
+       *  exchange/marketType/stake during template animation. */}
+      <div data-cy-anchor="bot-config:exchange">
+        <FormField label="Exchange" required>
+          <Select
+            value={config.exchange}
+            onChange={(e) => patch({ exchange: e.target.value })}
+          >
+            {EXCHANGES.map((ex) => (
+              <option key={ex.value} value={ex.value}>
+                {ex.label}
+              </option>
+            ))}
+          </Select>
+        </FormField>
+      </div>
 
       <FormField label="Market type" required>
         <ToggleGroup<MarketType>
