@@ -16,7 +16,8 @@ export const strings = {
     secondsAgo: (s: number) => `${s}s ago`,
   },
   cypheus: {
-    tabLabel: 'Cypheus',
+    panelTitle: 'Cypheus',
+    tabLabel: 'Chat',
     jsonTabLabel: 'JSON',
     inputPlaceholder: "Tell Cypheus what you're building...",
     send: 'Send',

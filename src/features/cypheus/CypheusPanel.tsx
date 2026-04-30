@@ -103,14 +103,22 @@ export function CypheusPanel() {
         style={{ width: 'var(--layout-left-panel)' }}
         aria-label="Cypheus assistant panel"
       >
-        {/* Header: collapse / expand chevron. Anchored top-right when
-         * expanded, top-centre when collapsed (only the icon shows). */}
+        {/* Header: panel title + collapse / expand chevron. When expanded
+         * the title sits left and the chevron right; collapsed mode hides
+         * the title and centres the chevron in the 48px strip. */}
         <header
           className={cn(
             'flex items-center border-b border-border-subtle',
-            collapsed ? 'justify-center px-1.5 py-2' : 'justify-end px-3 py-2',
+            collapsed
+              ? 'justify-center px-1.5 py-2'
+              : 'justify-between gap-2 px-3 py-2',
           )}
         >
+          {!collapsed && (
+            <h2 className="truncate text-xs font-semibold uppercase tracking-wider text-fg-muted">
+              {strings.cypheus.panelTitle}
+            </h2>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -123,7 +131,7 @@ export function CypheusPanel() {
                 }
                 aria-expanded={!collapsed}
                 className={cn(
-                  'inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-muted',
+                  'inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-fg-muted',
                   'transition-colors duration-fast hover:bg-surface-hover hover:text-fg',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
                 )}
