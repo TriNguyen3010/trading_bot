@@ -5,6 +5,7 @@ import { StepConnector } from './components/StepConnector';
 import { StepDrawer, type StepContentMap } from './components/StepDrawer';
 import { StrategyCard } from './components/StrategyCard';
 import { StrategyDrawerContent } from './components/StrategyDrawerContent';
+import { BotConfigDrawerContent } from './components/BotConfigDrawerContent';
 import { AddStrategyButton } from './components/AddStrategyButton';
 import { BotSummaryCard } from '@/features/bot-summary/BotSummaryCard';
 import {
@@ -171,6 +172,23 @@ export function BotBuilderCanvas() {
     />
   );
 
+  /** Phase 1 composite Save: merge Setup + Configure into a single Save —
+   * mark the step configured and close the drawer. We intentionally do
+   * NOT auto-open Phase 2 here; the wizard flow's "Save & Next" was a
+   * legacy 4-step affordance. Users in the new 2-phase UI explicitly
+   * click the Strategy card when they want to edit Phase 2. */
+  const handleBotConfigCompositeSave = () => {
+    setStepStatus('bot-config', 'configured');
+    closeManualDrawer();
+  };
+
+  const botConfigCompositeContent: ReactNode = (
+    <BotConfigDrawerContent
+      onCancel={closeManualDrawer}
+      onSave={handleBotConfigCompositeSave}
+    />
+  );
+
   // 2-column layout when at least one phase is configured AND the user
   // hasn't dismissed the summary. Same canvas reflows automatically when
   // they toggle either condition — pristine state OR a dismissed
@@ -264,6 +282,11 @@ export function BotBuilderCanvas() {
         strategyHeader={{
           title: strings.strategyDrawer.title,
           description: strings.strategyDrawer.description,
+        }}
+        botConfigCompositeContent={botConfigCompositeContent}
+        botConfigHeader={{
+          title: strings.botConfigDrawer.title,
+          description: strings.botConfigDrawer.description,
         }}
       />
     </div>

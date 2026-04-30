@@ -66,6 +66,13 @@ export interface StepDrawerProps {
    * `strategyCompositeContent` is rendered we don't want "Step 2: Entry
    * Strategy" — we want "Strategy" with the phase description. */
   strategyHeader?: { title: string; description: string };
+  /** Composite body + footer for the Bot Basics phase (`bot-config`). When
+   * provided, replaces the legacy Setup/Configure tabs with a single
+   * scrolling form — matches the Strategy phase pattern. */
+  botConfigCompositeContent?: ReactNode;
+  /** Header copy override for the Bot Basics composite drawer. Drops the
+   * "Step 1: " prefix that was meaningful only in the wizard flow. */
+  botConfigHeader?: { title: string; description: string };
 }
 
 const TOTAL_STEPS = 4;
@@ -91,6 +98,8 @@ export function StepDrawer({
   onSummaryReviewJson,
   strategyCompositeContent,
   strategyHeader,
+  botConfigCompositeContent,
+  botConfigHeader,
 }: StepDrawerProps) {
   const openStep = useBuilderStore((s) => s.openStep);
   const drawerTab = useBuilderStore((s) => s.drawerTab);
@@ -133,6 +142,18 @@ export function StepDrawer({
     Boolean(strategyCompositeContent) &&
     activeStepId !== null &&
     STRATEGY_SUB_STEPS.includes(activeStepId);
+
+  // Composite Bot Basics mode: same pattern as strategy composite, but
+  // for Phase 1 (`bot-config`). Replaces the Setup/Configure tabs with a
+  // single scrolling form. The legacy tabs path remains in the file as
+  // dead code for the moment; once we're confident we won't roll back,
+  // a follow-up PR can rip it out.
+  const isCompositeBotConfig =
+    effectiveMode !== 'cypheus-summary' &&
+    Boolean(botConfigCompositeContent) &&
+    activeStepId === 'bot-config';
+
+  const isComposite = isCompositeStrategy || isCompositeBotConfig;
 
   const content = useMemo(() => {
     if (!activeStepId) return null;
@@ -217,15 +238,19 @@ export function StepDrawer({
                       ? strings.cypheus.magicBuild.summary.title
                       : isCompositeStrategy && strategyHeader
                         ? strategyHeader.title
-                        : isManual && content
-                          ? `${strings.drawer.stepLabel(content.index)}: ${content.title}`
-                          : (content?.title ?? '')}
+                        : isCompositeBotConfig && botConfigHeader
+                          ? botConfigHeader.title
+                          : isManual && content
+                            ? `${strings.drawer.stepLabel(content.index)}: ${content.title}`
+                            : (content?.title ?? '')}
                   </SheetTitle>
                   {effectiveMode !== 'cypheus-summary' && (
                     <SheetDescription>
                       {isCompositeStrategy && strategyHeader
                         ? strategyHeader.description
-                        : (content?.description ?? '')}
+                        : isCompositeBotConfig && botConfigHeader
+                          ? botConfigHeader.description
+                          : (content?.description ?? '')}
                       {isPinned && (
                         <span className="ml-2 text-fg-muted">
                           ·{' '}
@@ -237,10 +262,10 @@ export function StepDrawer({
                       )}
                     </SheetDescription>
                   )}
-                  {/* Setup/Configure stepper only applies to the legacy
-                      tabbed mode (Phase 1 Bot Basics). Composite Strategy
-                      drops it per plan D1. */}
-                  {isManual && content && !isCompositeStrategy && (
+                  {/* Setup/Configure stepper only renders in the legacy
+                      tabbed mode. Both Phase 1 (composite bot-config) and
+                      Phase 2 (composite Strategy) drop it. */}
+                  {isManual && content && !isComposite && (
                     <DrawerProgressIndicator
                       activeTab={drawerTab}
                       setupComplete={setupComplete}
@@ -268,6 +293,14 @@ export function StepDrawer({
           // pinned footer; manual mode footer is owned by the composite.
           <>
             {strategyCompositeContent}
+            {isPinned && <CypheusPinnedFooter />}
+          </>
+        ) : isCompositeBotConfig ? (
+          // Composite Bot Basics body — supplied by parent via
+          // `botConfigCompositeContent`. Pinned mode keeps the Cypheus
+          // pinned footer; manual mode footer is owned by the composite.
+          <>
+            {botConfigCompositeContent}
             {isPinned && <CypheusPinnedFooter />}
           </>
         ) : (

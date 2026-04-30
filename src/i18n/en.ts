@@ -250,6 +250,14 @@ export const strings = {
     saveDisabledTooltip:
       'Fill the required fields in Entry conditions and Action to enable Save.',
   },
+  // Phase 1 composite drawer — same single-pane pattern as strategy.
+  // Header copy used when the drawer renders the merged Setup+Configure
+  // form for `bot-config`.
+  botConfigDrawer: {
+    title: 'Bot Basics',
+    description:
+      'Pick the market, timeframe, trading mode and stake — all in one place.',
+  },
   drawer: {
     setupTab: 'Setup',
     configureTab: 'Configure',

@@ -110,4 +110,36 @@ describe('StepDrawer integration', () => {
     expect(await screen.findByText('All set ✓')).toBeInTheDocument();
     expect(screen.getByText('Review JSON')).toBeInTheDocument();
   });
+
+  it('Phase 1 composite (bot-config): renders the merged body, no Setup/Configure tabs', async () => {
+    useBuilderStore.getState().patchBotConfig({
+      pair: 'BTC-USDC',
+      timeframe: '5m',
+      leverage: 1,
+    });
+    useBuilderStore.getState().setOpenStep('bot-config');
+    render(
+      <StepDrawer
+        {...baseProps}
+        botConfigCompositeContent={
+          <div data-testid="composite-bot-config">
+            <button>Cancel</button>
+            <button>Save</button>
+          </div>
+        }
+        botConfigHeader={{ title: 'Bot Basics', description: 'merged' }}
+      />,
+    );
+    // Composite body shown.
+    expect(await screen.findByTestId('composite-bot-config')).toBeInTheDocument();
+    // Title without the "Step 1: " prefix.
+    expect(screen.getByText(/^Bot Basics$/)).toBeInTheDocument();
+    expect(screen.queryByText(/^Step 1:/)).toBeNull();
+    // Legacy Setup/Configure tabs gone.
+    expect(screen.queryByRole('tab', { name: /^Setup$/ })).toBeNull();
+    expect(screen.queryByRole('tab', { name: /^Configure$/ })).toBeNull();
+    // Legacy wizard footer (Continue / Skip & Save) gone.
+    expect(screen.queryByRole('button', { name: /continue/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /skip & save/i })).toBeNull();
+  });
 });
