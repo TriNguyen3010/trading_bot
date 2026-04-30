@@ -5,90 +5,87 @@ import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { useExportDialogStore } from '@/features/export-import/export-dialog.store';
 import { validateBuilder, type BuilderIssue } from '@/lib/validator';
+import {
+  PHASE_IDS,
+  STRATEGY_SUB_STEPS,
+  configuredPhaseCount,
+  derivePhaseStatus,
+  stepIdToPhase,
+  type PhaseId,
+} from '@/lib/phase-helpers';
 import { strings } from '@/i18n/en';
 import { cn } from '@/lib/utils';
 import type { StepId } from '@/types/builder.types';
 import { ProgressDots } from './ProgressDots';
 import { StepProgressPill } from './StepProgressPill';
 import {
-  PROGRESS_STEPS,
+  PROGRESS_PHASES,
   type ProgressMode,
   type ProgressStepStatus,
 } from './progress.types';
 
-const STEP_IDS: StepId[] = PROGRESS_STEPS.map((s) => s.id);
-
-function deriveVisualStatus(
-  id: StepId,
-  rawStatus: ProgressStepStatus,
-  openStep: StepId | null,
-  hasIssue: boolean,
-): ProgressStepStatus {
-  if (rawStatus === 'configured' && hasIssue) return 'error';
-  if (openStep === id && rawStatus === 'pending') return 'editing';
-  return rawStatus;
+/** Map a phase id back to the stepId we should setOpenStep() with so the
+ * drawer routes correctly. For the Strategy composite phase, we open
+ * 'entry-strategy' which the StepDrawer dispatches into composite mode
+ * (see BotBuilderCanvas wiring in PR-2). */
+function openStepIdFor(phase: PhaseId): StepId {
+  return phase === 'bot-basics' ? 'bot-config' : 'entry-strategy';
 }
 
 function deriveMode(
   configuredCount: number,
   issueCount: number,
 ): ProgressMode {
-  // Pristine: nothing configured yet — keep tone gentle, don't show
+  // Pristine: nothing configured yet — keep tone gentle, don't surface
   // validator issues that the user expects to fill in next.
   if (configuredCount === 0) return 'empty';
-  if (configuredCount < 4) return 'in_progress';
-  // All 4 configured.
+  // configuredCount can only be 0/1/2 in the 2-phase model.
+  if (configuredCount < 2) return 'in_progress';
   return issueCount === 0 ? 'ready' : 'error';
 }
 
 export function SetupProgress() {
-  const stepStatus = useBuilderStore((s) => s.stepStatus);
-  const openStep = useBuilderStore((s) => s.openStep);
   const setOpenStep = useBuilderStore((s) => s.setOpenStep);
   const setExportOpen = useExportDialogStore((s) => s.setOpen);
   const cypheusState = useCypheusStore((s) => s.state);
   const isBuilding = cypheusState === 'building';
 
-  // Re-derive issues whenever any builder field changes. We deliberately read
-  // the full state below so this memo invalidates on patches (zustand returns
-  // a new state object on each set).
+  // Read the full state so the validator memo invalidates on any patch.
   const builderState = useBuilderStore();
   const issues = useMemo<BuilderIssue[]>(
     () => validateBuilder(builderState),
     [builderState],
   );
 
-  const issuesByStep = useMemo(() => {
-    const map: Partial<Record<StepId, BuilderIssue[]>> = {};
-    for (const issue of issues) {
-      const list = map[issue.stepId] ?? [];
-      list.push(issue);
-      map[issue.stepId] = list;
-    }
-    return map;
-  }, [issues]);
-
-  const configuredCount = STEP_IDS.filter(
-    (id) => stepStatus[id] === 'configured',
-  ).length;
-
-  const visualStatusByStep = useMemo(() => {
-    const out = {} as Record<StepId, ProgressStepStatus>;
-    for (const id of STEP_IDS) {
-      out[id] = deriveVisualStatus(
-        id,
-        stepStatus[id],
-        openStep,
-        Boolean(issuesByStep[id]?.length),
+  // Per-phase visual status. derivePhaseStatus already handles the
+  // pending/editing/configured/error priority; we then layer a
+  // "configured + validator-issue → error" override per phase, mirroring
+  // StepCard / StrategyCard.
+  const visualStatusByPhase = useMemo<
+    Record<PhaseId, ProgressStepStatus>
+  >(() => {
+    const out = {} as Record<PhaseId, ProgressStepStatus>;
+    for (const phase of PHASE_IDS) {
+      const base = derivePhaseStatus(builderState, phase);
+      const subSteps: readonly StepId[] =
+        phase === 'bot-basics' ? ['bot-config'] : STRATEGY_SUB_STEPS;
+      const hasConfiguredIssue = issues.some(
+        (i) =>
+          subSteps.includes(i.stepId) &&
+          builderState.stepStatus[i.stepId] === 'configured',
       );
+      out[phase] = hasConfiguredIssue ? 'error' : base;
     }
     return out;
-  }, [stepStatus, openStep, issuesByStep]);
+  }, [builderState, issues]);
 
+  const configuredCount = configuredPhaseCount(builderState);
   const mode = deriveMode(configuredCount, issues.length);
   const showStepPills = mode === 'in_progress' || mode === 'error';
-  const firstErrorStep = issues[0]?.stepId ?? null;
-  const firstIssueMessage = issues[0]?.message ?? null;
+  const firstIssue = issues[0] ?? null;
+  const firstIssuePhase: PhaseId | null = firstIssue
+    ? stepIdToPhase(firstIssue.stepId)
+    : null;
 
   const labelText = (() => {
     switch (mode) {
@@ -116,6 +113,10 @@ export function SetupProgress() {
     (mode === 'empty' || mode === 'in_progress') && 'text-fg-secondary',
   );
 
+  const handlePillClick = (phase: PhaseId) => {
+    setOpenStep(openStepIdFor(phase));
+  };
+
   const cta = (() => {
     if (mode === 'ready') {
       return (
@@ -132,13 +133,13 @@ export function SetupProgress() {
         </Button>
       );
     }
-    if (mode === 'error' && firstErrorStep) {
+    if (mode === 'error' && firstIssuePhase) {
       return (
         <Button
           type="button"
           size="sm"
           variant="ghost"
-          onClick={() => setOpenStep(firstErrorStep)}
+          onClick={() => setOpenStep(openStepIdFor(firstIssuePhase))}
           className="text-brand hover:bg-brand-subtle"
         >
           {strings.cypheus.progress.fix}
@@ -157,11 +158,11 @@ export function SetupProgress() {
       )}
     >
       <div className="flex items-center gap-3">
-        <ProgressDots statusByStep={visualStatusByStep} />
+        <ProgressDots statusByPhase={visualStatusByPhase} />
         <span
           className={labelClass}
           title={
-            mode === 'error' && firstIssueMessage ? firstIssueMessage : undefined
+            mode === 'error' && firstIssue ? firstIssue.message : undefined
           }
         >
           {labelText}
@@ -171,28 +172,26 @@ export function SetupProgress() {
 
       {showStepPills && (
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {PROGRESS_STEPS.map((step) => (
+          {PROGRESS_PHASES.map((phase) => (
             <StepProgressPill
-              key={step.id}
-              stepId={step.id}
-              shortLabel={step.shortLabel}
-              status={visualStatusByStep[step.id]}
-              onClick={setOpenStep}
+              key={phase.id}
+              phaseId={phase.id}
+              shortLabel={phase.shortLabel}
+              status={visualStatusByPhase[phase.id]}
+              onClick={handlePillClick}
             />
           ))}
         </div>
       )}
 
-      {mode === 'error' && firstIssueMessage && (
+      {mode === 'error' && firstIssue && firstIssuePhase && (
         <button
           type="button"
-          onClick={() =>
-            firstErrorStep ? setOpenStep(firstErrorStep) : undefined
-          }
+          onClick={() => setOpenStep(openStepIdFor(firstIssuePhase))}
           className="mt-1.5 block w-full truncate text-left text-2xs text-brand/80 hover:text-brand focus-visible:outline-none focus-visible:underline"
-          title={firstIssueMessage}
+          title={firstIssue.message}
         >
-          → {firstIssueMessage}
+          → {firstIssue.message}
         </button>
       )}
     </div>

@@ -73,19 +73,20 @@ describe('SetupProgress', () => {
     expect(screen.getByText(/Set up your bot to get started/i)).toBeInTheDocument();
     // No CTA, no pill row, no Export button.
     expect(screen.queryByRole('button', { name: /export bot/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /open bot step/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /open bot phase/i })).toBeNull();
   });
 
-  it('shows in-progress counter after partial config', () => {
+  it('shows in-progress counter after partial phase config', () => {
     fillValidBotConfig();
     useBuilderStore.getState().setStepStatus('bot-config', 'configured');
     render(<SetupProgress />);
-    expect(screen.getByText(/1 \/ 4 steps configured/i)).toBeInTheDocument();
+    // Phrase changed from "X / 4 steps" to "X / 2 phases" for the 2-phase UI.
+    expect(screen.getByText(/1 \/ 2 phases configured/i)).toBeInTheDocument();
     // Pills render in in-progress / error mode.
-    expect(screen.getByRole('button', { name: /open bot step/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /open bot phase/i })).toBeInTheDocument();
   });
 
-  it('renders ready state with Export CTA when all 4 configured and no issues', () => {
+  it('renders ready state with Export CTA when all phases configured and no issues', () => {
     fillValidBotConfig();
     fillValidEntryStrategy();
     fillValidDirection();
@@ -96,7 +97,7 @@ describe('SetupProgress', () => {
     expect(screen.getByText(/Ready to export/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /export bot/i })).toBeInTheDocument();
     // Pills hidden in ready state.
-    expect(screen.queryByRole('button', { name: /open entry step/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /open strategy phase/i })).toBeNull();
   });
 
   it('shows error state with Fix CTA when configured but validation fails', () => {
@@ -113,13 +114,29 @@ describe('SetupProgress', () => {
     expect(screen.queryByRole('button', { name: /export bot/i })).toBeNull();
   });
 
-  it('clicking a step pill calls setOpenStep with that step id', () => {
+  it('clicking a phase pill routes the drawer to the matching step', () => {
     fillValidBotConfig();
     useBuilderStore.getState().setStepStatus('bot-config', 'configured');
     render(<SetupProgress />);
 
-    fireEvent.click(screen.getByRole('button', { name: /open entry step/i }));
+    // Strategy phase pill → opens the composite drawer (routes via
+    // openStep='entry-strategy', the canonical sub-step that the
+    // StepDrawer dispatches into composite mode for).
+    fireEvent.click(
+      screen.getByRole('button', { name: /open strategy phase/i }),
+    );
     expect(useBuilderStore.getState().openStep).toBe('entry-strategy');
+  });
+
+  it('clicking the Bot phase pill opens the bot-config drawer', () => {
+    fillValidBotConfig();
+    useBuilderStore.getState().setStepStatus('bot-config', 'configured');
+    render(<SetupProgress />);
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /open bot phase/i }),
+    );
+    expect(useBuilderStore.getState().openStep).toBe('bot-config');
   });
 
   it('clicking Export CTA opens shared export dialog store', () => {
@@ -149,7 +166,9 @@ describe('SetupProgress', () => {
   it('shows pills row in in_progress and error modes only', () => {
     // empty mode: no pills
     const { rerender, container } = render(<SetupProgress />);
-    expect(within(container).queryByRole('button', { name: /open bot step/i })).toBeNull();
+    expect(
+      within(container).queryByRole('button', { name: /open bot phase/i }),
+    ).toBeNull();
 
     // in_progress: pills shown
     act(() => {
@@ -157,7 +176,9 @@ describe('SetupProgress', () => {
       useBuilderStore.getState().setStepStatus('bot-config', 'configured');
     });
     rerender(<SetupProgress />);
-    expect(within(container).getByRole('button', { name: /open bot step/i })).toBeInTheDocument();
+    expect(
+      within(container).getByRole('button', { name: /open bot phase/i }),
+    ).toBeInTheDocument();
   });
 
   it('disables interactions when Cypheus is building', () => {

@@ -1,14 +1,14 @@
 import { AlertTriangle, Check, Circle, CircleDashed } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { StepId } from '@/types/builder.types';
+import type { PhaseId } from '@/lib/phase-helpers';
 import type { ProgressStepStatus } from './progress.types';
 
-export interface StepProgressPillProps {
-  stepId: StepId;
+export interface PhaseProgressPillProps {
+  phaseId: PhaseId;
   shortLabel: string;
   status: ProgressStepStatus;
-  onClick: (stepId: StepId) => void;
+  onClick: (phaseId: PhaseId) => void;
 }
 
 const iconByStatus: Record<ProgressStepStatus, LucideIcon> = {
@@ -29,24 +29,31 @@ const pillClassByStatus: Record<ProgressStepStatus, string> = {
     'bg-brand-subtle text-brand border-brand ring-1 ring-brand/40 hover:bg-brand-subtle',
 };
 
+/**
+ * Compact pill button for each phase in the SetupProgress widget. Click
+ * routes the user into the matching drawer (Bot Basics → tabs drawer,
+ * Strategy → composite drawer). Renamed from StepProgressPill for the
+ * 2-phase UI; the file name is kept for import-stability and will be
+ * renamed in PR-4 cleanup.
+ */
 export function StepProgressPill({
-  stepId,
+  phaseId,
   shortLabel,
   status,
   onClick,
-}: StepProgressPillProps) {
+}: PhaseProgressPillProps) {
   const Icon = iconByStatus[status];
   return (
     <button
       type="button"
-      onClick={() => onClick(stepId)}
+      onClick={() => onClick(phaseId)}
       className={cn(
         'inline-flex h-6 items-center gap-1 rounded-full border px-2 text-2xs font-medium',
         'transition-colors duration-fast ease-out-quick',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
         pillClassByStatus[status],
       )}
-      aria-label={`Open ${shortLabel} step`}
+      aria-label={`Open ${shortLabel} phase`}
     >
       <Icon className="h-3 w-3" />
       <span>{shortLabel}</span>

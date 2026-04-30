@@ -1,9 +1,9 @@
 import { cn } from '@/lib/utils';
-import { PROGRESS_STEPS, type ProgressStepStatus } from './progress.types';
-import type { StepId } from '@/types/builder.types';
+import { PROGRESS_PHASES, type ProgressStepStatus } from './progress.types';
+import type { PhaseId } from '@/lib/phase-helpers';
 
 export interface ProgressDotsProps {
-  statusByStep: Record<StepId, ProgressStepStatus>;
+  statusByPhase: Record<PhaseId, ProgressStepStatus>;
 }
 
 // Brand-only palette per Spec/Phase 1/card_yellow_stages_plan.md.
@@ -14,15 +14,15 @@ const dotClassByStatus: Record<ProgressStepStatus, string> = {
   error: 'bg-brand ring-1 ring-brand/40',
 };
 
-export function ProgressDots({ statusByStep }: ProgressDotsProps) {
+export function ProgressDots({ statusByPhase }: ProgressDotsProps) {
   return (
     <div className="flex items-center gap-1.5" aria-hidden="true">
-      {PROGRESS_STEPS.map((step) => (
+      {PROGRESS_PHASES.map((phase) => (
         <span
-          key={step.id}
+          key={phase.id}
           className={cn(
             'h-2 w-2 rounded-full transition-colors duration-fast ease-out-quick',
-            dotClassByStatus[statusByStep[step.id]],
+            dotClassByStatus[statusByPhase[phase.id]],
           )}
         />
       ))}

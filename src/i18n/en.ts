@@ -69,7 +69,9 @@ export const strings = {
     },
     progress: {
       empty: 'Set up your bot to get started',
-      configured: (n: number) => `${n} / 4 steps configured`,
+      // Phrase is now "phases" — widget aggregates 4 stepStatus IDs into
+      // 2 phases (Bot Basics + Strategy). See Spec/Phase 1/two_phase_ui_plan.md.
+      configured: (n: number) => `${n} / 2 phases configured`,
       issues: (n: number) => `${n} ${n === 1 ? 'issue' : 'issues'}`,
       issuesBlock: (n: number) =>
         `${n} ${n === 1 ? 'issue' : 'issues'} ${n === 1 ? 'blocks' : 'block'} export`,

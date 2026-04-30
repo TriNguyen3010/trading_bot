@@ -11,11 +11,23 @@ import {
 import { strings } from '@/i18n/en';
 
 /**
- * Hardcoded magic-build demo. The drawer is opened ONCE at the start of step 1
- * and closed by the summary view's auto-close after step 4; intermediate steps
- * swap the drawer's content via switchCypheusStep so the Sheet stays mounted.
+ * Hardcoded magic-build demo, 2-nhịp variant per
+ * Spec/Phase 1/two_phase_ui_plan.md §6.6.
  *
- * See Spec/Phase 1/cypheus/drawer_persistence_spec.md for the timeline.
+ * Phase 1 — Bot Basics:
+ *   - Pin bot-config (legacy Setup/Configure tabs drawer).
+ *   - Type pair / timeframe / mode / leverage.
+ *   - Mark bot-config configured.
+ *
+ * Phase 2 — Strategy (composite drawer, single pin):
+ *   - Pin entry-strategy ONCE — the StepDrawer dispatches to composite mode
+ *     (3 accordion sections in one body) so the drawer doesn't unmount when
+ *     we patch direction/close-method state. Fields fill in live across all
+ *     3 sections.
+ *   - Patch entry conditions, then direction, then close method (TP / SL).
+ *   - Mark all 3 strategy sub-steps configured at once.
+ *
+ * Summary view auto-closes via CypheusSummaryView's 2s timer.
  */
 export async function runMagicBuild(): Promise<void> {
   const ctx = startScript();
@@ -35,7 +47,8 @@ export async function runMagicBuild(): Promise<void> {
   if (!isCurrent(ctx)) return;
   await sleep(500, ctx);
 
-  /* ────────── Step 1: Bot Config ────────── */
+  /* ──────────── Phase 1: Bot Basics ──────────── */
+
   builder().setBotName('Bollinger Breakout');
   builder().setStepStatus('bot-config', 'editing');
   builder().setDrawerTab('setup');
@@ -71,13 +84,25 @@ export async function runMagicBuild(): Promise<void> {
   builder().setStepStatus('bot-config', 'configured');
   if (!isCurrent(ctx)) return;
 
-  /* ────────── Step 2: Entry Strategy ────────── */
+  /* ──────────── Phase 2: Strategy (composite, single pin) ──────────── */
+
+  // Mark all 3 sub-steps as 'editing' — StrategyCard's derivePhaseStatus
+  // surfaces this as 'editing' on the canvas, even though we only pin the
+  // first sub-step in the drawer.
   builder().setStepStatus('entry-strategy', 'editing');
+  builder().setStepStatus('direction', 'editing');
+  builder().setStepStatus('close-method', 'editing');
+
+  // Pin entry-strategy: parent BotBuilderCanvas detects this stepId is in
+  // STRATEGY_SUB_STEPS and renders the composite drawer body. No further
+  // switchCypheusStep() calls are needed for direction / close-method —
+  // the drawer body already shows all three sub-step forms simultaneously.
   cy().switchCypheusStep('entry-strategy');
   await sleep(500, ctx);
   if (!isCurrent(ctx)) return;
-  await typewriterMessage(strings.cypheus.magicBuild.step2, ctx);
 
+  // Entry conditions
+  await typewriterMessage(strings.cypheus.magicBuild.step2, ctx);
   builder().patchStrategy({ candlestick: ['close'] });
   await sleep(300, ctx);
   builder().patchStrategy({ candlestick: ['close', 'volume'] });
@@ -106,33 +131,20 @@ export async function runMagicBuild(): Promise<void> {
   await sleep(600, ctx);
   if (!isCurrent(ctx)) return;
   await typewriterMessage(strings.cypheus.magicBuild.step2Comment, ctx);
-  await sleep(800, ctx);
-  builder().setStepStatus('entry-strategy', 'configured');
-  if (!isCurrent(ctx)) return;
+  await sleep(600, ctx);
 
-  /* ────────── Step 3: Direction & Order ────────── */
-  builder().setStepStatus('direction', 'editing');
-  cy().switchCypheusStep('direction');
-  await sleep(500, ctx);
-  if (!isCurrent(ctx)) return;
+  // Direction (composite drawer's Action section reflects live)
   await typewriterMessage(strings.cypheus.magicBuild.step3, ctx);
   builder().patchDirection({ direction: 'long' });
   await sleep(400, ctx);
   builder().patchDirection({ orderType: 'market' });
-  await sleep(800, ctx);
-  builder().setStepStatus('direction', 'configured');
+  await sleep(600, ctx);
   if (!isCurrent(ctx)) return;
 
-  /* ────────── Step 4: Close Method ────────── */
-  builder().setStepStatus('close-method', 'editing');
-  builder().setDrawerTab('setup');
-  cy().switchCypheusStep('close-method');
-  await sleep(500, ctx);
-  if (!isCurrent(ctx)) return;
+  // Close method (still inside composite drawer; no setDrawerTab needed
+  // because the composite body has no tabs — TpSlForm renders inline).
   await typewriterMessage(strings.cypheus.magicBuild.step4, ctx);
   builder().patchCloseMethod({ type: 'tp_sl' });
-  await sleep(400, ctx);
-  builder().setDrawerTab('configure');
   await sleep(400, ctx);
   builder().patchCloseMethod({
     tpEnabled: true,
@@ -151,10 +163,16 @@ export async function runMagicBuild(): Promise<void> {
   if (!isCurrent(ctx)) return;
   await typewriterMessage(strings.cypheus.magicBuild.step4Comment, ctx);
   await sleep(800, ctx);
+
+  // Mark the 3 strategy sub-steps configured in a single batch — mirrors
+  // the StrategyDrawerContent Save handler's behavior for the composite
+  // phase.
+  builder().setStepStatus('entry-strategy', 'configured');
+  builder().setStepStatus('direction', 'configured');
   builder().setStepStatus('close-method', 'configured');
   if (!isCurrent(ctx)) return;
 
-  /* ────────── Summary + close ────────── */
+  /* ──────────── Summary + close ──────────── */
   await typewriterMessage(strings.cypheus.magicBuild.doneA, ctx);
   cy().showCypheusSummary();
   await sleep(400, ctx);
@@ -162,5 +180,5 @@ export async function runMagicBuild(): Promise<void> {
 
   cy().setAvatar('idle');
   cy().setState('done');
-  // Drawer dismissal handled by CypheusSummaryView's auto-close timer (2s).
+  // Drawer dismissal handled by CypheusSummaryView's auto-close timer.
 }
