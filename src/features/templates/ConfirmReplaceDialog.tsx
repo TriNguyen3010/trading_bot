@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { strings } from '@/i18n/en';
 import type { BotTemplate } from '@/templates';
 
 export interface ConfirmReplaceDialogProps {
@@ -34,18 +35,21 @@ export function ConfirmReplaceDialog({
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-bearish-subtle text-bearish">
             <AlertTriangle className="h-5 w-5" />
           </div>
-          <DialogTitle>Replace your current bot?</DialogTitle>
+          <DialogTitle>{strings.templates.confirmReplace.title}</DialogTitle>
           <DialogDescription>
-            Loading <span className="font-medium text-fg">{template?.name}</span>{' '}
-            will discard your unsaved changes. This can&apos;t be undone.
+            {/* The template name is interpolated into the body string for
+             * locale-correct quoting; the prose stays as one phrase. */}
+            {template
+              ? strings.templates.confirmReplace.body(template.name)
+              : ''}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" onClick={onCancel}>
-            Keep editing
+            {strings.templates.confirmReplace.cancel}
           </Button>
           <Button variant="destructive" onClick={onConfirm}>
-            Replace and load
+            {strings.templates.confirmReplace.confirm}
           </Button>
         </DialogFooter>
       </DialogContent>

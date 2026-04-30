@@ -11,6 +11,7 @@ import {
   getTemplateById,
   useTemplateTrackingStore,
 } from '@/templates';
+import { strings } from '@/i18n/en';
 import { useTemplatesDialogStore } from './templates-dialog.store';
 import { useDivergedFromTemplate } from './useDivergedFromTemplate';
 
@@ -52,7 +53,7 @@ export function AppliedTemplateBadge() {
         )}
       >
         <BookOpen className="h-3 w-3 text-brand" aria-hidden="true" />
-        <span className="text-fg-muted">Based on</span>
+        <span className="text-fg-muted">{strings.templates.appliedBadge.prefix}</span>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -64,26 +65,28 @@ export function AppliedTemplateBadge() {
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            View template details
+            {strings.templates.appliedBadge.viewDetails}
           </TooltipContent>
         </Tooltip>
         {diverged && (
           <>
             <span className="text-fg-muted">·</span>
-            <span className="italic text-fg-muted">Diverged</span>
+            <span className="italic text-fg-muted">
+              {strings.templates.appliedBadge.diverged}
+            </span>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
                   onClick={handleReset}
-                  aria-label="Reset to template snapshot"
+                  aria-label={strings.templates.appliedBadge.resetAria}
                   className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded text-fg-muted hover:text-brand focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand"
                 >
                   <RotateCcw className="h-3 w-3" aria-hidden="true" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-xs">
-                Reset to template snapshot (instant — no animation).
+                {strings.templates.appliedBadge.resetTooltip}
               </TooltipContent>
             </Tooltip>
           </>

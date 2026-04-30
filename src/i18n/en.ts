@@ -115,6 +115,89 @@ export const strings = {
       description: 'Entry conditions, direction, and close method.',
     },
   },
+  // Bot templates feature — see Spec/Phase 1/bot_templates_plan.md.
+  templates: {
+    headerButton: 'Templates',
+    headerButtonAria: 'Browse bot templates',
+    headerButtonTooltip: 'Pick a starter bot — Cypheus sets it up',
+
+    emptyState: {
+      cta: 'Browse templates',
+      hint: 'Pick a template to skip setup, ask Cypheus, or build below.',
+    },
+
+    gallery: {
+      title: 'Bot Templates',
+      // The two `<kbd>Shift</kbd>` + `<strong>Use</strong>` markers are
+      // part of the React tree, not this string — kept here as a
+      // sentence with the inline keyword in plain prose.
+      descriptionLead: 'Pick a starter bot. Cypheus will set it up for you. Hold ',
+      descriptionMid: ' while clicking ',
+      descriptionTail: ' to skip the animation.',
+      empty: 'No templates match this filter. Try clearing one of the chips above.',
+      cardCypheusHint: 'Cypheus animates the setup',
+      cardUseLabel: 'Use',
+      cardUseAria: (name: string) => `Use ${name}`,
+      cardPreviewAria: (name: string) => `Preview ${name}`,
+    },
+
+    detail: {
+      cancel: 'Cancel',
+      use: 'Use this template',
+      useAria: (name: string) => `Use ${name}`,
+      keyParams: 'Key parameters',
+      params: {
+        pair: 'Pair',
+        timeframe: 'Timeframe',
+        mode: 'Mode',
+        direction: 'Direction',
+        indicators: 'Indicators',
+        close: 'Close',
+      },
+    },
+
+    confirmReplace: {
+      title: 'Replace your current bot?',
+      body: (name: string) =>
+        `Loading "${name}" will discard your unsaved changes. This can't be undone.`,
+      cancel: 'Keep editing',
+      confirm: 'Replace and load',
+    },
+
+    appliedBadge: {
+      prefix: 'Based on',
+      diverged: 'Diverged',
+      viewDetails: 'View template details',
+      resetAria: 'Reset to template snapshot',
+      resetTooltip: 'Reset to template snapshot (instant — no animation).',
+    },
+
+    filter: {
+      difficulty: 'Difficulty',
+      risk: 'Risk',
+      tag: 'Tag',
+      difficultyOptions: {
+        beginner: 'Beginner',
+        intermediate: 'Intermediate',
+        advanced: 'Advanced',
+      },
+      riskOptions: {
+        conservative: 'Conservative',
+        balanced: 'Balanced',
+        aggressive: 'Aggressive',
+      },
+    },
+
+    apply: {
+      // Toast + chat copy used by snap-apply path.
+      loadedToast: (name: string) => `Applied "${name}"`,
+      loadedChat: (name: string) =>
+        `Loaded "${name}". Ready to export.`,
+    },
+
+    openPhaseAria: (label: string) => `Open ${label} phase`,
+  },
+
   strategyDrawer: {
     title: 'Strategy',
     description:

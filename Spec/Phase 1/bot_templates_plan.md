@@ -6,7 +6,13 @@
 >
 > Sau animation xong → JSON đã chuẩn → user chỉ việc Export.
 >
-> **Status**: Plan, chưa code. Confirm 4 decision ở §11 trước khi bắt đầu.
+> **Status**: ✅ **Implemented** (2026-04-30). Decisions D1–D4 confirmed.
+> Branch `feat/bot-templates` (5 PRs sequential):
+> - **PR-T1** `b4ad954` — engine refactor + cypheus-default seed + CI gate
+> - **PR-T2** `ecb410f` — catalog of 7 starter templates (beginner→advanced)
+> - **PR-T3** `004081e` — gallery UI (TemplatesDialog, TemplateCard, FilterChips, ConfirmReplaceDialog) + entry points
+> - **PR-T4** `3276331` — detail modal + applied badge + diverged tracking + persist + jsdom polyfill
+> - **PR-T5** `[this commit]` — i18n strings + reduce-motion auto-skip + keyboard nav + plan doc update
 >
 > **Prerequisite**: ✅ 2-phase UI redesign (`feat/2-phase-ui`) merged.
 > Template snapshot dùng existing state shape (`botConfig + strategy +
@@ -657,42 +663,48 @@ describe('built-in templates', () => {
 
 ## 10 · Implementation phases (PRs)
 
-### PR-T1 · Engine refactor (foundation, no UI)
-- Create `src/templates/{types,animation,apply,store,index}.ts`
-- Extract magic-build hard-code into `catalog/cypheus-default.ts`
-- Refactor `magic-build.script.ts` → delegate to engine
-- Existing flow ("Tell Cypheus what you're building") still works
-- Tests: validate-all-templates with just 1 template
-- **Effort**: 4-5h
+### PR-T1 · Engine refactor (foundation, no UI) ✅ `b4ad954`
+- `src/templates/{types,animation,apply,store,index}.ts`
+- Extracted magic-build hard-code into `catalog/cypheus-default.ts`
+- Refactored `magic-build.script.ts` → 20-line delegate
+- 5 CI gate tests for the seed template
 
-### PR-T2 · Catalog (data only, 7 templates)
-- 7 template files with full snapshots + narration
-- Update `index.ts` registry
-- Tests pass for all 8 (cypheus-default + 7 new)
-- **Effort**: 4-6h (careful tuning của params + narration cho mỗi cái)
+### PR-T2 · Catalog (data only, 7 templates) ✅ `ecb410f`
+- rsi-oversold-eth-1h, breakout-btc-15m, grid-stable-usdt-pairs,
+  multi-tf-trend-alts, macd-momentum-bnb, conservative-dca-btc, scalping-btc-1m
+- Registry ordered beginner → advanced (3/3/2)
+- All 8 pass `validate-all-templates.test.ts`
 
-### PR-T3 · Gallery UI
-- `<TemplatesDialog />` + `<TemplateCard />` + `<FilterChips />`
-- HeaderToolbar button entry point
-- Empty state CTA
-- Confirm dialog flow + apply integration
-- **Effort**: 5-6h
+### PR-T3 · Gallery UI ✅ `004081e`
+- TemplatesDialog (Radix Dialog with Filter + 2-col grid)
+- TemplateCard (badges + tags + Use → button)
+- FilterChips (3 single-select rows: difficulty / risk / tag)
+- ConfirmReplaceDialog (dirty-state guard)
+- HeaderToolbar Templates button + BuilderPage empty-state CTA
+- Shift+click "Use" → skipAnimation per D2
 
-### PR-T4 · Detail modal + applied badge
-- `<TemplateDetailModal />` (preview before apply)
-- `<AppliedTemplateBadge />` (header indicator)
-- "Diverged" detection (deep-equal vs template snapshot)
-- "Reset to template" mini-action
-- **Effort**: 3-4h
+### PR-T4 · Detail modal + applied badge ✅ `3276331`
+- TemplateDetailModal (longDescription + Key Parameters block)
+- AppliedTemplateBadge ("📚 Based on <name> · Diverged" + RotateCcw reset button)
+- useDivergedFromTemplate hook (JSON.stringify compare on TemplateStateSnapshot fields)
+- useTemplateTrackingStore now persisted (D3 — badge survives reload)
+- jsdom 25 localStorage polyfill in src/test/setup.ts (unblocked existing 110 tests)
+- CreateNewBotButton clears tracking on confirm
 
-### PR-T5 · Polish + i18n
-- i18n strings
-- Reduce-motion variant (skipAnimation default)
-- Keyboard nav (Tab through cards, Enter = Use)
-- Final visual smoke
-- **Effort**: 2h
+### PR-T5 · Polish + i18n ✅ `[this commit]`
+- All hardcoded strings moved to `strings.templates.*` namespace (~30 entries
+  across 8 UI files). i18n includes accessor functions for templated strings
+  (e.g. `cardUseAria(name)`, `confirmReplace.body(name)`, `apply.loadedToast(name)`).
+- `applyTemplate` auto-detects `prefers-reduced-motion: reduce` and routes
+  to skipAnimation when set — accessibility users get instant apply by
+  default without having to know about the Shift+click shortcut.
+- Keyboard nav verified: Tab through cards, Enter/Space opens preview
+  (already wired in PR-T4 via card body button-role + keydown handler),
+  Esc closes both gallery and detail modal (Radix default).
+- Plan doc updated with PR commit hashes + status banner.
 
-**Tổng**: ~18-23h, ~3 ngày focused work.
+**Tổng thực tế**: branch `feat/bot-templates` shipped in 5 sequential
+PRs. All quality gates clean throughout.
 
 ---
 

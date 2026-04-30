@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Chip } from '@/components/ui/chip';
 import { BUILT_IN_TEMPLATES } from '@/templates';
+import { strings } from '@/i18n/en';
 import type {
   BotTemplate,
   TemplateDifficulty,
@@ -30,12 +31,8 @@ const RISKS: readonly TemplateRisk[] = [
 ];
 
 const TITLE_CASE: Record<string, string> = {
-  beginner: 'Beginner',
-  intermediate: 'Intermediate',
-  advanced: 'Advanced',
-  conservative: 'Conservative',
-  balanced: 'Balanced',
-  aggressive: 'Aggressive',
+  ...strings.templates.filter.difficultyOptions,
+  ...strings.templates.filter.riskOptions,
 };
 
 function uniqueTags(templates: readonly BotTemplate[]): string[] {
@@ -64,7 +61,7 @@ export function FilterChips({
 
   return (
     <div className="space-y-3">
-      <Row label="Difficulty">
+      <Row label={strings.templates.filter.difficulty}>
         {DIFFICULTIES.map((d) => (
           <Chip
             key={d}
@@ -78,7 +75,7 @@ export function FilterChips({
         ))}
       </Row>
 
-      <Row label="Risk">
+      <Row label={strings.templates.filter.risk}>
         {RISKS.map((r) => (
           <Chip
             key={r}
@@ -90,7 +87,7 @@ export function FilterChips({
         ))}
       </Row>
 
-      <Row label="Tag">
+      <Row label={strings.templates.filter.tag}>
         {allTags.map((tag) => (
           <Chip
             key={tag}

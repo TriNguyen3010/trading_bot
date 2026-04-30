@@ -143,13 +143,15 @@ export function HeaderToolbar() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setTemplatesOpen(true)}
-                aria-label="Browse bot templates"
+                aria-label={strings.templates.headerButtonAria}
               >
                 <BookOpen className="h-3.5 w-3.5" />
-                Templates
+                {strings.templates.headerButton}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Pick a starter bot — Cypheus sets it up</TooltipContent>
+            <TooltipContent>
+              {strings.templates.headerButtonTooltip}
+            </TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>

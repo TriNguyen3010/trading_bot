@@ -10,6 +10,7 @@ import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { Button } from '@/components/ui/button';
 import { TemplatesDialog } from '@/features/templates/TemplatesDialog';
 import { useTemplatesDialogStore } from '@/features/templates/templates-dialog.store';
+import { strings } from '@/i18n/en';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -70,7 +71,7 @@ export function BuilderPage() {
               {allPending ? (
                 <div className="mx-auto mb-8 flex max-w-[var(--layout-step-list)] flex-col items-center gap-3 text-fg-muted">
                   <p className="text-sm">
-                    Pick a template to skip setup, ask Cypheus, or build below.
+                    {strings.templates.emptyState.hint}
                   </p>
                   <Button
                     variant="primary"
@@ -79,7 +80,7 @@ export function BuilderPage() {
                     className="shadow-glow"
                   >
                     <BookOpen className="h-3.5 w-3.5" />
-                    Browse templates
+                    {strings.templates.emptyState.cta}
                   </Button>
                   <ArrowDown className="mt-1 h-4 w-4 animate-bounce" />
                 </div>

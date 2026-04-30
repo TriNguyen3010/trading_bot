@@ -13,6 +13,7 @@ import {
   TemplateConflictError,
   type BotTemplate,
 } from '@/templates';
+import { strings } from '@/i18n/en';
 import { useTemplatesDialogStore } from './templates-dialog.store';
 import { TemplateCard } from './TemplateCard';
 import { FilterChips } from './FilterChips';
@@ -83,13 +84,15 @@ export function TemplatesDialog() {
             <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-brand-subtle text-brand">
               <Sparkles className="h-5 w-5" />
             </div>
-            <DialogTitle>Bot Templates</DialogTitle>
+            <DialogTitle>{strings.templates.gallery.title}</DialogTitle>
             <DialogDescription>
-              Pick a starter bot. Cypheus will set it up for you. Hold{' '}
+              {strings.templates.gallery.descriptionLead}
               <kbd className="rounded border border-border bg-canvas px-1 font-mono text-2xs">
                 Shift
-              </kbd>{' '}
-              while clicking <strong>Use</strong> to skip the animation.
+              </kbd>
+              {strings.templates.gallery.descriptionMid}
+              <strong>{strings.templates.gallery.cardUseLabel}</strong>
+              {strings.templates.gallery.descriptionTail}
             </DialogDescription>
           </DialogHeader>
 
@@ -97,8 +100,7 @@ export function TemplatesDialog() {
 
           {visible.length === 0 ? (
             <div className="py-8 text-center text-sm text-fg-muted">
-              No templates match this filter. Try clearing one of the chips
-              above.
+              {strings.templates.gallery.empty}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

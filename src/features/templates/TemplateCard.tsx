@@ -2,6 +2,7 @@ import type { MouseEvent } from 'react';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { strings } from '@/i18n/en';
 import type { BotTemplate, TemplateDifficulty, TemplateRisk } from '@/templates';
 
 const DIFFICULTY_TONE: Record<TemplateDifficulty, string> = {
@@ -16,11 +17,8 @@ const DIFFICULTY_DOT: Record<TemplateDifficulty, string> = {
   advanced: 'bg-bearish',
 };
 
-const RISK_LABEL: Record<TemplateRisk, string> = {
-  conservative: 'Conservative',
-  balanced: 'Balanced',
-  aggressive: 'Aggressive',
-};
+const RISK_LABEL: Record<TemplateRisk, string> =
+  strings.templates.filter.riskOptions;
 
 export interface TemplateCardProps {
   template: BotTemplate;
@@ -57,7 +55,9 @@ export function TemplateCard({ template, onUse, onPreview }: TemplateCardProps) 
           onPreview(template);
         }
       }}
-      aria-label={onPreview ? `Preview ${template.name}` : undefined}
+      aria-label={
+        onPreview ? strings.templates.gallery.cardPreviewAria(template.name) : undefined
+      }
       className={cn(
         'group flex flex-col gap-3 rounded-xl border border-border bg-surface p-5',
         'transition-colors duration-fast hover:border-brand/60',
@@ -106,7 +106,7 @@ export function TemplateCard({ template, onUse, onPreview }: TemplateCardProps) 
       <div className="mt-auto flex items-center justify-between pt-2">
         <span className="text-2xs text-fg-muted">
           <Sparkles className="mr-1 inline h-3 w-3" />
-          Cypheus animates the setup
+          {strings.templates.gallery.cardCypheusHint}
         </span>
         <Button
           variant="primary"
@@ -117,9 +117,9 @@ export function TemplateCard({ template, onUse, onPreview }: TemplateCardProps) 
             e.stopPropagation();
             onUse(template, e);
           }}
-          aria-label={`Use ${template.name}`}
+          aria-label={strings.templates.gallery.cardUseAria(template.name)}
         >
-          Use
+          {strings.templates.gallery.cardUseLabel}
           <ArrowRight className="h-3.5 w-3.5" />
         </Button>
       </div>

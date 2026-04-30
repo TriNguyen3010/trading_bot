@@ -9,6 +9,7 @@
 import { toast } from 'sonner';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
+import { strings } from '@/i18n/en';
 import type { StepId, StepStatus } from '@/types/builder.types';
 import { runTemplateAnimation } from './animation';
 import { useTemplateTrackingStore } from './store';
@@ -17,6 +18,19 @@ import {
   type BotTemplate,
   type TemplateStateSnapshot,
 } from './types';
+
+/** Detect the user's `prefers-reduced-motion` setting. Defensive: returns
+ * false in non-DOM contexts (SSR, vitest) where matchMedia is undefined. */
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return false;
+  }
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+}
 
 export class TemplateConflictError extends Error {
   constructor(message = 'Builder state is dirty — confirm replace.') {
@@ -61,7 +75,13 @@ export async function applyTemplate(
     template.meta.schemaVersion,
   );
 
-  if (opts.skipAnimation) {
+  // Resolve `skipAnimation`. Explicit caller value wins; otherwise fall
+  // back to the user's `prefers-reduced-motion: reduce` preference. So
+  // accessibility users get instant apply by default and don't have to
+  // hold Shift or know about it.
+  const skipAnimation = opts.skipAnimation ?? prefersReducedMotion();
+
+  if (skipAnimation) {
     snapApply(template, migrated);
     return;
   }
@@ -100,10 +120,10 @@ function snapApply(
   // Friendly chat line + tracking + toast.
   useCypheusStore.getState().pushMessage({
     role: 'cypheus',
-    text: `Loaded "${template.name}". Ready to export.`,
+    text: strings.templates.apply.loadedChat(template.name),
   });
   useTemplateTrackingStore.getState().setApplied(template.id);
-  toast.success(`Applied "${template.name}"`);
+  toast.success(strings.templates.apply.loadedToast(template.name));
 }
 
 function migrateTemplateSnapshot(

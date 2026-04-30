@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { strings } from '@/i18n/en';
 import {
   getTemplateById,
   type BotTemplate,
@@ -24,11 +25,8 @@ const DIFFICULTY_TONE: Record<TemplateDifficulty, string> = {
   advanced: 'text-bearish',
 };
 
-const RISK_LABEL: Record<TemplateRisk, string> = {
-  conservative: 'Conservative',
-  balanced: 'Balanced',
-  aggressive: 'Aggressive',
-};
+const RISK_LABEL: Record<TemplateRisk, string> =
+  strings.templates.filter.riskOptions;
 
 export interface TemplateDetailModalProps {
   /** Receives the click event so callers can detect Shift-click for the
@@ -64,14 +62,18 @@ export function TemplateDetailModal({ onUse }: TemplateDetailModalProps) {
         {template && <DetailBody template={template} />}
         <DialogFooter>
           <Button variant="ghost" onClick={closeDetail}>
-            Cancel
+            {strings.templates.detail.cancel}
           </Button>
           <Button
             variant="primary"
             onClick={handleUse}
-            aria-label={`Use ${template?.name ?? 'template'}`}
+            aria-label={
+              template
+                ? strings.templates.detail.useAria(template.name)
+                : strings.templates.detail.use
+            }
           >
-            Use this template
+            {strings.templates.detail.use}
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </DialogFooter>
@@ -143,26 +145,27 @@ function ParamHighlights({ template }: { template: BotTemplate }) {
   // Build a small key/value list highlighting the most "is this for me?"
   // fields. We keep it short — the gallery card already shows the name and
   // tags, so the modal's job is to surface the gritty trade params.
+  const t = strings.templates.detail.params;
   const rows: { label: string; value: string }[] = [
-    { label: 'Pair', value: c.pair },
-    { label: 'Timeframe', value: c.timeframe },
+    { label: t.pair, value: c.pair },
+    { label: t.timeframe, value: c.timeframe },
     {
-      label: 'Mode',
+      label: t.mode,
       value: `${c.tradingMode === 'dry-run' ? 'Dry-run' : 'Live'} · ${c.marketType}${c.leverage > 1 ? ` · ${c.leverage}x` : ''}`,
     },
     {
-      label: 'Direction',
+      label: t.direction,
       value: `${d.direction === 'long' ? 'Long' : 'Short'} · ${d.orderType}`,
     },
     {
-      label: 'Indicators',
+      label: t.indicators,
       value:
         template.state.strategy.indicators.length > 0
           ? template.state.strategy.indicators.map((i) => i.name).join(', ')
           : '—',
     },
     {
-      label: 'Close',
+      label: t.close,
       value: closeMethodLabel(close),
     },
   ];
@@ -170,7 +173,7 @@ function ParamHighlights({ template }: { template: BotTemplate }) {
   return (
     <div className="rounded-lg border border-border-subtle bg-canvas/60 p-4">
       <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-muted">
-        Key parameters
+        {strings.templates.detail.keyParams}
       </h4>
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
         {rows.map((row) => (
