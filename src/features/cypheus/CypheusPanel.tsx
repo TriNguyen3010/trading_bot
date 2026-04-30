@@ -1,6 +1,13 @@
 import { useEffect } from 'react';
-import { Sparkles, Braces } from 'lucide-react';
+import { Sparkles, Braces, PanelLeftClose } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import { CypheusChat } from './CypheusChat';
 import { CypheusInput } from './CypheusInput';
 import { CreateNewBotButton } from './CreateNewBotButton';
@@ -16,10 +23,13 @@ import { runMagicBuild } from './script/magic-build.script';
 import { strings } from '@/i18n/en';
 
 export function CypheusPanel() {
-  // Honour the persisted "collapse left panel" toggle (HeaderToolbar
-  // owns the button). When collapsed, BuilderPage drives the
-  // --layout-left-panel CSS var to 0 so the canvas reclaims the space.
+  // Honour the persisted "collapse left panel" toggle. The collapse
+  // button lives inside this panel's tab row so users see it where
+  // they're already looking; the matching "restore" button surfaces in
+  // HeaderToolbar only when the panel is collapsed (so we don't
+  // duplicate UI when the panel is open).
   const leftPanelCollapsed = useLayoutPrefsStore((s) => s.leftPanelCollapsed);
+  const toggleLeftPanel = useLayoutPrefsStore((s) => s.toggleLeftPanel);
 
   const tab = useCypheusStore((s) => s.panelTab);
   const setTab = useCypheusStore((s) => s.setPanelTab);
@@ -81,8 +91,8 @@ export function CypheusPanel() {
         onValueChange={(v) => setTab(v as LeftPanelTab)}
         className="flex flex-1 flex-col overflow-hidden"
       >
-        <div className="px-4 pt-4">
-          <TabsList className="w-full justify-start">
+        <div className="flex items-center gap-2 px-4 pt-4">
+          <TabsList className="flex-1 justify-start">
             <TabsTrigger value="cypheus" className="flex-1 justify-start">
               <Sparkles className="h-3.5 w-3.5" />
               <span>{strings.cypheus.tabLabel}</span>
@@ -101,6 +111,32 @@ export function CypheusPanel() {
               ) : null}
             </TabsTrigger>
           </TabsList>
+
+          {/* Inline collapse button — sits next to the tabs so users
+           * see "where the panel is" and "how to hide it" in one glance.
+           * The matching restore button only appears in HeaderToolbar
+           * when this panel is collapsed (avoids duplicate UI). */}
+          <TooltipProvider delayDuration={250}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={toggleLeftPanel}
+                  aria-label={strings.layoutToggles.cypheusHideAria}
+                  className={cn(
+                    'inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-fg-muted',
+                    'transition-colors duration-fast hover:bg-surface-hover hover:text-fg',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
+                  )}
+                >
+                  <PanelLeftClose className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {strings.layoutToggles.cypheusHideTooltip}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         <TabsContent
           value="cypheus"

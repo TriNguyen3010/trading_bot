@@ -5,7 +5,6 @@ import {
   Eye,
   EyeOff,
   FlaskConical,
-  PanelLeftClose,
   PanelLeftOpen,
   Pencil,
   Upload,
@@ -152,35 +151,28 @@ export function HeaderToolbar() {
       </div>
       <TooltipProvider delayDuration={300}>
         <div className="flex items-center gap-2">
-          {/* View toggles — Cypheus left panel + bot summary visibility.
-           * Persisted across reloads via useLayoutPrefsStore so user
-           * preferences survive a refresh. */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleLeftPanel}
-                aria-label={
-                  leftPanelCollapsed
-                    ? strings.layoutToggles.cypheusShowAria
-                    : strings.layoutToggles.cypheusHideAria
-                }
-                aria-pressed={!leftPanelCollapsed}
-              >
-                {leftPanelCollapsed ? (
+          {/* View toggles — bot summary visibility is always available
+           * here. The Cypheus collapse button now lives inside the
+           * panel itself; this header surfaces a "restore" button ONLY
+           * when the panel is collapsed (so we don't have two open
+           * buttons doing the same thing). */}
+          {leftPanelCollapsed && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleLeftPanel}
+                  aria-label={strings.layoutToggles.cypheusShowAria}
+                >
                   <PanelLeftOpen className="h-3.5 w-3.5" />
-                ) : (
-                  <PanelLeftClose className="h-3.5 w-3.5" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {leftPanelCollapsed
-                ? strings.layoutToggles.cypheusShowTooltip
-                : strings.layoutToggles.cypheusHideTooltip}
-            </TooltipContent>
-          </Tooltip>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {strings.layoutToggles.cypheusShowTooltip}
+              </TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
