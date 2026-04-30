@@ -27,22 +27,42 @@ export interface TemplateCardProps {
   /** Receives the click event so the dialog can detect Shift-click to
    * route to the skip-animation path (decision D2). */
   onUse: (template: BotTemplate, event: MouseEvent<HTMLButtonElement>) => void;
+  /** Optional: clicking the card body (anywhere outside the Use button)
+   * triggers the detail-modal preview. Wired by TemplatesDialog. */
+  onPreview?: (template: BotTemplate) => void;
 }
 
 /**
  * One card in the templates gallery. Renders metadata badges, a 1-2
  * sentence description, the tag list, and a primary "Use →" CTA.
  *
- * Body click is intentionally a no-op for now — PR-T4 wires it to a
- * detail modal preview. Power users can Shift+click "Use" to skip the
- * Cypheus animation (per plan D2).
+ * Body click → opens the detail-modal preview (PR-T4). The "Use →" button
+ * stops propagation so power users can apply directly from the gallery
+ * without going through the modal. Shift+click on Use skips the Cypheus
+ * animation (per plan D2).
  */
-export function TemplateCard({ template, onUse }: TemplateCardProps) {
+export function TemplateCard({ template, onUse, onPreview }: TemplateCardProps) {
+  const handleBodyClick = () => {
+    if (onPreview) onPreview(template);
+  };
+
   return (
     <article
+      onClick={handleBodyClick}
+      role={onPreview ? 'button' : undefined}
+      tabIndex={onPreview ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (onPreview && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onPreview(template);
+        }
+      }}
+      aria-label={onPreview ? `Preview ${template.name}` : undefined}
       className={cn(
         'group flex flex-col gap-3 rounded-xl border border-border bg-surface p-5',
         'transition-colors duration-fast hover:border-brand/60',
+        onPreview &&
+          'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
       )}
     >
       <header className="flex items-center justify-between gap-2 text-2xs uppercase tracking-wide">
@@ -91,7 +111,12 @@ export function TemplateCard({ template, onUse }: TemplateCardProps) {
         <Button
           variant="primary"
           size="sm"
-          onClick={(e) => onUse(template, e)}
+          onClick={(e) => {
+            // Stop propagation so the surrounding card's onPreview
+            // handler doesn't fire alongside applyTemplate.
+            e.stopPropagation();
+            onUse(template, e);
+          }}
           aria-label={`Use ${template.name}`}
         >
           Use

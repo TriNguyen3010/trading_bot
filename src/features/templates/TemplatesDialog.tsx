@@ -18,6 +18,7 @@ import { TemplateCard } from './TemplateCard';
 import { FilterChips } from './FilterChips';
 import { applyTemplateFilter, type TemplateFilter } from './filter';
 import { ConfirmReplaceDialog } from './ConfirmReplaceDialog';
+import { TemplateDetailModal } from './TemplateDetailModal';
 
 /**
  * The bot-templates gallery — main entry point for picking a starter
@@ -37,6 +38,7 @@ import { ConfirmReplaceDialog } from './ConfirmReplaceDialog';
 export function TemplatesDialog() {
   const open = useTemplatesDialogStore((s) => s.open);
   const setOpen = useTemplatesDialogStore((s) => s.setOpen);
+  const openDetail = useTemplatesDialogStore((s) => s.openDetail);
   const [filter, setFilter] = useState<TemplateFilter>({});
   const [pendingReplace, setPendingReplace] = useState<{
     template: BotTemplate;
@@ -101,12 +103,28 @@ export function TemplatesDialog() {
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {visible.map((t) => (
-                <TemplateCard key={t.id} template={t} onUse={handleUse} />
+                <TemplateCard
+                  key={t.id}
+                  template={t}
+                  onUse={handleUse}
+                  onPreview={(template) => {
+                    // Close the gallery first so the detail modal owns
+                    // the focus stack — running both at once stacks two
+                    // Radix portals and steals scroll lock.
+                    setOpen(false);
+                    openDetail(template.id);
+                  }}
+                />
               ))}
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Detail-modal preview + ConfirmReplaceDialog share the same
+       * `handleUse` callback so both entry points hit the same dirty-state
+       * confirm logic. */}
+      <TemplateDetailModal onUse={handleUse} />
 
       <ConfirmReplaceDialog
         template={pendingReplace?.template ?? null}

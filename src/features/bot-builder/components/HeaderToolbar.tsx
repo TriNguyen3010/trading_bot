@@ -13,6 +13,7 @@ import { ExportDialog } from '@/features/export-import/ExportDialog';
 import { useExportDialogStore } from '@/features/export-import/export-dialog.store';
 import { ImportDialog } from '@/features/export-import/ImportDialog';
 import { useTemplatesDialogStore } from '@/features/templates/templates-dialog.store';
+import { AppliedTemplateBadge } from '@/features/templates/AppliedTemplateBadge';
 import { validateBuilder } from '@/lib/validator';
 import { strings } from '@/i18n/en';
 import { cn } from '@/lib/utils';
@@ -130,6 +131,9 @@ export function HeaderToolbar() {
         >
           {relativeTime(lastSavedAt)}
         </span>
+        {/* Applied template indicator. Renders nothing when the user
+         * started blank or hit Create-new-bot. */}
+        <AppliedTemplateBadge />
       </div>
       <TooltipProvider delayDuration={300}>
         <div className="flex items-center gap-2">
