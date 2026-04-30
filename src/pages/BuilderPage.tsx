@@ -40,13 +40,14 @@ export function BuilderPage() {
   }, [drawerVisible, drawerWidth]);
 
   // Sync the --layout-left-panel CSS var with the collapsed toggle.
-  // CypheusPanel itself returns null when collapsed; this var lets the
+  // IDE-style sidebar: collapsed state keeps a thin 48px strip visible
+  // (the section icons rail) instead of hiding the panel entirely. The
   // canvas + DotGridSpotlight + drawer overlayClassName all reflow into
-  // the freed space without each component reading the prefs store.
+  // whatever space is left, without each component reading the prefs store.
   useEffect(() => {
     document.documentElement.style.setProperty(
       '--layout-left-panel',
-      leftPanelCollapsed ? '0px' : '400px',
+      leftPanelCollapsed ? '48px' : '400px',
     );
   }, [leftPanelCollapsed]);
 

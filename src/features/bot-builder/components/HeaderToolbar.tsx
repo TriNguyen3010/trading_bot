@@ -5,7 +5,6 @@ import {
   Eye,
   EyeOff,
   FlaskConical,
-  PanelLeftOpen,
   Pencil,
   Upload,
 } from 'lucide-react';
@@ -47,8 +46,6 @@ export function HeaderToolbar() {
   const exportOpen = useExportDialogStore((s) => s.open);
   const setExportOpen = useExportDialogStore((s) => s.setOpen);
   const setTemplatesOpen = useTemplatesDialogStore((s) => s.setOpen);
-  const leftPanelCollapsed = useLayoutPrefsStore((s) => s.leftPanelCollapsed);
-  const toggleLeftPanel = useLayoutPrefsStore((s) => s.toggleLeftPanel);
   const botSummaryHidden = useLayoutPrefsStore((s) => s.botSummaryHidden);
   const toggleBotSummary = useLayoutPrefsStore((s) => s.toggleBotSummary);
 
@@ -151,28 +148,10 @@ export function HeaderToolbar() {
       </div>
       <TooltipProvider delayDuration={300}>
         <div className="flex items-center gap-2">
-          {/* View toggles — bot summary visibility is always available
-           * here. The Cypheus collapse button now lives inside the
-           * panel itself; this header surfaces a "restore" button ONLY
-           * when the panel is collapsed (so we don't have two open
-           * buttons doing the same thing). */}
-          {leftPanelCollapsed && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleLeftPanel}
-                  aria-label={strings.layoutToggles.cypheusShowAria}
-                >
-                  <PanelLeftOpen className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {strings.layoutToggles.cypheusShowTooltip}
-              </TooltipContent>
-            </Tooltip>
-          )}
+          {/* View toggles — bot summary visibility is the only panel
+           * toggle that lives here. The Cypheus expand/collapse chevron
+           * is owned by the panel itself (IDE-style sidebar), so the
+           * panel never disappears and we don't need a restore button. */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
