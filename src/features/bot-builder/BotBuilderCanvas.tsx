@@ -6,6 +6,7 @@ import { StepDrawer, type StepContentMap } from './components/StepDrawer';
 import { StrategyCard } from './components/StrategyCard';
 import { StrategyDrawerContent } from './components/StrategyDrawerContent';
 import { AddStrategyButton } from './components/AddStrategyButton';
+import { BotSummaryCard } from '@/features/bot-summary/BotSummaryCard';
 import {
   BotConfigSetup,
   BotConfigConfigure,
@@ -202,6 +203,12 @@ export function BotBuilderCanvas() {
           <AddStrategyButton />
         </li>
       </ol>
+
+      {/* Read-only summary widget — appears once at least one phase is
+       * configured (renders nothing in pristine state). Translates the
+       * live builder state into plain English so users can sanity-check
+       * what they've built before hitting Export. */}
+      <BotSummaryCard />
 
       <StepDrawer
         contentByStep={CONTENT_BY_STEP}

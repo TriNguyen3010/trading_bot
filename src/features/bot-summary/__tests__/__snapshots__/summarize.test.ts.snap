@@ -1,0 +1,199 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`summarizeBot — 8 built-in templates > summarizes breakout-btc-15m with no translation gaps 1`] = `
+"## Market
+BTC/USDC perpetual futures on Binance, 15-minute candles.
+
+## Risk
+Dry-run mode with a $1,000 USDT simulated wallet.
+$100 USDT stake per trade, up to 5 concurrent positions.
+Leverage 5× cross-margin.
+
+## Entry
+Buys long when all of these are true:
+• RSI(14) is above 60
+• candle close is above the 50-period moving average
+
+## Action
+Goes Long with Market orders (fills immediately at best price).
+Slippage tolerance 0.5%.
+
+## Exit
+Take profit: +4% closes 50%, +8% closes 50%.
+Stop loss at -2%.
+
+## Notifications
+Telegram notifications disabled."
+`;
+
+exports[`summarizeBot — 8 built-in templates > summarizes conservative-dca-btc with no translation gaps 1`] = `
+"## Market
+BTC/USDC spot on Binance, 1-hour candles.
+
+## Risk
+Dry-run mode with a $1,000 USDT simulated wallet.
+$100 USDT stake per trade, up to 5 concurrent positions.
+Spot trading — no leverage, no liquidation risk.
+
+## Entry
+Buys long when RSI(14) is below 40.
+
+## Action
+Goes Long with Market orders (fills immediately at best price).
+Slippage tolerance 0.5%.
+
+## Exit
+Take profit at +1.5% (closes the full position).
+Stop loss at -10%.
+
+## Notifications
+Telegram notifications disabled."
+`;
+
+exports[`summarizeBot — 8 built-in templates > summarizes cypheus-default with no translation gaps 1`] = `
+"## Market
+BTC/USDC perpetual futures on Binance, 5-minute candles.
+
+## Risk
+Dry-run mode with a $1,000 USDT simulated wallet.
+$100 USDT stake per trade, up to 10 concurrent positions.
+Leverage 20× cross-margin — high-leverage, monitor closely.
+
+## Entry
+Buys long when RSI(14) is below 30.
+
+## Action
+Goes Long with Market orders (fills immediately at best price).
+Slippage tolerance 0.5%.
+
+## Exit
+Take profit: +5% closes 50%, +10% closes 25%.
+Stop loss at -3%.
+
+## Notifications
+Telegram notifications disabled."
+`;
+
+exports[`summarizeBot — 8 built-in templates > summarizes grid-stable-usdt-pairs with no translation gaps 1`] = `
+"## Market
+USDC/USDT spot on Binance, 5-minute candles.
+
+## Risk
+Dry-run mode with a $1,000 USDT simulated wallet.
+$100 USDT stake per trade, up to 10 concurrent positions.
+Spot trading — no leverage, no liquidation risk.
+
+## Entry
+Buys long when RSI(14) is below 55.
+
+## Action
+Goes Long with Limit orders, placed 0.05% below market.
+Slippage tolerance 0.1%.
+
+## Exit
+Time-based ROI: 0.50% target immediately, 0.30% target after 30 min, 0.10% target after 1 hour, break-even after 2 hours.
+
+## Notifications
+Telegram notifications disabled."
+`;
+
+exports[`summarizeBot — 8 built-in templates > summarizes macd-momentum-bnb with no translation gaps 1`] = `
+"## Market
+BNB/USDC perpetual futures on Binance, 30-minute candles.
+
+## Risk
+Dry-run mode with a $1,000 USDT simulated wallet.
+$100 USDT stake per trade, up to 4 concurrent positions.
+Leverage 10× cross-margin — high-leverage, monitor closely.
+
+## Entry
+Buys long when MACD line is above 0.
+
+## Action
+Goes Long with Market orders (fills immediately at best price).
+Slippage tolerance 0.5%.
+
+## Exit
+Take profit: +5% closes 50%, +10% closes 50%.
+Stop loss at -3%.
+
+## Notifications
+Telegram notifications disabled."
+`;
+
+exports[`summarizeBot — 8 built-in templates > summarizes multi-tf-trend-alts with no translation gaps 1`] = `
+"## Market
+SOL/USDC perpetual futures on Binance, 4-hour candles.
+
+## Risk
+Dry-run mode with a $1,000 USDT simulated wallet.
+$100 USDT stake per trade, up to 3 concurrent positions.
+Leverage 3× cross-margin.
+
+## Entry
+Buys long when all of these are true:
+• candle close is above the 200-period moving average
+• RSI(14) is above 50
+
+## Action
+Goes Long with Market orders (fills immediately at best price).
+Slippage tolerance 0.5%.
+
+## Exit
+Take profit: +8% closes 60%, +15% closes 40%.
+Stop loss at -5%.
+Trailing stop: activates after +2% profit, follows 3% behind.
+
+## Notifications
+Telegram notifications disabled."
+`;
+
+exports[`summarizeBot — 8 built-in templates > summarizes rsi-oversold-eth-1h with no translation gaps 1`] = `
+"## Market
+ETH/USDC perpetual futures on Binance, 1-hour candles.
+
+## Risk
+Dry-run mode with a $1,000 USDT simulated wallet.
+$100 USDT stake per trade, up to 3 concurrent positions.
+No leverage (1×), cross-margin futures.
+
+## Entry
+Buys long when RSI(14) is below 30.
+
+## Action
+Goes Long with Market orders (fills immediately at best price).
+Slippage tolerance 0.5%.
+
+## Exit
+Take profit at +3% (closes the full position).
+Stop loss at -2%.
+
+## Notifications
+Telegram notifications disabled."
+`;
+
+exports[`summarizeBot — 8 built-in templates > summarizes scalping-btc-1m with no translation gaps 1`] = `
+"## Market
+BTC/USDC perpetual futures on Binance, 1-minute candles.
+
+## Risk
+Dry-run mode with a $1,000 USDT simulated wallet.
+$100 USDT stake per trade, up to 3 concurrent positions.
+Leverage 20× cross-margin — high-leverage, monitor closely.
+
+## Entry
+Buys long when all of these are true:
+• RSI(14) is below 25
+• candle close is above the 20-period moving average
+
+## Action
+Goes Long with Market orders (fills immediately at best price).
+Slippage tolerance 0.05%.
+
+## Exit
+Take profit: +0.5% closes 70%, +1% closes 30%.
+Stop loss at -0.3%.
+
+## Notifications
+Telegram notifications disabled."
+`;
