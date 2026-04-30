@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, FlaskConical, Pencil, Upload } from 'lucide-react';
+import { BookOpen, Download, FlaskConical, Pencil, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,6 +12,7 @@ import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { ExportDialog } from '@/features/export-import/ExportDialog';
 import { useExportDialogStore } from '@/features/export-import/export-dialog.store';
 import { ImportDialog } from '@/features/export-import/ImportDialog';
+import { useTemplatesDialogStore } from '@/features/templates/templates-dialog.store';
 import { validateBuilder } from '@/lib/validator';
 import { strings } from '@/i18n/en';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,7 @@ export function HeaderToolbar() {
 
   const exportOpen = useExportDialogStore((s) => s.open);
   const setExportOpen = useExportDialogStore((s) => s.setOpen);
+  const setTemplatesOpen = useTemplatesDialogStore((s) => s.setOpen);
 
   const [isEditing, setEditing] = useState(false);
   const [draft, setDraft] = useState(botName);
@@ -131,6 +133,20 @@ export function HeaderToolbar() {
       </div>
       <TooltipProvider delayDuration={300}>
         <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTemplatesOpen(true)}
+                aria-label="Browse bot templates"
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                Templates
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Pick a starter bot — Cypheus sets it up</TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

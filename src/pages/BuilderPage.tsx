@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
 import { Toaster } from 'sonner';
-import { ArrowDown } from 'lucide-react';
+import { ArrowDown, BookOpen } from 'lucide-react';
 import { LayoutGroup } from 'framer-motion';
 import { CypheusPanel } from '@/features/cypheus/CypheusPanel';
 import { HeaderToolbar } from '@/features/bot-builder/components/HeaderToolbar';
 import { CypheusDock } from '@/features/cypheus/CypheusDock';
 import { BotBuilderCanvas } from '@/features/bot-builder/BotBuilderCanvas';
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
+import { Button } from '@/components/ui/button';
+import { TemplatesDialog } from '@/features/templates/TemplatesDialog';
+import { useTemplatesDialogStore } from '@/features/templates/templates-dialog.store';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -19,6 +22,7 @@ export function BuilderPage() {
   const openStep = useBuilderStore((s) => s.openStep);
   const drawerWidth = useBuilderStore((s) => s.drawerWidth);
   const cypheusDrawerMode = useCypheusStore((s) => s.drawerMode);
+  const setTemplatesOpen = useTemplatesDialogStore((s) => s.setOpen);
 
   const drawerVisible = openStep !== null || cypheusDrawerMode !== 'closed';
 
@@ -64,12 +68,20 @@ export function BuilderPage() {
               }}
             >
               {allPending ? (
-                <div className="mx-auto mb-6 flex max-w-[var(--layout-step-list)] flex-col items-center gap-2 text-fg-muted">
+                <div className="mx-auto mb-8 flex max-w-[var(--layout-step-list)] flex-col items-center gap-3 text-fg-muted">
                   <p className="text-sm">
-                    Send a message to Cypheus, or click any step below to start
-                    building.
+                    Pick a template to skip setup, ask Cypheus, or build below.
                   </p>
-                  <ArrowDown className="h-4 w-4 animate-bounce" />
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setTemplatesOpen(true)}
+                    className="shadow-glow"
+                  >
+                    <BookOpen className="h-3.5 w-3.5" />
+                    Browse templates
+                  </Button>
+                  <ArrowDown className="mt-1 h-4 w-4 animate-bounce" />
                 </div>
               ) : null}
               <BotBuilderCanvas />
@@ -85,6 +97,9 @@ export function BuilderPage() {
           className: 'border border-border bg-surface-elevated text-fg',
         }}
       />
+      {/* Templates gallery — page-level mount so the empty-state CTA,
+       * HeaderToolbar button, and any future entry point all share state. */}
+      <TemplatesDialog />
     </div>
   );
 }
