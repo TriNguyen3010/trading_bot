@@ -11,8 +11,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
-import { bundleSchema } from '@/schemas/bundle.schema';
-import { deserializeBundle } from '@/lib/serializer';
+import { unifiedBotStrategyCreateSchema } from '@/schemas/unified-bot-strategy.schema';
+import {
+  deserializeUnifiedPayload,
+  type UnifiedBundle,
+} from '@/lib/serializer';
 import { readTextFile } from './file-utils';
 
 export interface ImportDialogProps {
@@ -34,7 +37,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       setError(`Invalid JSON: ${e instanceof Error ? e.message : 'parse error'}`);
       return;
     }
-    const result = bundleSchema.safeParse(parsed);
+    // Validate against the BE-shape schema. The 3 FE-only round-trip
+    // fields (`order_type`, `limit_offset_pct`, `close_method_type`) are
+    // stripped here — we re-attach them from the raw JSON below so the
+    // builder can re-hydrate exactly the same state.
+    const result = unifiedBotStrategyCreateSchema.safeParse(parsed);
     if (!result.success) {
       setError(
         result.error.issues
@@ -46,7 +53,15 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     }
 
     try {
-      const next = deserializeBundle(result.data);
+      const raw = parsed as Record<string, unknown>;
+      const bundle: UnifiedBundle = {
+        ...result.data,
+        order_type: raw.order_type as UnifiedBundle['order_type'],
+        limit_offset_pct: raw.limit_offset_pct as UnifiedBundle['limit_offset_pct'],
+        close_method_type:
+          raw.close_method_type as UnifiedBundle['close_method_type'],
+      };
+      const next = deserializeUnifiedPayload(bundle);
       const store = useBuilderStore.getState();
       store.setBotName(next.botName);
       store.patchBotConfig(next.botConfig);
@@ -57,12 +72,14 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       store.setStepStatus('entry-strategy', 'configured');
       store.setStepStatus('direction', 'configured');
       store.setStepStatus('close-method', 'configured');
-      toast.success('Bundle imported.');
+      toast.success('Bot strategy imported.');
       onOpenChange(false);
       setTextInput('');
     } catch (e) {
       setError(
-        `Failed to apply bundle: ${e instanceof Error ? e.message : 'unknown error'}`,
+        `Failed to apply bot strategy: ${
+          e instanceof Error ? e.message : 'unknown error'
+        }`,
       );
     }
   };
@@ -76,10 +93,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Import bundle</DialogTitle>
+          <DialogTitle>Import bot strategy</DialogTitle>
           <DialogDescription>
-            Paste a previously exported <code>.bundle.json</code> or upload a
-            file. Existing configuration is replaced when import succeeds.
+            Paste a previously exported <code>bot-strategy-*.json</code> or
+            upload a file. Existing configuration is replaced when import
+            succeeds.
           </DialogDescription>
         </DialogHeader>
 
@@ -109,7 +127,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           <textarea
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
-            placeholder='{"bot": {...}, "strategy": {...}}'
+            placeholder='{"bot_name": "...", "exchange_name": "...", ...}'
             className="min-h-[160px] w-full rounded-md border border-border bg-input p-3 font-mono text-xs text-fg placeholder:text-fg-muted focus-visible:border-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-subtle"
           />
 

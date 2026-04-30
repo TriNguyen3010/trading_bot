@@ -11,10 +11,14 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
-import { buildBundle } from '@/lib/serializer';
+import { buildUnifiedPayload } from '@/lib/serializer';
 import { validateBuilder } from '@/lib/validator';
-import { copyToClipboard, downloadJson } from './file-utils';
-import { bundleSchema } from '@/schemas/bundle.schema';
+import {
+  copyToClipboard,
+  downloadJson,
+  unifiedBotStrategyFilename,
+} from './file-utils';
+import { unifiedBotStrategyCreateSchema } from '@/schemas/unified-bot-strategy.schema';
 
 export interface ExportDialogProps {
   open: boolean;
@@ -26,11 +30,15 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   const issues = useMemo(() => validateBuilder(state), [state]);
   const [parseError, setParseError] = useState<string | null>(null);
 
+  // Build the unified payload + the 3 FE-only round-trip fields. We
+  // validate the BE-shape part with `unifiedBotStrategyCreateSchema` (the
+  // schema strips the extras), but emit the full bundle so re-import
+  // re-hydrates the builder. See `UnifiedBundle` in serializer.ts.
   const bundle = useMemo(() => {
     if (issues.length > 0) return null;
     try {
-      const draft = buildBundle(state);
-      const result = bundleSchema.safeParse(draft);
+      const draft = buildUnifiedPayload(state);
+      const result = unifiedBotStrategyCreateSchema.safeParse(draft);
       if (!result.success) {
         setParseError(
           result.error.issues
@@ -41,7 +49,11 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         return null;
       }
       setParseError(null);
-      return result.data;
+      // Return the original draft (with FE-only fields), not result.data
+      // (which has the FE-only fields stripped by Zod's default object
+      // mode). Both are equivalent for the BE; the draft is richer for
+      // round-trip.
+      return draft;
     } catch (err) {
       setParseError(err instanceof Error ? err.message : String(err));
       return null;
@@ -49,18 +61,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   }, [state, issues.length]);
 
   const json = bundle ? JSON.stringify(bundle, null, 2) : '';
-
-  const slugBotName = state.botName
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'untitled-bot';
-  const filename = `${slugBotName}.bundle.json`;
+  const filename = unifiedBotStrategyFilename(state.botName);
 
   const handleCopy = async () => {
     const ok = await copyToClipboard(json);
     toast[ok ? 'success' : 'error'](
-      ok ? 'Bundle copied to clipboard.' : 'Copy failed.',
+      ok ? 'Bot strategy copied to clipboard.' : 'Copy failed.',
     );
   };
 
@@ -74,11 +80,10 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Export bundle</DialogTitle>
+          <DialogTitle>Export bot strategy</DialogTitle>
           <DialogDescription>
-            One file containing both <code>bot</code> and{' '}
-            <code>strategy</code> payloads. Backend can split client-side at
-            import time.
+            One unified <code>bot-strategy-*.json</code> file matching the
+            backend's <code>POST /bot-strategy/create</code> shape.
           </DialogDescription>
         </DialogHeader>
 
