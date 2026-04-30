@@ -372,8 +372,10 @@ export interface UnifiedBundle extends UnifiedBotStrategyCreate {
   order_type?: 'market' | 'limit';
   /** FE-only — DirectionForm.limitOffsetPct (when orderType === 'limit'). */
   limit_offset_pct?: number | null;
-  /** FE-only — CloseMethodForm.type. Inferred on import if missing. */
-  close_method_type?: 'tp_sl' | 'roi' | 'indicator';
+  /** FE-only — CloseMethodForm.type. Mirrors the full builder union
+   * (including 'manual') so the round-trip is lossless. Inferred on
+   * import if missing. */
+  close_method_type?: CloseMethodForm['type'];
 }
 
 export function buildUnifiedPayload(
@@ -480,6 +482,39 @@ const EMPTY_DESERIALIZED_GROUP: ConditionGroup = {
   conditions: [],
 };
 
+/**
+ * Coerce a Zod-inferred unified `SignalsBlock` into the narrower
+ * legacy `SignalGroup` shape used by `deserializeGroup`.
+ *
+ * Why: per `unified-bot-strategy.schema.ts` Đính chính 2, BE accepts
+ * BOTH tenses for the cross operators — `crosses_above` (FE-emitted)
+ * AND `crossed_above` (BE-emitted in production logs). The legacy
+ * `ConditionItem` type only has the present tense, so without this
+ * coercion `deserializeGroup` rejects payloads from non-FE sources.
+ *
+ * Future-proof: when BE settles on a single canonical tense, drop the
+ * mapping here and the legacy ops enum can stay narrow.
+ */
+function coerceUnifiedSignalGroup(
+  g: NonNullable<UnifiedBotStrategyCreate['configurations']>['signals']['entry_long'],
+): SignalGroup {
+  if (!g) {
+    return { logic: { type: 'AND', threshold: null }, conditions: [] };
+  }
+  return {
+    logic: { type: g.logic.type, threshold: g.logic.threshold },
+    conditions: g.conditions.map((c) => ({
+      ...c,
+      op:
+        c.op === 'crossed_above'
+          ? 'crosses_above'
+          : c.op === 'crossed_below'
+            ? 'crosses_below'
+            : c.op,
+    })),
+  };
+}
+
 export function deserializeUnifiedPayload(
   payload: UnifiedBundle,
 ): DeserializedState {
@@ -563,7 +598,7 @@ export function deserializeUnifiedPayload(
         })),
       ),
       entryConditions: entryGroup
-        ? deserializeGroup(entryGroup)
+        ? deserializeGroup(coerceUnifiedSignalGroup(entryGroup))
         : EMPTY_DESERIALIZED_GROUP,
       startupCandleCount: cfg.startup_candle_count,
       informativeTimeframes: cfg.informative_timeframes,
@@ -586,7 +621,7 @@ export function deserializeUnifiedPayload(
       trailingOffset: (risk?.trailing_stop_positive_offset ?? 0) * 100,
       roiSteps,
       exitConditions: exitGroup
-        ? deserializeGroup(exitGroup)
+        ? deserializeGroup(coerceUnifiedSignalGroup(exitGroup))
         : EMPTY_DESERIALIZED_GROUP,
     },
   };

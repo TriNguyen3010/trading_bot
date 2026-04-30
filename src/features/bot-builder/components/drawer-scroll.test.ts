@@ -9,7 +9,9 @@ import { DRAWER_ANCHORS, scrollDrawerTo } from './drawer-scroll';
  */
 function installScrollIntoViewStub(): ReturnType<typeof vi.fn> {
   const fn = vi.fn();
-  // @ts-expect-error - jsdom Element doesn't declare scrollIntoView.
+  // DOM lib types declare scrollIntoView so no @ts-expect-error needed
+  // here; jsdom just doesn't implement it at runtime, which is what the
+  // stub solves.
   Element.prototype.scrollIntoView = fn;
   return fn;
 }
@@ -17,8 +19,10 @@ function installScrollIntoViewStub(): ReturnType<typeof vi.fn> {
 describe('scrollDrawerTo', () => {
   afterEach(() => {
     document.body.innerHTML = '';
-    // @ts-expect-error - clean up the stub we installed.
-    delete Element.prototype.scrollIntoView;
+    // `delete` on an optional prototype method is allowed by the DOM
+    // types (scrollIntoView is `(...) => void`, not required). Restore
+    // by removing our stub so the next test reinstalls cleanly.
+    delete (Element.prototype as Partial<Element>).scrollIntoView;
     vi.restoreAllMocks();
   });
 
