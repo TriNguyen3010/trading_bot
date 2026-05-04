@@ -3,6 +3,10 @@
 Interactive strategy builder for the Trading Bot platform. MVP scope:
 single-strategy builder with Cypheus AI scripted demo and JSON export.
 
+> **New to the project?** Read [`Spec/PROJECT_OVERVIEW.md`](./Spec/PROJECT_OVERVIEW.md)
+> — single-page tour of architecture, features shipped, branches,
+> conventions, and an onboarding day-by-day plan.
+>
 > Specs live in `Spec/Phase 1/` — start with `Spec/Phase 1/README.md`.
 
 ## Quick start
