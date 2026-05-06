@@ -897,6 +897,7 @@ function EquityCurve({
           fontFamily:
             'Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
           fontSize: 11,
+          attributionLogo: false,
         },
         grid: {
           vertLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
@@ -1061,6 +1062,7 @@ function LiveSpotFeed({
           fontFamily:
             'Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
           fontSize: 11,
+          attributionLogo: false,
         },
         grid: {
           vertLines: { color: 'transparent' },
