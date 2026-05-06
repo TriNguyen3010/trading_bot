@@ -29,13 +29,13 @@ export interface Fill {
 export interface PerformanceSnapshot {
   totalPnL: number;
   todayPnL: number;
-  todayPnLPct: number;
-  totalPct: number;
-  winRate: number;          // 0..1
+  todayPnLPct: number;       // today's PnL as % of account equity
+  totalPct: number;          // total return % (totalPnL / initial capital)
+  winRate: number;           // 0..1, closed trades only
   totalTrades: number;
   wins: number;
   losses: number;
-  avgRR: number;
+  avgRR: number;             // avg risk/reward ratio of closed trades
   openPositions: number;
   openExposure: number;
   winStreak: number;
@@ -56,7 +56,7 @@ export interface ExecutionCycle {
   cycleId: number;
   budgetMs: number;
   elapsedMs: number;
-  stages: CycleStage[];
+  stages: CycleStage[];      // must contain all 6 stages in order: scan → detect → validate → size → fill → settle
 }
 
 // Hyperliquid types
@@ -69,7 +69,13 @@ export interface HLAssetCtx {
   funding: number;
 }
 export interface HLCandle {
-  t: number; T: number; o: number; h: number; l: number; c: number; v: number;
+  t: number;  // open time (ms)
+  T: number;  // close time (ms)
+  o: number;  // open price
+  h: number;  // high price
+  l: number;  // low price
+  c: number;  // close price
+  v: number;  // volume
 }
 export interface HLOrderBookLevel { px: number; sz: number; n: number; }
 export interface HLOrderBook {
