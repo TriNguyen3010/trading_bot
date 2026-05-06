@@ -9,6 +9,11 @@
  * remain available even before adding `class="dark"` toggling.
  */
 
+@keyframes scan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(360px); }
+}
+
 :root {
   color-scheme: dark;
 

@@ -593,7 +593,71 @@ function WinStreakGauge({ streak }: { streak: number }) {
   );
 }
 
-function HeroPnL({ snap }: { snap: PerformanceSnapshot }) {
+function HeroPnL({
+  snap,
+  phase,
+}: {
+  snap: PerformanceSnapshot;
+  phase: BotPhase;
+}) {
+  if (phase === 'just-deployed') {
+    return (
+      <section
+        aria-labelledby="hero-pnl-label"
+        className="relative grid grid-cols-[1fr_auto] gap-6 overflow-hidden rounded-xl border border-border-subtle bg-surface p-6"
+      >
+        <div className="relative">
+          <div
+            id="hero-pnl-label"
+            className="mb-3 flex items-center gap-3 text-2xs uppercase tracking-widest text-fg-muted"
+          >
+            <span>Today · Realized PnL</span>
+            <span className="inline-flex items-center gap-1.5 text-info">
+              <span className="h-1.5 w-1.5 rounded-full bg-info animate-pulse" />
+              Scanning
+            </span>
+            <span className="text-border-strong">·</span>
+            <span>0 trades yet</span>
+          </div>
+          <div
+            className="font-pixel text-4xl tabular-nums text-fg-disabled"
+            style={{ lineHeight: 1.05 }}
+          >
+            $0.00
+          </div>
+          <div className="mt-4 flex items-center gap-3 text-xs text-fg-muted">
+            <span>
+              <span aria-hidden="true">⏱ </span>
+              Est. first signal in{' '}
+              <b className="text-fg-secondary">1–3h</b>
+            </span>
+            <div className="relative h-1 w-48 overflow-hidden rounded-sm bg-canvas">
+              <span className="absolute inset-y-0 -left-12 w-12 animate-[scan_2s_linear_infinite] bg-gradient-to-r from-transparent via-info to-transparent" />
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center w-32 opacity-40">
+          <svg width="96" height="96" viewBox="0 0 100 100" aria-hidden="true">
+            <circle
+              cx="50"
+              cy="50"
+              r="42"
+              fill="none"
+              stroke="var(--color-border-default)"
+              strokeWidth="4"
+            />
+          </svg>
+          <div className="-mt-[72px] font-pixel text-2xl text-fg-disabled">
+            —
+          </div>
+          <div className="mt-8 text-2xs uppercase tracking-widest text-fg-muted text-center leading-relaxed">
+            Build a streak
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   const isPositive = snap.todayPnL >= 0;
   const pnlColor = isPositive ? 'text-bullish' : 'text-bearish';
   const pnlGlow = isPositive
@@ -719,16 +783,38 @@ function SectionCard({
 // ──────────────────────────────────────────────────────────────────────
 const EQUITY_RANGES: TimeRange[] = ['1D', '7D', '30D', 'all'];
 
+function EmptyStateCard({
+  icon,
+  title,
+  body,
+}: {
+  icon: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <section className="rounded-lg border border-border-subtle bg-surface p-8 text-center">
+      <div className="mx-auto mb-2 h-10 w-10 rounded-md bg-canvas flex items-center justify-center text-lg">
+        {icon}
+      </div>
+      <h4 className="m-0 text-sm font-semibold text-fg">{title}</h4>
+      <p className="mt-1 text-2xs text-fg-muted">{body}</p>
+    </section>
+  );
+}
+
 function EquityCurve({
   data,
   range,
   onRangeChange,
   total,
+  phase,
 }: {
   data: EquityPoint[];
   range: TimeRange;
   onRangeChange: (r: TimeRange) => void;
   total: number;
+  phase: BotPhase;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -818,6 +904,16 @@ function EquityCurve({
     );
     chartRef.current?.timeScale().fitContent();
   }, [data]);
+
+  if (phase === 'just-deployed' || data.length === 0) {
+    return (
+      <EmptyStateCard
+        icon="📈"
+        title="Equity curve will appear here"
+        body="After your first closed trade · est. 1–3 hours"
+      />
+    );
+  }
 
   return (
     <SectionCard
@@ -1109,12 +1205,45 @@ function ActivityHeatmap({
   total,
   best,
   worst,
+  phase,
 }: {
   daily: DailyPnL[];
   total: number;
   best: number;
   worst: number;
+  phase: BotPhase;
 }) {
+  if (phase === 'just-deployed') {
+    return (
+      <section className="rounded-lg border border-border-subtle bg-surface px-4 py-3 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-7 w-7 flex-shrink-0 rounded-md bg-info/15 text-info text-base flex items-center justify-center">
+            📊
+          </div>
+          <div className="min-w-0">
+            <h4 className="m-0 text-xs font-semibold text-fg">
+              Daily activity heatmap
+            </h4>
+            <p className="m-0 text-2xs text-fg-muted">
+              Will populate as bot accumulates trades · 47-day window
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-shrink-0 gap-0.5">
+          {Array.from({ length: 47 }).map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                'h-4 w-1.5 rounded-sm',
+                i === 46 ? 'bg-info animate-pulse' : 'bg-border-subtle',
+              )}
+            />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   const bestColor = total >= 0 ? 'text-bullish' : 'text-bearish';
   return (
     <SectionCard
@@ -1182,111 +1311,166 @@ function ActivityHeatmap({
 // ExecutionPipeline — 6 stage cards (Scan → Detect → … → Settle) + budget
 // Active stage glows bullish + pulse animation matching Builder card style.
 // ──────────────────────────────────────────────────────────────────────
-function ExecutionPipeline({ cycle }: { cycle: ExecutionCycle }) {
+function ExecutionPipeline({
+  cycle,
+  phase,
+}: {
+  cycle: ExecutionCycle;
+  phase: BotPhase;
+}) {
   const elapsedSec = (cycle.elapsedMs / 1000).toFixed(2);
   const budgetSec = (cycle.budgetMs / 1000).toFixed(1);
   const underBudget = cycle.elapsedMs <= cycle.budgetMs;
+  const isScanning = phase === 'just-deployed';
   return (
     <SectionCard
       title={
         <span className="inline-flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" />
+          <span
+            className={cn(
+              'h-1.5 w-1.5 rounded-full animate-pulse',
+              isScanning ? 'bg-info' : 'bg-bullish',
+            )}
+          />
           <span>Execution Cycle</span>
         </span>
       }
       meta={
         <span className="tabular-nums text-fg-muted">
           Cycle{' '}
-          <b className="text-fg-secondary">#{cycle.cycleId}</b>
-        </span>
-      }
-      rightSlot={
-        <span className="text-2xs uppercase tracking-wider text-fg-muted tabular-nums normal-case">
-          Budget <b className="text-fg-secondary">{budgetSec}s</b>
-          <span className="text-border-strong mx-2">·</span>
-          Elapsed{' '}
-          <b className={underBudget ? 'text-bullish' : 'text-bearish'}>
-            {elapsedSec}s
+          <b className="text-fg-secondary">
+            {isScanning ? '#1 · scanning' : `#${cycle.cycleId}`}
           </b>
         </span>
       }
+      rightSlot={
+        isScanning ? (
+          <span className="text-2xs uppercase tracking-wider text-fg-muted tabular-nums normal-case">
+            Last scan <b className="text-info">12s ago</b>
+            <span className="text-border-strong mx-2">·</span>
+            No signal
+          </span>
+        ) : (
+          <span className="text-2xs uppercase tracking-wider text-fg-muted tabular-nums normal-case">
+            Budget <b className="text-fg-secondary">{budgetSec}s</b>
+            <span className="text-border-strong mx-2">·</span>
+            Elapsed{' '}
+            <b className={underBudget ? 'text-bullish' : 'text-bearish'}>
+              {elapsedSec}s
+            </b>
+          </span>
+        )
+      }
     >
       <div className="grid grid-cols-7 gap-2 p-3">
-        {cycle.stages.map((s, i) => (
+        {cycle.stages.map((s, i) => {
+          // In scanning mode, only stage 1 (Scan) is highlighted blue;
+          // all others stay pending.
+          const status = isScanning
+            ? i === 0
+              ? 'active'
+              : 'pending'
+            : s.status;
+          return (
           <div
             key={s.id}
             className={cn(
               'rounded-md p-2 transition-all',
-              s.status === 'active' &&
+              status === 'active' && isScanning &&
+                'bg-info/10 border border-info ring-1 ring-info/40 shadow-[0_0_12px_rgba(59,130,246,0.25)]',
+              status === 'active' && !isScanning &&
                 'bg-bullish/10 border border-bullish ring-1 ring-bullish/40 shadow-[0_0_12px_rgba(14,203,129,0.25)]',
-              s.status === 'done' &&
+              status === 'done' &&
                 'bg-bullish/5 border border-bullish/30',
-              s.status === 'pending' &&
+              status === 'pending' &&
                 'bg-canvas border border-border-subtle',
             )}
           >
             <div
               className={cn(
                 'text-[9px] font-semibold tracking-wider',
-                s.status === 'active'
-                  ? 'text-bullish'
-                  : s.status === 'done'
-                    ? 'text-bullish/70'
-                    : 'text-fg-muted',
+                status === 'active' && isScanning
+                  ? 'text-info'
+                  : status === 'active'
+                    ? 'text-bullish'
+                    : status === 'done'
+                      ? 'text-bullish/70'
+                      : 'text-fg-muted',
               )}
             >
               {String(i + 1).padStart(2, '0')}
-              {s.status === 'active' && ' · ACT'}
+              {status === 'active' && ' · ACT'}
             </div>
             <div className="text-xs font-semibold text-fg mt-0.5">{s.label}</div>
             <div
               className={cn(
                 'text-xs font-bold tabular-nums mt-0.5',
-                s.status === 'active'
-                  ? 'text-bullish'
-                  : s.status === 'done'
-                    ? 'text-bullish/70'
-                    : 'text-fg-disabled',
+                status === 'active' && isScanning
+                  ? 'text-info'
+                  : status === 'active'
+                    ? 'text-bullish'
+                    : status === 'done'
+                      ? 'text-bullish/70'
+                      : 'text-fg-disabled',
               )}
             >
-              {s.durationMs > 0 ? `${s.durationMs}ms` : '—'}
+              {isScanning && i === 0
+                ? 'live'
+                : s.durationMs > 0
+                  ? `${s.durationMs}ms`
+                  : '—'}
             </div>
           </div>
-        ))}
-        {/* Budget summary card */}
-        <div
-          className={cn(
-            'rounded-md p-2 border',
-            underBudget
-              ? 'bg-warning/10 border-warning/30'
-              : 'bg-bearish/10 border-bearish/30',
-          )}
-        >
+          );
+        })}
+        {/* Budget summary / scan-counter card */}
+        {isScanning ? (
+          <div className="rounded-md p-2 border bg-info/10 border-info/30">
+            <div className="text-[9px] font-semibold tracking-wider text-info">
+              SCANS
+            </div>
+            <div className="text-xs font-bold tabular-nums mt-0.5 text-fg">
+              3,247
+            </div>
+            <div className="text-2xs uppercase tracking-wider mt-0.5 text-info/80">
+              Since deploy
+            </div>
+          </div>
+        ) : (
           <div
             className={cn(
-              'text-[9px] font-semibold tracking-wider',
-              underBudget ? 'text-warning' : 'text-bearish',
+              'rounded-md p-2 border',
+              underBudget
+                ? 'bg-warning/10 border-warning/30'
+                : 'bg-bearish/10 border-bearish/30',
             )}
           >
-            FILL TIME
+            <div
+              className={cn(
+                'text-[9px] font-semibold tracking-wider',
+                underBudget ? 'text-warning' : 'text-bearish',
+              )}
+            >
+              FILL TIME
+            </div>
+            <div
+              className={cn(
+                'text-xs font-bold tabular-nums mt-0.5',
+                underBudget ? 'text-warning' : 'text-bearish',
+              )}
+            >
+              {elapsedSec}s
+            </div>
+            <div
+              className={cn(
+                'text-2xs uppercase tracking-wider mt-0.5',
+                underBudget ? 'text-warning/80' : 'text-bearish/80',
+              )}
+            >
+              {underBudget ? 'Under' : 'Over'}
+            </div>
           </div>
-          <div
-            className={cn(
-              'text-xs font-bold tabular-nums mt-0.5',
-              underBudget ? 'text-warning' : 'text-bearish',
-            )}
-          >
-            {elapsedSec}s
-          </div>
-          <div
-            className={cn(
-              'text-2xs uppercase tracking-wider mt-0.5',
-              underBudget ? 'text-warning/80' : 'text-bearish/80',
-            )}
-          >
-            {underBudget ? 'Under' : 'Over'}
-          </div>
-        </div>
+        )}
       </div>
     </SectionCard>
   );
@@ -1304,7 +1488,22 @@ function timeAgo(ts: number): string {
   return `${Math.floor(diff / 86_400_000)}d`;
 }
 
-function RecentFills({ fills }: { fills: Fill[] }) {
+function RecentFills({
+  fills,
+  phase,
+}: {
+  fills: Fill[];
+  phase: BotPhase;
+}) {
+  if (phase === 'just-deployed' || fills.length === 0) {
+    return (
+      <EmptyStateCard
+        icon="⏳"
+        title="Waiting for first signal"
+        body="Trades will stream here as they execute · est. first within 1–3 hours"
+      />
+    );
+  }
   // Show latest 7, newest first. OPEN sticks at top.
   const sorted = [...fills].sort((a, b) => {
     if (a.status === 'OPEN' && b.status !== 'OPEN') return -1;
@@ -1792,9 +1991,85 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
 // ──────────────────────────────────────────────────────────────────────
 // Main page
 // ──────────────────────────────────────────────────────────────────────
+function useDevDeployedOverride(originalDeployedAt: number | undefined) {
+  const [override, setOverride] = useState<number | null>(null);
+  useEffect(() => {
+    // Listen to the dev-controls event so we don't pollute the URL.
+    const onSet = (e: Event) => {
+      const detail = (e as CustomEvent<number | null>).detail;
+      setOverride(detail);
+    };
+    window.addEventListener('bot-monitoring:set-deployed', onSet);
+    return () =>
+      window.removeEventListener('bot-monitoring:set-deployed', onSet);
+  }, []);
+  return override ?? originalDeployedAt;
+}
+
+function DevControls() {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    setOpen(new URLSearchParams(window.location.search).has('dev'));
+  }, []);
+  if (!open) return null;
+  const dispatch = (offsetMs: number | null) => {
+    const value =
+      offsetMs == null ? null : Date.now() - offsetMs;
+    window.dispatchEvent(
+      new CustomEvent('bot-monitoring:set-deployed', { detail: value }),
+    );
+  };
+  return (
+    <div className="fixed bottom-4 right-4 z-50 rounded-md border border-warning/40 bg-surface p-3 shadow-lg">
+      <div className="mb-2 text-2xs font-semibold uppercase tracking-wider text-warning">
+        Dev controls
+      </div>
+      <div className="flex flex-col gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="justify-start text-xs"
+          onClick={() => dispatch(60_000)}
+        >
+          Reset to Day 0 (1m ago)
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="justify-start text-xs"
+          onClick={() => dispatch(14 * 86_400_000)}
+        >
+          Skip to Day 14
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="justify-start text-xs"
+          onClick={() => dispatch(47 * 86_400_000)}
+        >
+          Skip to Day 47
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="justify-start text-xs text-fg-muted"
+          onClick={() => dispatch(null)}
+        >
+          Clear override
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function BotMonitoringPage() {
   const { id = '' } = useParams<{ id: string }>();
-  const meta = useBotMeta(id);
+  const metaRaw = useBotMeta(id);
+  const effectiveDeployedAt = useDevDeployedOverride(metaRaw?.deployedAt);
+  const meta =
+    metaRaw && effectiveDeployedAt
+      ? { ...metaRaw, deployedAt: effectiveDeployedAt }
+      : metaRaw;
   const snap = useSnapshot(id, meta?.deployedAt);
   const fills = useFills(id, meta?.deployedAt);
   const [range, setRange] = useState<TimeRange>('30D');
@@ -1837,7 +2112,7 @@ export function BotMonitoringPage() {
 
         <main className="relative z-10 flex-1 overflow-y-auto">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-5">
-            <HeroPnL snap={snap} />
+            <HeroPnL snap={snap} phase={phase} />
 
             <div className="grid grid-cols-1 gap-3">
               <ActivityHeatmap
@@ -1845,12 +2120,14 @@ export function BotMonitoringPage() {
                 total={snap.totalPnL}
                 best={snap.bestDay}
                 worst={snap.worstDay}
+                phase={phase}
               />
               <EquityCurve
                 data={equity}
                 range={range}
                 onRangeChange={setRange}
                 total={snap.totalPnL}
+                phase={phase}
               />
               <OrderBookL2 book={orderBook} coin={coin} />
               <LiveSpotFeed
@@ -1859,8 +2136,8 @@ export function BotMonitoringPage() {
                 fills={fills}
                 watchingFor="Bollinger upper band cross + RSI < 70"
               />
-              {cycle && <ExecutionPipeline cycle={cycle} />}
-              <RecentFills fills={fills} />
+              {cycle && <ExecutionPipeline cycle={cycle} phase={phase} />}
+              <RecentFills fills={fills} phase={phase} />
             </div>
           </div>
         </main>
@@ -1871,6 +2148,7 @@ export function BotMonitoringPage() {
           </div>
         </aside>
       </div>
+      <DevControls />
     </div>
   );
 }
