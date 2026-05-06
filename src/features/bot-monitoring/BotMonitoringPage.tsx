@@ -36,7 +36,6 @@ import {
 import type {
   BotMeta,
   BotPhase,
-  DailyPnL,
   EquityPoint,
   ExecutionCycle,
   Fill,
@@ -101,19 +100,6 @@ function useEquityCurve(
     if (deployedAt == null) return;
     botApi.getEquityCurve(id, deployedAt, range).then(setData);
   }, [id, deployedAt, range]);
-  return data;
-}
-
-function useDailyPnL(
-  id: string,
-  deployedAt: number | undefined,
-  days: number,
-) {
-  const [data, setData] = useState<DailyPnL[]>([]);
-  useEffect(() => {
-    if (deployedAt == null) return;
-    botApi.getDailyPnL(id, deployedAt, days).then(setData);
-  }, [id, deployedAt, days]);
   return data;
 }
 
@@ -1183,131 +1169,6 @@ function LiveSpotFeed({
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// ActivityHeatmap — 47-day strip, 1 row of cells colored by daily PnL
-// Coin98 / GitHub contribution-graph style.
-// ──────────────────────────────────────────────────────────────────────
-function colorForPnL(pnl: number, max: number, min: number): string {
-  if (Math.abs(pnl) < 1) return TOKEN.borderSubtle; // idle/no-trade day
-  if (pnl > 0) {
-    const t = pnl / Math.max(max, 1);
-    if (t > 0.7) return '#0ecb81'; // bullish strong
-    if (t > 0.4) return '#10b981';
-    return '#fbbf24'; // small profit
-  }
-  const tNeg = pnl / Math.min(min, -1);
-  if (tNeg > 0.7) return '#7f1d1d'; // bearish strong
-  if (tNeg > 0.4) return '#dc2626';
-  return '#f59e0b'; // small loss
-}
-
-function ActivityHeatmap({
-  daily,
-  total,
-  best,
-  worst,
-  phase,
-}: {
-  daily: DailyPnL[];
-  total: number;
-  best: number;
-  worst: number;
-  phase: BotPhase;
-}) {
-  if (phase === 'just-deployed') {
-    return (
-      <section className="rounded-lg border border-border-subtle bg-surface px-4 py-3 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="h-7 w-7 flex-shrink-0 rounded-md bg-info/15 text-info text-base flex items-center justify-center">
-            📊
-          </div>
-          <div className="min-w-0">
-            <h4 className="m-0 text-xs font-semibold text-fg">
-              Daily activity heatmap
-            </h4>
-            <p className="m-0 text-2xs text-fg-muted">
-              Will populate as bot accumulates trades · 47-day window
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-shrink-0 gap-0.5">
-          {Array.from({ length: 47 }).map((_, i) => (
-            <div
-              key={i}
-              className={cn(
-                'h-4 w-1.5 rounded-sm',
-                i === 46 ? 'bg-info animate-pulse' : 'bg-border-subtle',
-              )}
-            />
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  const bestColor = total >= 0 ? 'text-bullish' : 'text-bearish';
-  return (
-    <SectionCard
-      title="47-day Activity"
-      meta={
-        <span className="tabular-nums">
-          <span className="text-fg-muted">BTC-USDC · all-time</span>
-        </span>
-      }
-      rightSlot={
-        <span className="text-2xs uppercase tracking-wider text-fg-muted tabular-nums normal-case">
-          Total{' '}
-          <b className={cn(bestColor, 'font-semibold')}>
-            ${total >= 0 ? '+' : ''}
-            {total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-          </b>
-          <span className="text-border-strong mx-2">·</span>
-          Best{' '}
-          <b className="text-bullish font-semibold">
-            ${best.toFixed(0)}
-          </b>
-          <span className="text-border-strong mx-2">·</span>
-          Worst{' '}
-          <b className="text-bearish font-semibold">
-            ${worst.toFixed(0)}
-          </b>
-        </span>
-      }
-    >
-      <div className="px-4 py-4">
-        <div className="grid grid-cols-[repeat(47,1fr)] gap-[3px] h-9">
-          {daily.map((d, i) => (
-            <div
-              key={d.date}
-              title={`${d.date}: $${d.pnl.toFixed(2)} (${d.trades} trades)`}
-              className="rounded-sm transition-transform hover:scale-150 cursor-pointer"
-              style={{
-                background: colorForPnL(d.pnl, best, worst),
-                boxShadow:
-                  i === daily.length - 1
-                    ? '0 0 8px rgba(14, 203, 129, 0.6)'
-                    : undefined,
-              }}
-            />
-          ))}
-        </div>
-        <div className="mt-2 flex items-center justify-between text-2xs text-fg-muted">
-          <span>{daily[0]?.date ?? ''}</span>
-          <span className="flex items-center gap-1.5">
-            Less
-            <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: TOKEN.borderSubtle }} />
-            <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: '#fbbf24' }} />
-            <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: '#10b981' }} />
-            <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: '#0ecb81' }} />
-            More
-          </span>
-          <span className="tabular-nums">{daily[daily.length - 1]?.date ?? ''}</span>
-        </div>
-      </div>
-    </SectionCard>
-  );
-}
-
-// ──────────────────────────────────────────────────────────────────────
 // ExecutionPipeline — 6 stage cards (Scan → Detect → … → Settle) + budget
 // Active stage glows bullish + pulse animation matching Builder card style.
 // ──────────────────────────────────────────────────────────────────────
@@ -2074,7 +1935,6 @@ export function BotMonitoringPage() {
   const fills = useFills(id, meta?.deployedAt);
   const [range, setRange] = useState<TimeRange>('30D');
   const equity = useEquityCurve(id, meta?.deployedAt, range);
-  const daily = useDailyPnL(id, meta?.deployedAt, 47);
   const cycle = useCycle(id);
   const coin = meta?.pair?.split('-')[0] ?? 'BTC';
   const candles = useHyperliquidCandles(coin, '5m');
@@ -2115,13 +1975,7 @@ export function BotMonitoringPage() {
             <HeroPnL snap={snap} phase={phase} />
 
             <div className="grid grid-cols-1 gap-3">
-              <ActivityHeatmap
-                daily={daily}
-                total={snap.totalPnL}
-                best={snap.bestDay}
-                worst={snap.worstDay}
-                phase={phase}
-              />
+              {cycle && <ExecutionPipeline cycle={cycle} phase={phase} />}
               <EquityCurve
                 data={equity}
                 range={range}
@@ -2136,7 +1990,6 @@ export function BotMonitoringPage() {
                 fills={fills}
                 watchingFor="Bollinger upper band cross + RSI < 70"
               />
-              {cycle && <ExecutionPipeline cycle={cycle} phase={phase} />}
               <RecentFills fills={fills} phase={phase} />
             </div>
           </div>
