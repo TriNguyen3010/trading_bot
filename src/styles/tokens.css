@@ -72,6 +72,39 @@
   50%      { opacity: 0.4; transform: scale(1.6); }
 }
 
+/* Cypheus narrative — slide-in for new messages, glow ring for latest */
+@keyframes cy-msg-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.cy-msg {
+  animation: cy-msg-enter 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform, opacity;
+}
+@keyframes cy-msg-glow-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(14, 203, 129, 0.3),
+      0 0 12px rgba(14, 203, 129, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(14, 203, 129, 0.55),
+      0 0 22px rgba(14, 203, 129, 0.32);
+  }
+}
+.cy-msg-latest {
+  animation:
+    cy-msg-enter 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    cy-msg-glow-pulse 2.4s ease-in-out 360ms infinite;
+}
+
 :root {
   color-scheme: dark;
 

@@ -302,7 +302,6 @@ function useCycle(id: string) {
 }
 
 const MAX_NARRATIVE = 24;
-const NARRATIVE_THROTTLE_MS = 3_000;
 
 function useCypheusMonitoringNarrative(
   fills: Fill[],
@@ -314,53 +313,56 @@ function useCypheusMonitoringNarrative(
     snap: PerformanceSnapshot | null;
     fills: Fill[];
   }>({ snap: null, fills: [] });
-  const lastPushRef = useRef<number>(0);
   const bootstrappedRef = useRef(false);
+  // Stable IDs let us dedupe — the same event (e.g. SL on fill X) can be
+  // re-emitted by every poll, but should only appear in the rail once.
+  const seenIdsRef = useRef<Set<string>>(new Set());
 
   // Bootstrap once per snap+fill load
   useEffect(() => {
     if (!snap) return;
     if (bootstrappedRef.current) return;
+    let seed: CypheusMessage[];
     if (phase === 'just-deployed' || fills.length === 0) {
-      // Defer bootstrap until phase transitions to mature; just-deployed
-      // path handled by generateEventNarrations.
-      const seed = generateEventNarrations({
+      seed = generateEventNarrations({
         prevSnap: null,
         nextSnap: snap,
         prevFills: [],
         nextFills: fills,
         phase,
       });
-      if (seed.length > 0) {
-        setMessages(seed);
-        bootstrappedRef.current = true;
-      }
-      return;
+    } else {
+      seed = bootstrapNarrative(snap, fills);
     }
-    setMessages(bootstrapNarrative(snap, fills));
-    bootstrappedRef.current = true;
-    prevRef.current = { snap, fills };
+    if (seed.length > 0) {
+      seed.forEach((m) => seenIdsRef.current.add(m.id));
+      setMessages(seed);
+      bootstrappedRef.current = true;
+      prevRef.current = { snap, fills };
+    }
   }, [snap, fills, phase]);
 
-  // Diff prev/next on each update
+  // Diff prev/next on each update — emit only NEW (unseen) ids.
   useEffect(() => {
     if (!snap) return;
     if (!bootstrappedRef.current) return;
-    if (Date.now() - lastPushRef.current < NARRATIVE_THROTTLE_MS) {
-      // throttle; still update the prev ref so future diffs are accurate
-      prevRef.current = { snap, fills };
-      return;
-    }
-    const newMsgs = generateEventNarrations({
+    const candidate = generateEventNarrations({
       prevSnap: prevRef.current.snap,
       nextSnap: snap,
       prevFills: prevRef.current.fills,
       nextFills: fills,
       phase,
     });
-    if (newMsgs.length > 0) {
-      setMessages((prev) => [...newMsgs, ...prev].slice(0, MAX_NARRATIVE));
-      lastPushRef.current = Date.now();
+    const fresh = candidate.filter((m) => !seenIdsRef.current.has(m.id));
+    if (fresh.length > 0) {
+      fresh.forEach((m) => seenIdsRef.current.add(m.id));
+      setMessages((prev) => [...fresh, ...prev].slice(0, MAX_NARRATIVE));
+      // Cap the seen set so it can't grow unbounded across long sessions.
+      if (seenIdsRef.current.size > 200) {
+        seenIdsRef.current = new Set(
+          Array.from(seenIdsRef.current).slice(-150),
+        );
+      }
     }
     prevRef.current = { snap, fills };
   }, [snap, fills, phase]);
@@ -589,6 +591,8 @@ const CYPHEUS_TYPE_META: Record<
   'pnl-milestone': { label: 'Milestone', icon: '📈', color: 'text-brand' },
   anomaly: { label: 'Anomaly', icon: '⚠', color: 'text-warning' },
   idle: { label: 'Quiet', icon: '⏸', color: 'text-fg-muted' },
+  volatility: { label: 'Volatility', icon: '🌪', color: 'text-info' },
+  'session-summary': { label: 'Session', icon: '📊', color: 'text-fg-secondary' },
 };
 
 function relativeTimeLabel(ts: number): string {
@@ -692,15 +696,15 @@ function CypheusRail({ messages = [] }: { messages?: CypheusMessage[] }) {
               </article>
             ) : (
               messages.map((m, idx) => {
-                const meta = CYPHEUS_TYPE_META[m.type];
+                const meta = CYPHEUS_TYPE_META[m.type] ?? CYPHEUS_TYPE_META.idle;
                 const isLatest = idx === 0;
                 return (
                   <article
                     key={m.id}
                     className={cn(
-                      'rounded-md border bg-surface p-2.5 transition-colors',
+                      'cy-msg rounded-md border bg-surface p-2.5 transition-colors',
                       isLatest
-                        ? 'border-bullish/40 shadow-[0_0_0_1px_rgba(14,203,129,0.3),0_0_12px_rgba(14,203,129,0.15)]'
+                        ? 'cy-msg-latest border-bullish/40 shadow-[0_0_0_1px_rgba(14,203,129,0.3),0_0_12px_rgba(14,203,129,0.15)]'
                         : 'border-border-subtle',
                     )}
                   >
