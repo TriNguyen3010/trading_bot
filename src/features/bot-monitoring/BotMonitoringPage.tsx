@@ -1589,7 +1589,118 @@ function RecentFills({
 // ──────────────────────────────────────────────────────────────────────
 // OrderBookL2 — depth table for bot's pair (real Hyperliquid l2Book)
 // 2-column layout: asks (red) · spread/mid strip · bids (green)
+// Smooth update strategy:
+//  · stable rank-based keys (`ask-0`..`ask-5`) so DOM nodes persist between
+//    polls — text/style updates animate instead of mount/unmount jumps
+//  · CSS transition on bar width (600ms ease-out-quick)
+//  · per-row flash highlight (500ms) when price changes
+//  · spread/mid number gets a subtle scale pulse on update
 // ──────────────────────────────────────────────────────────────────────
+const OB_DEPTH = 6;
+
+interface OBLevel {
+  px: number;
+  sz: number;
+}
+
+function OBRow({
+  level,
+  maxSize,
+  side,
+}: {
+  level: OBLevel | null;
+  maxSize: number;
+  side: 'ask' | 'bid';
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const prevPxRef = useRef<number | null>(null);
+
+  // Flash highlight on price change for this rank.
+  useEffect(() => {
+    if (!ref.current || level == null) return;
+    const prev = prevPxRef.current;
+    prevPxRef.current = level.px;
+    if (prev == null || prev === level.px) return;
+    const el = ref.current;
+    const cls = side === 'ask' ? 'ob-flash-ask' : 'ob-flash-bid';
+    el.classList.remove(cls);
+    // Force reflow so re-adding the class restarts the animation
+    void el.offsetWidth;
+    el.classList.add(cls);
+  }, [level?.px, side, level]);
+
+  const widthPct = level ? Math.min(100, (level.sz / maxSize) * 100) : 0;
+  const colorClass = side === 'ask' ? 'text-bearish' : 'text-bullish';
+  const barGradient =
+    side === 'ask'
+      ? 'linear-gradient(90deg, transparent, rgba(246, 70, 93, 0.25))'
+      : 'linear-gradient(90deg, transparent, rgba(14, 203, 129, 0.25))';
+
+  return (
+    <div
+      ref={ref}
+      className="ob-row grid grid-cols-[1fr_minmax(0,1fr)_auto] items-center gap-2 py-0.5 text-xs"
+    >
+      <span className={cn('font-semibold tabular-nums', colorClass)}>
+        {level
+          ? level.px.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          : '—'}
+      </span>
+      <div
+        className="ob-bar h-3 rounded-sm"
+        style={{
+          width: `${widthPct}%`,
+          background: barGradient,
+        }}
+      />
+      <span className="text-2xs text-fg-muted text-right tabular-nums">
+        {level ? level.sz.toFixed(3) : ''}
+      </span>
+    </div>
+  );
+}
+
+function MidPriceDisplay({
+  mid,
+  spread,
+  spreadPct,
+}: {
+  mid: number;
+  spread: number;
+  spreadPct: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const prevMidRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!ref.current || !Number.isFinite(mid)) return;
+    const prev = prevMidRef.current;
+    prevMidRef.current = mid;
+    if (prev == null || prev === mid) return;
+    const el = ref.current;
+    el.classList.remove('ob-mid-pulse');
+    void el.offsetWidth;
+    el.classList.add('ob-mid-pulse');
+  }, [mid]);
+
+  return (
+    <div
+      ref={ref}
+      className="text-base font-bold text-fg tabular-nums origin-center"
+    >
+      {Number.isFinite(mid)
+        ? mid.toLocaleString(undefined, { maximumFractionDigits: 2 })
+        : '—'}
+      <div className="mt-0.5 text-2xs text-warning tabular-nums font-normal">
+        ${spread.toFixed(2)} · {spreadPct.toFixed(3)}%
+      </div>
+    </div>
+  );
+}
+
 function OrderBookL2({ book, coin }: { book: HLOrderBook | null; coin: string }) {
   if (!book || book.levels[0].length === 0 || book.levels[1].length === 0) {
     return (
@@ -1612,17 +1723,22 @@ function OrderBookL2({ book, coin }: { book: HLOrderBook | null; coin: string })
   }
 
   // HL returns levels[0]=asks (sells), levels[1]=bids (buys).
-  // Asks ascending (best ask first); bids descending.
-  const asks = [...book.levels[0]].sort((a, b) => a.px - b.px).slice(0, 6);
-  const bids = [...book.levels[1]].sort((a, b) => b.px - a.px).slice(0, 6);
+  // Pad to fixed length so the row count never jumps mid-update.
+  const padTo = (arr: OBLevel[], cmp: (a: OBLevel, b: OBLevel) => number) => {
+    const sorted = [...arr].sort(cmp).slice(0, OB_DEPTH);
+    while (sorted.length < OB_DEPTH) sorted.push({ px: 0, sz: 0 });
+    return sorted;
+  };
+  const asks = padTo(book.levels[0], (a, b) => a.px - b.px); // ascending
+  const bids = padTo(book.levels[1], (a, b) => b.px - a.px); // descending
   // Asks display from spread outward → reverse so best ask sits at bottom
   // of asks column (closest to spread strip).
   const asksDisplay = [...asks].reverse();
 
   const bestAsk = asks[0]?.px ?? 0;
   const bestBid = bids[0]?.px ?? 0;
-  const spread = bestAsk - bestBid;
-  const mid = (bestAsk + bestBid) / 2;
+  const spread = bestAsk && bestBid ? bestAsk - bestBid : 0;
+  const mid = bestAsk && bestBid ? (bestAsk + bestBid) / 2 : 0;
   const spreadPct = mid > 0 ? (spread / mid) * 100 : 0;
 
   const maxAsk = Math.max(...asks.map((l) => l.sz), 0.0001);
@@ -1647,41 +1763,29 @@ function OrderBookL2({ book, coin }: { book: HLOrderBook | null; coin: string })
     >
       <div className="grid grid-cols-[1fr_auto_1fr]">
         {/* Asks (sells) */}
-        <div className="px-4 py-3 tabular-nums">
+        <div className="px-4 py-3">
           <div className="mb-1 text-2xs uppercase tracking-wider text-fg-muted">
             Asks · sells
           </div>
-          {asksDisplay.map((l) => (
-            <div
-              key={`ask-${l.px}`}
-              className="grid grid-cols-[1fr_minmax(0,1fr)_auto] items-center gap-2 py-0.5 text-xs"
-            >
-              <span className="font-semibold text-bearish">
-                {l.px.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              <div
-                className="h-3 rounded-sm"
-                style={{
-                  width: `${(l.sz / maxAsk) * 100}%`,
-                  background:
-                    'linear-gradient(90deg, transparent, rgba(246, 70, 93, 0.25))',
-                }}
-              />
-              <span className="text-2xs text-fg-muted text-right">
-                {l.sz.toFixed(3)}
-              </span>
-            </div>
+          {asksDisplay.map((l, i) => (
+            <OBRow
+              key={`ask-${i}`}
+              level={l.px > 0 ? l : null}
+              maxSize={maxAsk}
+              side="ask"
+            />
           ))}
         </div>
 
         {/* Spread / mid strip */}
         <div className="border-x border-border-subtle bg-canvas px-4 py-3 flex flex-col items-center justify-center min-w-[140px]">
           <div className="text-2xs uppercase tracking-wider text-fg-muted">Spread</div>
-          <div className="mt-1 text-base font-bold text-fg tabular-nums">
-            {mid.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-          </div>
-          <div className="mt-0.5 text-2xs text-warning tabular-nums">
-            ${spread.toFixed(2)} · {spreadPct.toFixed(3)}%
+          <div className="mt-1">
+            <MidPriceDisplay
+              mid={mid}
+              spread={spread}
+              spreadPct={spreadPct}
+            />
           </div>
           <div className="mt-2 text-[9px] uppercase tracking-wider text-fg-disabled">
             Mid Price
@@ -1689,30 +1793,17 @@ function OrderBookL2({ book, coin }: { book: HLOrderBook | null; coin: string })
         </div>
 
         {/* Bids (buys) */}
-        <div className="px-4 py-3 tabular-nums">
+        <div className="px-4 py-3">
           <div className="mb-1 text-2xs uppercase tracking-wider text-fg-muted">
             Bids · buys
           </div>
-          {bids.map((l) => (
-            <div
-              key={`bid-${l.px}`}
-              className="grid grid-cols-[1fr_minmax(0,1fr)_auto] items-center gap-2 py-0.5 text-xs"
-            >
-              <span className="font-semibold text-bullish">
-                {l.px.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              <div
-                className="h-3 rounded-sm"
-                style={{
-                  width: `${(l.sz / maxBid) * 100}%`,
-                  background:
-                    'linear-gradient(90deg, transparent, rgba(14, 203, 129, 0.25))',
-                }}
-              />
-              <span className="text-2xs text-fg-muted text-right">
-                {l.sz.toFixed(3)}
-              </span>
-            </div>
+          {bids.map((l, i) => (
+            <OBRow
+              key={`bid-${i}`}
+              level={l.px > 0 ? l : null}
+              maxSize={maxBid}
+              side="bid"
+            />
           ))}
         </div>
       </div>
