@@ -29,6 +29,11 @@ import { cn } from '@/lib/utils';
 import { botApi } from './mockBotData';
 import { hlApi, type MetaAndAssetCtxs } from './hyperliquid.service';
 import {
+  hierarchy as d3Hierarchy,
+  pack as d3Pack,
+  type HierarchyCircularNode,
+} from 'd3-hierarchy';
+import {
   bootstrapNarrative,
   generateEventNarrations,
   type CypheusMessage,
@@ -1639,27 +1644,25 @@ function OrderBookL2({ book, coin }: { book: HLOrderBook | null; coin: string })
 
 // ──────────────────────────────────────────────────────────────────────
 // GainersLosersBubble — Hyperliquid market-wide top movers visualization.
-// Bubble = top 15 by magnitude × log(volume); footer stats from full universe.
+// Visual ref: viz_pnl_dashboard.html — body radial gradient + halo glow +
+// highlight + iridescent rim. Layout: d3.pack circle packing.
 // 7D/30D/90D tabs are visual stubs for v1 (only 24H has real % change).
 // ──────────────────────────────────────────────────────────────────────
 type BubbleTimeframe = '24H' | '7D' | '30D' | '90D';
 const VOL_FILTER_MIN = 100_000;
+const BUBBLE_CANVAS_W = 256;
+const BUBBLE_CANVAS_H = 540;
+const BUBBLE_PAD = 4;
+const BUBBLE_MAX = 18;
 
 interface BubblePair {
   name: string;
   pct: number;
   vol: number;
-  left: number; // 0..100
-  top: number;
-  size: number; // px
+  cx: number;
+  cy: number;
+  r: number;
 }
-
-// Pre-baked positions for 15 bubbles in a tall sidebar canvas.
-const BUBBLE_POSITIONS: [number, number, number][] = [
-  [50, 2, 88], [10, 16, 64], [62, 16, 68], [38, 26, 52], [10, 32, 56],
-  [62, 34, 44], [34, 44, 50], [62, 48, 46], [8, 52, 40], [36, 60, 42],
-  [62, 64, 48], [10, 70, 38], [38, 80, 44], [62, 80, 40], [16, 90, 36],
-];
 
 function computeBubbles(ctxs: HLAssetCtx[]): BubblePair[] {
   const items = ctxs
@@ -1674,14 +1677,35 @@ function computeBubbles(ctxs: HLAssetCtx[]): BubblePair[] {
         Math.abs(b.pct) * Math.log10(b.vol + 10) -
         Math.abs(a.pct) * Math.log10(a.vol + 10),
     );
-  const top = items.slice(0, BUBBLE_POSITIONS.length);
-  const maxAbsPct = Math.max(...top.map((p) => Math.abs(p.pct)), 1);
+  const top = items.slice(0, BUBBLE_MAX);
+  if (top.length === 0) return [];
 
-  return top.map((p, i) => {
-    const [left, top, baseSize] = BUBBLE_POSITIONS[i];
-    const size = baseSize * (0.65 + 0.35 * (Math.abs(p.pct) / maxAbsPct));
-    return { ...p, left, top, size };
-  });
+  // d3.pack circle-packing — value ∝ sqrt(|pct| · log(vol)) so radius
+  // reads visually as magnitude weighted by liquidity.
+  type Leaf = { name: string; pct: number; vol: number };
+  type Datum = { name: string; pct?: number; vol?: number; children?: Leaf[] };
+  const root: Datum = {
+    name: 'root',
+    children: top.map((p) => ({ name: p.name, pct: p.pct, vol: p.vol })),
+  };
+  const packed = d3Pack<Datum>()
+    .size([BUBBLE_CANVAS_W, BUBBLE_CANVAS_H])
+    .padding(BUBBLE_PAD)(
+    d3Hierarchy<Datum>(root).sum((d) =>
+      d.children
+        ? 0
+        : Math.sqrt(Math.abs(d.pct ?? 0)) * Math.log10((d.vol ?? 0) + 10),
+    ),
+  );
+
+  return (packed.leaves() as HierarchyCircularNode<Datum>[]).map((node) => ({
+    name: node.data.name,
+    pct: node.data.pct ?? 0,
+    vol: node.data.vol ?? 0,
+    cx: node.x,
+    cy: node.y,
+    r: node.r,
+  }));
 }
 
 interface BubbleStats {
@@ -1761,9 +1785,9 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
       <div
         className="relative overflow-hidden rounded-md"
         style={{
-          height: 540,
+          height: BUBBLE_CANVAS_H,
           background:
-            'radial-gradient(ellipse at center, rgba(14, 203, 129, 0.05), transparent 70%)',
+            'radial-gradient(ellipse at center, rgba(14, 203, 129, 0.04), transparent 70%)',
         }}
       >
         {bubbles.length === 0 ? (
@@ -1771,40 +1795,146 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
             Waiting for HL data…
           </div>
         ) : (
-          bubbles.map((b) => (
-            <div
-              key={b.name}
-              title={`${b.name}: ${b.pct >= 0 ? '+' : ''}${b.pct.toFixed(2)}% · vol $${b.vol.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-              className={cn(
-                'absolute flex flex-col items-center justify-center rounded-full font-bold text-white tabular-nums cursor-pointer transition-transform',
-                'hover:scale-110 hover:z-10',
-                b.pct >= 0
-                  ? 'border border-bullish'
-                  : 'border border-bearish',
-              )}
-              style={{
-                width: b.size,
-                height: b.size,
-                left: `${b.left}%`,
-                top: `${b.top}%`,
-                background:
-                  b.pct >= 0
-                    ? 'radial-gradient(circle at 30% 30%, #10b981, #047857)'
-                    : 'radial-gradient(circle at 30% 30%, #f6647b, #991b1b)',
-                boxShadow:
-                  b.pct >= 0
-                    ? '0 0 12px rgba(14, 203, 129, 0.4)'
-                    : '0 0 12px rgba(246, 70, 93, 0.4)',
-                textShadow: '0 1px 2px rgba(0,0,0,0.6)',
-              }}
-            >
-              <div className="text-[11px] tracking-wider opacity-90">{b.name}</div>
-              <div className="text-[12px]">
-                {b.pct >= 0 ? '+' : ''}
-                {b.pct.toFixed(1)}%
-              </div>
-            </div>
-          ))
+          <svg
+            viewBox={`0 0 ${BUBBLE_CANVAS_W} ${BUBBLE_CANVAS_H}`}
+            preserveAspectRatio="xMidYMid meet"
+            className="absolute inset-0 h-full w-full"
+            aria-label="Hyperliquid market gainers and losers bubble chart"
+          >
+            <defs>
+              {/* Body radial — gain */}
+              <radialGradient id="hlBody-gain" cx="38%" cy="35%" r="62%">
+                <stop offset="0%" stopColor="#7CFFCB" stopOpacity="0.55" />
+                <stop offset="35%" stopColor="#0ECB81" stopOpacity="0.45" />
+                <stop offset="75%" stopColor="#0ECB81" stopOpacity="0.20" />
+                <stop offset="100%" stopColor="#0ECB81" stopOpacity="0.55" />
+              </radialGradient>
+              {/* Body radial — loss */}
+              <radialGradient id="hlBody-loss" cx="38%" cy="35%" r="62%">
+                <stop offset="0%" stopColor="#FFAFB7" stopOpacity="0.55" />
+                <stop offset="35%" stopColor="#F6465D" stopOpacity="0.45" />
+                <stop offset="75%" stopColor="#F6465D" stopOpacity="0.20" />
+                <stop offset="100%" stopColor="#F6465D" stopOpacity="0.55" />
+              </radialGradient>
+              {/* Atmospheric halo — gain */}
+              <radialGradient id="hlHalo-gain" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#0ECB81" stopOpacity="0.22" />
+                <stop offset="60%" stopColor="#0ECB81" stopOpacity="0.06" />
+                <stop offset="100%" stopColor="#0ECB81" stopOpacity="0" />
+              </radialGradient>
+              <radialGradient id="hlHalo-loss" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#F6465D" stopOpacity="0.22" />
+                <stop offset="60%" stopColor="#F6465D" stopOpacity="0.06" />
+                <stop offset="100%" stopColor="#F6465D" stopOpacity="0" />
+              </radialGradient>
+              {/* Specular highlight (top-left white fade) */}
+              <radialGradient id="hlHighlight" cx="35%" cy="30%" r="30%">
+                <stop offset="0%" stopColor="white" stopOpacity="0.85" />
+                <stop offset="60%" stopColor="white" stopOpacity="0.15" />
+                <stop offset="100%" stopColor="white" stopOpacity="0" />
+              </radialGradient>
+              {/* Iridescent rim — cyan→pink→gold→teal */}
+              <linearGradient id="hlRim" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#22D3EE" />
+                <stop offset="33%" stopColor="#F472B6" />
+                <stop offset="66%" stopColor="#FCD535" />
+                <stop offset="100%" stopColor="#22D3A8" />
+              </linearGradient>
+            </defs>
+            {bubbles.map((b) => {
+              const variant = b.pct >= 0 ? 'gain' : 'loss';
+              const sym = b.name.length > 5 ? b.name.slice(0, 5) : b.name;
+              const symFontSize = Math.max(9, Math.min(b.r * 0.36, 16));
+              const pctFontSize = Math.max(8, Math.min(b.r * 0.30, 14));
+              return (
+                <g
+                  key={b.name}
+                  className="hl-bubble"
+                  style={{
+                    animationDelay: `${(b.cx + b.cy) % 4}s`,
+                    transformOrigin: `${b.cx}px ${b.cy}px`,
+                  }}
+                >
+                  <title>
+                    {b.name}: {b.pct >= 0 ? '+' : ''}
+                    {b.pct.toFixed(2)}% · vol $
+                    {b.vol.toLocaleString(undefined, {
+                      maximumFractionDigits: 0,
+                    })}
+                  </title>
+                  {/* Halo */}
+                  <circle
+                    cx={b.cx}
+                    cy={b.cy}
+                    r={b.r * 1.35}
+                    fill={`url(#hlHalo-${variant})`}
+                  />
+                  {/* Iridescent rim outline */}
+                  <circle
+                    cx={b.cx}
+                    cy={b.cy}
+                    r={b.r}
+                    fill="none"
+                    stroke="url(#hlRim)"
+                    strokeWidth={1.2}
+                    opacity={0.4}
+                  />
+                  {/* Body */}
+                  <circle
+                    cx={b.cx}
+                    cy={b.cy}
+                    r={b.r}
+                    fill={`url(#hlBody-${variant})`}
+                    stroke={
+                      b.pct >= 0 ? 'rgba(14,203,129,0.55)' : 'rgba(246,70,93,0.55)'
+                    }
+                    strokeWidth={0.8}
+                  />
+                  {/* Specular highlight (offset) */}
+                  <circle
+                    cx={b.cx - b.r * 0.15}
+                    cy={b.cy - b.r * 0.2}
+                    r={b.r * 0.7}
+                    fill="url(#hlHighlight)"
+                    pointerEvents="none"
+                  />
+                  {/* Symbol label */}
+                  <text
+                    x={b.cx}
+                    y={b.cy - 2}
+                    fontFamily="Inter, sans-serif"
+                    fontWeight="700"
+                    fontSize={symFontSize}
+                    fill="#fff"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}
+                  >
+                    {sym}
+                  </text>
+                  {b.r >= 18 && (
+                    <text
+                      x={b.cx}
+                      y={b.cy + symFontSize * 0.85}
+                      fontFamily="JetBrains Mono, monospace"
+                      fontWeight="600"
+                      fontSize={pctFontSize}
+                      fill="#fff"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      style={{
+                        textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {b.pct >= 0 ? '+' : ''}
+                      {b.pct.toFixed(1)}%
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
         )}
       </div>
 

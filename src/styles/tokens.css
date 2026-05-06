@@ -14,6 +14,20 @@
   100% { transform: translateX(360px); }
 }
 
+/* Subtle bubble breath — used by GainersLosersBubble SVG groups */
+@keyframes hl-bubble-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.015); }
+}
+.hl-bubble {
+  animation: hl-bubble-float 6s ease-in-out infinite;
+  cursor: pointer;
+  transition: filter 200ms ease-out;
+}
+.hl-bubble:hover {
+  filter: brightness(1.15) drop-shadow(0 0 8px rgba(255, 255, 255, 0.18));
+}
+
 :root {
   color-scheme: dark;
 
