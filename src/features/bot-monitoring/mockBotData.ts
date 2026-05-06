@@ -34,7 +34,7 @@ export function generateMockFills(botId: string, deployedAt: number, now: number
   const targetCount = Math.min(200, Math.floor(hoursSinceDeploy * 0.15));
 
   let cumPrice = BTC_BASE;
-  let cycleId = 1000;
+  const cycleId = 1000;
 
   for (let i = 0; i < targetCount; i++) {
     const openedAt = deployedAt + Math.floor((i / targetCount) * (now - deployedAt));

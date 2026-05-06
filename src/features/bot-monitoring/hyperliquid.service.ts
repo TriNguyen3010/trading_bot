@@ -26,7 +26,7 @@ export interface HyperliquidApi {
 
 export const hlApi: HyperliquidApi = {
   async getMetaAndAssetCtxs() {
-    const res = await hlFetch<[any, HLAssetCtx[]]>({ type: 'metaAndAssetCtxs' });
+    const res = await hlFetch<[MetaAndAssetCtxs['meta'], HLAssetCtx[]]>({ type: 'metaAndAssetCtxs' });
     return { meta: res[0], ctxs: res[1] };
   },
   async getCandleSnapshot(coin, interval, startTime, endTime) {
