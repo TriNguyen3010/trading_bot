@@ -668,8 +668,9 @@ function EquityCurve({
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// LiveSpotFeed — candlestick chart of bot's pair (real Hyperliquid data)
-// + entry markers from bot fills
+// LiveSpotFeed — line/area chart of bot's pair close price (real Hyperliquid)
+// + entry markers from bot fills + High/Low markers
+// Coin98-style aesthetic: smooth bullish/bearish line, soft area gradient.
 // ──────────────────────────────────────────────────────────────────────
 function LiveSpotFeed({
   coin,
@@ -684,7 +685,7 @@ function LiveSpotFeed({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
   const [chartError, setChartError] = useState<string | null>(null);
 
   // Create chart once
@@ -701,7 +702,7 @@ function LiveSpotFeed({
           fontSize: 11,
         },
         grid: {
-          vertLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
+          vertLines: { color: 'transparent' },
           horzLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
         },
         timeScale: {
@@ -730,12 +731,14 @@ function LiveSpotFeed({
       setChartError(e instanceof Error ? e.message : 'Chart init failed');
       return;
     }
-    const series = chart.addCandlestickSeries({
-      upColor: TOKEN.bullish,
-      downColor: TOKEN.bearish,
-      wickUpColor: TOKEN.bullish,
-      wickDownColor: TOKEN.bearish,
-      borderVisible: false,
+    const series = chart.addAreaSeries({
+      lineColor: TOKEN.bullish,
+      topColor: TOKEN.bullishGlow,
+      bottomColor: TOKEN.bullishFade,
+      lineWidth: 2,
+      lineType: 2, // curved (bezier) for smoother Coin98 look
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 4,
       priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
     });
     chartRef.current = chart;
@@ -756,39 +759,74 @@ function LiveSpotFeed({
     };
   }, []);
 
-  // Update candles when data changes
+  // Update line data + High/Low + entry markers when data changes
   useEffect(() => {
     if (!seriesRef.current) return;
     if (candles.length === 0) {
       seriesRef.current.setData([]);
+      seriesRef.current.setMarkers([]);
       return;
     }
+    // Plot close price as line
     seriesRef.current.setData(
       candles.map((c) => ({
-        time: (Math.floor(c.t / 1000) as Time),
-        open: c.o,
-        high: c.h,
-        low: c.l,
-        close: c.c,
+        time: Math.floor(c.t / 1000) as Time,
+        value: c.c,
       })),
     );
-    chartRef.current?.timeScale().fitContent();
-  }, [candles]);
 
-  // Update entry markers from fills (latest 10)
-  useEffect(() => {
-    if (!seriesRef.current) return;
-    const recent = fills.slice(-10);
-    seriesRef.current.setMarkers(
-      recent.map((f) => ({
-        time: (Math.floor(f.openedAt / 1000) as Time),
+    // Build markers: High/Low extremes + recent entry/exit fills
+    const highIdx = candles.reduce(
+      (best, c, i) => (c.h > candles[best].h ? i : best),
+      0,
+    );
+    const lowIdx = candles.reduce(
+      (best, c, i) => (c.l < candles[best].l ? i : best),
+      0,
+    );
+    const high = candles[highIdx];
+    const low = candles[lowIdx];
+
+    const markers: Parameters<typeof seriesRef.current.setMarkers>[0] = [];
+    if (high && lowIdx !== highIdx) {
+      markers.push({
+        time: Math.floor(high.t / 1000) as Time,
+        position: 'aboveBar',
+        color: TOKEN.textSecondary,
+        shape: 'circle',
+        text: `High ${high.h.toLocaleString(undefined, {
+          maximumFractionDigits: 2,
+        })}`,
+      });
+    }
+    if (low) {
+      markers.push({
+        time: Math.floor(low.t / 1000) as Time,
+        position: 'belowBar',
+        color: TOKEN.textSecondary,
+        shape: 'circle',
+        text: `Low ${low.l.toLocaleString(undefined, {
+          maximumFractionDigits: 2,
+        })}`,
+      });
+    }
+    // Entry markers from fills (latest 6 to avoid clutter)
+    const recentFills = fills.slice(-6);
+    recentFills.forEach((f) => {
+      markers.push({
+        time: Math.floor(f.openedAt / 1000) as Time,
         position: f.side === 'LONG' ? 'belowBar' : 'aboveBar',
         color: f.side === 'LONG' ? TOKEN.bullish : TOKEN.bearish,
         shape: f.side === 'LONG' ? 'arrowUp' : 'arrowDown',
         text: f.side,
-      })),
-    );
-  }, [fills]);
+      });
+    });
+    // Markers must be sorted by time ascending
+    markers.sort((a, b) => Number(a.time) - Number(b.time));
+    seriesRef.current.setMarkers(markers);
+
+    chartRef.current?.timeScale().fitContent();
+  }, [candles, fills]);
 
   const last = candles[candles.length - 1];
   const first = candles[0];
