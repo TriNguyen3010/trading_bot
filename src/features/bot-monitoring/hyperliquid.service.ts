@@ -26,8 +26,28 @@ export interface HyperliquidApi {
 
 export const hlApi: HyperliquidApi = {
   async getMetaAndAssetCtxs() {
-    const res = await hlFetch<[MetaAndAssetCtxs['meta'], HLAssetCtx[]]>({ type: 'metaAndAssetCtxs' });
-    return { meta: res[0], ctxs: res[1] };
+    // HL returns asset context fields (markPx/prevDayPx/dayNtlVlm/openInterest/funding)
+    // as strings — coerce to numbers so consumers can do math directly.
+    type RawCtx = {
+      markPx?: string | number | null;
+      prevDayPx?: string | number | null;
+      dayNtlVlm?: string | number | null;
+      openInterest?: string | number | null;
+      funding?: string | number | null;
+    };
+    type RawRes = [MetaAndAssetCtxs['meta'], RawCtx[]];
+    const res = await hlFetch<RawRes>({ type: 'metaAndAssetCtxs' });
+    const meta = res[0];
+    const num = (v: unknown) => (v == null ? 0 : Number(v));
+    const ctxs: HLAssetCtx[] = res[1].map((c, i) => ({
+      coin: meta.universe[i]?.name ?? `?${i}`,
+      markPx: num(c.markPx),
+      prevDayPx: num(c.prevDayPx),
+      dayNtlVlm: num(c.dayNtlVlm),
+      openInterest: num(c.openInterest),
+      funding: num(c.funding),
+    }));
+    return { meta, ctxs };
   },
   async getCandleSnapshot(coin, interval, startTime, endTime) {
     // HL returns OHLCV as strings (e.g. "81175.0") — coerce to numbers

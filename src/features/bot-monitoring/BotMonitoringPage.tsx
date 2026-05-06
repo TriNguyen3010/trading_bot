@@ -27,7 +27,7 @@ import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { cn } from '@/lib/utils';
 import { botApi } from './mockBotData';
-import { hlApi } from './hyperliquid.service';
+import { hlApi, type MetaAndAssetCtxs } from './hyperliquid.service';
 import {
   bootstrapNarrative,
   generateEventNarrations,
@@ -40,7 +40,9 @@ import type {
   EquityPoint,
   ExecutionCycle,
   Fill,
+  HLAssetCtx,
   HLCandle,
+  HLOrderBook,
   PerformanceSnapshot,
   TimeRange,
 } from './types';
@@ -113,6 +115,53 @@ function useDailyPnL(
     botApi.getDailyPnL(id, deployedAt, days).then(setData);
   }, [id, deployedAt, days]);
   return data;
+}
+
+function useHyperliquidMarkets() {
+  const [data, setData] = useState<MetaAndAssetCtxs | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const load = (skipIfHidden: boolean) => {
+      if (skipIfHidden && document.hidden) return;
+      hlApi
+        .getMetaAndAssetCtxs()
+        .then((res) => {
+          if (!cancelled) setData(res);
+        })
+        .catch((err) => console.warn('HL markets fetch:', err));
+    };
+    load(false); // always fetch once on mount
+    const handle = setInterval(() => load(true), 10_000);
+    return () => {
+      cancelled = true;
+      clearInterval(handle);
+    };
+  }, []);
+  return data;
+}
+
+function useHyperliquidOrderBook(coin: string) {
+  const [book, setBook] = useState<HLOrderBook | null>(null);
+  useEffect(() => {
+    if (!coin) return;
+    let cancelled = false;
+    const load = (skipIfHidden: boolean) => {
+      if (skipIfHidden && document.hidden) return;
+      hlApi
+        .getL2Book(coin)
+        .then((b) => {
+          if (!cancelled) setBook(b);
+        })
+        .catch((err) => console.warn('HL orderbook fetch:', err));
+    };
+    load(false); // always fetch once on mount
+    const handle = setInterval(() => load(true), 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(handle);
+    };
+  }, [coin]);
+  return book;
 }
 
 function useCycle(id: string) {
@@ -1395,23 +1444,350 @@ function RecentFills({ fills }: { fills: Fill[] }) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Placeholder cards (M4 fill these in)
+// OrderBookL2 — depth table for bot's pair (real Hyperliquid l2Book)
+// 2-column layout: asks (red) · spread/mid strip · bids (green)
 // ──────────────────────────────────────────────────────────────────────
-function PlaceholderCard({ label, plannedIn }: { label: string; plannedIn: string }) {
+function OrderBookL2({ book, coin }: { book: HLOrderBook | null; coin: string }) {
+  if (!book || book.levels[0].length === 0 || book.levels[1].length === 0) {
+    return (
+      <SectionCard
+        title={
+          <span className="inline-flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded border border-bullish/30 bg-bullish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-bullish">
+              <span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" />
+              L2
+            </span>
+            <span>Order Book · {coin}</span>
+          </span>
+        }
+      >
+        <div className="px-4 py-8 text-center text-xs text-fg-muted">
+          Loading order book…
+        </div>
+      </SectionCard>
+    );
+  }
+
+  // HL returns levels[0]=asks (sells), levels[1]=bids (buys).
+  // Asks ascending (best ask first); bids descending.
+  const asks = [...book.levels[0]].sort((a, b) => a.px - b.px).slice(0, 6);
+  const bids = [...book.levels[1]].sort((a, b) => b.px - a.px).slice(0, 6);
+  // Asks display from spread outward → reverse so best ask sits at bottom
+  // of asks column (closest to spread strip).
+  const asksDisplay = [...asks].reverse();
+
+  const bestAsk = asks[0]?.px ?? 0;
+  const bestBid = bids[0]?.px ?? 0;
+  const spread = bestAsk - bestBid;
+  const mid = (bestAsk + bestBid) / 2;
+  const spreadPct = mid > 0 ? (spread / mid) * 100 : 0;
+
+  const maxAsk = Math.max(...asks.map((l) => l.sz), 0.0001);
+  const maxBid = Math.max(...bids.map((l) => l.sz), 0.0001);
+
   return (
-    <div
-      className={cn(
-        'rounded-lg border border-dashed border-border-default bg-surface/40 p-8',
-        'flex flex-col items-center justify-center gap-1 text-center',
-      )}
+    <SectionCard
+      title={
+        <span className="inline-flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded border border-bullish/30 bg-bullish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-bullish">
+            <span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" />
+            L2
+          </span>
+          <span>Order Book · {coin}</span>
+        </span>
+      }
+      rightSlot={
+        <span className="text-2xs text-fg-muted normal-case">
+          Updates 1s
+        </span>
+      }
     >
-      <div className="text-xs font-semibold text-fg-secondary">{label}</div>
-      <div className="text-2xs uppercase tracking-wider text-fg-muted">
-        arrives in {plannedIn}
+      <div className="grid grid-cols-[1fr_auto_1fr]">
+        {/* Asks (sells) */}
+        <div className="px-4 py-3 tabular-nums">
+          <div className="mb-1 text-2xs uppercase tracking-wider text-fg-muted">
+            Asks · sells
+          </div>
+          {asksDisplay.map((l) => (
+            <div
+              key={`ask-${l.px}`}
+              className="grid grid-cols-[1fr_minmax(0,1fr)_auto] items-center gap-2 py-0.5 text-xs"
+            >
+              <span className="font-semibold text-bearish">
+                {l.px.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <div
+                className="h-3 rounded-sm"
+                style={{
+                  width: `${(l.sz / maxAsk) * 100}%`,
+                  background:
+                    'linear-gradient(90deg, transparent, rgba(246, 70, 93, 0.25))',
+                }}
+              />
+              <span className="text-2xs text-fg-muted text-right">
+                {l.sz.toFixed(3)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Spread / mid strip */}
+        <div className="border-x border-border-subtle bg-canvas px-4 py-3 flex flex-col items-center justify-center min-w-[140px]">
+          <div className="text-2xs uppercase tracking-wider text-fg-muted">Spread</div>
+          <div className="mt-1 text-base font-bold text-fg tabular-nums">
+            {mid.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+          </div>
+          <div className="mt-0.5 text-2xs text-warning tabular-nums">
+            ${spread.toFixed(2)} · {spreadPct.toFixed(3)}%
+          </div>
+          <div className="mt-2 text-[9px] uppercase tracking-wider text-fg-disabled">
+            Mid Price
+          </div>
+        </div>
+
+        {/* Bids (buys) */}
+        <div className="px-4 py-3 tabular-nums">
+          <div className="mb-1 text-2xs uppercase tracking-wider text-fg-muted">
+            Bids · buys
+          </div>
+          {bids.map((l) => (
+            <div
+              key={`bid-${l.px}`}
+              className="grid grid-cols-[1fr_minmax(0,1fr)_auto] items-center gap-2 py-0.5 text-xs"
+            >
+              <span className="font-semibold text-bullish">
+                {l.px.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <div
+                className="h-3 rounded-sm"
+                style={{
+                  width: `${(l.sz / maxBid) * 100}%`,
+                  background:
+                    'linear-gradient(90deg, transparent, rgba(14, 203, 129, 0.25))',
+                }}
+              />
+              <span className="text-2xs text-fg-muted text-right">
+                {l.sz.toFixed(3)}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </SectionCard>
   );
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// GainersLosersBubble — Hyperliquid market-wide top movers visualization.
+// Bubble = top 15 by magnitude × log(volume); footer stats from full universe.
+// 7D/30D/90D tabs are visual stubs for v1 (only 24H has real % change).
+// ──────────────────────────────────────────────────────────────────────
+type BubbleTimeframe = '24H' | '7D' | '30D' | '90D';
+const VOL_FILTER_MIN = 100_000;
+
+interface BubblePair {
+  name: string;
+  pct: number;
+  vol: number;
+  left: number; // 0..100
+  top: number;
+  size: number; // px
+}
+
+// Pre-baked positions for 15 bubbles in a tall sidebar canvas.
+const BUBBLE_POSITIONS: [number, number, number][] = [
+  [50, 2, 88], [10, 16, 64], [62, 16, 68], [38, 26, 52], [10, 32, 56],
+  [62, 34, 44], [34, 44, 50], [62, 48, 46], [8, 52, 40], [36, 60, 42],
+  [62, 64, 48], [10, 70, 38], [38, 80, 44], [62, 80, 40], [16, 90, 36],
+];
+
+function computeBubbles(ctxs: HLAssetCtx[]): BubblePair[] {
+  const items = ctxs
+    .filter((c) => c.dayNtlVlm >= VOL_FILTER_MIN && c.prevDayPx > 0)
+    .map((c) => ({
+      name: c.coin,
+      pct: ((c.markPx - c.prevDayPx) / c.prevDayPx) * 100,
+      vol: c.dayNtlVlm,
+    }))
+    .sort(
+      (a, b) =>
+        Math.abs(b.pct) * Math.log10(b.vol + 10) -
+        Math.abs(a.pct) * Math.log10(a.vol + 10),
+    );
+  const top = items.slice(0, BUBBLE_POSITIONS.length);
+  const maxAbsPct = Math.max(...top.map((p) => Math.abs(p.pct)), 1);
+
+  return top.map((p, i) => {
+    const [left, top, baseSize] = BUBBLE_POSITIONS[i];
+    const size = baseSize * (0.65 + 0.35 * (Math.abs(p.pct) / maxAbsPct));
+    return { ...p, left, top, size };
+  });
+}
+
+interface BubbleStats {
+  winners: number;
+  losers: number;
+  bestCoin: string | null;
+  bestPct: number;
+  worstCoin: string | null;
+  worstPct: number;
+}
+
+function computeBubbleStats(ctxs: HLAssetCtx[]): BubbleStats {
+  const filtered = ctxs.filter(
+    (c) => c.dayNtlVlm >= VOL_FILTER_MIN && c.prevDayPx > 0,
+  );
+  let winners = 0;
+  let losers = 0;
+  let best: { coin: string; pct: number } | null = null;
+  let worst: { coin: string; pct: number } | null = null;
+  for (const c of filtered) {
+    const pct = ((c.markPx - c.prevDayPx) / c.prevDayPx) * 100;
+    if (pct > 0) winners++;
+    else if (pct < 0) losers++;
+    if (!best || pct > best.pct) best = { coin: c.coin, pct };
+    if (!worst || pct < worst.pct) worst = { coin: c.coin, pct };
+  }
+  return {
+    winners,
+    losers,
+    bestCoin: best?.coin ?? null,
+    bestPct: best?.pct ?? 0,
+    worstCoin: worst?.coin ?? null,
+    worstPct: worst?.pct ?? 0,
+  };
+}
+
+function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
+  const [tf, setTf] = useState<BubbleTimeframe>('24H');
+  const bubbles = computeBubbles(ctxs);
+  const stats = computeBubbleStats(ctxs);
+
+  return (
+    <section className="rounded-lg border border-border-subtle bg-surface p-3 sticky top-3">
+      <header className="mb-2 flex items-center justify-between text-2xs uppercase tracking-wider text-fg-muted">
+        <span className="font-semibold">Hyperliquid Markets</span>
+        <span className="inline-flex items-center gap-1 normal-case tracking-normal text-bullish">
+          <span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" />
+          Live
+        </span>
+      </header>
+
+      <div
+        role="tablist"
+        aria-label="Timeframe"
+        className="mb-2.5 flex gap-0.5 rounded-md border border-border-subtle bg-canvas p-0.5"
+      >
+        {(['24H', '7D', '30D', '90D'] as BubbleTimeframe[]).map((t) => (
+          <button
+            key={t}
+            type="button"
+            role="tab"
+            aria-selected={t === tf}
+            onClick={() => setTf(t)}
+            className={cn(
+              'flex-1 rounded-sm py-1 text-2xs font-medium tracking-wider transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
+              t === tf
+                ? 'bg-surface text-fg'
+                : 'text-fg-muted hover:text-fg',
+            )}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      <div
+        className="relative overflow-hidden rounded-md"
+        style={{
+          height: 540,
+          background:
+            'radial-gradient(ellipse at center, rgba(14, 203, 129, 0.05), transparent 70%)',
+        }}
+      >
+        {bubbles.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center text-2xs text-fg-muted">
+            Waiting for HL data…
+          </div>
+        ) : (
+          bubbles.map((b) => (
+            <div
+              key={b.name}
+              title={`${b.name}: ${b.pct >= 0 ? '+' : ''}${b.pct.toFixed(2)}% · vol $${b.vol.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+              className={cn(
+                'absolute flex flex-col items-center justify-center rounded-full font-bold text-white tabular-nums cursor-pointer transition-transform',
+                'hover:scale-110 hover:z-10',
+                b.pct >= 0
+                  ? 'border border-bullish'
+                  : 'border border-bearish',
+              )}
+              style={{
+                width: b.size,
+                height: b.size,
+                left: `${b.left}%`,
+                top: `${b.top}%`,
+                background:
+                  b.pct >= 0
+                    ? 'radial-gradient(circle at 30% 30%, #10b981, #047857)'
+                    : 'radial-gradient(circle at 30% 30%, #f6647b, #991b1b)',
+                boxShadow:
+                  b.pct >= 0
+                    ? '0 0 12px rgba(14, 203, 129, 0.4)'
+                    : '0 0 12px rgba(246, 70, 93, 0.4)',
+                textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+              }}
+            >
+              <div className="text-[11px] tracking-wider opacity-90">{b.name}</div>
+              <div className="text-[12px]">
+                {b.pct >= 0 ? '+' : ''}
+                {b.pct.toFixed(1)}%
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border-subtle pt-2 text-2xs uppercase tracking-wider text-fg-muted">
+        <div>
+          Winners
+          <b className="block normal-case tracking-normal mt-0.5 text-xs text-bullish font-semibold tabular-nums">
+            {stats.winners} pairs
+          </b>
+        </div>
+        <div>
+          Losers
+          <b className="block normal-case tracking-normal mt-0.5 text-xs text-bearish font-semibold tabular-nums">
+            {stats.losers} pairs
+          </b>
+        </div>
+        <div>
+          Best
+          <b className="block normal-case tracking-normal mt-0.5 text-xs text-bullish font-semibold tabular-nums">
+            {stats.bestCoin
+              ? `${stats.bestCoin} +${stats.bestPct.toFixed(1)}%`
+              : '—'}
+          </b>
+        </div>
+        <div>
+          Worst
+          <b className="block normal-case tracking-normal mt-0.5 text-xs text-bearish font-semibold tabular-nums">
+            {stats.worstCoin
+              ? `${stats.worstCoin} ${stats.worstPct.toFixed(1)}%`
+              : '—'}
+          </b>
+        </div>
+      </div>
+
+      {tf !== '24H' && (
+        <div className="mt-2 text-[10px] text-fg-disabled text-center italic">
+          {tf} compute lands post-demo · showing 24H magnitudes
+        </div>
+      )}
+    </section>
+  );
+}
+
 
 // ──────────────────────────────────────────────────────────────────────
 // Main page
@@ -1429,6 +1805,8 @@ export function BotMonitoringPage() {
   const candles = useHyperliquidCandles(coin, '5m');
   const phase = useBotMaturity(meta?.deployedAt, snap?.totalTrades ?? 0);
   const cypheusMessages = useCypheusMonitoringNarrative(fills, snap, phase);
+  const orderBook = useHyperliquidOrderBook(coin);
+  const markets = useHyperliquidMarkets();
 
   if (!meta || !snap) {
     return (
@@ -1474,7 +1852,7 @@ export function BotMonitoringPage() {
                 onRangeChange={setRange}
                 total={snap.totalPnL}
               />
-              <PlaceholderCard label="Order Book L2 · BTC" plannedIn="M4" />
+              <OrderBookL2 book={orderBook} coin={coin} />
               <LiveSpotFeed
                 coin={coin}
                 candles={candles}
@@ -1487,9 +1865,9 @@ export function BotMonitoringPage() {
           </div>
         </main>
 
-        <aside className="relative z-10 w-[280px] flex-shrink-0 border-l border-border-subtle bg-canvas">
+        <aside className="relative z-10 w-[280px] flex-shrink-0 border-l border-border-subtle bg-canvas overflow-y-auto">
           <div className="p-3">
-            <PlaceholderCard label="Hyperliquid Markets" plannedIn="M4" />
+            <GainersLosersBubble ctxs={markets?.ctxs ?? []} />
           </div>
         </aside>
       </div>
