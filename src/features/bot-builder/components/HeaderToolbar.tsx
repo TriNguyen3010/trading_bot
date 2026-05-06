@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
+  Activity,
   BookOpen,
   Download,
   Eye,
@@ -53,6 +55,8 @@ export function HeaderToolbar() {
   const [draft, setDraft] = useState(botName);
   const [importOpen, setImportOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const navigate = useNavigate();
 
   const issues = useMemo(() => validateBuilder(state), [state]);
   const canExport = issues.length === 0;
@@ -245,6 +249,26 @@ export function HeaderToolbar() {
               {canExport
                 ? 'Export the bundle JSON (Ctrl+E)'
                 : `${issues.length} issue${issues.length === 1 ? '' : 's'} to fix.`}
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={!canExport}
+                  onClick={() => navigate('/bots/bot-1')}
+                >
+                  <Activity className="h-3.5 w-3.5" />
+                  Monitor
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              {canExport
+                ? 'View live monitoring dashboard'
+                : 'Fix issues before monitoring'}
             </TooltipContent>
           </Tooltip>
         </div>

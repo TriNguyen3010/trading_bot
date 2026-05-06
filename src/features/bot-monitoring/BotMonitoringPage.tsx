@@ -245,6 +245,79 @@ function useCypheusMonitoringNarrative(
 // Cache HL candles in-module to avoid hammering the API on remounts.
 const candleCache = new Map<string, { data: HLCandle[]; ts: number }>();
 
+// ── Multi-timeframe pct cache (module-level, keyed by "tf:cacheKey") ──
+const tfPctCache = new Map<string, { data: Map<string, number>; ts: number }>();
+
+// Timeframe → days to look back
+const TF_DAYS: Record<string, number> = { '7D': 7, '30D': 30, '90D': 90 };
+
+// Batch-fetch candleSnapshot pct changes for a list of coins.
+// max 8 concurrent requests to avoid rate limiting.
+function useHLTfPct(
+  coins: string[],
+  tf: '7D' | '30D' | '90D',
+  enabled: boolean,
+): Map<string, number> | null {
+  const [result, setResult] = useState<Map<string, number> | null>(null);
+
+  // Stable cache key — changes every 5 minutes
+  const cacheKey = Math.floor(Date.now() / 300_000).toString();
+
+  useEffect(() => {
+    if (!enabled || coins.length === 0) return;
+
+    const key = `${tf}:${cacheKey}`;
+    const cached = tfPctCache.get(key);
+    if (cached && Date.now() - cached.ts < 300_000) {
+      setResult(cached.data);
+      return;
+    }
+
+    let cancelled = false;
+    setResult(null); // reset to loading state
+
+    const days = TF_DAYS[tf];
+    const now = Date.now();
+    const startTime = now - days * 86_400_000;
+
+    // Run in batches of 8
+    async function fetchAll() {
+      const map = new Map<string, number>();
+      const BATCH = 8;
+      for (let i = 0; i < coins.length; i += BATCH) {
+        if (cancelled) return;
+        const batch = coins.slice(i, i + BATCH);
+        await Promise.all(
+          batch.map(async (coin) => {
+            try {
+              const candles = await hlApi.getCandleSnapshot(coin, '1d', startTime, now);
+              if (candles.length >= 2) {
+                const first = candles[0];
+                const last = candles[candles.length - 1];
+                const pct = ((last.c - first.o) / first.o) * 100;
+                map.set(coin, pct);
+              }
+            } catch {
+              // skip coin on error
+            }
+          }),
+        );
+      }
+      if (!cancelled) {
+        tfPctCache.set(key, { data: map, ts: Date.now() });
+        setResult(map);
+      }
+    }
+
+    fetchAll().catch((err) => console.warn('useHLTfPct fetch failed:', err));
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, tf, cacheKey, coins.join(',')]);
+
+  return result;
+}
+
 function useHyperliquidCandles(
   coin: string,
   interval: '1m' | '5m' | '15m' | '1h' | '1d',
@@ -1742,10 +1815,448 @@ function computeBubbleStats(ctxs: HLAssetCtx[]): BubbleStats {
   };
 }
 
+// ── Physics engine for GainersLosersBubble ────────────────────────────
+// Matches viz_pnl_dashboard.html: Brownian noise + elastic collisions +
+// jelly squash/spring + organic blob perimeter (Cardinal closed spline).
+// All DOM updates are imperative via refs — zero React re-renders at 60fps.
+// ──────────────────────────────────────────────────────────────────────
+
+interface PhysBubble {
+  id: string;
+  pct: number;
+  vol: number;
+  x: number;
+  y: number;
+  r: number;
+  vx: number;
+  vy: number;
+  mass: number;
+  squashAmount: number;
+  squashVel: number;
+  squashAxis: number;
+  phase: number; // per-bubble random phase for blob wobble
+}
+
+const PHYS = {
+  thermal: 0.12,       // Brownian noise amplitude — higher = more lively drift
+  centerPull: 0.0004,  // soft gravity toward canvas centre
+  damping: 0.988,      // velocity drain per frame — slightly less drag
+  restitution: 0.45,   // energy kept on bubble–bubble collision
+  wallRestitution: 0.55,
+  minSpeed: 0.08,      // velocity floor — keeps bubbles always drifting
+} as const;
+
+const JELLY = {
+  springK: 0.20,       // restoring stiffness toward round shape
+  springDamp: 0.50,    // squash velocity drain — decays in ~5 frames
+  squashGain: 0.0006,  // collision → squash multiplier
+  maxSquash: 0.025,    // max deformation (2.5 % of radius)
+  wallSquashGain: 0.0005,
+  perimAmp: 0.014,     // blob breathing amplitude
+  perimVerts: 16,      // vertices for the organic outline
+} as const;
+
+function bRand(lo: number, hi: number) {
+  return lo + Math.random() * (hi - lo);
+}
+
+function applySquashForce(b: PhysBubble, amount: number, axis: number) {
+  b.squashAxis = axis;
+  b.squashVel += amount;
+  if (Math.abs(b.squashAmount) > JELLY.maxSquash) {
+    b.squashAmount = Math.sign(b.squashAmount) * JELLY.maxSquash;
+    b.squashVel *= 0.5;
+  }
+}
+
+function stepPhysics(bubbles: PhysBubble[], W: number, H: number) {
+  const cx = W / 2, cy = H / 2;
+
+  // 1. Forces + Euler integration
+  for (const b of bubbles) {
+    b.vx += bRand(-PHYS.thermal, PHYS.thermal);
+    b.vy += bRand(-PHYS.thermal, PHYS.thermal);
+    b.vx += (cx - b.x) * PHYS.centerPull;
+    b.vy += (cy - b.y) * PHYS.centerPull;
+    b.vx *= PHYS.damping;
+    b.vy *= PHYS.damping;
+    // Velocity floor — bubble never fully stops
+    const sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+    if (sp < PHYS.minSpeed) {
+      const ang = bRand(0, Math.PI * 2);
+      b.vx += Math.cos(ang) * PHYS.minSpeed * 0.3;
+      b.vy += Math.sin(ang) * PHYS.minSpeed * 0.3;
+    }
+    b.x += b.vx;
+    b.y += b.vy;
+  }
+
+  // 2. Wall bounce + squash
+  for (const b of bubbles) {
+    if (b.x - b.r < 8) {
+      applySquashForce(b, Math.abs(b.vx) * JELLY.wallSquashGain, 0);
+      b.x = b.r + 8;
+      b.vx = Math.abs(b.vx) * PHYS.wallRestitution;
+    }
+    if (b.x + b.r > W - 8) {
+      applySquashForce(b, Math.abs(b.vx) * JELLY.wallSquashGain, 0);
+      b.x = W - b.r - 8;
+      b.vx = -Math.abs(b.vx) * PHYS.wallRestitution;
+    }
+    if (b.y - b.r < 8) {
+      applySquashForce(b, Math.abs(b.vy) * JELLY.wallSquashGain, Math.PI / 2);
+      b.y = b.r + 8;
+      b.vy = Math.abs(b.vy) * PHYS.wallRestitution;
+    }
+    if (b.y + b.r > H - 8) {
+      applySquashForce(b, Math.abs(b.vy) * JELLY.wallSquashGain, Math.PI / 2);
+      b.y = H - b.r - 8;
+      b.vy = -Math.abs(b.vy) * PHYS.wallRestitution;
+    }
+  }
+
+  // 3. Pairwise elastic collisions
+  for (let i = 0; i < bubbles.length; i++) {
+    for (let j = i + 1; j < bubbles.length; j++) {
+      const a = bubbles[i], bub = bubbles[j];
+      const dx = bub.x - a.x, dy = bub.y - a.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const minD = a.r + bub.r + 2;
+      if (dist < minD && dist > 0.01) {
+        const overlap = (minD - dist) / 2;
+        const nx = dx / dist, ny = dy / dist;
+        a.x -= nx * overlap; a.y -= ny * overlap;
+        bub.x += nx * overlap; bub.y += ny * overlap;
+        const dvx = bub.vx - a.vx, dvy = bub.vy - a.vy;
+        const vn = dvx * nx + dvy * ny;
+        if (vn < 0) {
+          const ma = a.mass, mb = bub.mass;
+          const imp = -(1 + PHYS.restitution) * vn / (1 / ma + 1 / mb);
+          const ix = imp * nx, iy = imp * ny;
+          a.vx -= ix / ma; a.vy -= iy / ma;
+          bub.vx += ix / mb; bub.vy += iy / mb;
+          const cAxis = Math.atan2(ny, nx);
+          applySquashForce(a, Math.abs(imp) * JELLY.squashGain / Math.sqrt(ma), cAxis);
+          applySquashForce(bub, Math.abs(imp) * JELLY.squashGain / Math.sqrt(mb), cAxis);
+        }
+      }
+    }
+  }
+}
+
+function stepJelly(bubbles: PhysBubble[]) {
+  for (const b of bubbles) {
+    b.squashVel += -b.squashAmount * JELLY.springK;
+    b.squashVel *= JELLY.springDamp;
+    b.squashAmount += b.squashVel;
+    if (Math.abs(b.squashAmount) > JELLY.maxSquash) {
+      b.squashAmount = Math.sign(b.squashAmount) * JELLY.maxSquash;
+      b.squashVel *= -0.4;
+    }
+  }
+}
+
+// Cardinal closed spline (equivalent to d3.curveCardinalClosed tension=0.5)
+function cardinalClosed(pts: [number, number][], tension = 0.5): string {
+  const N = pts.length;
+  if (N < 3) return '';
+  const α = (1 - tension) / 2;
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < N; i++) {
+    const p0 = pts[(i - 1 + N) % N];
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % N];
+    const p3 = pts[(i + 2) % N];
+    const m1x = α * (p2[0] - p0[0]);
+    const m1y = α * (p2[1] - p0[1]);
+    const m2x = α * (p3[0] - p1[0]);
+    const m2y = α * (p3[1] - p1[1]);
+    const cp1x = (p1[0] + m1x / 3).toFixed(1);
+    const cp1y = (p1[1] + m1y / 3).toFixed(1);
+    const cp2x = (p2[0] - m2x / 3).toFixed(1);
+    const cp2y = (p2[1] - m2y / 3).toFixed(1);
+    d += `C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d + 'Z';
+}
+
+// Organic blob path: multi-frequency sine wobble + jelly squash deformation
+function makeBlobPath(
+  px: number, py: number, r: number,
+  squash: number, squashAxis: number,
+  t: number, phase: number,
+): string {
+  const N = JELLY.perimVerts;
+  const A = JELLY.perimAmp;
+  const pts: [number, number][] = [];
+  for (let i = 0; i < N; i++) {
+    const ang = (i / N) * Math.PI * 2;
+    const off =
+      A * Math.sin(t * 0.6 + i * 0.5 + phase) * 0.55 +
+      A * Math.sin(t * 1.0 + i * 0.9 + phase * 1.3) * 0.30 +
+      A * Math.sin(t * 0.35 + i * 0.3 + phase * 0.7) * 0.18;
+    // squash: compress along squashAxis, expand perpendicular
+    const relAng = ang - squashAxis;
+    const squashF = 1 + squash * Math.cos(2 * relAng);
+    const rr = r * (1 + off) * squashF;
+    pts.push([px + Math.cos(ang) * rr, py + Math.sin(ang) * rr]);
+  }
+  return cardinalClosed(pts);
+}
+
+// Imperative SVG helpers — avoids React re-render overhead at 60fps
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+function svgEl(tag: 'circle', attrs: Record<string, string | number>): SVGCircleElement;
+function svgEl(tag: 'path', attrs: Record<string, string | number>): SVGPathElement;
+function svgEl(tag: 'text', attrs: Record<string, string | number>): SVGTextElement;
+function svgEl(tag: string, attrs: Record<string, string | number>): SVGElement {
+  const el = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+  return el;
+}
+
+interface BubbleDOM {
+  g: SVGGElement;
+  halo: SVGCircleElement;
+  rim: SVGCircleElement;
+  body: SVGPathElement;
+  hl: SVGPathElement;
+  sym: SVGTextElement;
+  pct: SVGTextElement | null;
+  symFontSize: number;
+}
+
+interface BubbleHoverInfo {
+  id: string;
+  pct: number;
+  vol: number;
+  x: number;
+  y: number;
+}
+
+function spawnBubbleDOM(
+  b: PhysBubble,
+  t: number,
+  onHover?: (info: BubbleHoverInfo | null) => void,
+): BubbleDOM {
+  const variant = b.pct >= 0 ? 'gain' : 'loss';
+  const sym = b.id.length > 5 ? b.id.slice(0, 5) : b.id;
+  const symFontSize = Math.max(9, Math.min(b.r * 0.36, 16));
+  const pctFontSize = Math.max(8, Math.min(b.r * 0.30, 14));
+
+  const g = document.createElementNS(SVGNS, 'g') as SVGGElement;
+  g.setAttribute('data-bid', b.id);
+  g.style.cursor = 'pointer';
+
+  if (onHover) {
+    g.addEventListener('mouseenter', () => {
+      const rect = g.getBoundingClientRect();
+      onHover({ id: b.id, pct: b.pct, vol: b.vol, x: rect.left + rect.width / 2, y: rect.top - 8 });
+    });
+    g.addEventListener('mouseleave', () => onHover(null));
+  }
+
+  const halo = svgEl('circle', { cx: b.x, cy: b.y, r: b.r * 1.35, fill: `url(#hlHalo-${variant})` });
+  const rim = svgEl('circle', { cx: b.x, cy: b.y, r: b.r, fill: 'none', stroke: 'url(#hlRim)', 'stroke-width': 1.2, opacity: 0.4 });
+  const strokeColor = b.pct >= 0 ? 'rgba(14,203,129,0.55)' : 'rgba(246,70,93,0.55)';
+  const body = svgEl('path', {
+    d: makeBlobPath(b.x, b.y, b.r, 0, 0, t, b.phase),
+    fill: `url(#hlBody-${variant})`,
+    stroke: strokeColor,
+    'stroke-width': 0.8,
+  });
+  const hl = svgEl('path', {
+    d: makeBlobPath(b.x - b.r * 0.15, b.y - b.r * 0.2, b.r * 0.7, 0, 0, t, b.phase + 1),
+    fill: 'url(#hlHighlight)',
+    'pointer-events': 'none',
+  });
+  const symEl = svgEl('text', {
+    x: b.x, y: b.y - 2,
+    'font-family': 'Inter, sans-serif',
+    'font-weight': 700,
+    'font-size': symFontSize,
+    fill: '#fff',
+    'text-anchor': 'middle',
+    'dominant-baseline': 'middle',
+  });
+  symEl.textContent = sym;
+
+  let pctEl: SVGTextElement | null = null;
+  if (b.r >= 18) {
+    pctEl = svgEl('text', {
+      x: b.x, y: b.y + symFontSize * 0.85,
+      'font-family': 'JetBrains Mono, monospace',
+      'font-weight': 600,
+      'font-size': pctFontSize,
+      fill: '#fff',
+      'text-anchor': 'middle',
+      'dominant-baseline': 'middle',
+    });
+    pctEl.textContent = `${b.pct >= 0 ? '+' : ''}${b.pct.toFixed(1)}%`;
+  }
+
+  g.appendChild(halo);
+  g.appendChild(rim);
+  g.appendChild(body);
+  g.appendChild(hl);
+  g.appendChild(symEl);
+  if (pctEl) g.appendChild(pctEl);
+
+  return { g, halo, rim, body, hl, sym: symEl, pct: pctEl, symFontSize };
+}
+
+// ── Component ──────────────────────────────────────────────────────────
 function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
   const [tf, setTf] = useState<BubbleTimeframe>('24H');
-  const bubbles = computeBubbles(ctxs);
+  const [tooltip, setTooltip] = useState<BubbleHoverInfo | null>(null);
   const stats = computeBubbleStats(ctxs);
+
+  // Derive the top-coin list for multi-TF fetches (from 24H volume ranking)
+  const topCoins = computeBubbles(ctxs).map((b) => b.name);
+
+  const tfPctMap = useHLTfPct(
+    topCoins,
+    tf !== '24H' ? (tf as '7D' | '30D' | '90D') : '7D',
+    tf !== '24H',
+  );
+
+  const svgRef = useRef<SVGSVGElement>(null);
+  const physRef = useRef<PhysBubble[]>([]);
+  const domCacheRef = useRef<Map<string, BubbleDOM>>(new Map());
+  const rafRef = useRef<number>(0);
+  const tRef = useRef(0);
+  // Keep a stable ref to setTooltip so spawnBubbleDOM can close over it
+  const setTooltipRef = useRef(setTooltip);
+  setTooltipRef.current = setTooltip;
+
+  // Sync physics state + SVG DOM when live data changes
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg || ctxs.length === 0) return;
+
+    const packed = computeBubbles(ctxs);
+    const existingPhys = new Map(physRef.current.map((b) => [b.id, b]));
+    const domCache = domCacheRef.current;
+    const incomingIds = new Set(packed.map((p) => p.name));
+
+    // Remove stale bubbles
+    for (const [id, dom] of domCache) {
+      if (!incomingIds.has(id)) {
+        dom.g.remove();
+        domCache.delete(id);
+      }
+    }
+
+    // Update existing / spawn new
+    const newPhys: PhysBubble[] = packed.map((p) => {
+      const prev = existingPhys.get(p.name);
+      if (prev) {
+        prev.pct = p.pct;
+        prev.vol = p.vol;
+        // Sync pct label text
+        const dom = domCache.get(p.name);
+        if (dom?.pct)
+          dom.pct.textContent = `${p.pct >= 0 ? '+' : ''}${p.pct.toFixed(1)}%`;
+        return prev;
+      }
+      // New bubble — initialise with d3.pack position + strong random kick
+      const b: PhysBubble = {
+        id: p.name, pct: p.pct, vol: p.vol,
+        x: p.cx, y: p.cy, r: p.r,
+        vx: bRand(-1.5, 1.5), vy: bRand(-1.5, 1.5),
+        mass: p.r * p.r,
+        squashAmount: 0, squashVel: 0, squashAxis: 0,
+        phase: Math.random() * Math.PI * 2,
+      };
+      const dom = spawnBubbleDOM(b, tRef.current, (info) => setTooltipRef.current(info));
+      domCache.set(p.name, dom);
+      svg.appendChild(dom.g);
+      return b;
+    });
+    physRef.current = newPhys;
+  }, [ctxs]);
+
+  // When multi-TF data arrives, update bubble pct values + DOM labels
+  useEffect(() => {
+    if (tf === '24H' || !tfPctMap) return;
+    const domCache = domCacheRef.current;
+    for (const b of physRef.current) {
+      const newPct = tfPctMap.get(b.id);
+      if (newPct == null) continue;
+      b.pct = newPct;
+      const dom = domCache.get(b.id);
+      if (dom?.pct)
+        dom.pct.textContent = `${newPct >= 0 ? '+' : ''}${newPct.toFixed(1)}%`;
+    }
+  }, [tf, tfPctMap]);
+
+  // When switching back to 24H, restore original pct from ctxs
+  useEffect(() => {
+    if (tf !== '24H' || ctxs.length === 0) return;
+    const ctxMap = new Map(ctxs.map((c) => [c.coin, c]));
+    const domCache = domCacheRef.current;
+    for (const b of physRef.current) {
+      const c = ctxMap.get(b.id);
+      if (!c) continue;
+      const pct = ((c.markPx - c.prevDayPx) / c.prevDayPx) * 100;
+      b.pct = pct;
+      const dom = domCache.get(b.id);
+      if (dom?.pct)
+        dom.pct.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+    }
+  }, [tf, ctxs]);
+
+  // ~60fps animation loop via setInterval — runs even in background/hidden iframes.
+  // Falls back gracefully when tab is throttled; RAF would pause in hidden contexts.
+  useEffect(() => {
+    function frame() {
+      tRef.current += 1 / 60;
+      const t = tRef.current;
+      const bubbles = physRef.current;
+      if (bubbles.length === 0) return;
+
+      stepPhysics(bubbles, BUBBLE_CANVAS_W, BUBBLE_CANVAS_H);
+      stepJelly(bubbles);
+
+      const cache = domCacheRef.current;
+      for (const b of bubbles) {
+        const dom = cache.get(b.id);
+        if (!dom) continue;
+
+        const bx = b.x.toFixed(1);
+        const by = b.y.toFixed(1);
+
+        dom.halo.setAttribute('cx', bx);
+        dom.halo.setAttribute('cy', by);
+
+        dom.rim.setAttribute('cx', bx);
+        dom.rim.setAttribute('cy', by);
+
+        dom.body.setAttribute('d',
+          makeBlobPath(b.x, b.y, b.r, b.squashAmount, b.squashAxis, t, b.phase),
+        );
+        dom.hl.setAttribute('d',
+          makeBlobPath(b.x - b.r * 0.15, b.y - b.r * 0.2, b.r * 0.7,
+            b.squashAmount * 0.5, b.squashAxis, t * 0.8, b.phase + 1),
+        );
+
+        dom.sym.setAttribute('x', bx);
+        dom.sym.setAttribute('y', (b.y - 2).toFixed(1));
+
+        if (dom.pct) {
+          dom.pct.setAttribute('x', bx);
+          dom.pct.setAttribute('y', (b.y + dom.symFontSize * 0.85).toFixed(1));
+        }
+      }
+    }
+
+    rafRef.current = window.setInterval(frame, 1000 / 60) as unknown as number;
+    return () => window.clearInterval(rafRef.current);
+  }, []);
+
+  // Whether we're loading multi-TF data
+  const isLoading = tf !== '24H' && tfPctMap === null && topCoins.length > 0;
 
   return (
     <section className="rounded-lg border border-border-subtle bg-surface p-3 sticky top-3">
@@ -1772,9 +2283,7 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
             className={cn(
               'flex-1 rounded-sm py-1 text-2xs font-medium tracking-wider transition-colors',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
-              t === tf
-                ? 'bg-surface text-fg'
-                : 'text-fg-muted hover:text-fg',
+              t === tf ? 'bg-surface text-fg' : 'text-fg-muted hover:text-fg',
             )}
           >
             {t}
@@ -1786,155 +2295,96 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
         className="relative overflow-hidden rounded-md"
         style={{
           height: BUBBLE_CANVAS_H,
-          background:
-            'radial-gradient(ellipse at center, rgba(14, 203, 129, 0.04), transparent 70%)',
+          background: 'radial-gradient(ellipse at center, rgba(14, 203, 129, 0.04), transparent 70%)',
         }}
       >
-        {bubbles.length === 0 ? (
+        {ctxs.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-2xs text-fg-muted">
             Waiting for HL data…
           </div>
-        ) : (
-          <svg
-            viewBox={`0 0 ${BUBBLE_CANVAS_W} ${BUBBLE_CANVAS_H}`}
-            preserveAspectRatio="xMidYMid meet"
-            className="absolute inset-0 h-full w-full"
-            aria-label="Hyperliquid market gainers and losers bubble chart"
+        )}
+        {/* Loading overlay for multi-TF fetches */}
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-canvas/40 z-10 text-2xs text-fg-muted">
+            Loading {tf} data…
+          </div>
+        )}
+        {/* SVG container — bubble <g> elements appended imperatively by physics loop */}
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${BUBBLE_CANVAS_W} ${BUBBLE_CANVAS_H}`}
+          preserveAspectRatio="xMidYMid meet"
+          className="absolute inset-0 h-full w-full"
+          aria-label="Hyperliquid market gainers and losers bubble chart"
+        >
+          <defs>
+            <radialGradient id="hlBody-gain" cx="38%" cy="35%" r="62%">
+              <stop offset="0%" stopColor="#7CFFCB" stopOpacity="0.55" />
+              <stop offset="35%" stopColor="#0ECB81" stopOpacity="0.45" />
+              <stop offset="75%" stopColor="#0ECB81" stopOpacity="0.20" />
+              <stop offset="100%" stopColor="#0ECB81" stopOpacity="0.55" />
+            </radialGradient>
+            <radialGradient id="hlBody-loss" cx="38%" cy="35%" r="62%">
+              <stop offset="0%" stopColor="#FFAFB7" stopOpacity="0.55" />
+              <stop offset="35%" stopColor="#F6465D" stopOpacity="0.45" />
+              <stop offset="75%" stopColor="#F6465D" stopOpacity="0.20" />
+              <stop offset="100%" stopColor="#F6465D" stopOpacity="0.55" />
+            </radialGradient>
+            <radialGradient id="hlHalo-gain" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#0ECB81" stopOpacity="0.22" />
+              <stop offset="60%" stopColor="#0ECB81" stopOpacity="0.06" />
+              <stop offset="100%" stopColor="#0ECB81" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="hlHalo-loss" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#F6465D" stopOpacity="0.22" />
+              <stop offset="60%" stopColor="#F6465D" stopOpacity="0.06" />
+              <stop offset="100%" stopColor="#F6465D" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="hlHighlight" cx="35%" cy="30%" r="30%">
+              <stop offset="0%" stopColor="white" stopOpacity="0.85" />
+              <stop offset="60%" stopColor="white" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="white" stopOpacity="0" />
+            </radialGradient>
+            <linearGradient id="hlRim" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#22D3EE" />
+              <stop offset="33%" stopColor="#F472B6" />
+              <stop offset="66%" stopColor="#FCD535" />
+              <stop offset="100%" stopColor="#22D3A8" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        {/* Custom hover tooltip — fixed-position so it floats above the SVG */}
+        {tooltip && (
+          <div
+            style={{
+              position: 'fixed',
+              left: tooltip.x,
+              top: tooltip.y,
+              transform: 'translate(-50%, -100%)',
+              zIndex: 50,
+            }}
+            className="pointer-events-none rounded-lg border border-border-default bg-surface px-3 py-2 text-xs shadow-xl"
           >
-            <defs>
-              {/* Body radial — gain */}
-              <radialGradient id="hlBody-gain" cx="38%" cy="35%" r="62%">
-                <stop offset="0%" stopColor="#7CFFCB" stopOpacity="0.55" />
-                <stop offset="35%" stopColor="#0ECB81" stopOpacity="0.45" />
-                <stop offset="75%" stopColor="#0ECB81" stopOpacity="0.20" />
-                <stop offset="100%" stopColor="#0ECB81" stopOpacity="0.55" />
-              </radialGradient>
-              {/* Body radial — loss */}
-              <radialGradient id="hlBody-loss" cx="38%" cy="35%" r="62%">
-                <stop offset="0%" stopColor="#FFAFB7" stopOpacity="0.55" />
-                <stop offset="35%" stopColor="#F6465D" stopOpacity="0.45" />
-                <stop offset="75%" stopColor="#F6465D" stopOpacity="0.20" />
-                <stop offset="100%" stopColor="#F6465D" stopOpacity="0.55" />
-              </radialGradient>
-              {/* Atmospheric halo — gain */}
-              <radialGradient id="hlHalo-gain" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#0ECB81" stopOpacity="0.22" />
-                <stop offset="60%" stopColor="#0ECB81" stopOpacity="0.06" />
-                <stop offset="100%" stopColor="#0ECB81" stopOpacity="0" />
-              </radialGradient>
-              <radialGradient id="hlHalo-loss" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#F6465D" stopOpacity="0.22" />
-                <stop offset="60%" stopColor="#F6465D" stopOpacity="0.06" />
-                <stop offset="100%" stopColor="#F6465D" stopOpacity="0" />
-              </radialGradient>
-              {/* Specular highlight (top-left white fade) */}
-              <radialGradient id="hlHighlight" cx="35%" cy="30%" r="30%">
-                <stop offset="0%" stopColor="white" stopOpacity="0.85" />
-                <stop offset="60%" stopColor="white" stopOpacity="0.15" />
-                <stop offset="100%" stopColor="white" stopOpacity="0" />
-              </radialGradient>
-              {/* Iridescent rim — cyan→pink→gold→teal */}
-              <linearGradient id="hlRim" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#22D3EE" />
-                <stop offset="33%" stopColor="#F472B6" />
-                <stop offset="66%" stopColor="#FCD535" />
-                <stop offset="100%" stopColor="#22D3A8" />
-              </linearGradient>
-            </defs>
-            {bubbles.map((b) => {
-              const variant = b.pct >= 0 ? 'gain' : 'loss';
-              const sym = b.name.length > 5 ? b.name.slice(0, 5) : b.name;
-              const symFontSize = Math.max(9, Math.min(b.r * 0.36, 16));
-              const pctFontSize = Math.max(8, Math.min(b.r * 0.30, 14));
-              return (
-                <g
-                  key={b.name}
-                  className="hl-bubble"
-                  style={{
-                    animationDelay: `${(b.cx + b.cy) % 4}s`,
-                    transformOrigin: `${b.cx}px ${b.cy}px`,
-                  }}
-                >
-                  <title>
-                    {b.name}: {b.pct >= 0 ? '+' : ''}
-                    {b.pct.toFixed(2)}% · vol $
-                    {b.vol.toLocaleString(undefined, {
-                      maximumFractionDigits: 0,
-                    })}
-                  </title>
-                  {/* Halo */}
-                  <circle
-                    cx={b.cx}
-                    cy={b.cy}
-                    r={b.r * 1.35}
-                    fill={`url(#hlHalo-${variant})`}
-                  />
-                  {/* Iridescent rim outline */}
-                  <circle
-                    cx={b.cx}
-                    cy={b.cy}
-                    r={b.r}
-                    fill="none"
-                    stroke="url(#hlRim)"
-                    strokeWidth={1.2}
-                    opacity={0.4}
-                  />
-                  {/* Body */}
-                  <circle
-                    cx={b.cx}
-                    cy={b.cy}
-                    r={b.r}
-                    fill={`url(#hlBody-${variant})`}
-                    stroke={
-                      b.pct >= 0 ? 'rgba(14,203,129,0.55)' : 'rgba(246,70,93,0.55)'
-                    }
-                    strokeWidth={0.8}
-                  />
-                  {/* Specular highlight (offset) */}
-                  <circle
-                    cx={b.cx - b.r * 0.15}
-                    cy={b.cy - b.r * 0.2}
-                    r={b.r * 0.7}
-                    fill="url(#hlHighlight)"
-                    pointerEvents="none"
-                  />
-                  {/* Symbol label */}
-                  <text
-                    x={b.cx}
-                    y={b.cy - 2}
-                    fontFamily="Inter, sans-serif"
-                    fontWeight="700"
-                    fontSize={symFontSize}
-                    fill="#fff"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}
-                  >
-                    {sym}
-                  </text>
-                  {b.r >= 18 && (
-                    <text
-                      x={b.cx}
-                      y={b.cy + symFontSize * 0.85}
-                      fontFamily="JetBrains Mono, monospace"
-                      fontWeight="600"
-                      fontSize={pctFontSize}
-                      fill="#fff"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      style={{
-                        textShadow: '0 1px 2px rgba(0,0,0,0.6)',
-                        fontVariantNumeric: 'tabular-nums',
-                      }}
-                    >
-                      {b.pct >= 0 ? '+' : ''}
-                      {b.pct.toFixed(1)}%
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-          </svg>
+            <div className="font-bold text-fg">{tooltip.id}</div>
+            <div
+              className={cn(
+                'font-mono tabular-nums',
+                tooltip.pct >= 0 ? 'text-bullish' : 'text-bearish',
+              )}
+            >
+              {tooltip.pct >= 0 ? '+' : ''}
+              {tooltip.pct.toFixed(2)}%
+            </div>
+            <div className="text-fg-muted">
+              Vol $
+              {tooltip.vol >= 1e9
+                ? (tooltip.vol / 1e9).toFixed(1) + 'B'
+                : tooltip.vol >= 1e6
+                  ? (tooltip.vol / 1e6).toFixed(0) + 'M'
+                  : (tooltip.vol / 1e3).toFixed(0) + 'K'}
+            </div>
+          </div>
         )}
       </div>
 
@@ -1954,26 +2404,16 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
         <div>
           Best
           <b className="block normal-case tracking-normal mt-0.5 text-xs text-bullish font-semibold tabular-nums">
-            {stats.bestCoin
-              ? `${stats.bestCoin} +${stats.bestPct.toFixed(1)}%`
-              : '—'}
+            {stats.bestCoin ? `${stats.bestCoin} +${stats.bestPct.toFixed(1)}%` : '—'}
           </b>
         </div>
         <div>
           Worst
           <b className="block normal-case tracking-normal mt-0.5 text-xs text-bearish font-semibold tabular-nums">
-            {stats.worstCoin
-              ? `${stats.worstCoin} ${stats.worstPct.toFixed(1)}%`
-              : '—'}
+            {stats.worstCoin ? `${stats.worstCoin} ${stats.worstPct.toFixed(1)}%` : '—'}
           </b>
         </div>
       </div>
-
-      {tf !== '24H' && (
-        <div className="mt-2 text-[10px] text-fg-disabled text-center italic">
-          {tf} compute lands post-demo · showing 24H magnitudes
-        </div>
-      )}
     </section>
   );
 }
