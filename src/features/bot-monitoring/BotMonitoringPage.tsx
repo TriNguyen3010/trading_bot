@@ -532,37 +532,51 @@ function EquityCurve({
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
+  const [chartError, setChartError] = useState<string | null>(null);
 
   // Create chart once
   useEffect(() => {
     if (!containerRef.current) return;
-    const chart = createChart(containerRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: TOKEN.textMuted,
-        fontFamily:
-          'Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
-        fontSize: 11,
-      },
-      grid: {
-        vertLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
-        horzLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
-      },
-      timeScale: {
-        borderColor: TOKEN.borderSubtle,
-        timeVisible: false,
-        secondsVisible: false,
-      },
-      rightPriceScale: {
-        borderColor: TOKEN.borderSubtle,
-      },
-      crosshair: {
-        vertLine: { color: TOKEN.borderDefault, width: 1, style: LineStyle.Dashed },
-        horzLine: { color: TOKEN.borderDefault, width: 1, style: LineStyle.Dashed },
-      },
-      width: containerRef.current.clientWidth,
-      height: 180,
-    });
+    let chart: IChartApi;
+    try {
+      chart = createChart(containerRef.current, {
+        layout: {
+          background: { type: ColorType.Solid, color: 'transparent' },
+          textColor: TOKEN.textMuted,
+          fontFamily:
+            'Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+          fontSize: 11,
+        },
+        grid: {
+          vertLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
+          horzLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
+        },
+        timeScale: {
+          borderColor: TOKEN.borderSubtle,
+          timeVisible: false,
+          secondsVisible: false,
+        },
+        rightPriceScale: { borderColor: TOKEN.borderSubtle },
+        crosshair: {
+          vertLine: {
+            color: TOKEN.borderDefault,
+            width: 1,
+            style: LineStyle.Dashed,
+          },
+          horzLine: {
+            color: TOKEN.borderDefault,
+            width: 1,
+            style: LineStyle.Dashed,
+          },
+        },
+        width: containerRef.current.clientWidth,
+        height: 180,
+      });
+    } catch (e) {
+      console.error('EquityCurve chart init failed:', e);
+      setChartError(e instanceof Error ? e.message : 'Chart init failed');
+      return;
+    }
     const series = chart.addAreaSeries({
       lineColor: TOKEN.bullish,
       topColor: TOKEN.bullishGlow,
@@ -574,7 +588,9 @@ function EquityCurve({
     seriesRef.current = series;
     const onResize = () => {
       if (containerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+        chartRef.current.applyOptions({
+          width: containerRef.current.clientWidth,
+        });
       }
     };
     window.addEventListener('resize', onResize);
@@ -640,7 +656,13 @@ function EquityCurve({
         </div>
       }
     >
-      <div ref={containerRef} className="h-[180px]" />
+      {chartError ? (
+        <div className="px-4 py-8 text-center text-xs text-bearish">
+          Chart unavailable: {chartError}
+        </div>
+      ) : (
+        <div ref={containerRef} className="h-[180px]" />
+      )}
     </SectionCard>
   );
 }
@@ -663,35 +685,51 @@ function LiveSpotFeed({
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const [chartError, setChartError] = useState<string | null>(null);
 
   // Create chart once
   useEffect(() => {
     if (!containerRef.current) return;
-    const chart = createChart(containerRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: TOKEN.textMuted,
-        fontFamily:
-          'Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
-        fontSize: 11,
-      },
-      grid: {
-        vertLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
-        horzLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
-      },
-      timeScale: {
-        borderColor: TOKEN.borderSubtle,
-        timeVisible: true,
-        secondsVisible: false,
-      },
-      rightPriceScale: { borderColor: TOKEN.borderSubtle },
-      crosshair: {
-        vertLine: { color: TOKEN.borderDefault, width: 1, style: LineStyle.Dashed },
-        horzLine: { color: TOKEN.borderDefault, width: 1, style: LineStyle.Dashed },
-      },
-      width: containerRef.current.clientWidth,
-      height: 220,
-    });
+    let chart: IChartApi;
+    try {
+      chart = createChart(containerRef.current, {
+        layout: {
+          background: { type: ColorType.Solid, color: 'transparent' },
+          textColor: TOKEN.textMuted,
+          fontFamily:
+            'Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+          fontSize: 11,
+        },
+        grid: {
+          vertLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
+          horzLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
+        },
+        timeScale: {
+          borderColor: TOKEN.borderSubtle,
+          timeVisible: true,
+          secondsVisible: false,
+        },
+        rightPriceScale: { borderColor: TOKEN.borderSubtle },
+        crosshair: {
+          vertLine: {
+            color: TOKEN.borderDefault,
+            width: 1,
+            style: LineStyle.Dashed,
+          },
+          horzLine: {
+            color: TOKEN.borderDefault,
+            width: 1,
+            style: LineStyle.Dashed,
+          },
+        },
+        width: containerRef.current.clientWidth,
+        height: 220,
+      });
+    } catch (e) {
+      console.error('LiveSpotFeed chart init failed:', e);
+      setChartError(e instanceof Error ? e.message : 'Chart init failed');
+      return;
+    }
     const series = chart.addCandlestickSeries({
       upColor: TOKEN.bullish,
       downColor: TOKEN.bearish,
@@ -704,7 +742,9 @@ function LiveSpotFeed({
     seriesRef.current = series;
     const onResize = () => {
       if (containerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+        chartRef.current.applyOptions({
+          width: containerRef.current.clientWidth,
+        });
       }
     };
     window.addEventListener('resize', onResize);
@@ -785,7 +825,13 @@ function LiveSpotFeed({
         )
       }
     >
-      <div ref={containerRef} className="h-[220px]" />
+      {chartError ? (
+        <div className="px-4 py-8 text-center text-xs text-bearish">
+          Chart unavailable: {chartError}
+        </div>
+      ) : (
+        <div ref={containerRef} className="h-[220px]" />
+      )}
       {watchingFor && (
         <div className="flex items-center justify-between gap-3 border-t border-border-subtle px-4 py-2 text-xs text-fg-muted">
           <span className="inline-flex items-center gap-1.5 truncate">
