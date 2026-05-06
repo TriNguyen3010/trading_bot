@@ -25,6 +25,7 @@ const config: Config = {
           'Consolas',
           'monospace',
         ],
+        pixel: ['"Press Start 2P"', 'monospace'],
       },
       colors: {
         // Surfaces
