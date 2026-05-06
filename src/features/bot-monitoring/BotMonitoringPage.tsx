@@ -900,12 +900,12 @@ function EquityCurve({
           attributionLogo: false,
         },
         grid: {
-          vertLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
+          vertLines: { color: 'transparent' },
           horzLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
         },
         timeScale: {
           borderColor: TOKEN.borderSubtle,
-          timeVisible: false,
+          timeVisible: true,
           secondsVisible: false,
         },
         rightPriceScale: { borderColor: TOKEN.borderSubtle },
@@ -934,6 +934,9 @@ function EquityCurve({
       topColor: TOKEN.bullishGlow,
       bottomColor: TOKEN.bullishFade,
       lineWidth: 2,
+      lineType: 2, // curved (bezier) — matches LiveSpotFeed Coin98 style
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 4,
       priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
     });
     chartRef.current = chart;
