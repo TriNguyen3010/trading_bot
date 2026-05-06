@@ -52,6 +52,75 @@ import type {
 } from './types';
 
 // ──────────────────────────────────────────────────────────────────────
+// CountingNumber — interpolate from previous to next value over `duration`
+// using rAF + ease-out. Used for slow-changing scoreboard numbers (PnL,
+// trades, win streak) — gives a "live counting" feel between snapshot
+// refreshes. Do NOT use for fast-tick values (orderbook prices/sizes)
+// where the interpolation would lag behind the source.
+// ──────────────────────────────────────────────────────────────────────
+function CountingNumber({
+  value,
+  format,
+  duration = 700,
+  className,
+}: {
+  value: number;
+  format: (v: number) => string;
+  duration?: number;
+  className?: string;
+}) {
+  const [display, setDisplay] = useState(value);
+  const fromRef = useRef(value);
+  const targetRef = useRef(value);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (value === targetRef.current && value === display) return;
+    if (!Number.isFinite(value)) {
+      setDisplay(value);
+      return;
+    }
+    fromRef.current = display;
+    targetRef.current = value;
+    const start = performance.now();
+    const from = fromRef.current;
+    const to = value;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      // ease-out cubic — quick to start, settles smoothly
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplay(from + (to - from) * eased);
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        rafRef.current = null;
+      }
+    };
+    if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+    // We intentionally only re-run when `value` changes; `display` is the
+    // ref-tracked starting point and reading it captures the current frame.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, duration]);
+
+  return <span className={className}>{format(display)}</span>;
+}
+
+const fmtMoney = (precision = 2) => (v: number) =>
+  v.toLocaleString(undefined, {
+    minimumFractionDigits: precision,
+    maximumFractionDigits: precision,
+  });
+const fmtInt = (v: number) => Math.round(v).toLocaleString();
+const fmtPct = (v: number) => `${v.toFixed(1)}%`;
+
+// ──────────────────────────────────────────────────────────────────────
 // Design tokens (from src/styles/tokens.css) — used in chart configs
 // where Tailwind classes aren't available (canvas-rendered libraries).
 // ──────────────────────────────────────────────────────────────────────
@@ -81,7 +150,24 @@ function useSnapshot(id: string, deployedAt: number | undefined) {
   const [snap, setSnap] = useState<PerformanceSnapshot | null>(null);
   useEffect(() => {
     if (deployedAt == null) return;
-    botApi.getSnapshot(id, deployedAt).then(setSnap);
+    let cancelled = false;
+    const tick = () => {
+      botApi.getSnapshot(id, deployedAt).then((s) => {
+        if (!cancelled) setSnap(s);
+      });
+    };
+    tick();
+    // Refresh every 8s so the CountingNumber components have something to
+    // animate to as the mock generator shifts (more fills accumulate over
+    // time since `now` advances).
+    const handle = setInterval(() => {
+      if (document.hidden) return;
+      tick();
+    }, 8_000);
+    return () => {
+      cancelled = true;
+      clearInterval(handle);
+    };
   }, [id, deployedAt]);
   return snap;
 }
@@ -90,7 +176,21 @@ function useFills(id: string, deployedAt: number | undefined) {
   const [fills, setFills] = useState<Fill[]>([]);
   useEffect(() => {
     if (deployedAt == null) return;
-    botApi.getFills(id, deployedAt).then(setFills);
+    let cancelled = false;
+    const tick = () => {
+      botApi.getFills(id, deployedAt).then((f) => {
+        if (!cancelled) setFills(f);
+      });
+    };
+    tick();
+    const handle = setInterval(() => {
+      if (document.hidden) return;
+      tick();
+    }, 12_000);
+    return () => {
+      cancelled = true;
+      clearInterval(handle);
+    };
   }, [id, deployedAt]);
   return fills;
 }
@@ -634,16 +734,20 @@ function WinStreakGauge({ streak }: { streak: number }) {
             strokeDasharray={`${dash} 264`}
             strokeLinecap="round"
             transform="rotate(-90 50 50)"
-            style={{ filter: streak > 0 ? `drop-shadow(0 0 6px ${colorVar})` : undefined }}
+            style={{
+              filter: streak > 0 ? `drop-shadow(0 0 6px ${colorVar})` : undefined,
+              transition:
+                'stroke-dasharray 600ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+            }}
           />
         </svg>
         <div
           className={cn(
-            'absolute inset-0 flex items-center justify-center font-pixel text-2xl',
+            'absolute inset-0 flex items-center justify-center font-pixel text-2xl tabular-nums',
             streak > 0 ? 'text-bullish' : 'text-fg-disabled',
           )}
         >
-          {streak}
+          <CountingNumber value={streak} format={fmtInt} duration={500} />
         </div>
       </div>
       <div className="mt-2 text-2xs uppercase tracking-widest text-fg-muted text-center leading-relaxed">
@@ -763,29 +867,43 @@ function HeroPnL({
           className={cn('font-pixel text-4xl tabular-nums', pnlColor)}
           style={{ textShadow: pnlGlow, lineHeight: 1.05 }}
         >
-          ${sign}
-          {Math.abs(snap.todayPnL).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
+          {sign === '+' ? '+' : '−'}$
+          <CountingNumber
+            value={Math.abs(snap.todayPnL)}
+            format={fmtMoney(2)}
+            duration={900}
+          />
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-secondary">
           <span className="inline-flex items-center gap-1.5">
             <span className="text-bullish">▲</span>
-            <span className="text-fg font-semibold tabular-nums">{snap.totalTrades}</span>
+            <CountingNumber
+              value={snap.totalTrades}
+              format={fmtInt}
+              duration={600}
+              className="text-fg font-semibold tabular-nums"
+            />
             <span className="text-fg-muted">trades</span>
           </span>
           <span className="text-border-strong">·</span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-bullish font-semibold tabular-nums">
-              {(snap.winRate * 100).toFixed(1)}%
-            </span>
+            <CountingNumber
+              value={snap.winRate * 100}
+              format={fmtPct}
+              duration={600}
+              className="text-bullish font-semibold tabular-nums"
+            />
             <span className="text-fg-muted">win</span>
           </span>
           <span className="text-border-strong">·</span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-fg font-semibold tabular-nums">{snap.openPositions}</span>
+            <CountingNumber
+              value={snap.openPositions}
+              format={fmtInt}
+              duration={400}
+              className="text-fg font-semibold tabular-nums"
+            />
             <span className="text-fg-muted">open</span>
           </span>
           <span className="text-border-strong">·</span>
@@ -797,8 +915,12 @@ function HeroPnL({
                 snap.totalPnL >= 0 ? 'text-bullish' : 'text-bearish',
               )}
             >
-              ${snap.totalPnL >= 0 ? '+' : ''}
-              {snap.totalPnL.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              {snap.totalPnL >= 0 ? '+' : '−'}$
+              <CountingNumber
+                value={Math.abs(snap.totalPnL)}
+                format={fmtMoney(2)}
+                duration={900}
+              />
             </span>
           </span>
         </div>
@@ -995,8 +1117,12 @@ function EquityCurve({
               'font-semibold',
             )}
           >
-            ${total >= 0 ? '+' : ''}
-            {total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            {total >= 0 ? '+' : '−'}$
+            <CountingNumber
+              value={Math.abs(total)}
+              format={fmtMoney(2)}
+              duration={800}
+            />
           </b>
         </span>
       }
