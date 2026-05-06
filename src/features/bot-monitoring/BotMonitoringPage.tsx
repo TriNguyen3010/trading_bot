@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   PanelLeftClose,
   PanelLeftOpen,
@@ -1015,6 +1015,89 @@ function EmptyStateCard({
   );
 }
 
+// Hand-rolled SVG equity curve with stroke-dashoffset draw-in animation.
+// Replaces lightweight-charts here so we can use the canonical "trace from
+// origin" effect (impossible in canvas-based libs) + match the Coin98 ref
+// aesthetic: glowing bullish line, pulsing endpoint, value label floating
+// at the leading edge.
+const EQ_VIEW_W = 800;
+const EQ_VIEW_H = 180;
+const EQ_PAD_X = 14;
+const EQ_PAD_TOP = 18;
+const EQ_PAD_BOTTOM = 26;
+
+interface EqGeometry {
+  pathD: string;
+  areaD: string;
+  endX: number;
+  endY: number;
+  endValue: number;
+  ticks: { x: number; label: string }[];
+  yMin: number;
+  yMax: number;
+}
+
+function buildEquityGeometry(data: EquityPoint[]): EqGeometry | null {
+  if (data.length === 0) return null;
+  const xs = data.map((d) => d.t);
+  const ys = data.map((d) => d.equity);
+  const minX = Math.min(...xs);
+  let maxX = Math.max(...xs);
+  let minY = Math.min(...ys);
+  let maxY = Math.max(...ys);
+  if (maxX === minX) maxX = minX + 1;
+  // Expand y range by 8% top + bottom so line never touches edges.
+  const yPad = (maxY - minY || 1) * 0.08;
+  minY -= yPad;
+  maxY += yPad;
+
+  const sx = (x: number) =>
+    EQ_PAD_X +
+    ((x - minX) / (maxX - minX)) * (EQ_VIEW_W - EQ_PAD_X * 2);
+  const sy = (y: number) =>
+    EQ_PAD_TOP +
+    (1 - (y - minY) / (maxY - minY)) *
+      (EQ_VIEW_H - EQ_PAD_TOP - EQ_PAD_BOTTOM);
+
+  const points = data.map((d) => ({ x: sx(d.t), y: sy(d.equity) }));
+
+  // Catmull–Rom → cubic Bezier for smoother line (Coin98-y).
+  // Tension 0.5 = balanced.
+  const tension = 0.5;
+  let pathD = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] ?? points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] ?? p2;
+    const cp1x = p1.x + ((p2.x - p0.x) / 6) * tension * 2;
+    const cp1y = p1.y + ((p2.y - p0.y) / 6) * tension * 2;
+    const cp2x = p2.x - ((p3.x - p1.x) / 6) * tension * 2;
+    const cp2y = p2.y - ((p3.y - p1.y) / 6) * tension * 2;
+    pathD += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  // Area: same path closed back along baseline
+  const baseY = EQ_VIEW_H - EQ_PAD_BOTTOM;
+  const areaD = `${pathD} L ${points[points.length - 1].x.toFixed(2)} ${baseY.toFixed(2)} L ${points[0].x.toFixed(2)} ${baseY.toFixed(2)} Z`;
+  const endX = points[points.length - 1].x;
+  const endY = points[points.length - 1].y;
+  const endValue = ys[ys.length - 1];
+
+  // Build ~5 evenly-spaced time ticks for the x-axis.
+  const tickCount = 5;
+  const ticks: { x: number; label: string }[] = [];
+  for (let i = 0; i < tickCount; i++) {
+    const t = minX + ((maxX - minX) * i) / (tickCount - 1);
+    const date = new Date(t);
+    const label =
+      maxX - minX > 86_400_000
+        ? `${date.getDate()}/${date.getMonth() + 1}`
+        : `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    ticks.push({ x: sx(t), label });
+  }
+  return { pathD, areaD, endX, endY, endValue, ticks, yMin: minY, yMax: maxY };
+}
+
 function EquityCurve({
   data,
   range,
@@ -1028,100 +1111,19 @@ function EquityCurve({
   total: number;
   phase: BotPhase;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
-  const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
-  const [chartError, setChartError] = useState<string | null>(null);
+  const geometry = useMemo(() => buildEquityGeometry(data), [data]);
+  const linePathRef = useRef<SVGPathElement | null>(null);
+  const [pathLength, setPathLength] = useState<number>(0);
 
-  // Create chart once
+  // Re-measure path length whenever path changes; this drives the
+  // stroke-dashoffset draw-in animation (offset = length → 0).
   useEffect(() => {
-    if (!containerRef.current) return;
-    let chart: IChartApi;
-    try {
-      chart = createChart(containerRef.current, {
-        layout: {
-          background: { type: ColorType.Solid, color: 'transparent' },
-          textColor: TOKEN.textMuted,
-          fontFamily:
-            'Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
-          fontSize: 11,
-          attributionLogo: false,
-        },
-        grid: {
-          vertLines: { color: 'transparent' },
-          horzLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
-        },
-        timeScale: {
-          borderColor: TOKEN.borderSubtle,
-          timeVisible: true,
-          secondsVisible: false,
-        },
-        rightPriceScale: { borderColor: TOKEN.borderSubtle },
-        crosshair: {
-          vertLine: {
-            color: TOKEN.borderDefault,
-            width: 1,
-            style: LineStyle.Dashed,
-          },
-          horzLine: {
-            color: TOKEN.borderDefault,
-            width: 1,
-            style: LineStyle.Dashed,
-          },
-        },
-        width: containerRef.current.clientWidth,
-        height: 180,
-      });
-    } catch (e) {
-      console.error('EquityCurve chart init failed:', e);
-      setChartError(e instanceof Error ? e.message : 'Chart init failed');
-      return;
-    }
-    const series = chart.addAreaSeries({
-      lineColor: TOKEN.bullish,
-      topColor: TOKEN.bullishGlow,
-      bottomColor: TOKEN.bullishFade,
-      lineWidth: 2,
-      lineType: 2, // curved (bezier) — matches LiveSpotFeed Coin98 style
-      crosshairMarkerVisible: true,
-      crosshairMarkerRadius: 4,
-      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
-    });
-    chartRef.current = chart;
-    seriesRef.current = series;
-    const onResize = () => {
-      if (containerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({
-          width: containerRef.current.clientWidth,
-        });
-      }
-    };
-    window.addEventListener('resize', onResize);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      chart.remove();
-      chartRef.current = null;
-      seriesRef.current = null;
-    };
-  }, []);
+    if (!linePathRef.current || !geometry) return;
+    const len = linePathRef.current.getTotalLength();
+    setPathLength(len);
+  }, [geometry]);
 
-  // Update data when it changes
-  useEffect(() => {
-    if (!seriesRef.current) return;
-    if (data.length === 0) {
-      seriesRef.current.setData([]);
-      return;
-    }
-    seriesRef.current.setData(
-      data.map((p) => ({
-        time: (Math.floor(p.t / 1000) as Time),
-        value: p.equity,
-      })),
-    );
-    chartRef.current?.timeScale().fitContent();
-  }, [data]);
-
-  if (phase === 'just-deployed' || data.length === 0) {
+  if (phase === 'just-deployed' || data.length === 0 || !geometry) {
     return (
       <EmptyStateCard
         icon="📈"
@@ -1131,6 +1133,12 @@ function EquityCurve({
     );
   }
 
+  const totalPositive = total >= 0;
+  const lineColor = totalPositive ? 'var(--color-bullish)' : 'var(--color-bearish)';
+  // Force a new node identity per range so the draw animation re-runs
+  // when user switches tabs (vs. silently refreshing on auto-poll).
+  const animKey = `${range}-${data.length}`;
+
   return (
     <SectionCard
       title="PnL Curve"
@@ -1139,11 +1147,11 @@ function EquityCurve({
           Total{' '}
           <b
             className={cn(
-              total >= 0 ? 'text-bullish' : 'text-bearish',
+              totalPositive ? 'text-bullish' : 'text-bearish',
               'font-semibold',
             )}
           >
-            {total >= 0 ? '+' : '−'}$
+            {totalPositive ? '+' : '−'}$
             <CountingNumber
               value={Math.abs(total)}
               format={fmtMoney(2)}
@@ -1173,13 +1181,140 @@ function EquityCurve({
         </div>
       }
     >
-      {chartError ? (
-        <div className="px-4 py-8 text-center text-xs text-bearish">
-          Chart unavailable: {chartError}
-        </div>
-      ) : (
-        <div ref={containerRef} className="h-[180px]" />
-      )}
+      <div className="relative h-[180px] w-full">
+        <svg
+          key={animKey}
+          viewBox={`0 0 ${EQ_VIEW_W} ${EQ_VIEW_H}`}
+          preserveAspectRatio="none"
+          className="absolute inset-0 h-full w-full overflow-visible"
+        >
+          <defs>
+            <linearGradient id="eqArea" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={lineColor} stopOpacity="0.28" />
+              <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
+            </linearGradient>
+            <filter id="eqGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2.5" result="b" />
+              <feMerge>
+                <feMergeNode in="b" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Horizontal grid lines (3 dotted) */}
+          {[0.25, 0.5, 0.75].map((p) => {
+            const y = EQ_PAD_TOP + p * (EQ_VIEW_H - EQ_PAD_TOP - EQ_PAD_BOTTOM);
+            return (
+              <line
+                key={p}
+                x1={EQ_PAD_X}
+                y1={y}
+                x2={EQ_VIEW_W - EQ_PAD_X}
+                y2={y}
+                stroke={TOKEN.borderSubtle}
+                strokeDasharray="2 4"
+              />
+            );
+          })}
+
+          {/* X-axis tick labels */}
+          {geometry.ticks.map((tk, i) => (
+            <text
+              key={i}
+              x={tk.x}
+              y={EQ_VIEW_H - 8}
+              textAnchor="middle"
+              fontSize="10"
+              fill={TOKEN.textMuted}
+              fontFamily="Inter, system-ui, sans-serif"
+            >
+              {tk.label}
+            </text>
+          ))}
+
+          {/* Area fill — fades in after line draws */}
+          <path
+            d={geometry.areaD}
+            fill="url(#eqArea)"
+            className="eq-area"
+            opacity="0"
+            style={{ animation: 'eq-area-fade 800ms ease-out 1100ms forwards' }}
+          />
+
+          {/* Line — drawn via stroke-dashoffset transition */}
+          <path
+            ref={linePathRef}
+            d={geometry.pathD}
+            fill="none"
+            stroke={lineColor}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter="url(#eqGlow)"
+            strokeDasharray={pathLength || 1}
+            strokeDashoffset={pathLength || 1}
+            style={{
+              animation: pathLength
+                ? 'eq-line-draw 1500ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards'
+                : undefined,
+              ['--eq-path-length' as string]: pathLength,
+            }}
+          />
+
+          {/* Endpoint pulse halo (reveals after draw completes) */}
+          <circle
+            cx={geometry.endX}
+            cy={geometry.endY}
+            r="10"
+            fill={lineColor}
+            opacity="0"
+            style={{
+              animation:
+                'eq-endpoint-halo 1.6s ease-in-out 1500ms infinite',
+              transformOrigin: `${geometry.endX}px ${geometry.endY}px`,
+            }}
+          />
+          {/* Endpoint dot (bright) */}
+          <circle
+            cx={geometry.endX}
+            cy={geometry.endY}
+            r="4"
+            fill="white"
+            stroke={lineColor}
+            strokeWidth="2"
+            opacity="0"
+            style={{
+              animation:
+                'eq-endpoint-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) 1500ms forwards',
+              filter: `drop-shadow(0 0 6px ${lineColor})`,
+            }}
+          />
+          {/* Endpoint value label */}
+          <g
+            opacity="0"
+            style={{ animation: 'eq-endpoint-pop 400ms ease-out 1700ms forwards' }}
+          >
+            <text
+              x={geometry.endX + 10}
+              y={geometry.endY + 4}
+              fontSize="13"
+              fontWeight="700"
+              fill={totalPositive ? '#7CFFCB' : '#FFAFB7'}
+              fontFamily="JetBrains Mono, SF Mono, monospace"
+              style={{
+                fontVariantNumeric: 'tabular-nums',
+                filter: `drop-shadow(0 0 4px ${lineColor})`,
+              }}
+            >
+              ${geometry.endValue >= 0 ? '+' : '−'}
+              {Math.abs(geometry.endValue).toLocaleString(undefined, {
+                maximumFractionDigits: 0,
+              })}
+            </text>
+          </g>
+        </svg>
+      </div>
     </SectionCard>
   );
 }
