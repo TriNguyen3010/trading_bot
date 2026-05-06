@@ -22,5 +22,13 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    // Exclude parallel-agent worktrees (own node_modules + duplicate tests
+    // pollute the run). Keep the defaults too.
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/.claude/**',
+    ],
   },
 });

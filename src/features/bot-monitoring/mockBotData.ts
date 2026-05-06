@@ -162,8 +162,67 @@ export function generateCycle(botId: string, now: number): ExecutionCycle {
   };
 }
 
+// ──────────────────────────────────────────────────────────────────────
+// Mock bot registry — 3 demo bots for the BotsListPage. Any other id
+// (e.g. one minted by the Builder Deploy CTA: `bot-${Date.now()}`) falls
+// through to the default Bollinger config.
+// ──────────────────────────────────────────────────────────────────────
+const DAY_MS = 86_400_000;
+const HOUR_MS = 3_600_000;
+
+interface MockBotEntry extends Omit<BotMeta, 'id' | 'deployedAt'> {
+  // Real BE would compute deployedAt from a stored timestamp; we store
+  // the offset instead so Date.now() shifts naturally over time and the
+  // mock data generator picks up "more history" as the page lives.
+  uptimeOffsetMs: number;
+}
+
+const BOT_REGISTRY: Record<string, MockBotEntry> = {
+  'bot-1': {
+    name: 'Bollinger Breakout BTC',
+    pair: 'BTC-USDC',
+    timeframe: '5m',
+    exchange: 'hyperliquid',
+    mode: 'dry-run',
+    uptimeOffsetMs: 12 * DAY_MS + 4 * HOUR_MS,
+  },
+  'bot-2': {
+    name: 'RSI Reversal ETH',
+    pair: 'ETH-USDC',
+    timeframe: '15m',
+    exchange: 'hyperliquid',
+    mode: 'live',
+    uptimeOffsetMs: 28 * DAY_MS + 9 * HOUR_MS,
+  },
+  'bot-3': {
+    name: 'MACD Momentum BNB',
+    pair: 'BNB-USDC',
+    timeframe: '1h',
+    exchange: 'hyperliquid',
+    mode: 'dry-run',
+    uptimeOffsetMs: 6 * DAY_MS + 2 * HOUR_MS,
+  },
+};
+
+const DEFAULT_BOT: MockBotEntry = BOT_REGISTRY['bot-1'];
+export const MOCK_BOT_IDS = Object.keys(BOT_REGISTRY);
+
+function resolveMeta(id: string): BotMeta {
+  const entry = BOT_REGISTRY[id] ?? DEFAULT_BOT;
+  return {
+    id,
+    name: entry.name,
+    pair: entry.pair,
+    timeframe: entry.timeframe,
+    exchange: entry.exchange,
+    mode: entry.mode,
+    deployedAt: Date.now() - entry.uptimeOffsetMs,
+  };
+}
+
 export interface BotMonitoringApi {
   getBotMeta(id: string): Promise<BotMeta>;
+  listBots(): Promise<BotMeta[]>;
   getFills(id: string, deployedAt: number): Promise<Fill[]>;
   getSnapshot(id: string, deployedAt: number): Promise<PerformanceSnapshot>;
   getEquityCurve(id: string, deployedAt: number, range: TimeRange): Promise<EquityPoint[]>;
@@ -173,11 +232,10 @@ export interface BotMonitoringApi {
 
 export const botApi: BotMonitoringApi = {
   async getBotMeta(id) {
-    return {
-      id, name: 'Bollinger Breakout BTC', pair: 'BTC-USDC', timeframe: '5m',
-      exchange: 'hyperliquid', mode: 'dry-run',
-      deployedAt: Date.now() - 12 * 86_400_000 - 4 * 3_600_000,
-    };
+    return resolveMeta(id);
+  },
+  async listBots() {
+    return MOCK_BOT_IDS.map((id) => resolveMeta(id));
   },
   async getFills(id, deployedAt) { return generateMockFills(id, deployedAt, Date.now()); },
   async getSnapshot(id, deployedAt) {

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Copy, Download, ShieldAlert } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Activity, Copy, Download, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -29,6 +30,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   const state = useBuilderStore();
   const issues = useMemo(() => validateBuilder(state), [state]);
   const [parseError, setParseError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   // Build the unified payload + the 3 FE-only round-trip fields. We
   // validate the BE-shape part with `unifiedBotStrategyCreateSchema` (the
@@ -74,6 +76,19 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     if (!bundle) return;
     downloadJson(bundle, filename);
     toast.success(`Saved ${filename}`);
+  };
+
+  const handleDeploy = () => {
+    if (!bundle) return;
+    downloadJson(bundle, filename);
+    // Mock bot ID — real BE returns this from POST /bot-strategy/create.
+    const newBotId = `bot-${Date.now()}`;
+    toast.success(`${filename} saved · routing to monitor…`);
+    onOpenChange(false);
+    // Tiny delay so the dialog close animation reads cleanly before nav.
+    setTimeout(() => {
+      navigate(`/bots/${newBotId}`);
+    }, 150);
   };
 
   return (
@@ -131,12 +146,20 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             Copy
           </Button>
           <Button
-            variant="primary"
+            variant="secondary"
             disabled={!bundle}
             onClick={handleDownload}
           >
             <Download className="h-3.5 w-3.5" />
             Download .json
+          </Button>
+          <Button
+            variant="primary"
+            disabled={!bundle}
+            onClick={handleDeploy}
+          >
+            <Activity className="h-3.5 w-3.5" />
+            Deploy &amp; monitor
           </Button>
         </DialogFooter>
       </DialogContent>
