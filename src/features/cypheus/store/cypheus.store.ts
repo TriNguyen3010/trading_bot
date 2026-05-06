@@ -23,6 +23,8 @@ export type AvatarState = 'idle' | 'hello' | 'coding';
 
 export type LeftPanelTab = 'cypheus' | 'json';
 
+export type CypheusMode = 'builder' | 'monitoring';
+
 export type DrawerMode =
   | 'closed'
   | 'manual'
@@ -40,6 +42,7 @@ export interface ChatMessage {
 
 interface CypheusStore {
   panelTab: LeftPanelTab;
+  mode: CypheusMode;
   phase: Phase;
   state: CypheusState;
   avatar: AvatarState;
@@ -52,6 +55,7 @@ interface CypheusStore {
   jsonViewedAt: number | null;
 
   setPanelTab: (tab: LeftPanelTab) => void;
+  setMode: (mode: CypheusMode) => void;
   setPhase: (phase: Phase) => void;
   setState: (state: CypheusState) => void;
   setAvatar: (avatar: AvatarState) => void;
@@ -69,6 +73,7 @@ interface CypheusStore {
 
 export const useCypheusStore = create<CypheusStore>((set) => ({
   panelTab: 'cypheus',
+  mode: 'builder',
   phase: 'idle',
   state: 'idle',
   avatar: 'idle',
@@ -79,6 +84,7 @@ export const useCypheusStore = create<CypheusStore>((set) => ({
 
   setPanelTab: (panelTab) =>
     set(panelTab === 'json' ? { panelTab, jsonViewedAt: Date.now() } : { panelTab }),
+  setMode: (mode) => set({ mode }),
   setPhase: (phase) => set({ phase }),
   setState: (state) => set({ state }),
   setAvatar: (avatar) => set({ avatar }),
@@ -111,6 +117,7 @@ export const useCypheusStore = create<CypheusStore>((set) => ({
   resetAll: () =>
     set({
       panelTab: 'cypheus',
+      mode: 'builder',
       phase: 'idle',
       state: 'idle',
       avatar: 'idle',
