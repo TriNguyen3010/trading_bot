@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   PanelLeftClose,
   PanelLeftOpen,
@@ -63,53 +63,79 @@ function CountingNumber({
   format,
   duration = 700,
   className,
+  startFrom = 0,
 }: {
   value: number;
   format: (v: number) => string;
   duration?: number;
   className?: string;
+  /** Initial display value before the first animation runs. Default 0
+   * gives a count-up-from-zero effect on mount; set to `value` to skip. */
+  startFrom?: number;
 }) {
-  const [display, setDisplay] = useState(value);
-  const fromRef = useRef(value);
-  const targetRef = useRef(value);
-  const rafRef = useRef<number | null>(null);
+  // We own the span's text content via ref + textContent. The span renders
+  // *no React children* so React never reconciles them and never overwrites
+  // our textContent mutations. Parent can re-render freely (Pipeline ticks
+  // every 500ms cause grandparent re-renders) and our DOM mutations stick.
+  const spanRef = useRef<HTMLSpanElement | null>(null);
+  const displayedRef = useRef<number>(startFrom);
+  // Stash format in a ref so we don't include it in effect deps. format is
+  // typically a fresh closure every parent render (e.g. fmtMoney(2)), and
+  // including it would re-run the effect on every render and cancel the
+  // rAF before it could tick — animation would never advance.
+  const formatRef = useRef(format);
+  formatRef.current = format;
+
+  const setSpan = useCallback((node: HTMLSpanElement | null) => {
+    spanRef.current = node;
+    // Paint initial text on first ref attachment, before any effect runs.
+    if (node && node.textContent === '') {
+      node.textContent = formatRef.current(displayedRef.current);
+    }
+  }, []);
 
   useEffect(() => {
-    if (value === targetRef.current && value === display) return;
+    if (!spanRef.current) return;
     if (!Number.isFinite(value)) {
-      setDisplay(value);
+      displayedRef.current = value;
+      spanRef.current.textContent = formatRef.current(value);
       return;
     }
-    fromRef.current = display;
-    targetRef.current = value;
+    const from = displayedRef.current;
+    if (from === value) return;
     const start = performance.now();
-    const from = fromRef.current;
-    const to = value;
+    let raf: number | null = null;
+    // Fallback: if the tab is in the background, rAF is throttled/paused by
+    // the browser so the animation would never advance. Use a setTimeout
+    // fallback to snap-to-target after `duration + 50ms` so the displayed
+    // value is at least correct when the user focuses the tab.
+    const snapTimeout = window.setTimeout(() => {
+      if (raf != null) cancelAnimationFrame(raf);
+      displayedRef.current = value;
+      if (spanRef.current) spanRef.current.textContent = formatRef.current(value);
+    }, duration + 50);
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
       // ease-out cubic — quick to start, settles smoothly
       const eased = 1 - Math.pow(1 - t, 3);
-      setDisplay(from + (to - from) * eased);
+      const next = from + (value - from) * eased;
+      displayedRef.current = next;
+      if (spanRef.current) spanRef.current.textContent = formatRef.current(next);
       if (t < 1) {
-        rafRef.current = requestAnimationFrame(tick);
+        raf = requestAnimationFrame(tick);
       } else {
-        rafRef.current = null;
+        raf = null;
+        window.clearTimeout(snapTimeout);
       }
     };
-    if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(tick);
+    raf = requestAnimationFrame(tick);
     return () => {
-      if (rafRef.current != null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
+      if (raf != null) cancelAnimationFrame(raf);
+      window.clearTimeout(snapTimeout);
     };
-    // We intentionally only re-run when `value` changes; `display` is the
-    // ref-tracked starting point and reading it captures the current frame.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, duration]);
 
-  return <span className={className}>{format(display)}</span>;
+  return <span ref={setSpan} className={className} />;
 }
 
 const fmtMoney = (precision = 2) => (v: number) =>
