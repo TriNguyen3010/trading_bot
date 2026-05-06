@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   PanelLeftClose,
   PanelLeftOpen,
@@ -8,6 +8,14 @@ import {
   Sparkles,
   StopCircle,
 } from 'lucide-react';
+import {
+  createChart,
+  ColorType,
+  LineStyle,
+  type IChartApi,
+  type ISeriesApi,
+  type Time,
+} from 'lightweight-charts';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -19,7 +27,33 @@ import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { cn } from '@/lib/utils';
 import { botApi } from './mockBotData';
-import type { BotMeta, PerformanceSnapshot } from './types';
+import { hlApi } from './hyperliquid.service';
+import type {
+  BotMeta,
+  BotPhase,
+  EquityPoint,
+  Fill,
+  HLCandle,
+  PerformanceSnapshot,
+  TimeRange,
+} from './types';
+
+// ──────────────────────────────────────────────────────────────────────
+// Design tokens (from src/styles/tokens.css) — used in chart configs
+// where Tailwind classes aren't available (canvas-rendered libraries).
+// ──────────────────────────────────────────────────────────────────────
+const TOKEN = {
+  bgSurface: '#14181f',
+  borderSubtle: '#1e2329',
+  borderDefault: '#2b3139',
+  textMuted: '#848e9c',
+  textSecondary: '#b7bdc6',
+  bullish: '#0ecb81',
+  bearish: '#f6465d',
+  brand: '#f0b90b',
+  bullishGlow: 'rgba(14, 203, 129, 0.25)',
+  bullishFade: 'rgba(14, 203, 129, 0)',
+} as const;
 
 // === Hooks ===
 function useBotMeta(id: string) {
@@ -37,6 +71,87 @@ function useSnapshot(id: string, deployedAt: number | undefined) {
     botApi.getSnapshot(id, deployedAt).then(setSnap);
   }, [id, deployedAt]);
   return snap;
+}
+
+function useFills(id: string, deployedAt: number | undefined) {
+  const [fills, setFills] = useState<Fill[]>([]);
+  useEffect(() => {
+    if (deployedAt == null) return;
+    botApi.getFills(id, deployedAt).then(setFills);
+  }, [id, deployedAt]);
+  return fills;
+}
+
+function useEquityCurve(
+  id: string,
+  deployedAt: number | undefined,
+  range: TimeRange,
+) {
+  const [data, setData] = useState<EquityPoint[]>([]);
+  useEffect(() => {
+    if (deployedAt == null) return;
+    botApi.getEquityCurve(id, deployedAt, range).then(setData);
+  }, [id, deployedAt, range]);
+  return data;
+}
+
+// Cache HL candles in-module to avoid hammering the API on remounts.
+const candleCache = new Map<string, { data: HLCandle[]; ts: number }>();
+
+function useHyperliquidCandles(
+  coin: string,
+  interval: '1m' | '5m' | '15m' | '1h' | '1d',
+) {
+  const [candles, setCandles] = useState<HLCandle[]>([]);
+  useEffect(() => {
+    if (!coin) return;
+    const key = `${coin}:${interval}`;
+    let cancelled = false;
+
+    const load = (force = false) => {
+      const cached = candleCache.get(key);
+      if (!force && cached && Date.now() - cached.ts < 30_000) {
+        if (!cancelled) setCandles(cached.data);
+        return;
+      }
+      const now = Date.now();
+      const startTime = now - 4 * 60 * 60 * 1000; // last 4h window
+      hlApi
+        .getCandleSnapshot(coin, interval, startTime, now)
+        .then((data) => {
+          candleCache.set(key, { data, ts: Date.now() });
+          if (!cancelled) setCandles(data);
+        })
+        .catch((err) => console.warn('HL candle fetch:', err));
+    };
+
+    load();
+    const handle = setInterval(() => {
+      if (document.hidden) return;
+      load(true);
+    }, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(handle);
+    };
+  }, [coin, interval]);
+  return candles;
+}
+
+function computeBotPhase(deployedAt: number, totalTrades: number): BotPhase {
+  const hours = (Date.now() - deployedAt) / 3_600_000;
+  if (hours < 24 || totalTrades === 0) return 'just-deployed';
+  if (hours < 24 * 14) return 'collecting';
+  return 'mature';
+}
+
+function useBotMaturity(
+  deployedAt: number | undefined,
+  totalTrades: number,
+): BotPhase {
+  return deployedAt
+    ? computeBotPhase(deployedAt, totalTrades)
+    : 'just-deployed';
 }
 
 function formatUptime(deployedAt: number) {
@@ -366,7 +481,328 @@ function HeroPnL({ snap }: { snap: PerformanceSnapshot }) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Placeholder cards (M2/M3/M4 fill these in)
+// Section card primitive — semantic chrome shared by chart sections.
+// Header strip + dense content body, matches Builder card pattern.
+// ──────────────────────────────────────────────────────────────────────
+function SectionCard({
+  title,
+  meta,
+  rightSlot,
+  children,
+}: {
+  title: React.ReactNode;
+  meta?: React.ReactNode;
+  rightSlot?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-lg border border-border-subtle bg-surface overflow-hidden">
+      <header className="flex items-center justify-between gap-3 border-b border-border-subtle px-4 py-2.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-2xs font-semibold uppercase tracking-wider text-fg-muted">
+            {title}
+          </span>
+          {meta && (
+            <span className="text-xs text-fg-secondary truncate">{meta}</span>
+          )}
+        </div>
+        {rightSlot}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// EquityCurve — area chart (cumulative bot PnL over selected range)
+// ──────────────────────────────────────────────────────────────────────
+const EQUITY_RANGES: TimeRange[] = ['1D', '7D', '30D', 'all'];
+
+function EquityCurve({
+  data,
+  range,
+  onRangeChange,
+  total,
+}: {
+  data: EquityPoint[];
+  range: TimeRange;
+  onRangeChange: (r: TimeRange) => void;
+  total: number;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
+
+  // Create chart once
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const chart = createChart(containerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: 'transparent' },
+        textColor: TOKEN.textMuted,
+        fontFamily:
+          'Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+        fontSize: 11,
+      },
+      grid: {
+        vertLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
+        horzLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
+      },
+      timeScale: {
+        borderColor: TOKEN.borderSubtle,
+        timeVisible: false,
+        secondsVisible: false,
+      },
+      rightPriceScale: {
+        borderColor: TOKEN.borderSubtle,
+      },
+      crosshair: {
+        vertLine: { color: TOKEN.borderDefault, width: 1, style: LineStyle.Dashed },
+        horzLine: { color: TOKEN.borderDefault, width: 1, style: LineStyle.Dashed },
+      },
+      width: containerRef.current.clientWidth,
+      height: 180,
+    });
+    const series = chart.addAreaSeries({
+      lineColor: TOKEN.bullish,
+      topColor: TOKEN.bullishGlow,
+      bottomColor: TOKEN.bullishFade,
+      lineWidth: 2,
+      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+    });
+    chartRef.current = chart;
+    seriesRef.current = series;
+    const onResize = () => {
+      if (containerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+      }
+    };
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
+    };
+  }, []);
+
+  // Update data when it changes
+  useEffect(() => {
+    if (!seriesRef.current) return;
+    if (data.length === 0) {
+      seriesRef.current.setData([]);
+      return;
+    }
+    seriesRef.current.setData(
+      data.map((p) => ({
+        time: (Math.floor(p.t / 1000) as Time),
+        value: p.equity,
+      })),
+    );
+    chartRef.current?.timeScale().fitContent();
+  }, [data]);
+
+  return (
+    <SectionCard
+      title="PnL Curve"
+      meta={
+        <span className="tabular-nums">
+          Total{' '}
+          <b
+            className={cn(
+              total >= 0 ? 'text-bullish' : 'text-bearish',
+              'font-semibold',
+            )}
+          >
+            ${total >= 0 ? '+' : ''}
+            {total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+          </b>
+        </span>
+      }
+      rightSlot={
+        <div className="flex gap-0.5 rounded-md bg-canvas border border-border-subtle p-0.5">
+          {EQUITY_RANGES.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => onRangeChange(r)}
+              className={cn(
+                'rounded-sm px-2 py-0.5 text-2xs font-medium uppercase tracking-wider transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
+                r === range
+                  ? 'bg-surface text-fg shadow-sm'
+                  : 'text-fg-muted hover:text-fg',
+              )}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+      }
+    >
+      <div ref={containerRef} className="h-[180px]" />
+    </SectionCard>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// LiveSpotFeed — candlestick chart of bot's pair (real Hyperliquid data)
+// + entry markers from bot fills
+// ──────────────────────────────────────────────────────────────────────
+function LiveSpotFeed({
+  coin,
+  candles,
+  fills,
+  watchingFor,
+}: {
+  coin: string;
+  candles: HLCandle[];
+  fills: Fill[];
+  watchingFor?: string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+
+  // Create chart once
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const chart = createChart(containerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: 'transparent' },
+        textColor: TOKEN.textMuted,
+        fontFamily:
+          'Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+        fontSize: 11,
+      },
+      grid: {
+        vertLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
+        horzLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
+      },
+      timeScale: {
+        borderColor: TOKEN.borderSubtle,
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      rightPriceScale: { borderColor: TOKEN.borderSubtle },
+      crosshair: {
+        vertLine: { color: TOKEN.borderDefault, width: 1, style: LineStyle.Dashed },
+        horzLine: { color: TOKEN.borderDefault, width: 1, style: LineStyle.Dashed },
+      },
+      width: containerRef.current.clientWidth,
+      height: 220,
+    });
+    const series = chart.addCandlestickSeries({
+      upColor: TOKEN.bullish,
+      downColor: TOKEN.bearish,
+      wickUpColor: TOKEN.bullish,
+      wickDownColor: TOKEN.bearish,
+      borderVisible: false,
+      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+    });
+    chartRef.current = chart;
+    seriesRef.current = series;
+    const onResize = () => {
+      if (containerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+      }
+    };
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
+    };
+  }, []);
+
+  // Update candles when data changes
+  useEffect(() => {
+    if (!seriesRef.current) return;
+    if (candles.length === 0) {
+      seriesRef.current.setData([]);
+      return;
+    }
+    seriesRef.current.setData(
+      candles.map((c) => ({
+        time: (Math.floor(c.t / 1000) as Time),
+        open: c.o,
+        high: c.h,
+        low: c.l,
+        close: c.c,
+      })),
+    );
+    chartRef.current?.timeScale().fitContent();
+  }, [candles]);
+
+  // Update entry markers from fills (latest 10)
+  useEffect(() => {
+    if (!seriesRef.current) return;
+    const recent = fills.slice(-10);
+    seriesRef.current.setMarkers(
+      recent.map((f) => ({
+        time: (Math.floor(f.openedAt / 1000) as Time),
+        position: f.side === 'LONG' ? 'belowBar' : 'aboveBar',
+        color: f.side === 'LONG' ? TOKEN.bullish : TOKEN.bearish,
+        shape: f.side === 'LONG' ? 'arrowUp' : 'arrowDown',
+        text: f.side,
+      })),
+    );
+  }, [fills]);
+
+  const last = candles[candles.length - 1];
+  const first = candles[0];
+  const pct = first && last ? ((last.c - first.o) / first.o) * 100 : 0;
+  const pctPositive = pct >= 0;
+
+  return (
+    <SectionCard
+      title={
+        <span className="inline-flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded border border-bearish/30 bg-bearish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-bearish">
+            <span className="h-1.5 w-1.5 rounded-full bg-bearish animate-pulse" />
+            LIVE
+          </span>
+          <span>
+            {coin} · 5m · Market Data
+          </span>
+        </span>
+      }
+      rightSlot={
+        last && (
+          <span className="tabular-nums text-sm font-semibold text-fg">
+            ${last.c.toLocaleString(undefined, { maximumFractionDigits: 2 })}{' '}
+            <span
+              className={cn(
+                'text-xs font-medium',
+                pctPositive ? 'text-bullish' : 'text-bearish',
+              )}
+            >
+              {pctPositive ? '+' : ''}
+              {pct.toFixed(2)}%
+            </span>
+          </span>
+        )
+      }
+    >
+      <div ref={containerRef} className="h-[220px]" />
+      {watchingFor && (
+        <div className="flex items-center justify-between gap-3 border-t border-border-subtle px-4 py-2 text-xs text-fg-muted">
+          <span className="inline-flex items-center gap-1.5 truncate">
+            <span aria-hidden="true">📡</span>
+            <span>Watching for {watchingFor}</span>
+          </span>
+          <span className="text-fg-secondary tabular-nums whitespace-nowrap">
+            Next check in 12s
+          </span>
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Placeholder cards (M3/M4 fill these in)
 // ──────────────────────────────────────────────────────────────────────
 function PlaceholderCard({ label, plannedIn }: { label: string; plannedIn: string }) {
   return (
@@ -391,6 +827,15 @@ export function BotMonitoringPage() {
   const { id = '' } = useParams<{ id: string }>();
   const meta = useBotMeta(id);
   const snap = useSnapshot(id, meta?.deployedAt);
+  const fills = useFills(id, meta?.deployedAt);
+  const [range, setRange] = useState<TimeRange>('30D');
+  const equity = useEquityCurve(id, meta?.deployedAt, range);
+  const coin = meta?.pair?.split('-')[0] ?? 'BTC';
+  const candles = useHyperliquidCandles(coin, '5m');
+  // Phase determines empty-state behavior in M4. Computed here so it's
+  // available to all sections; unused warnings will resolve in M4 wiring.
+  const _phase = useBotMaturity(meta?.deployedAt, snap?.totalTrades ?? 0);
+  void _phase; // referenced by future sections
 
   if (!meta || !snap) {
     return (
@@ -425,9 +870,19 @@ export function BotMonitoringPage() {
 
             <div className="grid grid-cols-1 gap-3">
               <PlaceholderCard label="47-day Activity Heatmap" plannedIn="M3" />
-              <PlaceholderCard label="PnL Curve · 47 days" plannedIn="M2" />
+              <EquityCurve
+                data={equity}
+                range={range}
+                onRangeChange={setRange}
+                total={snap.totalPnL}
+              />
               <PlaceholderCard label="Order Book L2 · BTC" plannedIn="M4" />
-              <PlaceholderCard label="Live Spot Feed · BTC 5m" plannedIn="M2" />
+              <LiveSpotFeed
+                coin={coin}
+                candles={candles}
+                fills={fills}
+                watchingFor="Bollinger upper band cross + RSI < 70"
+              />
               <PlaceholderCard label="Live Execution Cycle" plannedIn="M3" />
               <PlaceholderCard label="Recent Fills" plannedIn="M3" />
             </div>
