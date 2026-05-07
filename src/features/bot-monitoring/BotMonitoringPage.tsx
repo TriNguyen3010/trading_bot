@@ -1118,6 +1118,9 @@ function EquityCurve({
   const geometry = useMemo(() => buildEquityGeometry(data), [data]);
   const linePathRef = useRef<SVGPathElement | null>(null);
   const [pathLength, setPathLength] = useState<number>(0);
+  // Live position of the endpoint dot — interpolated along the path so
+  // the pointer travels with the draw-in instead of popping in at the end.
+  const [endPos, setEndPos] = useState<{ x: number; y: number } | null>(null);
 
   // Re-measure path length whenever path changes; this drives the
   // stroke-dashoffset draw-in animation (offset = length → 0).
@@ -1125,7 +1128,35 @@ function EquityCurve({
     if (!linePathRef.current || !geometry) return;
     const len = linePathRef.current.getTotalLength();
     setPathLength(len);
+    // Seed endpoint at the start of the path so it's visible from frame 0.
+    const start = linePathRef.current.getPointAtLength(0);
+    setEndPos({ x: start.x, y: start.y });
   }, [geometry]);
+
+  // Drive the endpoint dot from the line's actual stroke-dashoffset value —
+  // guarantees perfect sync with the CSS draw-in animation regardless of
+  // its easing curve. Reads getComputedStyle each frame and converts the
+  // remaining offset to a length-along-path.
+  useEffect(() => {
+    if (!pathLength || !linePathRef.current || !geometry) return;
+    const path = linePathRef.current;
+    let raf = 0;
+    const tick = () => {
+      const offsetRaw = getComputedStyle(path).strokeDashoffset;
+      const offset = parseFloat(offsetRaw) || 0;
+      const drawn = Math.max(0, Math.min(pathLength, pathLength - offset));
+      const pt = path.getPointAtLength(drawn);
+      setEndPos({ x: pt.x, y: pt.y });
+      if (offset > 0.5) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        // Snap to true endpoint so we don't drift on subpixel rounding.
+        setEndPos({ x: geometry.endX, y: geometry.endY });
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [pathLength, geometry]);
 
   if (phase === 'just-deployed' || data.length === 0 || !geometry) {
     return (
@@ -1266,7 +1297,7 @@ function EquityCurve({
             }}
           />
 
-          {/* Endpoint pulse halo (reveals after draw completes) */}
+          {/* Endpoint pulse halo (reveals after draw completes, anchors to final position) */}
           <circle
             cx={geometry.endX}
             cy={geometry.endY}
@@ -1279,18 +1310,17 @@ function EquityCurve({
               transformOrigin: `${geometry.endX}px ${geometry.endY}px`,
             }}
           />
-          {/* Endpoint dot (bright) */}
+          {/* Endpoint dot — travels along the path with the draw-in.
+            * cx/cy come from rAF-sampled getPointAtLength, kept in sync
+            * with the line's stroke-dashoffset. */}
           <circle
-            cx={geometry.endX}
-            cy={geometry.endY}
+            cx={endPos?.x ?? geometry.endX}
+            cy={endPos?.y ?? geometry.endY}
             r="4"
             fill="white"
             stroke={lineColor}
             strokeWidth="2"
-            opacity="0"
             style={{
-              animation:
-                'eq-endpoint-pop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) 1500ms forwards',
               filter: `drop-shadow(0 0 6px ${lineColor})`,
             }}
           />
