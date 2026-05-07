@@ -8,14 +8,6 @@ import {
   Sparkles,
   StopCircle,
 } from 'lucide-react';
-import {
-  createChart,
-  ColorType,
-  LineStyle,
-  type IChartApi,
-  type ISeriesApi,
-  type Time,
-} from 'lightweight-charts';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -292,7 +284,9 @@ function useCycle(id: string) {
       });
     };
     tick();
-    const handle = setInterval(tick, 500);
+    // Poll faster than the per-stage duration (~250ms) so transitions
+    // aren't aliased — every stage gets at least one render frame.
+    const handle = setInterval(tick, 100);
     return () => {
       cancelled = true;
       clearInterval(handle);
@@ -1268,16 +1262,16 @@ function EquityCurve({
             </text>
           ))}
 
-          {/* Area fill — fades in after line draws */}
+          {/* Area fill — fades in just before line draw completes */}
           <path
             d={geometry.areaD}
             fill="url(#eqArea)"
             className="eq-area"
             opacity="0"
-            style={{ animation: 'eq-area-fade 800ms ease-out 1100ms forwards' }}
+            style={{ animation: 'eq-area-fade 1000ms ease-out 9000ms forwards' }}
           />
 
-          {/* Line — drawn via stroke-dashoffset transition */}
+          {/* Line — drawn via stroke-dashoffset transition (4s draw-in) */}
           <path
             ref={linePathRef}
             d={geometry.pathD}
@@ -1291,13 +1285,13 @@ function EquityCurve({
             strokeDashoffset={pathLength || 1}
             style={{
               animation: pathLength
-                ? 'eq-line-draw 1500ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards'
+                ? 'eq-line-draw 10000ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards'
                 : undefined,
               ['--eq-path-length' as string]: pathLength,
             }}
           />
 
-          {/* Endpoint pulse halo (reveals after draw completes, anchors to final position) */}
+          {/* Endpoint pulse halo — reveals after line completes (4s) */}
           <circle
             cx={geometry.endX}
             cy={geometry.endY}
@@ -1306,47 +1300,61 @@ function EquityCurve({
             opacity="0"
             style={{
               animation:
-                'eq-endpoint-halo 1.6s ease-in-out 1500ms infinite',
+                'eq-endpoint-halo 1.6s ease-in-out 10000ms infinite',
               transformOrigin: `${geometry.endX}px ${geometry.endY}px`,
             }}
           />
-          {/* Endpoint dot — travels along the path with the draw-in.
-            * cx/cy come from rAF-sampled getPointAtLength, kept in sync
-            * with the line's stroke-dashoffset. */}
-          <circle
-            cx={endPos?.x ?? geometry.endX}
-            cy={endPos?.y ?? geometry.endY}
-            r="4"
-            fill="white"
-            stroke={lineColor}
-            strokeWidth="2"
-            style={{
-              filter: `drop-shadow(0 0 6px ${lineColor})`,
-            }}
-          />
-          {/* Endpoint value label */}
-          <g
-            opacity="0"
-            style={{ animation: 'eq-endpoint-pop 400ms ease-out 1700ms forwards' }}
-          >
-            <text
-              x={geometry.endX + 10}
-              y={geometry.endY + 4}
-              fontSize="13"
-              fontWeight="700"
-              fill={totalPositive ? '#7CFFCB' : '#FFAFB7'}
-              fontFamily="JetBrains Mono, SF Mono, monospace"
-              style={{
-                fontVariantNumeric: 'tabular-nums',
-                filter: `drop-shadow(0 0 4px ${lineColor})`,
-              }}
-            >
-              ${geometry.endValue >= 0 ? '+' : '−'}
-              {Math.abs(geometry.endValue).toLocaleString(undefined, {
-                maximumFractionDigits: 0,
-              })}
-            </text>
-          </g>
+          {/* Endpoint dot + live value label — both travel with the
+            * draw-in via rAF-sampled getPointAtLength. The value is
+            * inverse-mapped from the dot's y so the number matches the
+            * curve's height at every frame. */}
+          {(() => {
+            const ex = endPos?.x ?? geometry.endX;
+            const ey = endPos?.y ?? geometry.endY;
+            // Inverse map ey → equity value (reverse of sy() in geometry).
+            const innerH = EQ_VIEW_H - EQ_PAD_TOP - EQ_PAD_BOTTOM;
+            const liveVal =
+              geometry.yMin +
+              (1 - (ey - EQ_PAD_TOP) / innerH) *
+                (geometry.yMax - geometry.yMin);
+            const valPositive = liveVal >= 0;
+            // Flip label to the left side near the right edge so it
+            // doesn't clip out of the viewBox when the dot reaches the end.
+            const flipLeft = ex > EQ_VIEW_W - 90;
+            const labelX = flipLeft ? ex - 10 : ex + 10;
+            const labelAnchor = flipLeft ? 'end' : 'start';
+            return (
+              <g>
+                <circle
+                  cx={ex}
+                  cy={ey}
+                  r="4"
+                  fill="white"
+                  stroke={lineColor}
+                  strokeWidth="2"
+                  style={{ filter: `drop-shadow(0 0 6px ${lineColor})` }}
+                />
+                <text
+                  x={labelX}
+                  y={ey - 8}
+                  textAnchor={labelAnchor}
+                  fontSize="12"
+                  fontWeight="700"
+                  fill={valPositive ? '#7CFFCB' : '#FFAFB7'}
+                  fontFamily="JetBrains Mono, SF Mono, monospace"
+                  style={{
+                    fontVariantNumeric: 'tabular-nums',
+                    filter: `drop-shadow(0 0 4px ${lineColor})`,
+                  }}
+                >
+                  {valPositive ? '+' : '−'}$
+                  {Math.abs(liveVal).toLocaleString(undefined, {
+                    maximumFractionDigits: 0,
+                  })}
+                </text>
+              </g>
+            );
+          })()}
         </svg>
       </div>
     </SectionCard>
@@ -1354,10 +1362,118 @@ function EquityCurve({
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// LiveSpotFeed — line/area chart of bot's pair close price (real Hyperliquid)
-// + entry markers from bot fills + High/Low markers
-// Coin98-style aesthetic: smooth bullish/bearish line, soft area gradient.
+// LiveSpotFeed — Coin98-style hand-rolled SVG chart of bot's pair close
+// price (real Hyperliquid candles). Uses the same draw-in animation
+// rules as the PnL Curve: stroke-dashoffset 10s line draw, area fade-in
+// just before completion, traveling endpoint dot with live price label,
+// + bot fill entry markers that pop in as the line sweeps past them.
 // ──────────────────────────────────────────────────────────────────────
+const SPOT_VIEW_W = 800;
+const SPOT_VIEW_H = 220;
+const SPOT_PAD_X = 14;
+const SPOT_PAD_TOP = 18;
+const SPOT_PAD_BOTTOM = 30;
+const SPOT_DRAW_MS = 10000;
+
+interface SpotGeometry {
+  pathD: string;
+  areaD: string;
+  endX: number;
+  endY: number;
+  endValue: number;
+  yMin: number;
+  yMax: number;
+  ticks: { x: number; label: string }[];
+  highX: number;
+  highY: number;
+  highValue: number;
+  lowX: number;
+  lowY: number;
+  lowValue: number;
+  sx: (t: number) => number;
+  sy: (p: number) => number;
+  xMin: number;
+  xMax: number;
+}
+
+function buildSpotGeometry(candles: HLCandle[]): SpotGeometry | null {
+  if (candles.length < 2) return null;
+  let highIdx = 0;
+  let lowIdx = 0;
+  for (let i = 1; i < candles.length; i++) {
+    if (candles[i].h > candles[highIdx].h) highIdx = i;
+    if (candles[i].l < candles[lowIdx].l) lowIdx = i;
+  }
+  const ys = candles.map((c) => c.c);
+  const minX = candles[0].t;
+  let maxX = candles[candles.length - 1].t;
+  if (maxX === minX) maxX = minX + 1;
+  let minY = Math.min(Math.min(...ys), candles[lowIdx].l);
+  let maxY = Math.max(Math.max(...ys), candles[highIdx].h);
+  const yPad = (maxY - minY || 1) * 0.10;
+  minY -= yPad;
+  maxY += yPad;
+
+  const sx = (x: number) =>
+    SPOT_PAD_X +
+    ((x - minX) / (maxX - minX)) * (SPOT_VIEW_W - SPOT_PAD_X * 2);
+  const sy = (y: number) =>
+    SPOT_PAD_TOP +
+    (1 - (y - minY) / (maxY - minY)) *
+      (SPOT_VIEW_H - SPOT_PAD_TOP - SPOT_PAD_BOTTOM);
+
+  const points = candles.map((c) => ({ x: sx(c.t), y: sy(c.c) }));
+
+  // Catmull-Rom → cubic Bezier with tension 0.5 (same as EquityCurve).
+  const tension = 0.5;
+  let pathD = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] ?? points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] ?? p2;
+    const cp1x = p1.x + ((p2.x - p0.x) / 6) * tension * 2;
+    const cp1y = p1.y + ((p2.y - p0.y) / 6) * tension * 2;
+    const cp2x = p2.x - ((p3.x - p1.x) / 6) * tension * 2;
+    const cp2y = p2.y - ((p3.y - p1.y) / 6) * tension * 2;
+    pathD += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  const baseY = SPOT_VIEW_H - SPOT_PAD_BOTTOM;
+  const last = points[points.length - 1];
+  const areaD = `${pathD} L ${last.x.toFixed(2)} ${baseY.toFixed(2)} L ${points[0].x.toFixed(2)} ${baseY.toFixed(2)} Z`;
+
+  // 5 evenly-spaced HH:MM ticks.
+  const tickCount = 5;
+  const ticks: { x: number; label: string }[] = [];
+  for (let i = 0; i < tickCount; i++) {
+    const t = minX + ((maxX - minX) * i) / (tickCount - 1);
+    const date = new Date(t);
+    const label = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    ticks.push({ x: sx(t), label });
+  }
+
+  return {
+    pathD,
+    areaD,
+    endX: last.x,
+    endY: last.y,
+    endValue: ys[ys.length - 1],
+    yMin: minY,
+    yMax: maxY,
+    ticks,
+    highX: sx(candles[highIdx].t),
+    highY: sy(candles[highIdx].h),
+    highValue: candles[highIdx].h,
+    lowX: sx(candles[lowIdx].t),
+    lowY: sy(candles[lowIdx].l),
+    lowValue: candles[lowIdx].l,
+    sx,
+    sy,
+    xMin: minX,
+    xMax: maxX,
+  };
+}
+
 function LiveSpotFeed({
   coin,
   candles,
@@ -1369,156 +1485,89 @@ function LiveSpotFeed({
   fills: Fill[];
   watchingFor?: string;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
-  const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
-  const [chartError, setChartError] = useState<string | null>(null);
+  const geometry = useMemo(() => buildSpotGeometry(candles), [candles]);
+  const linePathRef = useRef<SVGPathElement | null>(null);
+  const [pathLength, setPathLength] = useState<number>(0);
+  // Live position of the endpoint dot — interpolated along the path so
+  // the pointer travels with the draw-in instead of popping in at the end.
+  const [endPos, setEndPos] = useState<{ x: number; y: number } | null>(null);
 
-  // Create chart once
   useEffect(() => {
-    if (!containerRef.current) return;
-    let chart: IChartApi;
-    try {
-      chart = createChart(containerRef.current, {
-        layout: {
-          background: { type: ColorType.Solid, color: 'transparent' },
-          textColor: TOKEN.textMuted,
-          fontFamily:
-            'Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
-          fontSize: 11,
-          attributionLogo: false,
-        },
-        grid: {
-          vertLines: { color: 'transparent' },
-          horzLines: { color: TOKEN.borderSubtle, style: LineStyle.Dotted },
-        },
-        timeScale: {
-          borderColor: TOKEN.borderSubtle,
-          timeVisible: true,
-          secondsVisible: false,
-        },
-        rightPriceScale: { borderColor: TOKEN.borderSubtle },
-        crosshair: {
-          vertLine: {
-            color: TOKEN.borderDefault,
-            width: 1,
-            style: LineStyle.Dashed,
-          },
-          horzLine: {
-            color: TOKEN.borderDefault,
-            width: 1,
-            style: LineStyle.Dashed,
-          },
-        },
-        width: containerRef.current.clientWidth,
-        height: 220,
-      });
-    } catch (e) {
-      console.error('LiveSpotFeed chart init failed:', e);
-      setChartError(e instanceof Error ? e.message : 'Chart init failed');
-      return;
-    }
-    const series = chart.addAreaSeries({
-      lineColor: TOKEN.bullish,
-      topColor: TOKEN.bullishGlow,
-      bottomColor: TOKEN.bullishFade,
-      lineWidth: 2,
-      lineType: 2, // curved (bezier) for smoother Coin98 look
-      crosshairMarkerVisible: true,
-      crosshairMarkerRadius: 4,
-      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
-    });
-    chartRef.current = chart;
-    seriesRef.current = series;
-    const onResize = () => {
-      if (containerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({
-          width: containerRef.current.clientWidth,
-        });
+    if (!linePathRef.current || !geometry) return;
+    const len = linePathRef.current.getTotalLength();
+    setPathLength(len);
+    const start = linePathRef.current.getPointAtLength(0);
+    setEndPos({ x: start.x, y: start.y });
+  }, [geometry]);
+
+  useEffect(() => {
+    if (!pathLength || !linePathRef.current || !geometry) return;
+    const path = linePathRef.current;
+    let raf = 0;
+    const tick = () => {
+      const offsetRaw = getComputedStyle(path).strokeDashoffset;
+      const offset = parseFloat(offsetRaw) || 0;
+      const drawn = Math.max(0, Math.min(pathLength, pathLength - offset));
+      const pt = path.getPointAtLength(drawn);
+      setEndPos({ x: pt.x, y: pt.y });
+      if (offset > 0.5) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        setEndPos({ x: geometry.endX, y: geometry.endY });
       }
     };
-    window.addEventListener('resize', onResize);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      chart.remove();
-      chartRef.current = null;
-      seriesRef.current = null;
-    };
-  }, []);
-
-  // Update line data + High/Low + entry markers when data changes
-  useEffect(() => {
-    if (!seriesRef.current) return;
-    if (candles.length === 0) {
-      seriesRef.current.setData([]);
-      seriesRef.current.setMarkers([]);
-      return;
-    }
-    // Plot close price as line
-    seriesRef.current.setData(
-      candles.map((c) => ({
-        time: Math.floor(c.t / 1000) as Time,
-        value: c.c,
-      })),
-    );
-
-    // Build markers: High/Low extremes + recent entry/exit fills
-    const highIdx = candles.reduce(
-      (best, c, i) => (c.h > candles[best].h ? i : best),
-      0,
-    );
-    const lowIdx = candles.reduce(
-      (best, c, i) => (c.l < candles[best].l ? i : best),
-      0,
-    );
-    const high = candles[highIdx];
-    const low = candles[lowIdx];
-
-    const markers: Parameters<typeof seriesRef.current.setMarkers>[0] = [];
-    if (high && lowIdx !== highIdx) {
-      markers.push({
-        time: Math.floor(high.t / 1000) as Time,
-        position: 'aboveBar',
-        color: TOKEN.textSecondary,
-        shape: 'circle',
-        text: `High ${high.h.toLocaleString(undefined, {
-          maximumFractionDigits: 2,
-        })}`,
-      });
-    }
-    if (low) {
-      markers.push({
-        time: Math.floor(low.t / 1000) as Time,
-        position: 'belowBar',
-        color: TOKEN.textSecondary,
-        shape: 'circle',
-        text: `Low ${low.l.toLocaleString(undefined, {
-          maximumFractionDigits: 2,
-        })}`,
-      });
-    }
-    // Entry markers from fills (latest 6 to avoid clutter)
-    const recentFills = fills.slice(-6);
-    recentFills.forEach((f) => {
-      markers.push({
-        time: Math.floor(f.openedAt / 1000) as Time,
-        position: f.side === 'LONG' ? 'belowBar' : 'aboveBar',
-        color: f.side === 'LONG' ? TOKEN.bullish : TOKEN.bearish,
-        shape: f.side === 'LONG' ? 'arrowUp' : 'arrowDown',
-        text: f.side,
-      });
-    });
-    // Markers must be sorted by time ascending
-    markers.sort((a, b) => Number(a.time) - Number(b.time));
-    seriesRef.current.setMarkers(markers);
-
-    chartRef.current?.timeScale().fitContent();
-  }, [candles, fills]);
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [pathLength, geometry]);
 
   const last = candles[candles.length - 1];
   const first = candles[0];
   const pct = first && last ? ((last.c - first.o) / first.o) * 100 : 0;
   const pctPositive = pct >= 0;
+
+  // Empty / loading state — keep header consistent with the live state.
+  if (!geometry || candles.length < 2) {
+    return (
+      <SectionCard
+        title={
+          <span className="inline-flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded border border-bearish/30 bg-bearish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-bearish">
+              <span className="h-1.5 w-1.5 rounded-full bg-bearish animate-pulse" />
+              LIVE
+            </span>
+            <span>{coin} · 5m · Market Data</span>
+          </span>
+        }
+      >
+        <div className="flex h-[220px] items-center justify-center text-xs text-fg-muted">
+          Waiting for HL data…
+        </div>
+      </SectionCard>
+    );
+  }
+
+  const lineColor = pctPositive ? 'var(--color-bullish)' : 'var(--color-bearish)';
+  const labelTextColor = pctPositive ? '#7CFFCB' : '#FFAFB7';
+
+  // Bot fill entry markers — only fills whose openedAt sits inside the
+  // visible candle range. Limit to the most recent 6 to avoid clutter.
+  // Each marker pops in as the draw-line sweeps past its x-position
+  // (delay scales with the marker's progress along the canvas).
+  const visibleFills = fills
+    .filter((f) => f.openedAt >= geometry.xMin && f.openedAt <= geometry.xMax)
+    .slice(-6);
+  const totalDrawableX = SPOT_VIEW_W - SPOT_PAD_X * 2;
+  const fillMarkers = visibleFills.map((f) => {
+    const x = geometry.sx(f.openedAt);
+    const y = geometry.sy(f.entryPrice);
+    const progress = (x - SPOT_PAD_X) / totalDrawableX;
+    const delay = Math.max(0, Math.min(1, progress)) * SPOT_DRAW_MS;
+    return { f, x, y, delay };
+  });
+
+  // Force a fresh node identity on coin/length change so the draw-in
+  // animation re-triggers visibly (and the markers re-pop in sequence).
+  const animKey = `${coin}-${candles.length}`;
 
   return (
     <SectionCard
@@ -1528,35 +1577,295 @@ function LiveSpotFeed({
             <span className="h-1.5 w-1.5 rounded-full bg-bearish animate-pulse" />
             LIVE
           </span>
-          <span>
-            {coin} · 5m · Market Data
-          </span>
+          <span>{coin} · 5m · Market Data</span>
         </span>
       }
       rightSlot={
-        last && (
-          <span className="tabular-nums text-sm font-semibold text-fg">
-            ${last.c.toLocaleString(undefined, { maximumFractionDigits: 2 })}{' '}
-            <span
-              className={cn(
-                'text-xs font-medium',
-                pctPositive ? 'text-bullish' : 'text-bearish',
-              )}
-            >
-              {pctPositive ? '+' : ''}
-              {pct.toFixed(2)}%
-            </span>
+        <span className="tabular-nums text-sm font-semibold text-fg">
+          ${last.c.toLocaleString(undefined, { maximumFractionDigits: 2 })}{' '}
+          <span
+            className={cn(
+              'text-xs font-medium',
+              pctPositive ? 'text-bullish' : 'text-bearish',
+            )}
+          >
+            {pctPositive ? '+' : ''}
+            {pct.toFixed(2)}%
           </span>
-        )
+        </span>
       }
     >
-      {chartError ? (
-        <div className="px-4 py-8 text-center text-xs text-bearish">
-          Chart unavailable: {chartError}
-        </div>
-      ) : (
-        <div ref={containerRef} className="h-[220px]" />
-      )}
+      <div className="relative h-[220px] w-full">
+        <svg
+          key={animKey}
+          viewBox={`0 0 ${SPOT_VIEW_W} ${SPOT_VIEW_H}`}
+          preserveAspectRatio="none"
+          className="absolute inset-0 h-full w-full overflow-visible"
+        >
+          <defs>
+            <linearGradient id="spotArea" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={lineColor} stopOpacity="0.30" />
+              <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
+            </linearGradient>
+            <filter id="spotGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2.5" result="b" />
+              <feMerge>
+                <feMergeNode in="b" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Horizontal grid lines (3 dotted) */}
+          {[0.25, 0.5, 0.75].map((p) => {
+            const y =
+              SPOT_PAD_TOP +
+              p * (SPOT_VIEW_H - SPOT_PAD_TOP - SPOT_PAD_BOTTOM);
+            return (
+              <line
+                key={p}
+                x1={SPOT_PAD_X}
+                y1={y}
+                x2={SPOT_VIEW_W - SPOT_PAD_X}
+                y2={y}
+                stroke={TOKEN.borderSubtle}
+                strokeDasharray="2 4"
+              />
+            );
+          })}
+
+          {/* X-axis HH:MM ticks */}
+          {geometry.ticks.map((tk, i) => (
+            <text
+              key={i}
+              x={tk.x}
+              y={SPOT_VIEW_H - 10}
+              textAnchor="middle"
+              fontSize="10"
+              fill={TOKEN.textMuted}
+              fontFamily="Inter, system-ui, sans-serif"
+            >
+              {tk.label}
+            </text>
+          ))}
+
+          {/* Area fill — fades in just before line completes */}
+          <path
+            d={geometry.areaD}
+            fill="url(#spotArea)"
+            opacity="0"
+            style={{
+              animation: 'eq-area-fade 1000ms ease-out 9000ms forwards',
+            }}
+          />
+
+          {/* Line — drawn via stroke-dashoffset (10s) */}
+          <path
+            ref={linePathRef}
+            d={geometry.pathD}
+            fill="none"
+            stroke={lineColor}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter="url(#spotGlow)"
+            strokeDasharray={pathLength || 1}
+            strokeDashoffset={pathLength || 1}
+            style={{
+              animation: pathLength
+                ? `eq-line-draw ${SPOT_DRAW_MS}ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards`
+                : undefined,
+            }}
+          />
+
+          {/* High marker — pops in just before line completes */}
+          <g
+            opacity="0"
+            style={{
+              animation:
+                'eq-endpoint-pop 400ms ease-out 9500ms forwards',
+            }}
+          >
+            <circle
+              cx={geometry.highX}
+              cy={geometry.highY}
+              r="3.5"
+              fill="white"
+              stroke={TOKEN.textSecondary}
+              strokeWidth="1.5"
+            />
+            <text
+              x={geometry.highX}
+              y={geometry.highY - 10}
+              textAnchor="middle"
+              fontSize="10"
+              fontWeight="600"
+              fill={TOKEN.textSecondary}
+              fontFamily="JetBrains Mono, SF Mono, monospace"
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            >
+              H {geometry.highValue.toFixed(2)}
+            </text>
+          </g>
+
+          {/* Low marker */}
+          <g
+            opacity="0"
+            style={{
+              animation:
+                'eq-endpoint-pop 400ms ease-out 9500ms forwards',
+            }}
+          >
+            <circle
+              cx={geometry.lowX}
+              cy={geometry.lowY}
+              r="3.5"
+              fill="white"
+              stroke={TOKEN.textSecondary}
+              strokeWidth="1.5"
+            />
+            <text
+              x={geometry.lowX}
+              y={geometry.lowY + 18}
+              textAnchor="middle"
+              fontSize="10"
+              fontWeight="600"
+              fill={TOKEN.textSecondary}
+              fontFamily="JetBrains Mono, SF Mono, monospace"
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            >
+              L {geometry.lowValue.toFixed(2)}
+            </text>
+          </g>
+
+          {/* Bot fill entry markers — pop in as the line sweeps past */}
+          {fillMarkers.map(({ f, x, y, delay }) => {
+            const isLong = f.side === 'LONG';
+            const color = isLong
+              ? 'var(--color-bullish)'
+              : 'var(--color-bearish)';
+            // Triangle vertex offset — point points toward the price.
+            const offY = isLong ? 14 : -14;
+            const triCY = y + offY;
+            const tri = isLong
+              ? `${x},${triCY - 6} ${x - 6},${triCY + 5} ${x + 6},${triCY + 5}`
+              : `${x},${triCY + 6} ${x - 6},${triCY - 5} ${x + 6},${triCY - 5}`;
+            const labelY = isLong ? triCY + 18 : triCY - 10;
+            return (
+              <g
+                key={f.id}
+                opacity="0"
+                style={{
+                  animation: `eq-endpoint-pop 360ms ease-out ${delay.toFixed(0)}ms forwards`,
+                }}
+              >
+                {/* Vertical guide between price level and triangle */}
+                <line
+                  x1={x}
+                  y1={y}
+                  x2={x}
+                  y2={triCY + (isLong ? -5 : 5)}
+                  stroke={color}
+                  strokeWidth="1"
+                  strokeDasharray="2 2"
+                  opacity="0.55"
+                />
+                {/* Price-level dot on the line itself */}
+                <circle
+                  cx={x}
+                  cy={y}
+                  r="3"
+                  fill={color}
+                  stroke="white"
+                  strokeWidth="1"
+                  style={{ filter: `drop-shadow(0 0 4px ${color})` }}
+                />
+                {/* Triangle pointing direction of the trade */}
+                <polygon
+                  points={tri}
+                  fill={color}
+                  stroke="white"
+                  strokeWidth="1"
+                  style={{ filter: `drop-shadow(0 0 4px ${color})` }}
+                />
+                <text
+                  x={x}
+                  y={labelY}
+                  textAnchor="middle"
+                  fontSize="9"
+                  fontWeight="700"
+                  fill={color}
+                  fontFamily="Inter, system-ui, sans-serif"
+                  style={{ letterSpacing: '0.04em' }}
+                >
+                  {f.side}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Endpoint pulse halo — anchors at final position */}
+          <circle
+            cx={geometry.endX}
+            cy={geometry.endY}
+            r="10"
+            fill={lineColor}
+            opacity="0"
+            style={{
+              animation: `eq-endpoint-halo 1.6s ease-in-out ${SPOT_DRAW_MS}ms infinite`,
+              transformOrigin: `${geometry.endX}px ${geometry.endY}px`,
+            }}
+          />
+
+          {/* Endpoint dot + live price label — travel with the draw-in.
+            * cx/cy come from rAF-sampled getPointAtLength. The price is
+            * inverse-mapped from the dot's y so the number matches the
+            * curve's height at every frame. */}
+          {(() => {
+            const ex = endPos?.x ?? geometry.endX;
+            const ey = endPos?.y ?? geometry.endY;
+            const innerH = SPOT_VIEW_H - SPOT_PAD_TOP - SPOT_PAD_BOTTOM;
+            const liveVal =
+              geometry.yMin +
+              (1 - (ey - SPOT_PAD_TOP) / innerH) *
+                (geometry.yMax - geometry.yMin);
+            const flipLeft = ex > SPOT_VIEW_W - 110;
+            const labelX = flipLeft ? ex - 10 : ex + 10;
+            const labelAnchor = flipLeft ? 'end' : 'start';
+            return (
+              <g>
+                <circle
+                  cx={ex}
+                  cy={ey}
+                  r="4"
+                  fill="white"
+                  stroke={lineColor}
+                  strokeWidth="2"
+                  style={{ filter: `drop-shadow(0 0 6px ${lineColor})` }}
+                />
+                <text
+                  x={labelX}
+                  y={ey - 8}
+                  textAnchor={labelAnchor}
+                  fontSize="12"
+                  fontWeight="700"
+                  fill={labelTextColor}
+                  fontFamily="JetBrains Mono, SF Mono, monospace"
+                  style={{
+                    fontVariantNumeric: 'tabular-nums',
+                    filter: `drop-shadow(0 0 4px ${lineColor})`,
+                  }}
+                >
+                  ${liveVal.toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                    minimumFractionDigits: 2,
+                  })}
+                </text>
+              </g>
+            );
+          })()}
+        </svg>
+      </div>
       {watchingFor && (
         <div className="flex items-center justify-between gap-3 border-t border-border-subtle px-4 py-2 text-xs text-fg-muted">
           <span className="inline-flex items-center gap-1.5 truncate">
@@ -2141,9 +2450,44 @@ function OrderBookL2({ book, coin }: { book: HLOrderBook | null; coin: string })
 type BubbleTimeframe = '24H' | '7D' | '30D' | '90D';
 const VOL_FILTER_MIN = 100_000;
 const BUBBLE_CANVAS_W = 256;
-const BUBBLE_CANVAS_H = 540;
+const BUBBLE_CANVAS_H = 480;
 const BUBBLE_PAD = 4;
-const BUBBLE_MAX = 18;
+const BUBBLE_MAX = 27;
+// Scale all packed radii up so bubbles read bigger. Initial overlap
+// is fine — soft physics + lifecycle anims spread them organically.
+const BUBBLE_SIZE_BOOST = 1.35;
+// Lifecycle durations (matches viz_pnl_dashboard.html rules).
+const BUBBLE_BIRTH_MS = 900;
+const BUBBLE_DEATH_SHRINK_MS = 500;
+const BUBBLE_DEATH_FLOAT_MS = 700;
+// Stagger between spawns so bubbles arrive one-after-another rather
+// than all at once. Each new bubble's stateT is pushed `idx * BASE + rand(0, JITTER)`
+// into the future; the lifecycle pass keeps it hidden until then.
+// Tuning target: full spawn sequence (last bubble fully alive) ≈ 4s.
+// With BUBBLE_MAX = 27 and BIRTH = 900ms, last spawn starts at
+// 26 × 120 + 60 = ~3180ms → finishes at ~4080ms.
+const BUBBLE_SPAWN_STAGGER_MS = 120;
+const BUBBLE_SPAWN_JITTER_MS = 60;
+// Number of distinct compass directions a new bubble can spawn from.
+// 14 = 4 corners + 10 evenly distributed mid-edges, evenly spaced
+// around the canvas perimeter (2π / 14 ≈ 25.7° per slot).
+const BUBBLE_SPAWN_DIRS = 14;
+
+// Single-glyph token icons — Unicode symbols where the coin has a
+// recognisable mark, otherwise the first letter is used as a fallback.
+const COIN_ICONS: Record<string, string> = {
+  BTC: '₿', ETH: 'Ξ', SOL: '◎', DOGE: 'Ð', ADA: '₳',
+  XRP: '✕', BNB: '⬣', AVAX: '▲', DOT: '●', LINK: '⬡',
+  ATOM: '⚛', LTC: 'Ł', SUI: '◆', TAO: 'τ', NEAR: '◐',
+  ICP: '∞', TRX: '✦', INJ: '⟡', SEI: '◈', TIA: '✧',
+  ARB: '◇', OP: '◯', PEPE: '🐸', WIF: '🐶', BONK: '🐕',
+  SHIB: 'Ѕ', JUP: 'J', WLD: 'W', PYTH: 'P', RNDR: 'R',
+  AAVE: 'A', FET: 'F', ONDO: 'O', ORDI: 'O', JTO: 'J',
+  LDO: 'L', UNI: 'U', MATIC: 'M', APT: 'A', TON: 'T',
+};
+function getCoinIcon(sym: string): string {
+  return COIN_ICONS[sym] ?? sym.charAt(0);
+}
 
 interface BubblePair {
   name: string;
@@ -2194,7 +2538,9 @@ function computeBubbles(ctxs: HLAssetCtx[]): BubblePair[] {
     vol: node.data.vol ?? 0,
     cx: node.x,
     cy: node.y,
-    r: node.r,
+    // Boost packed radius — physics handles the resulting overlap,
+    // bubbles read visibly bigger.
+    r: node.r * BUBBLE_SIZE_BOOST,
   }));
 }
 
@@ -2238,20 +2584,32 @@ function computeBubbleStats(ctxs: HLAssetCtx[]): BubbleStats {
 // All DOM updates are imperative via refs — zero React re-renders at 60fps.
 // ──────────────────────────────────────────────────────────────────────
 
+type BubbleLifecycle =
+  | 'birth'
+  | 'alive'
+  | 'dying-shrink'
+  | 'dying-float'
+  | 'dead';
+
 interface PhysBubble {
   id: string;
   pct: number;
   vol: number;
   x: number;
   y: number;
-  r: number;
+  r: number;          // currently rendered radius (driven by lifecycle)
+  targetR: number;    // resting radius once ALIVE
   vx: number;
   vy: number;
   mass: number;
   squashAmount: number;
   squashVel: number;
   squashAxis: number;
-  phase: number; // per-bubble random phase for blob wobble
+  phase: number;      // per-bubble random phase for blob wobble
+  state: BubbleLifecycle;
+  stateT: number;     // performance.now() when current state began
+  floatXdir?: number; // per-bubble drift direction during dying-float
+  fragsEmitted?: boolean; // reserved for future fragment FX
 }
 
 const PHYS = {
@@ -2439,9 +2797,13 @@ interface BubbleDOM {
   rim: SVGCircleElement;
   body: SVGPathElement;
   hl: SVGPathElement;
+  birthRing: SVGCircleElement;
+  icon: SVGTextElement;
   sym: SVGTextElement;
-  pct: SVGTextElement | null;
-  symFontSize: number;
+  pct: SVGTextElement;
+  // Resting radius the labels were sized for. Used to detect when r
+  // drifts far enough that we should re-size the labels.
+  baseR: number;
 }
 
 interface BubbleHoverInfo {
@@ -2459,8 +2821,9 @@ function spawnBubbleDOM(
 ): BubbleDOM {
   const variant = b.pct >= 0 ? 'gain' : 'loss';
   const sym = b.id.length > 5 ? b.id.slice(0, 5) : b.id;
-  const symFontSize = Math.max(9, Math.min(b.r * 0.36, 16));
-  const pctFontSize = Math.max(8, Math.min(b.r * 0.30, 14));
+  // r used for sizing here is the bubble's resting (target) radius, so
+  // labels don't shrink while the bubble is birthing in.
+  const baseR = b.targetR > 1 ? b.targetR : b.r;
 
   const g = document.createElementNS(SVGNS, 'g') as SVGGElement;
   g.setAttribute('data-bid', b.id);
@@ -2475,6 +2838,16 @@ function spawnBubbleDOM(
   }
 
   const halo = svgEl('circle', { cx: b.x, cy: b.y, r: b.r * 1.35, fill: `url(#hlHalo-${variant})` });
+  // Birth ring — expanding stroke that fades during BIRTH state.
+  const ringStroke = b.pct >= 0 ? '#7CFFCB' : '#FFAFB7';
+  const birthRing = svgEl('circle', {
+    cx: b.x, cy: b.y, r: b.r,
+    fill: 'none',
+    stroke: ringStroke,
+    'stroke-width': 1.5,
+    opacity: 0,
+    'pointer-events': 'none',
+  });
   const rim = svgEl('circle', { cx: b.x, cy: b.y, r: b.r, fill: 'none', stroke: 'url(#hlRim)', 'stroke-width': 1.2, opacity: 0.4 });
   const strokeColor = b.pct >= 0 ? 'rgba(14,203,129,0.55)' : 'rgba(246,70,93,0.55)';
   const body = svgEl('path', {
@@ -2488,39 +2861,59 @@ function spawnBubbleDOM(
     fill: 'url(#hlHighlight)',
     'pointer-events': 'none',
   });
-  const symEl = svgEl('text', {
-    x: b.x, y: b.y - 2,
+  // Three label rows — Icon (top), Symbol (middle), %Change (bottom).
+  // Font sizes scale with bubble radius and clamp into a legible range.
+  const iconFont = Math.max(11, Math.min(baseR * 0.55, 26));
+  const symFont = Math.max(9, Math.min(baseR * 0.26, 13));
+  const pctFont = Math.max(9, Math.min(baseR * 0.24, 12));
+
+  const iconEl = svgEl('text', {
+    x: b.x, y: b.y - baseR * 0.30,
     'font-family': 'Inter, sans-serif',
     'font-weight': 700,
-    'font-size': symFontSize,
+    'font-size': iconFont,
     fill: '#fff',
     'text-anchor': 'middle',
     'dominant-baseline': 'middle',
+    'pointer-events': 'none',
+  });
+  iconEl.textContent = getCoinIcon(sym);
+
+  const symEl = svgEl('text', {
+    x: b.x, y: b.y + baseR * 0.10,
+    'font-family': 'Inter, sans-serif',
+    'font-weight': 700,
+    'font-size': symFont,
+    fill: '#fff',
+    'text-anchor': 'middle',
+    'dominant-baseline': 'middle',
+    opacity: 0.92,
+    'pointer-events': 'none',
   });
   symEl.textContent = sym;
 
-  let pctEl: SVGTextElement | null = null;
-  if (b.r >= 18) {
-    pctEl = svgEl('text', {
-      x: b.x, y: b.y + symFontSize * 0.85,
-      'font-family': 'JetBrains Mono, monospace',
-      'font-weight': 600,
-      'font-size': pctFontSize,
-      fill: '#fff',
-      'text-anchor': 'middle',
-      'dominant-baseline': 'middle',
-    });
-    pctEl.textContent = `${b.pct >= 0 ? '+' : ''}${b.pct.toFixed(1)}%`;
-  }
+  const pctEl = svgEl('text', {
+    x: b.x, y: b.y + baseR * 0.42,
+    'font-family': 'JetBrains Mono, monospace',
+    'font-weight': 600,
+    'font-size': pctFont,
+    fill: b.pct >= 0 ? '#7CFFCB' : '#FFAFB7',
+    'text-anchor': 'middle',
+    'dominant-baseline': 'middle',
+    'pointer-events': 'none',
+  });
+  pctEl.textContent = `${b.pct >= 0 ? '+' : ''}${b.pct.toFixed(1)}%`;
 
   g.appendChild(halo);
+  g.appendChild(birthRing);
   g.appendChild(rim);
   g.appendChild(body);
   g.appendChild(hl);
+  g.appendChild(iconEl);
   g.appendChild(symEl);
-  if (pctEl) g.appendChild(pctEl);
+  g.appendChild(pctEl);
 
-  return { g, halo, rim, body, hl, sym: symEl, pct: pctEl, symFontSize };
+  return { g, halo, rim, body, hl, birthRing, icon: iconEl, sym: symEl, pct: pctEl, baseR };
 }
 
 // ── Component ──────────────────────────────────────────────────────────
@@ -2547,51 +2940,114 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
   const setTooltipRef = useRef(setTooltip);
   setTooltipRef.current = setTooltip;
 
-  // Sync physics state + SVG DOM when live data changes
+  // Sync physics state + SVG DOM when live data changes.
+  // Lifecycle-aware: absent bubbles transition to a dying state (float
+  // or shrink) instead of being yanked from the DOM. New bubbles spawn
+  // from outside the canvas with a BIRTH ramp.
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg || ctxs.length === 0) return;
 
+    const now = performance.now();
     const packed = computeBubbles(ctxs);
     const existingPhys = new Map(physRef.current.map((b) => [b.id, b]));
-    const domCache = domCacheRef.current;
     const incomingIds = new Set(packed.map((p) => p.name));
 
-    // Remove stale bubbles
-    for (const [id, dom] of domCache) {
-      if (!incomingIds.has(id)) {
-        dom.g.remove();
-        domCache.delete(id);
+    // Mark stale bubbles as dying (they remain in physRef until DEAD).
+    for (const b of physRef.current) {
+      if (!incomingIds.has(b.id) && !b.state.startsWith('dying') && b.state !== 'dead') {
+        // Coin-flip between float-up and shrink-out for visual variety.
+        b.state = Math.random() < 0.65 ? 'dying-float' : 'dying-shrink';
+        b.stateT = now;
+        if (b.state === 'dying-float') {
+          b.floatXdir = Math.random() < 0.5 ? -1 : 1;
+        }
       }
     }
 
-    // Update existing / spawn new
-    const newPhys: PhysBubble[] = packed.map((p) => {
+    // Update existing or spawn new.
+    const survivors = physRef.current.filter((b) => b.state !== 'dead');
+
+    // Pass 1 — refresh existing bubbles (revive if dying, sync labels).
+    const newcomers: typeof packed = [];
+    for (const p of packed) {
       const prev = existingPhys.get(p.name);
-      if (prev) {
+      if (prev && prev.state !== 'dead') {
         prev.pct = p.pct;
         prev.vol = p.vol;
-        // Sync pct label text
-        const dom = domCache.get(p.name);
-        if (dom?.pct)
+        prev.targetR = p.r;
+        prev.mass = p.r * p.r;
+        if (prev.state.startsWith('dying')) {
+          prev.state = 'birth';
+          prev.stateT = now;
+        }
+        const dom = domCacheRef.current.get(p.name);
+        if (dom?.pct) {
           dom.pct.textContent = `${p.pct >= 0 ? '+' : ''}${p.pct.toFixed(1)}%`;
-        return prev;
+          dom.pct.setAttribute('fill', p.pct >= 0 ? '#7CFFCB' : '#FFAFB7');
+        }
+        continue;
       }
-      // New bubble — initialise with d3.pack position + strong random kick
+      newcomers.push(p);
+    }
+
+    // Shuffle newcomers so spawn order is random (not tier-by-tier
+    // which is how computeBubbles ranks them).
+    for (let i = newcomers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newcomers[i], newcomers[j]] = [newcomers[j], newcomers[i]];
+    }
+
+    // Pass 2 — stagger the spawn so bubbles arrive one after another.
+    // Each gets a future stateT; the lifecycle pass keeps r=0 +
+    // opacity=0 until that moment arrives.
+    newcomers.forEach((p, idx) => {
+      // Spawn from one of BUBBLE_SPAWN_DIRS evenly distributed compass
+      // directions around the canvas centre, projected outside the
+      // perimeter. Small ±jitter on the angle keeps consecutive spawns
+      // from the same dir from stacking on the exact same line.
+      const dirIdx = Math.floor(Math.random() * BUBBLE_SPAWN_DIRS);
+      const angle =
+        (dirIdx / BUBBLE_SPAWN_DIRS) * Math.PI * 2 + bRand(-0.06, 0.06);
+      const cxC = BUBBLE_CANVAS_W / 2;
+      const cyC = BUBBLE_CANVAS_H / 2;
+      // Spawn radius — past the corner of the canvas so the bubble is
+      // fully off-screen regardless of which side it comes from.
+      const spawnDist =
+        Math.hypot(BUBBLE_CANVAS_W, BUBBLE_CANVAS_H) / 2 + 40;
+      const sx = cxC + Math.cos(angle) * spawnDist;
+      const sy = cyC + Math.sin(angle) * spawnDist;
+      // Velocity points back toward the centre (with target jitter so
+      // bubbles converge on a small zone rather than a single point).
+      const targetCx = cxC + bRand(-14, 14);
+      const targetCy = cyC + bRand(-14, 14);
+      const dxc = targetCx - sx;
+      const dyc = targetCy - sy;
+      const dlen = Math.sqrt(dxc * dxc + dyc * dyc) || 1;
+      const speed = bRand(1.2, 1.8);
+      const delay =
+        idx * BUBBLE_SPAWN_STAGGER_MS +
+        Math.random() * BUBBLE_SPAWN_JITTER_MS;
       const b: PhysBubble = {
         id: p.name, pct: p.pct, vol: p.vol,
-        x: p.cx, y: p.cy, r: p.r,
-        vx: bRand(-1.5, 1.5), vy: bRand(-1.5, 1.5),
+        x: sx, y: sy,
+        r: 0, targetR: p.r,
+        vx: (dxc / dlen) * speed,
+        vy: (dyc / dlen) * speed,
         mass: p.r * p.r,
         squashAmount: 0, squashVel: 0, squashAxis: 0,
         phase: Math.random() * Math.PI * 2,
+        state: 'birth',
+        stateT: now + delay, // future timestamp = pre-birth (hidden)
       };
       const dom = spawnBubbleDOM(b, tRef.current, (info) => setTooltipRef.current(info));
-      domCache.set(p.name, dom);
+      // Hide immediately so pre-birth bubbles aren't drawn at the corner.
+      dom.g.style.opacity = '0';
+      domCacheRef.current.set(p.name, dom);
       svg.appendChild(dom.g);
-      return b;
+      survivors.push(b);
     });
-    physRef.current = newPhys;
+    physRef.current = survivors;
   }, [ctxs]);
 
   // When multi-TF data arrives, update bubble pct values + DOM labels
@@ -2603,8 +3059,10 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
       if (newPct == null) continue;
       b.pct = newPct;
       const dom = domCache.get(b.id);
-      if (dom?.pct)
+      if (dom?.pct) {
         dom.pct.textContent = `${newPct >= 0 ? '+' : ''}${newPct.toFixed(1)}%`;
+        dom.pct.setAttribute('fill', newPct >= 0 ? '#7CFFCB' : '#FFAFB7');
+      }
     }
   }, [tf, tfPctMap]);
 
@@ -2619,8 +3077,10 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
       const pct = ((c.markPx - c.prevDayPx) / c.prevDayPx) * 100;
       b.pct = pct;
       const dom = domCache.get(b.id);
-      if (dom?.pct)
+      if (dom?.pct) {
         dom.pct.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+        dom.pct.setAttribute('fill', pct >= 0 ? '#7CFFCB' : '#FFAFB7');
+      }
     }
   }, [tf, ctxs]);
 
@@ -2633,22 +3093,130 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
       const bubbles = physRef.current;
       if (bubbles.length === 0) return;
 
-      stepPhysics(bubbles, BUBBLE_CANVAS_W, BUBBLE_CANVAS_H);
-      stepJelly(bubbles);
-
+      // Lifecycle pass — drives r + opacity from state, marks DEAD,
+      // gives ALIVE bubbles their resting radius for physics.
+      const now = performance.now();
       const cache = domCacheRef.current;
+      const renderOpacity = new Map<string, number>();
+      const renderExtraTrans = new Map<string, string>();
+
       for (const b of bubbles) {
+        if (b.state === 'birth') {
+          const elapsed = now - b.stateT;
+          if (elapsed < 0) {
+            // Pre-birth — scheduled for the future. Keep invisible at
+            // the corner spawn position; no physics, no render.
+            b.r = 0;
+            renderOpacity.set(b.id, 0);
+            continue;
+          }
+          const p = Math.min(1, elapsed / BUBBLE_BIRTH_MS);
+          const eased = 1 - Math.pow(1 - p, 3);
+          const overshoot = 1 + 0.18 * Math.sin(p * Math.PI);
+          b.r = Math.max(1, b.targetR * eased * overshoot);
+          renderOpacity.set(b.id, eased);
+          // Birth ring: expanding circle that fades.
+          const dom = cache.get(b.id);
+          if (dom) {
+            const ringR = b.targetR * (1 + p * 1.5);
+            dom.birthRing.setAttribute('r', ringR.toFixed(1));
+            dom.birthRing.setAttribute('opacity', ((1 - p) * 0.7).toFixed(2));
+          }
+          if (p >= 1) {
+            b.state = 'alive';
+            b.stateT = now;
+            if (dom) dom.birthRing.setAttribute('opacity', '0');
+          }
+        } else if (b.state === 'alive') {
+          // Smooth approach to target radius (handles small targetR shifts).
+          b.r += (b.targetR - b.r) * 0.06;
+          renderOpacity.set(b.id, 1);
+        } else if (b.state === 'dying-shrink') {
+          const p = Math.min(1, (now - b.stateT) / BUBBLE_DEATH_SHRINK_MS);
+          b.r = b.targetR * (1 - p);
+          renderOpacity.set(b.id, 1 - p);
+          if (p >= 1) b.state = 'dead';
+        } else if (b.state === 'dying-float') {
+          const p = Math.min(1, (now - b.stateT) / BUBBLE_DEATH_FLOAT_MS);
+          const eased = 1 - Math.pow(1 - p, 2);
+          b.r = b.targetR * (1 - eased * 0.3);
+          renderOpacity.set(b.id, 1 - eased);
+          const yOff = -eased * 60;
+          const xOff = eased * 12 * (b.floatXdir ?? 1);
+          renderExtraTrans.set(b.id, `translate(${xOff.toFixed(1)},${yOff.toFixed(1)})`);
+          if (p >= 1) b.state = 'dead';
+        }
+      }
+
+      // Drop DEAD bubbles from physRef + DOM cache.
+      const live: PhysBubble[] = [];
+      for (const b of bubbles) {
+        if (b.state === 'dead') {
+          const dom = cache.get(b.id);
+          if (dom) {
+            dom.g.remove();
+            cache.delete(b.id);
+          }
+          continue;
+        }
+        live.push(b);
+      }
+      physRef.current = live;
+
+      // Physics only acts on ALIVE bubbles — dying ones drift by their
+      // own transform offset; birth ones are still ramping in size and
+      // shouldn't body-check live siblings.
+      const activeBubbles = live.filter((b) => b.state === 'alive');
+      if (activeBubbles.length > 0) {
+        stepPhysics(activeBubbles, BUBBLE_CANVAS_W, BUBBLE_CANVAS_H);
+        stepJelly(activeBubbles);
+      }
+
+      // Birth bubbles: travel in a straight line toward the centre,
+      // with a gentle gravity-like pull so they don't overshoot. Light
+      // damping keeps the initial corner-aimed velocity dominant for
+      // most of the journey before ALIVE physics takes over.
+      // Pre-birth (future stateT) bubbles are skipped — they sit at
+      // the corner until their scheduled birth moment.
+      const cx = BUBBLE_CANVAS_W / 2, cy = BUBBLE_CANVAS_H / 2;
+      for (const b of live) {
+        if (b.state === 'birth' && now >= b.stateT) {
+          b.vx += (cx - b.x) * 0.004;
+          b.vy += (cy - b.y) * 0.004;
+          b.vx *= 0.985;
+          b.vy *= 0.985;
+          b.x += b.vx;
+          b.y += b.vy;
+        }
+      }
+
+      for (const b of live) {
         const dom = cache.get(b.id);
         if (!dom) continue;
 
         const bx = b.x.toFixed(1);
         const by = b.y.toFixed(1);
+        const op = renderOpacity.get(b.id) ?? 1;
+        const extraTrans = renderExtraTrans.get(b.id) ?? '';
+
+        // Apply group-level transform for floating offsets + opacity.
+        if (extraTrans) {
+          dom.g.setAttribute('transform', extraTrans);
+        } else {
+          dom.g.removeAttribute('transform');
+        }
+        dom.g.style.opacity = String(op);
 
         dom.halo.setAttribute('cx', bx);
         dom.halo.setAttribute('cy', by);
+        dom.halo.setAttribute('r', (b.r * 1.35).toFixed(1));
+
+        dom.birthRing.setAttribute('cx', bx);
+        dom.birthRing.setAttribute('cy', by);
 
         dom.rim.setAttribute('cx', bx);
         dom.rim.setAttribute('cy', by);
+        dom.rim.setAttribute('r', b.r.toFixed(1));
 
         dom.body.setAttribute('d',
           makeBlobPath(b.x, b.y, b.r, b.squashAmount, b.squashAxis, t, b.phase),
@@ -2658,13 +3226,15 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
             b.squashAmount * 0.5, b.squashAxis, t * 0.8, b.phase + 1),
         );
 
+        // Three label rows positioned proportionally to baseR so they
+        // hold their layout while the bubble breathes/squashes.
+        const lr = dom.baseR;
+        dom.icon.setAttribute('x', bx);
+        dom.icon.setAttribute('y', (b.y - lr * 0.30).toFixed(1));
         dom.sym.setAttribute('x', bx);
-        dom.sym.setAttribute('y', (b.y - 2).toFixed(1));
-
-        if (dom.pct) {
-          dom.pct.setAttribute('x', bx);
-          dom.pct.setAttribute('y', (b.y + dom.symFontSize * 0.85).toFixed(1));
-        }
+        dom.sym.setAttribute('y', (b.y + lr * 0.10).toFixed(1));
+        dom.pct.setAttribute('x', bx);
+        dom.pct.setAttribute('y', (b.y + lr * 0.42).toFixed(1));
       }
     }
 

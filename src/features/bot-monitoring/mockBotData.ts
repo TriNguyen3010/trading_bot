@@ -144,19 +144,22 @@ export function generateDailyPnL(fills: Fill[], days: number, now: number): Dail
 }
 
 export function generateCycle(botId: string, now: number): ExecutionCycle {
-  const rng = mulberry32(stringHash(botId) + Math.floor(now / 2000));
-  const tick = Math.floor((now / 2000) % 6);
+  // Each stage stays active for STAGE_MS. Full round of 6 stages = 1.5s
+  // (250 × 6) — fast snappy execution rhythm.
+  const STAGE_MS = 250;
+  const rng = mulberry32(stringHash(botId) + Math.floor(now / STAGE_MS));
+  const tick = Math.floor((now / STAGE_MS) % 6);
   const stages = (['scan', 'detect', 'validate', 'size', 'fill', 'settle'] as const).map((id, idx) => ({
     id, label: id[0].toUpperCase() + id.slice(1),
-    durationMs: idx === tick ? Math.floor(50 + rng() * 500)
-              : idx < tick ? Math.floor(50 + rng() * 200)
+    durationMs: idx === tick ? Math.floor(100 + rng() * 1000)
+              : idx < tick ? Math.floor(100 + rng() * 400)
               : 0,
     status: idx === tick ? 'active' as const : idx < tick ? 'done' as const : 'pending' as const,
   }));
   const elapsedMs = stages.reduce((s, st) => s + st.durationMs, 0);
   return {
-    cycleId: 1354 + Math.floor(now / 2000),
-    budgetMs: 2700,
+    cycleId: 1354 + Math.floor(now / STAGE_MS),
+    budgetMs: 5400,
     elapsedMs,
     stages,
   };
