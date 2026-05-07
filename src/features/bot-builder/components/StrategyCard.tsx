@@ -131,8 +131,8 @@ export function StrategyCard() {
       aria-pressed={isOpen}
       aria-disabled={isPinned}
       className={cn(
-        'group relative flex w-full flex-col items-stretch overflow-hidden rounded-xl border bg-surface text-left transition-all duration-fast ease-out-quick',
-        'hover:bg-surface-hover hover:border-brand/60',
+        'group relative flex w-full flex-col items-stretch overflow-hidden rounded-xl glass-card glass-card-hover text-left',
+        'hover:border-brand/60',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         visualStatus === 'pending' && 'border-brand/15',
         visualStatus === 'editing' && 'border-brand shadow-glow',

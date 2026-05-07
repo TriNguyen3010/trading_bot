@@ -100,33 +100,31 @@ export function StepCard({
       aria-pressed={isOpen}
       aria-disabled={isPinned}
       className={cn(
-        'group relative flex w-full flex-col items-stretch overflow-hidden rounded-xl border bg-surface text-left transition-all duration-fast ease-out-quick',
-        'hover:bg-surface-hover hover:border-brand/60',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+        'group relative flex w-full flex-col items-stretch overflow-hidden rounded-3xl glass-card glass-card-hover text-left',
+        'hover:ring-1 hover:ring-brand/40',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-black',
         isStep1Idle && styles.highlighted,
-        !isStep1Idle && visualStatus === 'pending' && 'border-brand/15',
-        visualStatus === 'editing' && 'border-brand shadow-glow',
-        // Boosted from brand/50 → brand/80 + tinted background so the
-        // "done" state reads clearly on dark canvas instead of the
-        // washed-out near-white edge it had before.
-        visualStatus === 'configured' && 'border-brand/80 bg-brand-subtle/20',
-        visualStatus === 'error' && 'border-brand ring-2 ring-brand/40',
-        isCypheusActive && 'border-brand shadow-glow',
+        !isStep1Idle && visualStatus === 'pending' && 'ring-1 ring-brand/10',
+        visualStatus === 'editing' && 'ring-2 ring-brand shadow-[0_0_24px_rgba(240,185,11,0.3)]',
+        // "Done" state — soft yellow tint inset + bright ring
+        visualStatus === 'configured' && 'ring-1 ring-brand/60 bg-brand-subtle/20',
+        visualStatus === 'error' && 'ring-2 ring-brand/80 shadow-[0_0_18px_rgba(240,185,11,0.25)]',
+        isCypheusActive && 'ring-2 ring-brand shadow-[0_0_24px_rgba(240,185,11,0.3)]',
         isPinned && !isCypheusActive && 'cursor-not-allowed opacity-60',
       )}
     >
       <header className="flex w-full items-center gap-4 px-5 py-3">
         <div
           className={cn(
-            'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border',
+            'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full',
             visualStatus === 'pending' &&
-              'border-brand/15 bg-canvas text-fg-secondary',
+              'bg-black text-fg-secondary',
             visualStatus === 'editing' &&
-              'border-brand/40 bg-brand-subtle text-brand',
+              'bg-brand-subtle text-brand',
             visualStatus === 'configured' &&
-              'border-brand/60 bg-brand-subtle text-brand',
+              'bg-brand text-black shadow-[0_0_10px_rgba(240,185,11,0.4)]',
             visualStatus === 'error' &&
-              'border-brand bg-brand-subtle text-brand',
+              'bg-brand-subtle text-brand',
           )}
         >
           <Icon className="h-4 w-4" />
@@ -185,7 +183,7 @@ export function StepCard({
       </header>
 
       {(visualStatus === 'configured' || visualStatus === 'error') && (
-        <div className="w-full border-t border-border-subtle px-5 py-3 cursor-default" onClick={(e) => e.stopPropagation()}>
+        <div className="w-full px-5 pb-4 pt-1 cursor-default" onClick={(e) => e.stopPropagation()}>
           <StepCardSummary stepId={stepId} />
         </div>
       )}

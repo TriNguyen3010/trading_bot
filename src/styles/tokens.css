@@ -105,6 +105,15 @@
     cy-msg-glow-pulse 2.4s ease-in-out 360ms infinite;
 }
 
+/* Coin98 card surface — subtle vertical gradient + faint top highlight.
+ * Matches the SwapX panel aesthetic: lighter at the top edge, fading
+ * down to a near-black bottom. The 1px inset highlight at top sells the
+ * "elevated glass" feel on dark backgrounds. */
+.card-coin98 {
+  background: linear-gradient(180deg, #16161a 0%, #0c0c0e 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
 :root {
   color-scheme: dark;
 
@@ -209,4 +218,75 @@
   --fx-dot-color-bright: rgba(255, 210, 80, 0.95);
   --fx-spacing: 17px;
   --fx-radius: 120px;
+
+  /* === GLASS (card surfaces) ===
+   * Used by .glass-card. Tunable here so the whole UI shifts in lockstep
+   * if we later soften / harden the glass aesthetic. */
+  --glass-bg-from: rgba(255, 255, 255, 0.045);
+  --glass-bg-to: rgba(255, 255, 255, 0.012);
+  --glass-bg-from-hover: rgba(255, 255, 255, 0.07);
+  --glass-bg-to-hover: rgba(255, 255, 255, 0.025);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(255, 255, 255, 0.14);
+  --glass-blur: 16px;
+  --glass-saturate: 140%;
+  --glass-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.42),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  --glass-shadow-hover:
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.08) inset;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+ *  Glass card utility
+ *
+ *  Frosted-glass surface for cards that sit ABOVE the DotGridSpotlight
+ *  background — backdrop-blur turns the dot pattern into a soft
+ *  texture behind the card while the translucent gradient lets the
+ *  brand glow bleed through.
+ *
+ *  Usage:
+ *    <div className="glass-card rounded-xl p-4">…</div>
+ *
+ *  Components keep their per-state borders (e.g. brand on active) by
+ *  layering them AFTER `.glass-card` in cn() — the rules below use
+ *  low-specificity selectors so a `border-brand` override wins.
+ *
+ *  Browsers without `backdrop-filter` support fall back to a slightly
+ *  more opaque solid surface so cards remain readable.
+ * ────────────────────────────────────────────────────────────────── */
+.glass-card {
+  background-image: linear-gradient(
+    135deg,
+    var(--glass-bg-from),
+    var(--glass-bg-to)
+  );
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  transition:
+    background-image var(--duration-normal) var(--ease-out-quick),
+    border-color var(--duration-normal) var(--ease-out-quick),
+    box-shadow var(--duration-normal) var(--ease-out-quick),
+    transform var(--duration-normal) var(--ease-out-quick);
+}
+
+.glass-card-hover:hover,
+.glass-card.glass-card-hover:hover {
+  background-image: linear-gradient(
+    135deg,
+    var(--glass-bg-from-hover),
+    var(--glass-bg-to-hover)
+  );
+  border-color: var(--glass-border-hover);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-card {
+    background-image: none;
+    background-color: var(--color-bg-surface);
+  }
 }

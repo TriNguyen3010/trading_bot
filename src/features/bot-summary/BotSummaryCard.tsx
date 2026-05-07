@@ -81,10 +81,11 @@ export function BotSummaryCard() {
     <section
       aria-label={strings.botSummary.title}
       className={cn(
-        // Sizing is controlled by the parent (BotBuilderCanvas grid). We
-        // only own the chrome here — border, surface bg, transitions.
-        'w-full rounded-xl border border-brand/15 bg-surface',
-        'transition-colors duration-fast',
+        // Sizing is controlled by the parent (BotBuilderCanvas grid).
+        // `glass-card` handles bg/border/shadow + transition; we add a
+        // brand-tinted ring on top so the card still reads as
+        // "summary" rather than blending into a step card.
+        'w-full rounded-xl glass-card ring-1 ring-brand/15',
       )}
     >
       <header className="flex items-center gap-2 border-b border-border-subtle px-5 py-3">

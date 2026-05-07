@@ -59,8 +59,8 @@ export function TemplateCard({ template, onUse, onPreview }: TemplateCardProps) 
         onPreview ? strings.templates.gallery.cardPreviewAria(template.name) : undefined
       }
       className={cn(
-        'group flex flex-col gap-3 rounded-xl border border-border bg-surface p-5',
-        'transition-colors duration-fast hover:border-brand/60',
+        'group flex flex-col gap-3 rounded-xl glass-card glass-card-hover p-5',
+        'hover:border-brand/60',
         onPreview &&
           'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
       )}
