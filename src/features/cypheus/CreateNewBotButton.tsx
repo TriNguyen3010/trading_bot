@@ -41,7 +41,7 @@ export function CreateNewBotButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-border-strong px-3 py-2 text-xs font-medium text-fg-secondary transition-colors hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        className="mt-2 flex w-full items-center justify-center gap-2 rounded-full card-coin98 px-3 py-2.5 text-xs font-medium text-fg-secondary transition-colors hover:bg-brand-subtle hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       >
         <RotateCcw className="h-3.5 w-3.5" />
         {strings.cypheus.createNewBot}

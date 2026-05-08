@@ -109,12 +109,13 @@ export function HeaderToolbar() {
   };
 
   return (
-    <header className="flex h-[var(--layout-header)] flex-shrink-0 items-center justify-between border-b border-border-subtle bg-canvas px-6">
-      <div className="flex items-center gap-4">
+    <header className="flex h-[var(--layout-header)] flex-shrink-0 items-center px-3 pt-2">
+      <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3 rounded-full card-coin98 px-3 py-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
+      <div className="flex items-center gap-3 pl-1">
         <img
           src="/logo.png"
           alt="Strategy Builder"
-          className="h-8 w-8 select-none object-contain"
+          className="h-8 w-8 select-none rounded-full object-contain"
           draggable={false}
         />
         {isEditing ? (
@@ -134,7 +135,7 @@ export function HeaderToolbar() {
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="group inline-flex items-center gap-2 rounded-md px-2 py-1 text-md font-semibold text-fg transition-colors hover:bg-surface-hover"
+            className="group inline-flex items-center gap-2 rounded-full px-3 py-1 text-md font-semibold text-fg transition-colors hover:bg-black/40"
             aria-label="Edit bot name"
           >
             {botName || strings.header.botNamePlaceholder}
@@ -151,7 +152,7 @@ export function HeaderToolbar() {
         <AppliedTemplateBadge />
       </div>
       <TooltipProvider delayDuration={300}>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 pr-1">
           {/* View toggles — bot summary visibility is the only panel
            * toggle that lives here. The Cypheus expand/collapse chevron
            * is owned by the panel itself (IDE-style sidebar), so the
@@ -162,6 +163,7 @@ export function HeaderToolbar() {
                 variant="ghost"
                 size="icon"
                 onClick={toggleBotSummary}
+                className="rounded-full"
                 aria-label={
                   botSummaryHidden
                     ? strings.layoutToggles.summaryShowAria
@@ -185,7 +187,7 @@ export function HeaderToolbar() {
           {/* Visual divider between view toggles and primary actions. */}
           <span
             aria-hidden="true"
-            className="mx-1 h-6 w-px bg-border-subtle"
+            className="mx-1 h-5 w-px bg-border-subtle"
           />
           <Tooltip>
             <TooltipTrigger asChild>
@@ -193,6 +195,7 @@ export function HeaderToolbar() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setTemplatesOpen(true)}
+                className="rounded-full px-3"
                 aria-label={strings.templates.headerButtonAria}
               >
                 <BookOpen className="h-3.5 w-3.5" />
@@ -209,6 +212,7 @@ export function HeaderToolbar() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setImportOpen(true)}
+                className="rounded-full px-3"
                 aria-label="Import bundle"
               >
                 <Upload className="h-3.5 w-3.5" />
@@ -219,7 +223,7 @@ export function HeaderToolbar() {
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="secondary" size="sm" disabled>
+              <Button variant="secondary" size="sm" className="rounded-full px-3" disabled>
                 <FlaskConical className="h-3.5 w-3.5" />
                 {strings.header.backtest}
               </Button>
@@ -234,6 +238,7 @@ export function HeaderToolbar() {
                   size="sm"
                   disabled={!canExport}
                   onClick={() => setExportOpen(true)}
+                  className="rounded-full px-4 shadow-[0_0_16px_rgba(240,185,11,0.35)]"
                 >
                   <Download className="h-3.5 w-3.5" />
                   {strings.header.export}
@@ -259,6 +264,7 @@ export function HeaderToolbar() {
                   size="sm"
                   disabled={!canExport}
                   onClick={() => navigate('/bots/bot-1')}
+                  className="rounded-full px-3"
                 >
                   <Activity className="h-3.5 w-3.5" />
                   Monitor
@@ -273,6 +279,7 @@ export function HeaderToolbar() {
           </Tooltip>
         </div>
       </TooltipProvider>
+      </div>
 
       <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />

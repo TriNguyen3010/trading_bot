@@ -55,7 +55,16 @@ export function BuilderPage() {
   // its own measured height. The canvas just reads the CSS var below.
 
   return (
-    <div className="flex h-screen w-screen flex-col bg-canvas text-fg">
+    <div className="flex h-screen w-screen flex-col bg-black text-fg">
+      {/* Page-level yellow halo (Coin98 brand glow) */}
+      <div
+        className="pointer-events-none fixed -top-20 left-1/2 z-0 h-[420px] w-[700px] -translate-x-1/2 rounded-full opacity-50 blur-3xl"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, rgba(240,185,11,0.12), transparent 70%)',
+        }}
+        aria-hidden="true"
+      />
       <HeaderToolbar />
       <div className="flex flex-1 overflow-hidden">
         <CypheusPanel />
@@ -112,7 +121,7 @@ export function BuilderPage() {
         theme="dark"
         position="top-right"
         toastOptions={{
-          className: 'border border-border bg-surface-elevated text-fg',
+          className: 'rounded-2xl card-coin98 text-fg shadow-2xl',
         }}
       />
       {/* Templates gallery — page-level mount so the empty-state CTA,

@@ -511,59 +511,78 @@ function MonitoringHeader({ meta }: { meta: BotMeta }) {
   const uptime = formatUptime(meta.deployedAt);
   const isLive = meta.mode === 'live';
 
+  // Coin98 floating pill nav: header occupies the full row but the
+  // visible chrome is a single rounded-full bar centred with max-w,
+  // sitting on the pure black page so it visually "floats".
   return (
-    <header className="flex h-[var(--layout-header,56px)] flex-shrink-0 items-center justify-between gap-4 border-b border-border-subtle bg-canvas px-4">
-      <div className="flex items-center gap-3 min-w-0">
-        {/* Bot identity */}
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-brand-subtle text-brand">
-          <Sparkles className="h-4 w-4" aria-hidden="true" />
-        </div>
-        <div className="flex flex-col min-w-0">
-          <h1 className="truncate text-sm font-semibold text-fg">{meta.name}</h1>
-          <div className="flex items-center gap-1.5 text-xs text-fg-muted">
-            <code className="text-fg-secondary">{meta.pair}</code>
-            <span className="text-border-strong">·</span>
-            <span>{meta.timeframe}</span>
-            <span className="text-border-strong">·</span>
-            <span>{meta.exchange}</span>
-            <span className="text-border-strong">·</span>
-            <span>Up {uptime}</span>
+    <header className="flex h-[var(--layout-header,56px)] flex-shrink-0 items-center px-3 pt-2">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 rounded-full card-coin98 px-2 py-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
+        <div className="flex min-w-0 items-center gap-3 pl-1">
+          {/* Bot identity — circular brand badge */}
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-brand text-black shadow-[0_0_12px_rgba(240,185,11,0.5)]">
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+          </div>
+          <div className="flex min-w-0 flex-col">
+            <h1 className="truncate text-sm font-semibold text-fg">
+              {meta.name}
+            </h1>
+            <div className="flex items-center gap-1.5 text-[11px] text-fg-muted">
+              <code className="text-fg-secondary">{meta.pair}</code>
+              <span className="text-border-strong">·</span>
+              <span>{meta.timeframe}</span>
+              <span className="text-border-strong">·</span>
+              <span>{meta.exchange}</span>
+              <span className="text-border-strong">·</span>
+              <span>Up {uptime}</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex items-center gap-2">
-        {/* Status pill */}
-        <span
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider',
-            isLive
-              ? 'bg-bullish-subtle text-bullish'
-              : 'bg-brand-subtle text-brand',
-          )}
-        >
+        <div className="flex items-center gap-1.5 pr-1">
+          {/* Status pill */}
           <span
             className={cn(
-              'h-1.5 w-1.5 rounded-full animate-pulse',
-              isLive ? 'bg-bullish' : 'bg-brand',
+              'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider',
+              isLive
+                ? 'bg-bullish-subtle text-bullish'
+                : 'bg-brand-subtle text-brand',
             )}
-          />
-          {isLive ? 'Live' : 'Dry-run'}
-        </span>
+          >
+            <span
+              className={cn(
+                'h-1.5 w-1.5 rounded-full animate-pulse',
+                isLive ? 'bg-bullish' : 'bg-brand',
+              )}
+            />
+            {isLive ? 'Live' : 'Dry-run'}
+          </span>
 
-        {/* Actions */}
-        <Button variant="ghost" size="sm" className="text-fg-muted hover:text-fg">
-          <Pause className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-          Pause
-        </Button>
-        <Button variant="ghost" size="sm" className="text-bearish hover:bg-bearish-subtle hover:text-bearish-hover">
-          <StopCircle className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-          Stop
-        </Button>
-        <Button variant="ghost" size="sm" className="text-fg-muted hover:text-fg">
-          <Pencil className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-          Edit
-        </Button>
+          {/* Pill-shaped action buttons (Coin98 style) */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full px-3 text-fg-muted hover:text-fg hover:bg-black/40"
+          >
+            <Pause className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+            Pause
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full px-3 text-bearish hover:bg-bearish-subtle hover:text-bearish-hover"
+          >
+            <StopCircle className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+            Stop
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full px-3 text-fg-muted hover:text-fg hover:bg-black/40"
+          >
+            <Pencil className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+            Edit
+          </Button>
+        </div>
       </div>
     </header>
   );
@@ -613,7 +632,7 @@ function CypheusRail({ messages = [] }: { messages?: CypheusMessage[] }) {
     <TooltipProvider delayDuration={collapsed ? 100 : 250}>
       <aside
         className={cn(
-          'flex h-full flex-shrink-0 flex-col border-r border-border-subtle bg-canvas',
+          'flex h-full flex-shrink-0 flex-col bg-black',
           'transition-[width] duration-fast ease-out-quick',
         )}
         style={{ width: 'var(--layout-left-panel)' }}
@@ -622,10 +641,10 @@ function CypheusRail({ messages = [] }: { messages?: CypheusMessage[] }) {
         {/* Header */}
         <header
           className={cn(
-            'flex items-center border-b border-border-subtle',
+            'flex items-center',
             collapsed
-              ? 'justify-center px-1.5 py-2'
-              : 'justify-between gap-2 px-3 py-2',
+              ? 'justify-center px-1.5 py-3'
+              : 'justify-between gap-2 px-4 py-3',
           )}
         >
           {!collapsed && (
@@ -641,8 +660,8 @@ function CypheusRail({ messages = [] }: { messages?: CypheusMessage[] }) {
                 aria-label={collapsed ? 'Expand panel' : 'Collapse panel'}
                 aria-expanded={!collapsed}
                 className={cn(
-                  'inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-fg-muted',
-                  'transition-colors duration-fast hover:bg-surface-hover hover:text-fg',
+                  'inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-fg-muted',
+                  'transition-colors duration-fast hover:bg-[#1a1a1f] hover:text-fg',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
                 )}
               >
@@ -662,8 +681,8 @@ function CypheusRail({ messages = [] }: { messages?: CypheusMessage[] }) {
         {/* Content (only when expanded) */}
         {!collapsed && (
           <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-3">
-            <div className="flex items-center gap-2 rounded-md bg-surface p-2.5">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-brand-subtle text-brand">
+            <div className="flex items-center gap-2 rounded-2xl card-coin98 p-3">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-brand text-black shadow-[0_0_10px_rgba(240,185,11,0.4)]">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
               </div>
               <div className="min-w-0">
@@ -680,7 +699,7 @@ function CypheusRail({ messages = [] }: { messages?: CypheusMessage[] }) {
             </div>
 
             {messages.length === 0 ? (
-              <article className="rounded-md border border-border-subtle bg-surface p-2.5">
+              <article className="rounded-2xl card-coin98 p-3">
                 <div className="text-2xs uppercase tracking-wider text-fg-muted mb-1">
                   ⏸ Quiet
                 </div>
@@ -696,10 +715,9 @@ function CypheusRail({ messages = [] }: { messages?: CypheusMessage[] }) {
                   <article
                     key={m.id}
                     className={cn(
-                      'cy-msg rounded-md border bg-surface p-2.5 transition-colors',
-                      isLatest
-                        ? 'cy-msg-latest border-bullish/40 shadow-[0_0_0_1px_rgba(14,203,129,0.3),0_0_12px_rgba(14,203,129,0.15)]'
-                        : 'border-border-subtle',
+                      'cy-msg rounded-2xl card-coin98 p-3 transition-colors',
+                      isLatest &&
+                        'cy-msg-latest shadow-[0_0_0_1px_rgba(14,203,129,0.4),0_0_16px_rgba(14,203,129,0.18)]',
                     )}
                   >
                     <div
@@ -767,7 +785,7 @@ function WinStreakGauge({ streak }: { streak: number }) {
         </svg>
         <div
           className={cn(
-            'absolute inset-0 flex items-center justify-center font-pixel text-2xl tabular-nums',
+            'absolute inset-0 flex items-center justify-center text-3xl font-bold tabular-nums',
             streak > 0 ? 'text-bullish' : 'text-fg-disabled',
           )}
         >
@@ -796,12 +814,12 @@ function HeroPnL({
     return (
       <section
         aria-labelledby="hero-pnl-label"
-        className="relative grid grid-cols-[1fr_auto] gap-6 overflow-hidden rounded-xl border border-border-subtle bg-surface p-6"
+        className="relative grid grid-cols-[1fr_auto] gap-6 overflow-hidden rounded-3xl card-coin98 p-8"
       >
         <div className="relative">
           <div
             id="hero-pnl-label"
-            className="mb-3 flex items-center gap-3 text-2xs uppercase tracking-widest text-fg-muted"
+            className="mb-4 flex items-center gap-3 text-2xs uppercase tracking-widest text-fg-muted"
           >
             <span>Today · Realized PnL</span>
             <span className="inline-flex items-center gap-1.5 text-info">
@@ -812,23 +830,23 @@ function HeroPnL({
             <span>0 trades yet</span>
           </div>
           <div
-            className="font-pixel text-4xl tabular-nums text-fg-disabled"
-            style={{ lineHeight: 1.05 }}
+            className="text-6xl font-bold tabular-nums tracking-tight text-fg-disabled"
+            style={{ lineHeight: 1.0 }}
           >
             $0.00
           </div>
-          <div className="mt-4 flex items-center gap-3 text-xs text-fg-muted">
+          <div className="mt-5 flex items-center gap-3 text-xs text-fg-muted">
             <span>
               <span aria-hidden="true">⏱ </span>
               Est. first signal in{' '}
               <b className="text-fg-secondary">1–3h</b>
             </span>
-            <div className="relative h-1 w-48 overflow-hidden rounded-sm bg-canvas">
+            <div className="relative h-1 w-48 overflow-hidden rounded-full bg-black">
               <span className="absolute inset-y-0 -left-12 w-12 animate-[scan_2s_linear_infinite] bg-gradient-to-r from-transparent via-info to-transparent" />
             </div>
           </div>
         </div>
-        <div className="flex flex-col items-center justify-center w-32 opacity-40">
+        <div className="flex w-32 flex-col items-center justify-center opacity-40">
           <svg width="96" height="96" viewBox="0 0 100 100" aria-hidden="true">
             <circle
               cx="50"
@@ -839,7 +857,7 @@ function HeroPnL({
               strokeWidth="4"
             />
           </svg>
-          <div className="-mt-[72px] font-pixel text-2xl text-fg-disabled">
+          <div className="-mt-[68px] text-2xl font-bold text-fg-disabled">
             —
           </div>
           <div className="mt-8 text-2xs uppercase tracking-widest text-fg-muted text-center leading-relaxed">
@@ -853,19 +871,28 @@ function HeroPnL({
   const isPositive = snap.todayPnL >= 0;
   const pnlColor = isPositive ? 'text-bullish' : 'text-bearish';
   const pnlGlow = isPositive
-    ? '0 0 30px rgba(14, 203, 129, 0.35)'
-    : '0 0 30px rgba(246, 70, 93, 0.35)';
+    ? '0 0 38px rgba(14, 203, 129, 0.45)'
+    : '0 0 38px rgba(246, 70, 93, 0.45)';
   const sign = isPositive ? '+' : '';
 
   return (
     <section
       aria-labelledby="hero-pnl-label"
-      className="relative grid grid-cols-[1fr_auto] gap-6 overflow-hidden rounded-xl border border-border-subtle bg-surface p-6"
+      className="relative grid grid-cols-[1fr_auto] gap-6 overflow-hidden rounded-3xl card-coin98 p-8"
     >
-      {/* Subtle gradient halo behind hero number */}
+      {/* Yellow halo (Coin98 brand glow) layered behind the number */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full opacity-20"
+        className="pointer-events-none absolute -left-16 -top-24 h-80 w-80 rounded-full opacity-40 blur-2xl"
+        style={{
+          background:
+            'radial-gradient(circle, rgba(240,185,11,0.25), transparent 70%)',
+        }}
+      />
+      {/* Performance-tinted halo on the right */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full opacity-30 blur-2xl"
         style={{
           background: `radial-gradient(circle, ${
             isPositive ? 'var(--color-bullish)' : 'var(--color-bearish)'
@@ -876,7 +903,7 @@ function HeroPnL({
       <div className="relative">
         <div
           id="hero-pnl-label"
-          className="mb-3 flex items-center gap-3 text-2xs uppercase tracking-widest text-fg-muted"
+          className="mb-4 flex items-center gap-3 text-2xs uppercase tracking-widest text-fg-muted"
         >
           <span>Today · Realized PnL</span>
           <span className="inline-flex items-center gap-1.5 text-bullish">
@@ -888,8 +915,11 @@ function HeroPnL({
         </div>
 
         <div
-          className={cn('font-pixel text-4xl tabular-nums', pnlColor)}
-          style={{ textShadow: pnlGlow, lineHeight: 1.05 }}
+          className={cn(
+            'text-6xl font-bold tabular-nums tracking-tight',
+            pnlColor,
+          )}
+          style={{ textShadow: pnlGlow, lineHeight: 1.0 }}
         >
           {sign === '+' ? '+' : '−'}$
           <CountingNumber
@@ -970,9 +1000,12 @@ function SectionCard({
   rightSlot?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  // Coin98 style: pill-friendly large radius, no visible border (rely on
+  // bg contrast against the pure-black canvas), header has no divider
+  // — relies on whitespace.
   return (
-    <section className="rounded-lg border border-border-subtle bg-surface overflow-hidden">
-      <header className="flex items-center justify-between gap-3 border-b border-border-subtle px-4 py-2.5">
+    <section className="rounded-3xl card-coin98 overflow-hidden">
+      <header className="flex items-center justify-between gap-3 px-5 pt-4 pb-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-2xs font-semibold uppercase tracking-wider text-fg-muted">
             {title}
@@ -1003,8 +1036,8 @@ function EmptyStateCard({
   body: string;
 }) {
   return (
-    <section className="rounded-lg border border-border-subtle bg-surface p-8 text-center">
-      <div className="mx-auto mb-2 h-10 w-10 rounded-md bg-canvas flex items-center justify-center text-lg">
+    <section className="rounded-3xl card-coin98 p-10 text-center">
+      <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-black flex items-center justify-center text-xl">
         {icon}
       </div>
       <h4 className="m-0 text-sm font-semibold text-fg">{title}</h4>
@@ -1112,41 +1145,39 @@ function EquityCurve({
   const geometry = useMemo(() => buildEquityGeometry(data), [data]);
   const linePathRef = useRef<SVGPathElement | null>(null);
   const [pathLength, setPathLength] = useState<number>(0);
-  // Live position of the endpoint dot — interpolated along the path so
-  // the pointer travels with the draw-in instead of popping in at the end.
+  // Live position of the endpoint dot — sampled along the path each
+  // frame and kept perfectly in sync with the line's drawn portion.
   const [endPos, setEndPos] = useState<{ x: number; y: number } | null>(null);
+  const EQ_DRAW_MS = 10000;
 
-  // Re-measure path length whenever path changes; this drives the
-  // stroke-dashoffset draw-in animation (offset = length → 0).
+  // Measure the path length once geometry is ready. Used both for the
+  // stroke-dasharray gate and as the upper bound for getPointAtLength.
   useEffect(() => {
     if (!linePathRef.current || !geometry) return;
     const len = linePathRef.current.getTotalLength();
     setPathLength(len);
-    // Seed endpoint at the start of the path so it's visible from frame 0.
     const start = linePathRef.current.getPointAtLength(0);
     setEndPos({ x: start.x, y: start.y });
   }, [geometry]);
 
-  // Drive the endpoint dot from the line's actual stroke-dashoffset value —
-  // guarantees perfect sync with the CSS draw-in animation regardless of
-  // its easing curve. Reads getComputedStyle each frame and converts the
-  // remaining offset to a length-along-path.
+  // JS-driven draw-in — single rAF timeline that mutates BOTH the
+  // line's strokeDashoffset AND the endpoint position from the same
+  // tick. Linear easing → uniform speed. No getComputedStyle reads,
+  // no CSS animation, no possibility of the dot drifting from the tip.
   useEffect(() => {
     if (!pathLength || !linePathRef.current || !geometry) return;
     const path = linePathRef.current;
+    const startT = performance.now();
     let raf = 0;
-    const tick = () => {
-      const offsetRaw = getComputedStyle(path).strokeDashoffset;
-      const offset = parseFloat(offsetRaw) || 0;
-      const drawn = Math.max(0, Math.min(pathLength, pathLength - offset));
+    const tick = (now: number) => {
+      const elapsed = now - startT;
+      const p = Math.min(1, elapsed / EQ_DRAW_MS); // linear: speed uniform
+      const drawn = pathLength * p;
+      path.style.strokeDashoffset = String(pathLength - drawn);
       const pt = path.getPointAtLength(drawn);
       setEndPos({ x: pt.x, y: pt.y });
-      if (offset > 0.5) {
-        raf = requestAnimationFrame(tick);
-      } else {
-        // Snap to true endpoint so we don't drift on subpixel rounding.
-        setEndPos({ x: geometry.endX, y: geometry.endY });
-      }
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else setEndPos({ x: geometry.endX, y: geometry.endY });
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
@@ -1190,17 +1221,17 @@ function EquityCurve({
         </span>
       }
       rightSlot={
-        <div className="flex gap-0.5 rounded-md bg-canvas border border-border-subtle p-0.5">
+        <div className="flex gap-1 rounded-full bg-black p-1">
           {EQUITY_RANGES.map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => onRangeChange(r)}
               className={cn(
-                'rounded-sm px-2 py-0.5 text-2xs font-medium uppercase tracking-wider transition-colors',
+                'rounded-full px-3 py-1 text-2xs font-medium uppercase tracking-wider transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
                 r === range
-                  ? 'bg-surface text-fg shadow-sm'
+                  ? 'bg-brand text-black font-semibold shadow-[0_0_10px_rgba(240,185,11,0.35)]'
                   : 'text-fg-muted hover:text-fg',
               )}
             >
@@ -1229,6 +1260,17 @@ function EquityCurve({
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+            {/* Clip rectangle that grows with the line tip — gradient
+              * fill below the curve reveals exactly under the part
+              * that's already been drawn. */}
+            <clipPath id="eqAreaClip">
+              <rect
+                x="0"
+                y="0"
+                width={endPos?.x ?? 0}
+                height={EQ_VIEW_H}
+              />
+            </clipPath>
           </defs>
 
           {/* Horizontal grid lines (3 dotted) */}
@@ -1262,16 +1304,17 @@ function EquityCurve({
             </text>
           ))}
 
-          {/* Area fill — fades in just before line draw completes */}
+          {/* Area fill — clipped by a rectangle that grows with the
+            * draw line's tip, so the gradient fills in progressively
+            * underneath the line as it draws (not in one fade flash). */}
           <path
             d={geometry.areaD}
             fill="url(#eqArea)"
-            className="eq-area"
-            opacity="0"
-            style={{ animation: 'eq-area-fade 1000ms ease-out 9000ms forwards' }}
+            clipPath="url(#eqAreaClip)"
           />
 
-          {/* Line — drawn via stroke-dashoffset transition (4s draw-in) */}
+          {/* Line — strokeDashoffset is animated by JS rAF (linear,
+            * 10s) so the endpoint sampling stays pixel-perfect. */}
           <path
             ref={linePathRef}
             d={geometry.pathD}
@@ -1283,12 +1326,6 @@ function EquityCurve({
             filter="url(#eqGlow)"
             strokeDasharray={pathLength || 1}
             strokeDashoffset={pathLength || 1}
-            style={{
-              animation: pathLength
-                ? 'eq-line-draw 10000ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards'
-                : undefined,
-              ['--eq-path-length' as string]: pathLength,
-            }}
           />
 
           {/* Endpoint pulse halo — reveals after line completes (4s) */}
@@ -1488,9 +1525,12 @@ function LiveSpotFeed({
   const geometry = useMemo(() => buildSpotGeometry(candles), [candles]);
   const linePathRef = useRef<SVGPathElement | null>(null);
   const [pathLength, setPathLength] = useState<number>(0);
-  // Live position of the endpoint dot — interpolated along the path so
-  // the pointer travels with the draw-in instead of popping in at the end.
+  // Live position of the endpoint dot — sampled along the path each
+  // frame from the same rAF that drives the line's draw-in.
   const [endPos, setEndPos] = useState<{ x: number; y: number } | null>(null);
+  // Linear progress 0..1 along the path. Used to gate fill markers so
+  // they reveal exactly when the draw line passes their x-position.
+  const [drawProgress, setDrawProgress] = useState<number>(0);
 
   useEffect(() => {
     if (!linePathRef.current || !geometry) return;
@@ -1498,23 +1538,27 @@ function LiveSpotFeed({
     setPathLength(len);
     const start = linePathRef.current.getPointAtLength(0);
     setEndPos({ x: start.x, y: start.y });
+    setDrawProgress(0);
   }, [geometry]);
 
+  // Single rAF timeline drives BOTH the line draw and the endpoint
+  // dot — linear easing so the speed is uniform end-to-end and the
+  // dot never drifts from the tip.
   useEffect(() => {
     if (!pathLength || !linePathRef.current || !geometry) return;
     const path = linePathRef.current;
+    const startT = performance.now();
     let raf = 0;
-    const tick = () => {
-      const offsetRaw = getComputedStyle(path).strokeDashoffset;
-      const offset = parseFloat(offsetRaw) || 0;
-      const drawn = Math.max(0, Math.min(pathLength, pathLength - offset));
+    const tick = (now: number) => {
+      const elapsed = now - startT;
+      const p = Math.min(1, elapsed / SPOT_DRAW_MS); // linear
+      const drawn = pathLength * p;
+      path.style.strokeDashoffset = String(pathLength - drawn);
       const pt = path.getPointAtLength(drawn);
       setEndPos({ x: pt.x, y: pt.y });
-      if (offset > 0.5) {
-        raf = requestAnimationFrame(tick);
-      } else {
-        setEndPos({ x: geometry.endX, y: geometry.endY });
-      }
+      setDrawProgress(p);
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else setEndPos({ x: geometry.endX, y: geometry.endY });
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
@@ -1551,8 +1595,8 @@ function LiveSpotFeed({
 
   // Bot fill entry markers — only fills whose openedAt sits inside the
   // visible candle range. Limit to the most recent 6 to avoid clutter.
-  // Each marker pops in as the draw-line sweeps past its x-position
-  // (delay scales with the marker's progress along the canvas).
+  // Each marker reveals exactly when drawProgress passes its
+  // x-position along the path (gated by drawProgress, not setTimeout).
   const visibleFills = fills
     .filter((f) => f.openedAt >= geometry.xMin && f.openedAt <= geometry.xMax)
     .slice(-6);
@@ -1560,9 +1604,9 @@ function LiveSpotFeed({
   const fillMarkers = visibleFills.map((f) => {
     const x = geometry.sx(f.openedAt);
     const y = geometry.sy(f.entryPrice);
-    const progress = (x - SPOT_PAD_X) / totalDrawableX;
-    const delay = Math.max(0, Math.min(1, progress)) * SPOT_DRAW_MS;
-    return { f, x, y, delay };
+    const progressAt = Math.max(0, Math.min(1, (x - SPOT_PAD_X) / totalDrawableX));
+    const revealed = drawProgress >= progressAt;
+    return { f, x, y, revealed };
   });
 
   // Force a fresh node identity on coin/length change so the draw-in
@@ -1614,6 +1658,17 @@ function LiveSpotFeed({
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+            {/* Clip rectangle that grows with the line tip — gradient
+              * fill below the curve reveals progressively under the
+              * already-drawn portion. */}
+            <clipPath id="spotAreaClip">
+              <rect
+                x="0"
+                y="0"
+                width={endPos?.x ?? 0}
+                height={SPOT_VIEW_H}
+              />
+            </clipPath>
           </defs>
 
           {/* Horizontal grid lines (3 dotted) */}
@@ -1649,17 +1704,17 @@ function LiveSpotFeed({
             </text>
           ))}
 
-          {/* Area fill — fades in just before line completes */}
+          {/* Area fill — clipped by a rectangle that grows with the
+            * line tip, so the gradient fills progressively underneath
+            * the curve while it draws (not in one fade flash). */}
           <path
             d={geometry.areaD}
             fill="url(#spotArea)"
-            opacity="0"
-            style={{
-              animation: 'eq-area-fade 1000ms ease-out 9000ms forwards',
-            }}
+            clipPath="url(#spotAreaClip)"
           />
 
-          {/* Line — drawn via stroke-dashoffset (10s) */}
+          {/* Line — strokeDashoffset is animated by JS rAF (linear,
+            * 10s) for uniform speed + perfect endpoint sync. */}
           <path
             ref={linePathRef}
             d={geometry.pathD}
@@ -1671,11 +1726,6 @@ function LiveSpotFeed({
             filter="url(#spotGlow)"
             strokeDasharray={pathLength || 1}
             strokeDashoffset={pathLength || 1}
-            style={{
-              animation: pathLength
-                ? `eq-line-draw ${SPOT_DRAW_MS}ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards`
-                : undefined,
-            }}
           />
 
           {/* High marker — pops in just before line completes */}
@@ -1738,67 +1788,103 @@ function LiveSpotFeed({
             </text>
           </g>
 
-          {/* Bot fill entry markers — pop in as the line sweeps past */}
-          {fillMarkers.map(({ f, x, y, delay }) => {
+          {/* Bot fill entry markers — each reveals exactly when the
+            * draw-line sweeps past its x-position (gated by
+            * drawProgress, not setTimeout). Visual: full-height
+            * dashed guide, glowing entry dot ON the line with an
+            * infinite pulsing ring, and a colored side badge. */}
+          {fillMarkers.map(({ f, x, y, revealed }) => {
             const isLong = f.side === 'LONG';
-            const color = isLong
-              ? 'var(--color-bullish)'
-              : 'var(--color-bearish)';
-            // Triangle vertex offset — point points toward the price.
-            const offY = isLong ? 14 : -14;
-            const triCY = y + offY;
-            const tri = isLong
-              ? `${x},${triCY - 6} ${x - 6},${triCY + 5} ${x + 6},${triCY + 5}`
-              : `${x},${triCY + 6} ${x - 6},${triCY - 5} ${x + 6},${triCY - 5}`;
-            const labelY = isLong ? triCY + 18 : triCY - 10;
+            const colorHex = isLong ? '#0ECB81' : '#F6465D';
+            // Badge sits above for LONG (rising trade), below for SHORT.
+            const badgeY = isLong ? y - 22 : y + 22;
             return (
               <g
                 key={f.id}
-                opacity="0"
                 style={{
-                  animation: `eq-endpoint-pop 360ms ease-out ${delay.toFixed(0)}ms forwards`,
+                  opacity: revealed ? 1 : 0,
+                  transition: 'opacity 280ms ease-out',
                 }}
               >
-                {/* Vertical guide between price level and triangle */}
+                {/* Vertical guide line — full chart height */}
                 <line
                   x1={x}
-                  y1={y}
+                  y1={SPOT_PAD_TOP}
                   x2={x}
-                  y2={triCY + (isLong ? -5 : 5)}
-                  stroke={color}
+                  y2={SPOT_VIEW_H - SPOT_PAD_BOTTOM}
+                  stroke={colorHex}
                   strokeWidth="1"
-                  strokeDasharray="2 2"
-                  opacity="0.55"
+                  strokeDasharray="3 3"
+                  opacity="0.32"
                 />
-                {/* Price-level dot on the line itself */}
+                {/* Infinite pulsing halo around the entry dot */}
                 <circle
                   cx={x}
                   cy={y}
-                  r="3"
-                  fill={color}
-                  stroke="white"
-                  strokeWidth="1"
-                  style={{ filter: `drop-shadow(0 0 4px ${color})` }}
+                  r="11"
+                  fill={colorHex}
+                  opacity="0"
+                  style={{
+                    animation:
+                      'eq-endpoint-halo 1.6s ease-in-out infinite',
+                    transformOrigin: `${x}px ${y}px`,
+                  }}
                 />
-                {/* Triangle pointing direction of the trade */}
-                <polygon
-                  points={tri}
-                  fill={color}
+                {/* Entry dot ON the line */}
+                <circle
+                  cx={x}
+                  cy={y}
+                  r="5"
+                  fill={colorHex}
                   stroke="white"
-                  strokeWidth="1"
-                  style={{ filter: `drop-shadow(0 0 4px ${color})` }}
+                  strokeWidth="1.6"
+                  style={{
+                    filter: `drop-shadow(0 0 6px ${colorHex})`,
+                  }}
                 />
+                {/* Side badge */}
+                <g transform={`translate(${x},${badgeY})`}>
+                  <rect
+                    x="-26"
+                    y="-9"
+                    width="52"
+                    height="18"
+                    rx="3"
+                    fill={colorHex}
+                    style={{
+                      filter: `drop-shadow(0 1px 4px rgba(0,0,0,0.5))`,
+                    }}
+                  />
+                  <text
+                    x="0"
+                    y="1"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="10"
+                    fontWeight="700"
+                    fill="white"
+                    fontFamily="Inter, system-ui, sans-serif"
+                    style={{ letterSpacing: '0.06em' }}
+                  >
+                    {isLong ? '▲ LONG' : '▼ SHORT'}
+                  </text>
+                </g>
+                {/* Entry price label, smaller, near the dot */}
                 <text
-                  x={x}
-                  y={labelY}
-                  textAnchor="middle"
+                  x={x + 9}
+                  y={y + 4}
                   fontSize="9"
-                  fontWeight="700"
-                  fill={color}
-                  fontFamily="Inter, system-ui, sans-serif"
-                  style={{ letterSpacing: '0.04em' }}
+                  fontWeight="600"
+                  fill={colorHex}
+                  fontFamily="JetBrains Mono, SF Mono, monospace"
+                  style={{
+                    fontVariantNumeric: 'tabular-nums',
+                    filter: `drop-shadow(0 0 3px ${colorHex})`,
+                  }}
                 >
-                  {f.side}
+                  ${f.entryPrice.toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })}
                 </text>
               </g>
             );
@@ -1867,7 +1953,7 @@ function LiveSpotFeed({
         </svg>
       </div>
       {watchingFor && (
-        <div className="flex items-center justify-between gap-3 border-t border-border-subtle px-4 py-2 text-xs text-fg-muted">
+        <div className="mx-5 mb-4 mt-2 flex items-center justify-between gap-3 rounded-2xl bg-black/40 px-4 py-2.5 text-xs text-fg-muted">
           <span className="inline-flex items-center gap-1.5 truncate">
             <span aria-hidden="true">📡</span>
             <span>Watching for {watchingFor}</span>
@@ -1949,15 +2035,15 @@ function ExecutionPipeline({
           <div
             key={s.id}
             className={cn(
-              'rounded-md p-2 transition-all',
+              'rounded-2xl p-2.5 transition-all',
               status === 'active' && isScanning &&
-                'bg-info/10 border border-info ring-1 ring-info/40 shadow-[0_0_12px_rgba(59,130,246,0.25)]',
+                'bg-info/15 ring-1 ring-info/50 shadow-[0_0_18px_rgba(59,130,246,0.35)]',
               status === 'active' && !isScanning &&
-                'bg-bullish/10 border border-bullish ring-1 ring-bullish/40 shadow-[0_0_12px_rgba(14,203,129,0.25)]',
+                'bg-bullish/15 ring-1 ring-bullish/50 shadow-[0_0_18px_rgba(14,203,129,0.35)]',
               status === 'done' &&
-                'bg-bullish/5 border border-bullish/30',
+                'bg-bullish/8',
               status === 'pending' &&
-                'bg-canvas border border-border-subtle',
+                'bg-black',
             )}
           >
             <div
@@ -1999,7 +2085,7 @@ function ExecutionPipeline({
         })}
         {/* Budget summary / scan-counter card */}
         {isScanning ? (
-          <div className="rounded-md p-2 border bg-info/10 border-info/30">
+          <div className="rounded-2xl p-2.5 bg-info/15 ring-1 ring-info/40">
             <div className="text-[9px] font-semibold tracking-wider text-info">
               SCANS
             </div>
@@ -2013,10 +2099,10 @@ function ExecutionPipeline({
         ) : (
           <div
             className={cn(
-              'rounded-md p-2 border',
+              'rounded-2xl p-2.5',
               underBudget
-                ? 'bg-warning/10 border-warning/30'
-                : 'bg-bearish/10 border-bearish/30',
+                ? 'bg-warning/15 ring-1 ring-warning/40'
+                : 'bg-bearish/15 ring-1 ring-bearish/40',
             )}
           >
             <div
@@ -2128,12 +2214,12 @@ function RecentFills({
                   ? 'bg-bullish/10 text-bullish'
                   : f.status === 'SL'
                     ? 'bg-bearish/10 text-bearish'
-                    : 'bg-surface-hover text-fg-muted';
+                    : 'bg-black/40 text-fg-muted';
             return (
               <tr
                 key={f.id}
                 className={cn(
-                  'border-b border-border-subtle last:border-b-0 hover:bg-surface-hover/40 transition-colors',
+                  'transition-colors hover:bg-black/30',
                   f.status === 'OPEN' && 'border-l-2 border-l-bearish',
                 )}
               >
@@ -2209,7 +2295,7 @@ function RecentFills({
           })}
         </tbody>
       </table>
-      <div className="border-t border-border-subtle px-3 py-2 text-center text-2xs uppercase tracking-wider text-fg-muted">
+      <div className="px-5 pb-4 pt-2 text-center text-2xs uppercase tracking-wider text-fg-muted hover:text-brand transition-colors cursor-pointer">
         View all {fills.length} trades →
       </div>
     </SectionCard>
@@ -2408,7 +2494,7 @@ function OrderBookL2({ book, coin }: { book: HLOrderBook | null; coin: string })
         </div>
 
         {/* Spread / mid strip */}
-        <div className="border-x border-border-subtle bg-canvas px-4 py-3 flex flex-col items-center justify-center min-w-[140px]">
+        <div className="bg-black/40 px-4 py-3 flex flex-col items-center justify-center min-w-[140px] mx-2 my-2 rounded-2xl">
           <div className="text-2xs uppercase tracking-wider text-fg-muted">Spread</div>
           <div className="mt-1">
             <MidPriceDisplay
@@ -3246,8 +3332,8 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
   const isLoading = tf !== '24H' && tfPctMap === null && topCoins.length > 0;
 
   return (
-    <section className="rounded-lg border border-border-subtle bg-surface p-3 sticky top-3">
-      <header className="mb-2 flex items-center justify-between text-2xs uppercase tracking-wider text-fg-muted">
+    <section className="rounded-3xl card-coin98 p-4 sticky top-3">
+      <header className="mb-3 flex items-center justify-between text-2xs uppercase tracking-wider text-fg-muted">
         <span className="font-semibold">Hyperliquid Markets</span>
         <span className="inline-flex items-center gap-1 normal-case tracking-normal text-bullish">
           <span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" />
@@ -3258,7 +3344,7 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
       <div
         role="tablist"
         aria-label="Timeframe"
-        className="mb-2.5 flex gap-0.5 rounded-md border border-border-subtle bg-canvas p-0.5"
+        className="mb-3 flex gap-1 rounded-full bg-black p-1"
       >
         {(['24H', '7D', '30D', '90D'] as BubbleTimeframe[]).map((t) => (
           <button
@@ -3268,9 +3354,11 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
             aria-selected={t === tf}
             onClick={() => setTf(t)}
             className={cn(
-              'flex-1 rounded-sm py-1 text-2xs font-medium tracking-wider transition-colors',
+              'flex-1 rounded-full py-1 text-2xs font-medium tracking-wider transition-colors',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
-              t === tf ? 'bg-surface text-fg' : 'text-fg-muted hover:text-fg',
+              t === tf
+                ? 'bg-brand text-black font-semibold shadow-[0_0_10px_rgba(240,185,11,0.35)]'
+                : 'text-fg-muted hover:text-fg',
             )}
           >
             {t}
@@ -3279,7 +3367,7 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
       </div>
 
       <div
-        className="relative overflow-hidden rounded-md"
+        className="relative overflow-hidden rounded-2xl"
         style={{
           height: BUBBLE_CANVAS_H,
           background: 'radial-gradient(ellipse at center, rgba(14, 203, 129, 0.04), transparent 70%)',
@@ -3292,7 +3380,7 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
         )}
         {/* Loading overlay for multi-TF fetches */}
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-canvas/40 z-10 text-2xs text-fg-muted">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 text-2xs text-fg-muted">
             Loading {tf} data…
           </div>
         )}
@@ -3351,7 +3439,7 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
               transform: 'translate(-50%, -100%)',
               zIndex: 50,
             }}
-            className="pointer-events-none rounded-lg border border-border-default bg-surface px-3 py-2 text-xs shadow-xl"
+            className="pointer-events-none rounded-2xl card-coin98 px-3 py-2 text-xs shadow-2xl"
           >
             <div className="font-bold text-fg">{tooltip.id}</div>
             <div
@@ -3375,7 +3463,7 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
         )}
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border-subtle pt-2 text-2xs uppercase tracking-wider text-fg-muted">
+      <div className="mt-3 grid grid-cols-2 gap-2 pt-3 text-2xs uppercase tracking-wider text-fg-muted">
         <div>
           Winners
           <b className="block normal-case tracking-normal mt-0.5 text-xs text-bullish font-semibold tabular-nums">
@@ -3438,7 +3526,7 @@ function DevControls() {
     );
   };
   return (
-    <div className="fixed bottom-4 right-4 z-50 rounded-md border border-warning/40 bg-surface p-3 shadow-lg">
+    <div className="fixed bottom-4 right-4 z-50 rounded-2xl card-coin98 ring-1 ring-warning/40 p-3 shadow-2xl">
       <div className="mb-2 text-2xs font-semibold uppercase tracking-wider text-warning">
         Dev controls
       </div>
@@ -3502,14 +3590,23 @@ export function BotMonitoringPage() {
 
   if (!meta || !snap) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-canvas text-fg-muted">
+      <div className="flex h-screen w-screen items-center justify-center bg-black text-fg-muted">
         <span className="text-sm">Loading bot…</span>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen w-screen flex-col bg-canvas text-fg">
+    <div className="flex h-screen w-screen flex-col bg-black text-fg">
+      {/* Page-wide subtle yellow glow accents (Coin98 hero halos) */}
+      <div
+        className="pointer-events-none fixed -top-20 left-1/2 z-0 h-[420px] w-[700px] -translate-x-1/2 rounded-full opacity-50 blur-3xl"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, rgba(240,185,11,0.12), transparent 70%)',
+        }}
+        aria-hidden="true"
+      />
       <MonitoringHeader meta={meta} />
 
       <div className="flex flex-1 overflow-hidden">
@@ -3528,10 +3625,10 @@ export function BotMonitoringPage() {
         />
 
         <main className="relative z-10 flex-1 overflow-y-auto">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-5">
+          <div className="mx-auto flex max-w-6xl flex-col gap-5 px-8 py-7">
             <HeroPnL snap={snap} phase={phase} />
 
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 gap-5">
               {cycle && <ExecutionPipeline cycle={cycle} phase={phase} />}
               <EquityCurve
                 data={equity}
@@ -3552,7 +3649,7 @@ export function BotMonitoringPage() {
           </div>
         </main>
 
-        <aside className="relative z-10 w-[280px] flex-shrink-0 border-l border-border-subtle bg-canvas overflow-y-auto">
+        <aside className="relative z-10 w-[280px] flex-shrink-0 bg-black overflow-y-auto">
           <div className="p-3">
             <GainersLosersBubble ctxs={markets?.ctxs ?? []} />
           </div>

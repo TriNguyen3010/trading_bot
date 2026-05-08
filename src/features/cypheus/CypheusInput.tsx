@@ -29,7 +29,7 @@ export function CypheusInput({ disabled, onSubmit }: CypheusInputProps) {
   };
 
   return (
-    <div className="flex items-end gap-2 bg-surface px-4 py-3">
+    <div className="flex items-end gap-2 px-4 py-3">
       <textarea
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -38,8 +38,8 @@ export function CypheusInput({ disabled, onSubmit }: CypheusInputProps) {
         placeholder={strings.cypheus.inputPlaceholder}
         disabled={disabled}
         className={cn(
-          'flex-1 resize-none rounded-md border border-border bg-input px-3 py-2 text-sm text-fg placeholder:text-fg-muted',
-          'transition-colors duration-fast focus-visible:border-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-subtle',
+          'flex-1 resize-none rounded-2xl card-coin98 px-3 py-2 text-sm text-fg placeholder:text-fg-muted',
+          'transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
           'min-h-[40px] max-h-[120px]',
           disabled && 'cursor-not-allowed opacity-60',
         )}
@@ -51,6 +51,7 @@ export function CypheusInput({ disabled, onSubmit }: CypheusInputProps) {
         disabled={!canSubmit}
         onClick={submit}
         aria-label={strings.cypheus.send}
+        className="rounded-full"
       >
         <Send className="h-4 w-4" />
       </Button>

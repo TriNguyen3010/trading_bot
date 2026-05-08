@@ -18,10 +18,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       {isCypheus ? <CypheusAvatar size="sm" state="idle" /> : null}
       <div
         className={cn(
-          'max-w-[280px] rounded-lg px-3 py-2 text-sm',
+          'max-w-[280px] rounded-2xl px-3.5 py-2.5 text-sm',
           isCypheus
-            ? 'border-l-2 border-brand bg-surface text-fg'
-            : 'bg-input text-fg',
+            ? 'card-coin98 text-fg shadow-[0_0_0_1px_rgba(240,185,11,0.15)]'
+            : 'bg-brand text-black font-medium shadow-[0_0_10px_rgba(240,185,11,0.3)]',
         )}
       >
         <p className="whitespace-pre-wrap leading-relaxed">

@@ -97,7 +97,7 @@ export function CypheusPanel() {
     <TooltipProvider delayDuration={collapsed ? 100 : 250}>
       <aside
         className={cn(
-          'flex h-full flex-shrink-0 flex-col border-r border-border-subtle bg-canvas',
+          'flex h-full flex-shrink-0 flex-col bg-black',
           'transition-[width] duration-fast ease-out-quick',
         )}
         style={{ width: 'var(--layout-left-panel)' }}
@@ -108,10 +108,10 @@ export function CypheusPanel() {
          * the title and centres the chevron in the 48px strip. */}
         <header
           className={cn(
-            'flex items-center border-b border-border-subtle',
+            'flex items-center',
             collapsed
-              ? 'justify-center px-1.5 py-2'
-              : 'justify-between gap-2 px-3 py-2',
+              ? 'justify-center px-1.5 py-3'
+              : 'justify-between gap-2 px-4 py-3',
           )}
         >
           {!collapsed && (
@@ -131,8 +131,8 @@ export function CypheusPanel() {
                 }
                 aria-expanded={!collapsed}
                 className={cn(
-                  'inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-fg-muted',
-                  'transition-colors duration-fast hover:bg-surface-hover hover:text-fg',
+                  'inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-fg-muted',
+                  'transition-colors duration-fast hover:bg-[#1a1a1f] hover:text-fg',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
                 )}
               >
@@ -179,7 +179,7 @@ export function CypheusPanel() {
         {/* Active section content — only when expanded. Collapsed strip
          * deliberately leaves no content space. */}
         {!collapsed && (
-          <div className="flex flex-1 flex-col overflow-hidden border-t border-border-subtle">
+          <div className="flex flex-1 flex-col overflow-hidden">
             {tab === 'cypheus' && <CypheusSectionBody
               onSubmit={handleUserSubmit}
               inputDisabled={inputDisabled}
@@ -229,15 +229,15 @@ function SectionItem({
       aria-current={active ? 'page' : undefined}
       aria-label={collapsed ? `Open ${label} section` : undefined}
       className={cn(
-        'group relative flex items-center gap-3 rounded-md text-sm font-medium',
+        'group relative flex items-center gap-3 rounded-full text-sm font-medium',
         'transition-colors duration-fast ease-out-quick',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
         collapsed
           ? 'mx-auto h-9 w-9 justify-center'
-          : 'h-9 w-full justify-start px-3',
+          : 'h-9 w-full justify-start px-4',
         active
-          ? 'bg-brand-subtle text-brand'
-          : 'text-fg-secondary hover:bg-surface-hover hover:text-fg',
+          ? 'bg-brand text-black font-semibold shadow-[0_0_10px_rgba(240,185,11,0.35)]'
+          : 'text-fg-secondary hover:bg-[#1a1a1f] hover:text-fg',
       )}
       data-section={id}
     >
@@ -284,7 +284,7 @@ function CypheusSectionBody({
   return (
     <>
       <CypheusChat />
-      <div className="bg-canvas">
+      <div className="bg-black">
         <CypheusInput onSubmit={onSubmit} disabled={inputDisabled} />
         <div className="px-4 pb-3">
           <CreateNewBotButton />

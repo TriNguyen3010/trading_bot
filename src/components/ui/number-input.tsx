@@ -43,17 +43,17 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
             if (Number.isFinite(num)) onValueChange?.(num);
           }}
           className={cn(
-            'flex h-10 w-full rounded-md border border-border bg-input pl-3 text-sm text-fg font-tabular',
-            suffix ? 'pr-12 text-right' : 'pr-3',
-            'transition-colors duration-fast focus-visible:border-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-subtle',
+            'flex h-11 w-full rounded-2xl bg-black/40 pl-4 text-sm text-fg font-tabular',
+            suffix ? 'pr-14 text-right' : 'pr-4',
+            'transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
             'disabled:cursor-not-allowed disabled:opacity-60',
-            'aria-[invalid=true]:border-danger',
+            'aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-danger/60',
             className,
           )}
           {...props}
         />
         {suffix ? (
-          <span className="pointer-events-none absolute right-3 text-xs text-fg-muted">
+          <span className="pointer-events-none absolute right-4 text-xs text-fg-muted">
             {suffix}
           </span>
         ) : null}

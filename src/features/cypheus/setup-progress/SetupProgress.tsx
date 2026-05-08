@@ -152,7 +152,7 @@ export function SetupProgress() {
   return (
     <div
       className={cn(
-        'border-t border-border-subtle bg-canvas px-4 py-2.5',
+        'mx-3 mt-2 mb-3 rounded-2xl card-coin98 px-4 py-2.5',
         mode === 'ready' && 'bg-brand-subtle',
         isBuilding && 'pointer-events-none opacity-60',
       )}
