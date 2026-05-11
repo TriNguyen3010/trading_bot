@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Visual Options · Hyperliquid Bot Decoration Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<style>
+:root{
+  --bg-base:#0B0E11; --bg-surface:#14181F; --bg-elevated:#1E2329;
+  --bg-hover:#2B3139; --bg-active:#363C45; --bg-input:#181C22;
+  --border-subtle:#1E2329; --border-default:#2B3139; --border-strong:#474D57;
+  --text-primary:#EAECEF; --text-secondary:#B7BDC6; --text-tertiary:#848E9C;
+  --brand-primary:#F0B90B; --brand-subtle:rgba(240,185,11,0.10); --brand-glow:rgba(240,185,11,0.4);
+  --bullish:#0ECB81; --bullish-subtle:rgba(14,203,129,0.12);
+  --bearish:#F6465D; --bearish-subtle:rgba(246,70,93,0.12);
+  --info:#3B82F6; --purple:#A78BFA; --pink:#F472B6;
+  --radius-sm:4px; --radius-md:6px; --radius-lg:8px; --radius-xl:12px;
+  --font-sans:'Inter',-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono','SF Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg-base);color:var(--text-primary);
+  font-family:var(--font-sans);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+
+/* HEADER */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 28px;background:var(--bg-surface);
+  border-bottom:1px solid var(--border-subtle);
+  position:sticky;top:0;z-index:10;backdrop-filter:blur(8px);
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand .logo{font-weight:700;color:var(--brand-primary);letter-spacing:-.3px}
+.brand .sep{width:1px;height:18px;background:var(--border-default)}
+.brand .title{font-size:14px;font-weight:600}
+.brand .pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:3px 10px;background:var(--bullish-subtle);color:var(--bullish);
+  border-radius:var(--radius-sm);font-size:11px;font-weight:600;
+}
+.brand .pill .dot{width:6px;height:6px;border-radius:50%;background:var(--bullish);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.subtitle{color:var(--text-tertiary);font-size:13px}
+
+/* GRID */
+main{padding:24px 28px 80px;max-width:1600px;margin:0 auto}
+.intro{
+  background:var(--bg-surface);border:1px solid var(--border-subtle);
+  border-left:3px solid var(--brand-primary);
+  border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:24px;
+  font-size:13px;color:var(--text-secondary);
+}
+.intro b{color:var(--text-primary)}
+
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+@media (max-width:980px){.grid{grid-template-columns:1fr}}
+
+.card{
+  background:var(--bg-surface);border:1px solid var(--border-subtle);
+  border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;
+}
+.card-head{
+  padding:12px 16px;display:flex;justify-content:space-between;align-items:center;
+  border-bottom:1px solid var(--border-subtle);
+}
+.card-head .tt{display:flex;align-items:center;gap:10px}
+.card-head .badge{
+  background:var(--brand-subtle);color:var(--brand-primary);
+  font-family:var(--font-mono);font-size:11px;font-weight:700;
+  padding:2px 6px;border-radius:var(--radius-sm);
+}
+.card-head h3{font-size:14px;font-weight:600;letter-spacing:-.2px}
+.card-head .src{
+  font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);
+  background:var(--bg-elevated);padding:3px 8px;border-radius:var(--radius-sm);
+  letter-spacing:.04em;
+}
+.card-desc{padding:10px 16px;font-size:12px;color:var(--text-tertiary);border-bottom:1px solid var(--border-subtle)}
+.viz{position:relative;height:300px;background:var(--bg-base);overflow:hidden}
+.viz canvas, .viz svg{display:block;width:100%;height:100%}
+.card-foot{
+  padding:10px 16px;display:flex;gap:14px;justify-content:space-between;
+  border-top:1px solid var(--border-subtle);font-size:11px;
+}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat .l{color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;font-size:10px}
+.stat .v{font-family:var(--font-mono);font-weight:600;color:var(--text-primary)}
+.stat .v.up{color:var(--bullish)}
+.stat .v.dn{color:var(--bearish)}
+.stat .v.brand{color:var(--brand-primary)}
+
+/* viz-specific containers */
+.tape-track{position:absolute;inset:0;display:flex;align-items:center;overflow:hidden}
+.tape-list{display:flex;gap:18px;padding:0 12px;font-family:var(--font-mono);font-size:12px;white-space:nowrap;animation:tapeMove 18s linear infinite}
+.tape-list .item{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:var(--radius-sm);flex-shrink:0}
+.tape-list .item.buy{color:var(--bullish);border-color:var(--bullish-subtle)}
+.tape-list .item.sell{color:var(--bearish);border-color:var(--bearish-subtle)}
+.tape-list .item.large{box-shadow:0 0 12px currentColor}
+.tape-list .item .px{color:var(--text-secondary)}
+.tape-list .item .t{color:var(--text-tertiary);font-size:10px}
+@keyframes tapeMove{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+.constel-tip{
+  position:absolute;left:10px;top:8px;
+  font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);
+  letter-spacing:.04em;display:flex;gap:10px;
+}
+.constel-tip .dot-r{display:inline-block;width:6px;height:6px;background:var(--bearish);border-radius:50%;margin-right:4px;vertical-align:middle}
+.constel-tip .dot-g{display:inline-block;width:6px;height:6px;background:var(--bullish);border-radius:50%;margin-right:4px;vertical-align:middle}
+
+.legend{
+  position:absolute;left:10px;top:8px;
+  font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);
+  display:flex;flex-direction:column;gap:3px;background:rgba(11,14,17,.7);padding:6px 8px;border-radius:var(--radius-sm);
+  pointer-events:none;
+}
+.legend .l-row{display:flex;align-items:center;gap:6px}
+.legend .l-dot{width:8px;height:8px;border-radius:50%}
+
+.viz .label-overlay{
+  position:absolute;right:12px;top:10px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);
+  text-align:right;pointer-events:none;
+}
+.viz .label-overlay .v{color:var(--brand-primary);font-size:13px;font-weight:700}
+
+/* convergence top-right widget */
+.conv-widget{
+  position:absolute;right:12px;top:10px;
+  background:rgba(11,14,17,.7);border:1px solid var(--border-default);
+  border-radius:var(--radius-sm);padding:8px 10px;
+  font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);
+  display:flex;flex-direction:column;gap:3px;line-height:1.4;
+}
+.conv-widget .v{color:var(--text-primary);font-weight:700}
+.conv-widget .v.up{color:var(--bullish)}
+.conv-widget .v.dn{color:var(--bearish)}
+.conv-widget .v.brand{color:var(--brand-primary)}
+
+/* footer note */
+.note{
+  margin-top:24px;padding:14px 18px;
+  background:var(--bg-surface);border:1px dashed var(--border-default);border-radius:var(--radius-lg);
+  color:var(--text-tertiary);font-size:12px;text-align:center;
+}
+.note b{color:var(--text-primary)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">⚡ TradeBot</span>
+    <span class="sep"></span>
+    <span class="title">Visual Options Gallery</span>
+    <span class="pill"><span class="dot"></span>8 OPTIONS · LIVE MOCK</span>
+  </div>
+  <span class="subtitle">Mỗi viz dùng mock data mô phỏng pattern Hyperliquid · scroll để xem hết</span>
+</header>
+
+<main>
+  <div class="intro">
+    <b>Cách đọc demo:</b> Mỗi card là 1 phương án visualization, đều chạy realtime bằng mock data có hành vi giống Hyperliquid streaming. <b>Nguồn data thật</b> được note ở góc phải mỗi card (vd <span class="num" style="color:var(--brand-primary)">l2Book</span>, <span class="num" style="color:var(--brand-primary)">trades</span>, <span class="num" style="color:var(--brand-primary)">activeAssetCtx</span>).
+  </div>
+
+  <div class="grid">
+
+    <!-- 1. ORDER BOOK HEATMAP -->
+    <div class="card">
+      <div class="card-head">
+        <div class="tt"><span class="badge">01</span><h3>Order Book Heatmap</h3></div>
+        <span class="src">l2Book · WS</span>
+      </div>
+      <div class="card-desc">20 mức bid/ask realtime, intensity = size. Wall to glow + ripple khi có order lớn nhồi vào.</div>
+      <div class="viz" id="v1">
+        <canvas id="v1-canvas"></canvas>
+        <div class="label-overlay">BTC/USDT<br><span class="v num" id="v1-mid">$67,451</span></div>
+      </div>
+      <div class="card-foot">
+        <div class="stat"><span class="l">Best bid</span><span class="v up num" id="v1-bid">67,449</span></div>
+        <div class="stat"><span class="l">Spread</span><span class="v num" id="v1-spread">2.0</span></div>
+        <div class="stat"><span class="l">Best ask</span><span class="v dn num" id="v1-ask">67,451</span></div>
+        <div class="stat"><span class="l">Imbalance</span><span class="v num brand" id="v1-imb">+12%</span></div>
+      </div>
+    </div>
+
+    <!-- 2. LIQUIDATION WATERFALL -->
+    <div class="card">
+      <div class="card-head">
+        <div class="tt"><span class="badge">02</span><h3>Liquidation Waterfall</h3></div>
+        <span class="src">userEvents + Hyperdash</span>
+      </div>
+      <div class="card-desc">Mỗi liquidation = 1 droplet rơi từ trên xuống. Đỏ = LONG bị wipe, cyan = SHORT bị wipe.</div>
+      <div class="viz" id="v2">
+        <canvas id="v2-canvas"></canvas>
+        <div class="legend">
+          <div class="l-row"><span class="l-dot" style="background:#F6465D"></span>LONG LIQ</div>
+          <div class="l-row"><span class="l-dot" style="background:#22D3EE"></span>SHORT LIQ</div>
+        </div>
+      </div>
+      <div class="card-foot">
+        <div class="stat"><span class="l">5m total</span><span class="v num brand" id="v2-total">$0</span></div>
+        <div class="stat"><span class="l">LONG liq</span><span class="v dn num" id="v2-long">$0</span></div>
+        <div class="stat"><span class="l">SHORT liq</span><span class="v up num" id="v2-short">$0</span></div>
+        <div class="stat"><span class="l">Events</span><span class="v num" id="v2-count">0</span></div>
+      </div>
+    </div>
+
+    <!-- 3. TRADE TAPE RIBBON -->
+    <div class="card">
+      <div class="card-head">
+        <div class="tt"><span class="badge">03</span><h3>Trade Tape Ribbon</h3></div>
+        <span class="src">trades · WS</span>
+      </div>
+      <div class="card-desc">Mỗi trade chạy ngang qua màn hình, large prints có glow. Style cổ điển NYSE ticker tape.</div>
+      <div class="viz" id="v3" style="height:200px">
+        <div class="tape-track"><div class="tape-list" id="v3-list"></div></div>
+      </div>
+      <div class="card-foot">
+        <div class="stat"><span class="l">Tape rate</span><span class="v num" id="v3-rate">12/s</span></div>
+        <div class="stat"><span class="l">Avg size</span><span class="v num" id="v3-avg">$3,420</span></div>
+        <div class="stat"><span class="l">Buy %</span><span class="v up num" id="v3-buy">52%</span></div>
+        <div class="stat"><span class="l">Largest</span><span class="v num brand" id="v3-large">$48,900</span></div>
+      </div>
+    </div>
+
+    <!-- 4. CROSS-ASSET CORRELATION FORCE GRAPH -->
+    <div class="card">
+      <div class="card-head">
+        <div class="tt"><span class="badge">04</span><h3>Cross-asset Correlation Graph</h3></div>
+        <span class="src">allMids · candle (multi-pair)</span>
+      </div>
+      <div class="card-desc">130+ perp tự sắp xếp theo tương quan giá. Cluster ngành (DeFi/AI/Memes/L1) tự hình thành.</div>
+      <div class="viz" id="v4">
+        <svg id="v4-svg"></svg>
+        <div class="legend">
+          <div class="l-row"><span class="l-dot" style="background:#F0B90B"></span>L1/Major</div>
+          <div class="l-row"><span class="l-dot" style="background:#0ECB81"></span>DeFi</div>
+          <div class="l-row"><span class="l-dot" style="background:#A78BFA"></span>AI</div>
+          <div class="l-row"><span class="l-dot" style="background:#F472B6"></span>Meme</div>
+          <div class="l-row"><span class="l-dot" style="background:#3B82F6"></span>L2/RWA</div>
+        </div>
+      </div>
+      <div class="card-foot">
+        <div class="stat"><span class="l">Pairs</span><span class="v num" id="v4-pairs">24</span></div>
+        <div class="stat"><span class="l">Avg corr</span><span class="v num brand" id="v4-corr">+0.42</span></div>
+        <div class="stat"><span class="l">Tightest cluster</span><span class="v num" id="v4-cluster">L1/Major</span></div>
+        <div class="stat"><span class="l">Outlier</span><span class="v num" id="v4-outlier">DOGE</span></div>
+      </div>
+    </div>
+
+    <!-- 5. FUNDING RATE CONSTELLATION -->
+    <div class="card">
+      <div class="card-head">
+        <div class="tt"><span class="badge">05</span><h3>Funding Rate Constellation</h3></div>
+        <span class="src">activeAssetCtx · poll 5s</span>
+      </div>
+      <div class="card-desc">Mỗi sao = 1 perp pair. Sáng = OI cao. Xanh = funding âm (short trả phí). Đỏ = funding dương (long trả phí).</div>
+      <div class="viz" id="v5">
+        <svg id="v5-svg"></svg>
+        <div class="constel-tip">
+          <span><span class="dot-r"></span>+ funding (longs pay)</span>
+          <span><span class="dot-g"></span>− funding (shorts pay)</span>
+        </div>
+      </div>
+      <div class="card-foot">
+        <div class="stat"><span class="l">Pairs tracked</span><span class="v num" id="v5-tracked">130</span></div>
+        <div class="stat"><span class="l">Avg funding</span><span class="v num" id="v5-avg">+0.0024%</span></div>
+        <div class="stat"><span class="l">Most paid</span><span class="v num dn" id="v5-paid">PEPE +0.18%</span></div>
+        <div class="stat"><span class="l">Recent flips</span><span class="v num brand" id="v5-flip">3</span></div>
+      </div>
+    </div>
+
+    <!-- 6. VOLUME BUBBLES -->
+    <div class="card">
+      <div class="card-head">
+        <div class="tt"><span class="badge">06</span><h3>Volume Bubbles Burst</h3></div>
+        <span class="src">trades · filter size>$10k</span>
+      </div>
+      <div class="card-desc">Bubble nổi từ đáy chart, kích thước = USD value. Pop khi tới đỉnh kèm hiệu ứng particle.</div>
+      <div class="viz" id="v6">
+        <canvas id="v6-canvas"></canvas>
+      </div>
+      <div class="card-foot">
+        <div class="stat"><span class="l">Bubbles/min</span><span class="v num" id="v6-rate">42</span></div>
+        <div class="stat"><span class="l">Largest now</span><span class="v num brand" id="v6-max">$124k</span></div>
+        <div class="stat"><span class="l">Buy bubbles</span><span class="v up num" id="v6-buy">26</span></div>
+        <div class="stat"><span class="l">Sell bubbles</span><span class="v dn num" id="v6-sell">16</span></div>
+      </div>
+    </div>
+
+    <!-- 7. PRICE PARTICLE TRAIL -->
+    <div class="card">
+      <div class="card-head">
+        <div class="tt"><span class="badge">07</span><h3>Price Particle Trail</h3></div>
+        <span class="src">bbo / midPrice · WS</span>
+      </div>
+      <div class="card-desc">Đường giá vẽ bằng particle stream — fading firefly. Aesthetic ambient để làm background card.</div>
+      <div class="viz" id="v7">
+        <canvas id="v7-canvas"></canvas>
+        <div class="label-overlay">BTC mid<br><span class="v num" id="v7-mid">$67,451</span></div>
+      </div>
+      <div class="card-foot">
+        <div class="stat"><span class="l">Tick rate</span><span class="v num" id="v7-tick">8 Hz</span></div>
+        <div class="stat"><span class="l">Particles</span><span class="v num" id="v7-parts">312</span></div>
+        <div class="stat"><span class="l">Drift</span><span class="v up num" id="v7-drift">+0.04%</span></div>
+        <div class="stat"><span class="l">Range 1m</span><span class="v num" id="v7-range">$24</span></div>
+      </div>
+    </div>
+
+    <!-- 8. SIGNAL FORCE GRAPH (MiroFish-like) -->
+    <div class="card">
+      <div class="card-head">
+        <div class="tt"><span class="badge">08</span><h3>Signal Force Graph (Cypheus brain)</h3></div>
+        <span class="src">computed · book + trades + funding + liq</span>
+      </div>
+      <div class="card-desc">40 node tín hiệu kết nối nhau. Khi node fire → glow → propagate qua edge → cluster forms. Convergence% là chỉ số đầu ra.</div>
+      <div class="viz" id="v8" style="height:380px">
+        <svg id="v8-svg"></svg>
+        <div class="conv-widget">
+          <div>CONVERGENCE <span class="v brand" id="v8-conv">86.4%</span></div>
+          <div>BULL PATHS <span class="v up" id="v8-bull">877</span></div>
+          <div>BEAR PATHS <span class="v dn" id="v8-bear">1,457</span></div>
+          <div>HUB NODES <span class="v" id="v8-hubs">8</span></div>
+          <div>SIGNAL <span class="v dn" id="v8-sig">STRONG DOWN</span></div>
+        </div>
+        <div class="legend" style="left:auto;right:12px;top:auto;bottom:10px">
+          <div class="l-row"><span class="l-dot" style="background:#F6465D"></span>BEAR signal</div>
+          <div class="l-row"><span class="l-dot" style="background:#0ECB81"></span>BULL signal</div>
+          <div class="l-row"><span class="l-dot" style="background:#F0B90B"></span>CATALYST</div>
+          <div class="l-row"><span class="l-dot" style="background:#A78BFA"></span>CLUSTER</div>
+          <div class="l-row"><span class="l-dot" style="background:#F472B6"></span>COLLISION</div>
+        </div>
+      </div>
+      <div class="card-foot">
+        <div class="stat"><span class="l">Active nodes</span><span class="v num" id="v8-active">14/40</span></div>
+        <div class="stat"><span class="l">Edge avg weight</span><span class="v num" id="v8-edge">0.42</span></div>
+        <div class="stat"><span class="l">Direction</span><span class="v num dn" id="v8-dir">DOWN 64%</span></div>
+        <div class="stat"><span class="l">Next trade</span><span class="v num brand" id="v8-next">4s</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note">
+    Tất cả 8 visual chạy bằng <b>mock data</b> mô phỏng pattern Hyperliquid. Khi tích hợp thật, mỗi viz chỉ cần 1 WebSocket subscription tương ứng (note ở card head). Bro chọn 1-2 cái thấy hợp vibe nhất → mình build prototype với data thật ở bước tiếp.
+  </div>
+
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const rand=(a,b)=>a+Math.random()*(b-a);
+const ri=(a,b)=>Math.floor(rand(a,b));
+const fmtN=n=>Math.round(Math.abs(n)).toLocaleString('en-US');
+const fmtK=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'k':Math.round(n);
+
+// ============================================================
+// 01. ORDER BOOK HEATMAP
+// ============================================================
+(function(){
+  const canvas=$('#v1-canvas');
+  const c=canvas.getContext('2d');
+  let mid=67450;
+  const N=20;
+  const bids=Array(N).fill(0).map(()=>rand(2,18));
+  const asks=Array(N).fill(0).map(()=>rand(2,18));
+  let ripples=[];
+
+  function resize(){
+    canvas.width=canvas.clientWidth*2;
+    canvas.height=canvas.clientHeight*2;
+    c.scale(2,2);
+  }
+  resize(); window.addEventListener('resize',resize);
+
+  function tick(){
+    mid+=rand(-0.8,0.8);
+    for(let i=0;i<N;i++){
+      bids[i]=Math.max(0.5, bids[i]+rand(-1,1));
+      asks[i]=Math.max(0.5, asks[i]+rand(-1,1));
+    }
+    if(Math.random()<0.08){
+      const side=Math.random()<0.5?'bid':'ask';
+      const idx=ri(0,N);
+      if(side==='bid') bids[idx]+=rand(8,25);
+      else asks[idx]+=rand(8,25);
+      ripples.push({side,idx,r:0,t:0});
+    }
+    $('#v1-mid').textContent='$'+fmtN(mid);
+    $('#v1-bid').textContent=fmtN(mid-1);
+    $('#v1-ask').textContent=fmtN(mid+1);
+    const totBid=bids.reduce((a,b)=>a+b);
+    const totAsk=asks.reduce((a,b)=>a+b);
+    const imb=Math.round((totBid-totAsk)/(totBid+totAsk)*100);
+    $('#v1-imb').textContent=(imb>0?'+':'')+imb+'%';
+  }
+
+  function draw(){
+    const w=canvas.clientWidth, h=canvas.clientHeight;
+    c.fillStyle='#0B0E11'; c.fillRect(0,0,w,h);
+    const midY=h/2;
+    const rowH=(h/2-10)/N;
+    const maxSize=Math.max(...bids,...asks);
+    // bids
+    for(let i=0;i<N;i++){
+      const sz=bids[i];
+      const intensity=sz/maxSize;
+      const y=midY+i*rowH;
+      const ww=intensity*w*0.92;
+      c.fillStyle=`rgba(14,203,129,${0.08+intensity*0.7})`;
+      c.fillRect(w*0.04, y, ww, rowH-1);
+      if(sz>15){
+        c.fillStyle='rgba(14,203,129,0.95)';
+        c.fillRect(w*0.04, y, 2, rowH-1);
+      }
+    }
+    // asks
+    for(let i=0;i<N;i++){
+      const sz=asks[i];
+      const intensity=sz/maxSize;
+      const y=midY-(i+1)*rowH;
+      const ww=intensity*w*0.92;
+      c.fillStyle=`rgba(246,70,93,${0.08+intensity*0.7})`;
+      c.fillRect(w*0.04, y, ww, rowH-1);
+      if(sz>15){
+        c.fillStyle='rgba(246,70,93,0.95)';
+        c.fillRect(w*0.04, y, 2, rowH-1);
+      }
+    }
+    // ripples
+    ripples=ripples.filter(rp=>{
+      rp.t+=0.04; rp.r=rp.t*40;
+      const y = rp.side==='bid' ? midY+rp.idx*rowH+rowH/2 : midY-(rp.idx+1)*rowH+rowH/2;
+      const x = w*0.04 + 24;
+      c.strokeStyle = rp.side==='bid' ? `rgba(14,203,129,${1-rp.t})` : `rgba(246,70,93,${1-rp.t})`;
+      c.lineWidth=2; c.beginPath(); c.arc(x,y,rp.r,0,Math.PI*2); c.stroke();
+      return rp.t<1;
+    });
+    // mid line
+    c.fillStyle='#F0B90B'; c.fillRect(0,midY-1,w,2);
+    c.fillStyle='rgba(240,185,11,.15)'; c.fillRect(0,midY-6,w,12);
+  }
+
+  setInterval(tick, 200);
+  function loop(){draw();requestAnimationFrame(loop)}
+  loop();
+})();
+
+// ============================================================
+// 02. LIQUIDATION WATERFALL
+// ============================================================
+(function(){
+  const canvas=$('#v2-canvas');
+  const c=canvas.getContext('2d');
+  function resize(){canvas.width=canvas.clientWidth*2;canvas.height=canvas.clientHeight*2;c.scale(2,2)}
+  resize(); window.addEventListener('resize',resize);
+  const drops=[];
+  let total=0, longTot=0, shortTot=0, count=0;
+
+  function spawn(){
+    const isLong=Math.random()<0.62; // bear regime, more longs liq
+    const value=Math.exp(rand(7,12)); // log-normal $1k - $160k
+    drops.push({
+      x:rand(20,canvas.clientWidth-20),
+      y:-10,
+      vy:rand(0.5,1.5),
+      r:Math.min(28, 4+Math.log10(value)*4),
+      isLong,
+      value,
+      opacity:1,
+      life:1,
+    });
+    total+=value;
+    if(isLong)longTot+=value; else shortTot+=value;
+    count++;
+    $('#v2-total').textContent='$'+fmtK(total);
+    $('#v2-long').textContent='$'+fmtK(longTot);
+    $('#v2-short').textContent='$'+fmtK(shortTot);
+    $('#v2-count').textContent=count;
+  }
+
+  function loop(){
+    const w=canvas.clientWidth, h=canvas.clientHeight;
+    c.fillStyle='rgba(11,14,17,.18)'; c.fillRect(0,0,w,h);
+    for(const d of drops){
+      d.y+=d.vy; d.vy+=0.02;
+      if(d.y>h*0.9) d.opacity*=0.92;
+      const col = d.isLong ? '246,70,93' : '34,211,238';
+      // glow
+      const grad=c.createRadialGradient(d.x,d.y,0,d.x,d.y,d.r*2.4);
+      grad.addColorStop(0,`rgba(${col},${0.55*d.opacity})`);
+      grad.addColorStop(1,`rgba(${col},0)`);
+      c.fillStyle=grad; c.beginPath(); c.arc(d.x,d.y,d.r*2.4,0,Math.PI*2); c.fill();
+      // core
+      c.fillStyle=`rgba(${col},${0.95*d.opacity})`;
+      c.beginPath(); c.arc(d.x,d.y,d.r,0,Math.PI*2); c.fill();
+      // label for big ones
+      if(d.value>50000 && d.opacity>0.5){
+        c.fillStyle=`rgba(255,255,255,${d.opacity})`;
+        c.font='bold 10px JetBrains Mono';
+        c.textAlign='center';
+        c.fillText('$'+fmtK(d.value), d.x, d.y+4);
+      }
+    }
+    for(let i=drops.length-1;i>=0;i--){if(drops[i].opacity<0.05||drops[i].y>h+30) drops.splice(i,1)}
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  function spawnLoop(){
+    spawn();
+    if(Math.random()<0.3) setTimeout(spawn, ri(50,200));
+    setTimeout(spawnLoop, ri(300,1400));
+  }
+  spawnLoop();
+})();
+
+// ============================================================
+// 03. TRADE TAPE
+// ============================================================
+(function(){
+  const list=$('#v3-list');
+  const items=[];
+  const sym='BTC';
+  let basePx=67450;
+  let largest=0;
+
+  function spawn(){
+    basePx+=rand(-3,3);
+    const isBuy=Math.random()<0.52;
+    const sz=Math.exp(rand(4,9.5));
+    const value=sz*0.001*basePx;
+    if(value>largest){largest=value;$('#v3-large').textContent='$'+fmtK(largest)}
+    const isLarge = value>20000;
+    const t=new Date().toTimeString().slice(0,8);
+    items.push({isBuy,sz,px:basePx,t,isLarge});
+    if(items.length>40)items.shift();
+    render();
+  }
+  function render(){
+    list.innerHTML = items.map(i=>`
+      <div class="item ${i.isBuy?'buy':'sell'} ${i.isLarge?'large':''}">
+        <span>${i.isBuy?'▲':'▼'}</span>
+        <span>${sym}</span>
+        <span>${i.sz.toFixed(3)}</span>
+        <span class="px">@ ${fmtN(i.px)}</span>
+        <span class="t">${i.t}</span>
+      </div>
+    `).join('') + items.map(i=>`
+      <div class="item ${i.isBuy?'buy':'sell'} ${i.isLarge?'large':''}">
+        <span>${i.isBuy?'▲':'▼'}</span>
+        <span>${sym}</span>
+        <span>${i.sz.toFixed(3)}</span>
+        <span class="px">@ ${fmtN(i.px)}</span>
+        <span class="t">${i.t}</span>
+      </div>
+    `).join('');
+  }
+  setInterval(spawn, 350);
+  // initial fill
+  for(let i=0;i<20;i++) spawn();
+})();
+
+// ============================================================
+// 04. CROSS-ASSET CORRELATION FORCE GRAPH
+// ============================================================
+(function(){
+  const svg=d3.select('#v4-svg');
+  const node = $('#v4');
+  function dim(){return [node.clientWidth, node.clientHeight]}
+  let [W,H]=dim();
+  svg.attr('viewBox',`0 0 ${W} ${H}`);
+  const SECTORS = {
+    major:{c:'#F0B90B', list:['BTC','ETH','BNB','SOL']},
+    defi:{c:'#0ECB81', list:['UNI','AAVE','MKR','LDO','CRV']},
+    ai:{c:'#A78BFA', list:['FET','RNDR','TAO','WLD','AGIX']},
+    meme:{c:'#F472B6', list:['DOGE','SHIB','PEPE','WIF','BONK']},
+    l2:{c:'#3B82F6', list:['ARB','OP','MATIC','STRK','MNT']},
+  };
+  const nodes=[];
+  Object.entries(SECTORS).forEach(([k,v])=>v.list.forEach(s=>nodes.push({id:s,sector:k,c:v.c})));
+  // links: random correlations weighted, more in same sector
+  const links=[];
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const sameSector = nodes[i].sector===nodes[j].sector;
+      if(sameSector && Math.random()<0.7) links.push({source:nodes[i].id,target:nodes[j].id,w:rand(0.5,0.95)});
+      else if(Math.random()<0.06) links.push({source:nodes[i].id,target:nodes[j].id,w:rand(0.2,0.4)});
+    }
+  }
+  const sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d=>d.id).distance(d=>50/d.w).strength(d=>d.w*0.6))
+    .force('charge', d3.forceManyBody().strength(-60))
+    .force('center', d3.forceCenter(W/2, H/2))
+    .force('collide', d3.forceCollide(14));
+
+  const link = svg.append('g').selectAll('line').data(links).join('line')
+    .attr('stroke',d=>d.w>0.5?'#0ECB81':'#3F3F46')
+    .attr('stroke-opacity',d=>0.15+d.w*0.5)
+    .attr('stroke-width',d=>d.w*1.3);
+  const g = svg.append('g').selectAll('g').data(nodes).join('g');
+  g.append('circle').attr('r',d=>d.sector==='major'?9:6).attr('fill',d=>d.c).attr('stroke','#0B0E11').attr('stroke-width',1.5);
+  g.append('text').attr('font-family','JetBrains Mono').attr('font-size',9).attr('fill','#B7BDC6').attr('dx',10).attr('dy',3).text(d=>d.id);
+
+  sim.on('tick',()=>{
+    link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+    g.attr('transform',d=>`translate(${d.x},${d.y})`);
+  });
+
+  // periodic correlation re-shuffle
+  setInterval(()=>{
+    links.forEach(l=>l.w=Math.max(0.1,Math.min(1, l.w+rand(-0.06,0.06))));
+    sim.force('link', d3.forceLink(links).id(d=>d.id).distance(d=>50/d.w).strength(d=>d.w*0.6));
+    link.attr('stroke-opacity',d=>0.15+d.w*0.5).attr('stroke-width',d=>d.w*1.3);
+    sim.alpha(0.3).restart();
+    const avg = links.reduce((a,b)=>a+b.w,0)/links.length;
+    $('#v4-corr').textContent = (avg>=0?'+':'')+avg.toFixed(2);
+    const sectors=['L1/Major','DeFi','AI','Meme','L2/RWA'];
+    $('#v4-cluster').textContent = sectors[ri(0,sectors.length)];
+    $('#v4-outlier').textContent = nodes[ri(0,nodes.length)].id;
+  }, 3000);
+})();
+
+// ============================================================
+// 05. FUNDING RATE CONSTELLATION
+// ============================================================
+(function(){
+  const svg=d3.select('#v5-svg');
+  const node=$('#v5');
+  let [W,H]=[node.clientWidth, node.clientHeight];
+  svg.attr('viewBox',`0 0 ${W} ${H}`);
+  const stars = Array(80).fill(0).map(()=>({
+    x:rand(20,W-20),
+    y:rand(20,H-20),
+    r:rand(1.2,4.5),
+    funding:rand(-0.3,0.3),
+    oi:rand(0.3,1),
+    twinkle:rand(0,Math.PI*2),
+  }));
+
+  // edges between most-correlated bright stars (decoration)
+  const edges=[];
+  for(let i=0;i<stars.length;i++){
+    for(let j=i+1;j<stars.length;j++){
+      const d=Math.hypot(stars[i].x-stars[j].x, stars[i].y-stars[j].y);
+      if(d<60 && stars[i].oi>0.7 && stars[j].oi>0.7) edges.push({a:i,b:j,d});
+    }
+  }
+  svg.append('g').selectAll('line').data(edges).join('line')
+    .attr('x1',d=>stars[d.a].x).attr('y1',d=>stars[d.a].y)
+    .attr('x2',d=>stars[d.b].x).attr('y2',d=>stars[d.b].y)
+    .attr('stroke','#2B3139').attr('stroke-opacity','0.3').attr('stroke-width',0.5);
+
+  const sg = svg.append('g').selectAll('g').data(stars).join('g');
+  const halo = sg.append('circle').attr('cx',d=>d.x).attr('cy',d=>d.y).attr('r',d=>d.r*3.5).attr('opacity',0);
+  const core = sg.append('circle').attr('cx',d=>d.x).attr('cy',d=>d.y);
+
+  function update(){
+    stars.forEach(s=>{
+      s.funding += rand(-0.005,0.005);
+      s.funding = Math.max(-0.3, Math.min(0.3, s.funding));
+      s.oi = Math.max(0.2, Math.min(1.2, s.oi+rand(-0.02,0.02)));
+      s.twinkle += 0.04;
+    });
+    core.attr('r', d=>d.r*(0.85+0.3*Math.sin(d.twinkle)))
+        .attr('fill', d=>d.funding>0?'#F6465D':'#0ECB81')
+        .attr('opacity', d=>0.45+d.oi*0.45+0.1*Math.sin(d.twinkle));
+    halo.attr('fill', d=>d.funding>0?'#F6465D':'#0ECB81')
+        .attr('opacity', d=>d.oi>0.85?0.18:0);
+    let avg=0,flips=0,maxFund=null;
+    stars.forEach(s=>{
+      avg+=s.funding;
+      if(!maxFund || Math.abs(s.funding)>Math.abs(maxFund)) maxFund=s.funding;
+    });
+    avg/=stars.length;
+    $('#v5-avg').textContent = (avg>=0?'+':'')+avg.toFixed(4)+'%';
+    $('#v5-paid').textContent = (maxFund>0?'PEPE +':'OP −')+Math.abs(maxFund).toFixed(2)+'%';
+    $('#v5-flip').textContent = ri(0,8);
+  }
+  setInterval(update, 300);
+
+  // occasional flip flash
+  setInterval(()=>{
+    const idx=ri(0,stars.length);
+    stars[idx].funding *= -1;
+    sg.filter((d,i)=>i===idx).select('circle:nth-child(2)')
+      .transition().duration(300).attr('r', stars[idx].r*4)
+      .transition().duration(400).attr('r', stars[idx].r);
+  }, 1500);
+})();
+
+// ============================================================
+// 06. VOLUME BUBBLES
+// ============================================================
+(function(){
+  const canvas=$('#v6-canvas');
+  const c=canvas.getContext('2d');
+  function resize(){canvas.width=canvas.clientWidth*2;canvas.height=canvas.clientHeight*2;c.scale(2,2)}
+  resize(); window.addEventListener('resize',resize);
+  const bubbles=[], pops=[];
+  let buyC=0,sellC=0,maxV=0,minute=0;
+
+  function spawn(){
+    const isBuy=Math.random()<0.6;
+    const v=Math.exp(rand(9,12));
+    const r=Math.min(34, 6+Math.log10(v)*4);
+    bubbles.push({
+      x:rand(r+8,canvas.clientWidth-r-8),
+      y:canvas.clientHeight+r,
+      vy:-rand(0.4,1.0),
+      r,
+      isBuy,
+      value:v,
+      opacity:1,
+      sway:rand(0,Math.PI*2),
+      ph:0,
+    });
+    if(isBuy)buyC++; else sellC++;
+    if(v>maxV)maxV=v;
+    $('#v6-buy').textContent=buyC;
+    $('#v6-sell').textContent=sellC;
+    $('#v6-max').textContent='$'+fmtK(maxV);
+    $('#v6-rate').textContent=Math.round((buyC+sellC)/Math.max(1,minute))+ '/m';
+  }
+
+  function loop(){
+    const w=canvas.clientWidth, h=canvas.clientHeight;
+    c.fillStyle='rgba(11,14,17,.20)'; c.fillRect(0,0,w,h);
+    for(const b of bubbles){
+      b.y+=b.vy; b.sway+=0.03;
+      b.x+=Math.sin(b.sway)*0.4;
+      const col=b.isBuy?'14,203,129':'246,70,93';
+      if(b.y < b.r+20 && b.ph===0){
+        b.ph=1; pops.push({x:b.x,y:b.y,r:b.r,col,t:0,value:b.value});
+        b.opacity=0;
+      }
+      if(b.opacity<=0) continue;
+      const grad=c.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+      grad.addColorStop(0,`rgba(${col},.5)`);
+      grad.addColorStop(0.6,`rgba(${col},.18)`);
+      grad.addColorStop(1,`rgba(${col},0)`);
+      c.fillStyle=grad; c.beginPath(); c.arc(b.x,b.y,b.r,0,Math.PI*2); c.fill();
+      c.strokeStyle=`rgba(${col},.6)`; c.lineWidth=1;
+      c.beginPath(); c.arc(b.x,b.y,b.r,0,Math.PI*2); c.stroke();
+    }
+    for(let i=bubbles.length-1;i>=0;i--){if(bubbles[i].opacity<=0||bubbles[i].y<-50) bubbles.splice(i,1)}
+    // pops
+    for(const p of pops){
+      p.t+=0.06;
+      const rr=p.r+p.t*30;
+      c.strokeStyle=`rgba(${p.col},${1-p.t})`; c.lineWidth=1.5;
+      c.beginPath(); c.arc(p.x,p.y,rr,0,Math.PI*2); c.stroke();
+      // particles
+      for(let k=0;k<6;k++){
+        const a=k/6*Math.PI*2;
+        const px=p.x+Math.cos(a)*rr*0.85, py=p.y+Math.sin(a)*rr*0.85;
+        c.fillStyle=`rgba(${p.col},${1-p.t})`;
+        c.beginPath(); c.arc(px,py,2,0,Math.PI*2); c.fill();
+      }
+    }
+    for(let i=pops.length-1;i>=0;i--){if(pops[i].t>=1) pops.splice(i,1)}
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  function spawnLoop(){spawn(); setTimeout(spawnLoop, ri(180,800))}
+  spawnLoop();
+  setInterval(()=>minute+=1/60, 1000);
+})();
+
+// ============================================================
+// 07. PRICE PARTICLE TRAIL
+// ============================================================
+(function(){
+  const canvas=$('#v7-canvas');
+  const c=canvas.getContext('2d');
+  function resize(){canvas.width=canvas.clientWidth*2;canvas.height=canvas.clientHeight*2;c.scale(2,2)}
+  resize(); window.addEventListener('resize',resize);
+  const parts=[];
+  let mid=67450;
+  let history=Array(200).fill(67450);
+  let lastMid=mid;
+
+  function tick(){
+    mid+=rand(-3,3);
+    history.push(mid); if(history.length>200) history.shift();
+    $('#v7-mid').textContent='$'+fmtN(mid);
+    const drift = (mid-history[0])/history[0]*100;
+    $('#v7-drift').textContent = (drift>=0?'+':'')+drift.toFixed(2)+'%';
+    const range = Math.max(...history)-Math.min(...history);
+    $('#v7-range').textContent = '$'+range.toFixed(0);
+    // spawn particle at current price
+    const w=canvas.clientWidth, h=canvas.clientHeight;
+    const max=Math.max(...history), min=Math.min(...history);
+    const y = h - ((mid-min)/(max-min||1))*(h*0.7) - h*0.15;
+    const x = w-30;
+    const isUp = mid>=lastMid;
+    parts.push({x,y,vx:-rand(0.4,1.1),vy:rand(-0.2,0.2),life:1,size:rand(1.4,2.6),isUp});
+    lastMid=mid;
+    $('#v7-parts').textContent = parts.length;
+  }
+  setInterval(tick, 125);
+
+  function loop(){
+    const w=canvas.clientWidth, h=canvas.clientHeight;
+    c.fillStyle='rgba(11,14,17,.10)'; c.fillRect(0,0,w,h);
+    // draw faint price line
+    const max=Math.max(...history), min=Math.min(...history);
+    c.strokeStyle='rgba(240,185,11,.12)'; c.lineWidth=1; c.beginPath();
+    history.forEach((v,i)=>{
+      const x=(i/history.length)*w;
+      const y=h-((v-min)/(max-min||1))*(h*0.7)-h*0.15;
+      if(i===0) c.moveTo(x,y); else c.lineTo(x,y);
+    });
+    c.stroke();
+    // particles
+    for(const p of parts){
+      p.x+=p.vx; p.y+=p.vy; p.life-=0.012;
+      const col=p.isUp?'14,203,129':'246,70,93';
+      const grad=c.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size*4);
+      grad.addColorStop(0,`rgba(${col},${p.life*0.8})`);
+      grad.addColorStop(1,`rgba(${col},0)`);
+      c.fillStyle=grad; c.beginPath(); c.arc(p.x,p.y,p.size*4,0,Math.PI*2); c.fill();
+      c.fillStyle=`rgba(${col},${p.life})`;
+      c.beginPath(); c.arc(p.x,p.y,p.size,0,Math.PI*2); c.fill();
+    }
+    for(let i=parts.length-1;i>=0;i--){if(parts[i].life<=0) parts.splice(i,1)}
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+// ============================================================
+// 08. SIGNAL FORCE GRAPH (MiroFish-style)
+// ============================================================
+(function(){
+  const svg=d3.select('#v8-svg');
+  const node=$('#v8');
+  let [W,H]=[node.clientWidth, node.clientHeight];
+  svg.attr('viewBox',`0 0 ${W} ${H}`);
+
+  const CATS = {
+    bear:{c:'#F6465D'}, bull:{c:'#0ECB81'}, catalyst:{c:'#F0B90B'},
+    cluster:{c:'#A78BFA'}, collision:{c:'#F472B6'}, median:{c:'#3B82F6'},
+  };
+  const NODE_DEFS = [
+    // bear signals
+    ['RSI_OVB','bear'],['VOL_DUMP','bear'],['SHORT_SIG','bear'],['REJECT','bear'],
+    ['BREAK_DOWN','bear'],['EVL_DROP','bear'],['SHORT_SQUEEZE','bear'],
+    // bull signals
+    ['RSI_OVS','bull'],['VOL_PUMP','bull'],['LONG_SIG','bull'],['BREAKOUT','bull'],
+    ['BUY_ZONE','bull'],['BID_WALL','bull'],['MERGE','bull'],['DRIFT','bull'],
+    // catalyst (yellow, macro)
+    ['FOMC','catalyst'],['NFP','catalyst'],['CPI','catalyst'],['JOBS','catalyst'],
+    ['ETF_FLOW','catalyst'],['FED_HAWK','catalyst'],['FED_WIRE','catalyst'],
+    // cluster (purple, liquidity)
+    ['LIQ_67k','cluster'],['LIQ_68k','cluster'],['CORE','cluster'],['MASS','cluster'],
+    ['HEAVY','cluster'],['VWAP','cluster'],['EQ','cluster'],
+    // collision (pink, battle)
+    ['COLLISION','collision'],['LIQUIDATION','collision'],['RESIST','collision'],
+    ['SUPPORT','collision'],['PIVOT','collision'],
+    // median path (blue trend)
+    ['MEDIAN','median'],['TREND','median'],['BB_MID','median'],
+    // extra
+    ['FUND_FLIP','catalyst'],['OI_SPIKE','cluster'],
+  ];
+  const nodes = NODE_DEFS.map(([id,cat])=>({id,cat,c:CATS[cat].c,energy:0}));
+  // edges: random plus dense within category
+  const links=[];
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const same=nodes[i].cat===nodes[j].cat;
+      if(same && Math.random()<0.5) links.push({source:nodes[i].id,target:nodes[j].id,w:rand(0.4,0.9)});
+      else if(Math.random()<0.04) links.push({source:nodes[i].id,target:nodes[j].id,w:rand(0.15,0.4)});
+    }
+  }
+  const sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d=>d.id).distance(d=>40/d.w).strength(d=>d.w*0.5))
+    .force('charge', d3.forceManyBody().strength(-50))
+    .force('center', d3.forceCenter(W/2, H/2))
+    .force('collide', d3.forceCollide(11));
+
+  const link = svg.append('g').selectAll('line').data(links).join('line')
+    .attr('stroke',d=>d.w>0.5?'#F472B6':'#3F3F46')
+    .attr('stroke-opacity',0.18)
+    .attr('stroke-width',d=>d.w*1.1);
+  const g = svg.append('g').selectAll('g').data(nodes).join('g').style('cursor','pointer');
+  const halo = g.append('circle').attr('r',d=>5+(d.cat==='catalyst'||d.cat==='cluster'?3:0)).attr('opacity',0);
+  const core = g.append('circle').attr('r',d=>4+(d.cat==='catalyst'||d.cat==='cluster'?2:0)).attr('fill',d=>d.c).attr('stroke','#0B0E11').attr('stroke-width',1);
+  const lbl = g.append('text').attr('font-family','JetBrains Mono').attr('font-size',7).attr('fill','#848E9C').attr('dx',8).attr('dy',2).text(d=>d.id);
+
+  sim.on('tick',()=>{
+    link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+    g.attr('transform',d=>`translate(${d.x},${d.y})`);
+  });
+
+  // fire random nodes, propagate energy to neighbors
+  function fireNode(idx, energy=1, depth=0){
+    if(depth>2) return;
+    const n = nodes[idx]; n.energy = Math.min(1, n.energy + energy);
+    const neighbors = links.filter(l=>l.source.id===n.id || l.target.id===n.id);
+    neighbors.forEach(l=>{
+      if(Math.random()<l.w*0.6){
+        const otherId = l.source.id===n.id ? l.target.id : l.source.id;
+        const otherIdx = nodes.findIndex(x=>x.id===otherId);
+        setTimeout(()=>fireNode(otherIdx, energy*0.5, depth+1), 80+depth*40);
+      }
+    });
+  }
+
+  function fire(){
+    const idx = ri(0,nodes.length);
+    fireNode(idx, 1);
+  }
+  setInterval(fire, 280);
+
+  // decay + render
+  function update(){
+    nodes.forEach(n=>n.energy*=0.94);
+    halo.attr('opacity',d=>d.energy*0.55).attr('fill',d=>d.c).attr('r',d=>(5+(d.cat==='catalyst'?3:0))+d.energy*12);
+    core.attr('r',d=>{
+      const base=4+(d.cat==='catalyst'||d.cat==='cluster'?2:0);
+      return base+d.energy*3;
+    }).attr('opacity',d=>0.7+d.energy*0.3);
+    lbl.attr('opacity',d=>d.energy>0.4?1:0.4).attr('fill',d=>d.energy>0.4?d.c:'#848E9C');
+
+    // stats
+    const active = nodes.filter(n=>n.energy>0.15).length;
+    $('#v8-active').textContent = active+'/'+nodes.length;
+    const bullEn = nodes.filter(n=>n.cat==='bull').reduce((a,b)=>a+b.energy,0);
+    const bearEn = nodes.filter(n=>n.cat==='bear').reduce((a,b)=>a+b.energy,0);
+    const total = bullEn+bearEn||1;
+    const bullPct = bullEn/total, bearPct = bearEn/total;
+    const conv = Math.max(bullPct,bearPct)*100;
+    $('#v8-conv').textContent = conv.toFixed(1)+'%';
+    $('#v8-bull').textContent = Math.round(bullEn*1500);
+    $('#v8-bear').textContent = Math.round(bearEn*1500);
+    $('#v8-hubs').textContent = nodes.filter(n=>n.energy>0.5).length;
+    const dir = bullPct>0.55?'STRONG UP':bearPct>0.55?'STRONG DOWN':bullPct>bearPct?'UP':'DOWN';
+    const dirEl = $('#v8-sig');
+    dirEl.textContent = dir;
+    dirEl.className = 'v '+(dir.includes('UP')?'up':dir.includes('DOWN')?'dn':'brand');
+    $('#v8-dir').textContent = (dir.includes('UP')?'UP ':'DOWN ')+(Math.max(bullPct,bearPct)*100).toFixed(0)+'%';
+    $('#v8-dir').className = 'v num '+(dir.includes('UP')?'up':'dn');
+    $('#v8-edge').textContent = (links.reduce((a,b)=>a+b.w,0)/links.length).toFixed(2);
+    $('#v8-next').textContent = ri(2,9)+'s';
+  }
+  setInterval(update, 80);
+
+  // resize support
+  window.addEventListener('resize',()=>{
+    [W,H]=[node.clientWidth, node.clientHeight];
+    svg.attr('viewBox',`0 0 ${W} ${H}`);
+    sim.force('center', d3.forceCenter(W/2, H/2));
+    sim.alpha(0.3).restart();
+  });
+})();
+</script>
+</body>
+</html>

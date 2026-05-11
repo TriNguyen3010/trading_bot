@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>5-Dot Cluster Animations · Coin98 Style</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #000;
+    color: #eaecef;
+    font-family:
+      'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 32px;
+    min-height: 100vh;
+  }
+  h1 {
+    font-size: 28px;
+    margin-bottom: 8px;
+    color: #f0b90b;
+    letter-spacing: -0.02em;
+  }
+  .subtitle {
+    color: #848e9c;
+    margin-bottom: 28px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .subtitle b { color: #fcd535; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+  }
+  .demo {
+    background: linear-gradient(180deg, #16161a 0%, #0c0c0e 100%);
+    border-radius: 24px;
+    overflow: hidden;
+    padding: 16px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .demo .stage {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .demo canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .demo h3 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 14px;
+    color: #fcd535;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .demo h3 .num {
+    color: #848e9c;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .demo p {
+    font-size: 12px;
+    color: #b7bdc6;
+    margin-top: 6px;
+    line-height: 1.55;
+  }
+  .demo p .vibe {
+    color: #f0b90b;
+    font-style: italic;
+  }
+  .legend {
+    margin-top: 32px;
+    padding: 16px 20px;
+    background: linear-gradient(180deg, #16161a 0%, #0c0c0e 100%);
+    border-radius: 16px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    font-size: 12px;
+    color: #b7bdc6;
+  }
+  .legend strong { color: #fcd535; }
+  .pickup {
+    margin-top: 12px;
+    color: #b7bdc6;
+    font-size: 13px;
+  }
+  .pickup b { color: #f0b90b; }
+</style>
+</head>
+<body>
+
+<h1>5-Dot Cluster Animations</h1>
+<p class="subtitle">
+  7 animation patterns + baseline cho cluster 5 đốm vàng (1 center +
+  4 cardinals).
+  Sizes: <b>4</b> background · <b>8</b> cardinal · <b>12</b> centre.
+  Spacing <b>10px</b>. Drop ra browser, mở file là chạy.
+</p>
+
+<div class="grid" id="grid"></div>
+
+<div class="legend">
+  <span><strong>BASE alpha</strong> 0.12 dim grid</span>
+  <span><strong>PEAK alpha</strong> 0.98 plus dots</span>
+  <span><strong>HALO</strong> 95px radial corona</span>
+  <span><strong>BLUR</strong> 16px shadow per plus dot</span>
+</div>
+
+<p class="pickup">
+  Quan sát đến khi tìm thấy 1-2 cái mood phù hợp.
+  Báo tôi tên (ví dụ: <b>"đi với Ripple cho cả 2 beacons"</b> hoặc
+  <b>"B1 dùng Heartbeat, B2 dùng Cardinal Rotation"</b>) → tôi
+  apply vào code production.
+</p>
+
+<script>
+// === Constants matching production code ===
+const SPACING = 10;
+const DOT_R = 2;       // size 4
+const CARD_R = 4;      // size 8
+const CENTER_R = 6;    // size 12
+const HALO_R = 95;
+const BLUR = 16;
+
+const COLOR = [255, 210, 80];
+const BRIGHT = [255, 217, 96];
+const BASE_A = 0.12;
+const PEAK_A = 0.98;
+
+// === Anim functions: each returns [centre, top, right, bottom, left] in [0..1] ===
+
+const anims = {
+  baseline: (t) => {
+    const i = 0.7 + 0.3 * Math.sin((t / 3500) * Math.PI * 2);
+    return [i, i, i, i, i];
+  },
+
+  ripple: (t) => {
+    const tt = (t / 2200) * Math.PI * 2;
+    const c = 0.7 + 0.3 * Math.sin(tt);
+    const card = 0.7 + 0.3 * Math.sin(tt - 0.8);
+    return [c, card, card, card, card];
+  },
+
+  rippleInverse: (t) => {
+    const tt = (t / 2200) * Math.PI * 2;
+    const card = 0.7 + 0.3 * Math.sin(tt);
+    const c = 0.7 + 0.3 * Math.sin(tt - 0.8);
+    return [c, card, card, card, card];
+  },
+
+  heartbeat: (t) => {
+    const phase = (t % 1500) / 1500;
+    let i;
+    if (phase < 0.08) i = phase / 0.08;
+    else if (phase < 0.16) i = 1 - (phase - 0.08) / 0.08;
+    else if (phase < 0.24) i = (phase - 0.16) / 0.08;
+    else if (phase < 0.32) i = 1 - (phase - 0.24) / 0.08;
+    else i = 0;
+    i = Math.max(0.55, i);
+    return [i, i, i, i, i];
+  },
+
+  rotation: (t) => {
+    const c = 0.85;
+    const phase = (t / 3000) % 1;
+    const slot = Math.floor(phase * 4); // 0=top, 1=right, 2=bottom, 3=left
+    const slotP = (phase * 4) % 1;
+    const cards = [0.45, 0.45, 0.45, 0.45];
+    cards[slot] = 1.0;
+    cards[(slot + 1) % 4] = 0.45 + 0.55 * slotP;
+    return [c, cards[0], cards[1], cards[2], cards[3]];
+  },
+
+  counter: (t) => {
+    const tt = (t / 3000) * Math.PI * 2;
+    const c = 0.6 + 0.4 * Math.sin(tt);
+    const card = 0.6 + 0.4 * Math.sin(tt + Math.PI);
+    return [c, card, card, card, card];
+  },
+
+  twinkle: (t) => {
+    const periods = [3500, 2800, 4200, 3100, 3800];
+    const phases = [0, 1.2, 2.4, 3.6, 4.8];
+    return periods.map(
+      (p, i) => 0.65 + 0.35 * Math.sin((t / p) * Math.PI * 2 + phases[i]),
+    );
+  },
+
+  bloom: (t) => {
+    const cycle = (t % 5000) / 5000;
+    let count;
+    if (cycle < 0.4) count = 1 + Math.floor((cycle / 0.4) * 5);
+    else if (cycle < 0.6) count = 5;
+    else if (cycle < 0.95) count = 5 - Math.floor(((cycle - 0.6) / 0.35) * 5);
+    else count = 0;
+    count = Math.max(0, Math.min(5, count));
+    // Order: centre, top, right, bottom, left
+    return [
+      count >= 1 ? 1.0 : 0.05,
+      count >= 2 ? 1.0 : 0.05,
+      count >= 3 ? 1.0 : 0.05,
+      count >= 4 ? 1.0 : 0.05,
+      count >= 5 ? 1.0 : 0.05,
+    ];
+  },
+};
+
+// === Plus-pattern slot detection ===
+// 0 = centre, 1 = top, 2 = right, 3 = bottom, 4 = left, -1 = none
+function plusSlot(dx, dy) {
+  const eps = 0.6;
+  if (Math.abs(dx) < eps && Math.abs(dy) < eps) return 0;                            // centre
+  if (Math.abs(dx) < eps && Math.abs(dy + SPACING) < eps) return 1;                  // top
+  if (Math.abs(dy) < eps && Math.abs(dx - SPACING) < eps) return 2;                  // right
+  if (Math.abs(dx) < eps && Math.abs(dy - SPACING) < eps) return 3;                  // bottom
+  if (Math.abs(dy) < eps && Math.abs(dx + SPACING) < eps) return 4;                  // left
+  return -1;
+}
+
+// === Canvas / grid setup ===
+function setupCanvas(canvas) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.floor(rect.width * dpr);
+  canvas.height = Math.floor(rect.height * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: rect.width, h: rect.height };
+}
+
+function buildGrid(w, h) {
+  const dots = [];
+  const cols = Math.ceil(w / SPACING);
+  const rows = Math.ceil(h / SPACING);
+  const offX = (w - cols * SPACING) / 2 + SPACING / 2;
+  const offY = (h - rows * SPACING) / 2 + SPACING / 2;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      dots.push({ x: offX + c * SPACING, y: offY + r * SPACING });
+    }
+  }
+  return { dots, offX, offY };
+}
+
+function snapBeacon(targetX, targetY, offX, offY) {
+  const c = Math.round((targetX - offX) / SPACING);
+  const r = Math.round((targetY - offY) / SPACING);
+  return { x: offX + c * SPACING, y: offY + r * SPACING };
+}
+
+// === Frame renderer ===
+function renderFrame(ctx, w, h, dots, beacons, intensitiesPerBeacon, beamPhase = null) {
+  ctx.clearRect(0, 0, w, h);
+
+  // Beam (when 2 beacons + beamPhase provided)
+  if (beacons.length === 2 && beamPhase !== null) {
+    const [b0, b1] = beacons;
+    ctx.save();
+    ctx.shadowColor = `rgba(${COLOR[0]}, ${COLOR[1]}, ${COLOR[2]}, 0.45)`;
+    ctx.shadowBlur = 8;
+    const grad = ctx.createLinearGradient(b0.x, b0.y, b1.x, b1.y);
+    grad.addColorStop(0, `rgba(${COLOR[0]}, ${COLOR[1]}, ${COLOR[2]}, 0.55)`);
+    grad.addColorStop(0.5, `rgba(${COLOR[0]}, ${COLOR[1]}, ${COLOR[2]}, 0.16)`);
+    grad.addColorStop(1, `rgba(${COLOR[0]}, ${COLOR[1]}, ${COLOR[2]}, 0.55)`);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(b0.x, b0.y);
+    ctx.lineTo(b1.x, b1.y);
+    ctx.stroke();
+
+    // Moving energy pulse
+    const px = b0.x + (b1.x - b0.x) * beamPhase;
+    const py = b0.y + (b1.y - b0.y) * beamPhase;
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = `rgba(${BRIGHT[0]}, ${BRIGHT[1]}, ${BRIGHT[2]}, 0.95)`;
+    ctx.beginPath();
+    ctx.arc(px, py, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Beacon halos
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  beacons.forEach((b, bi) => {
+    const intensity = Math.max(...intensitiesPerBeacon[bi]);
+    const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, HALO_R);
+    grad.addColorStop(0, `rgba(${COLOR[0]}, ${COLOR[1]}, ${COLOR[2]}, ${0.45 * intensity})`);
+    grad.addColorStop(0.45, `rgba(${COLOR[0]}, ${COLOR[1]}, ${COLOR[2]}, ${0.18 * intensity})`);
+    grad.addColorStop(1, `rgba(${COLOR[0]}, ${COLOR[1]}, ${COLOR[2]}, 0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, HALO_R, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+
+  // Identify plus dots per beacon
+  const plusMap = new Map(); // dot index -> { isCenter, intensity }
+  dots.forEach((d, di) => {
+    beacons.forEach((b, bi) => {
+      const slot = plusSlot(d.x - b.x, d.y - b.y);
+      if (slot >= 0) {
+        const intensity = intensitiesPerBeacon[bi][slot];
+        const existing = plusMap.get(di);
+        if (!existing || intensity > existing.intensity) {
+          plusMap.set(di, { isCenter: slot === 0, intensity });
+        }
+      }
+    });
+  });
+
+  // Draw dim dots (skip plus members)
+  ctx.fillStyle = `rgba(${COLOR[0]}, ${COLOR[1]}, ${COLOR[2]}, ${BASE_A})`;
+  dots.forEach((d, di) => {
+    if (plusMap.has(di)) return;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, DOT_R, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Draw plus dots with shadowBlur glow
+  ctx.save();
+  plusMap.forEach((info, di) => {
+    const d = dots[di];
+    const a = PEAK_A * info.intensity;
+    if (a < 0.02) return;
+    ctx.shadowColor = `rgba(${BRIGHT[0]}, ${BRIGHT[1]}, ${BRIGHT[2]}, ${0.95 * info.intensity})`;
+    ctx.shadowBlur = BLUR;
+    ctx.fillStyle = `rgba(${BRIGHT[0]}, ${BRIGHT[1]}, ${BRIGHT[2]}, ${a})`;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, info.isCenter ? CENTER_R : CARD_R, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+// === Demo init ===
+function initSingleBeaconDemo(canvas, animKey) {
+  let setup = setupCanvas(canvas);
+  let grid = buildGrid(setup.w, setup.h);
+  let beacon = snapBeacon(setup.w / 2, setup.h / 2, grid.offX, grid.offY);
+
+  const ro = new ResizeObserver(() => {
+    setup = setupCanvas(canvas);
+    grid = buildGrid(setup.w, setup.h);
+    beacon = snapBeacon(setup.w / 2, setup.h / 2, grid.offX, grid.offY);
+  });
+  ro.observe(canvas);
+
+  function loop() {
+    const now = performance.now();
+    const intensities = [anims[animKey](now)];
+    renderFrame(setup.ctx, setup.w, setup.h, grid.dots, [beacon], intensities, null);
+    requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+function initBeamDemo(canvas) {
+  let setup = setupCanvas(canvas);
+  let grid = buildGrid(setup.w, setup.h);
+  let b0 = snapBeacon(setup.w * 0.22, setup.h * 0.5, grid.offX, grid.offY);
+  let b1 = snapBeacon(setup.w * 0.78, setup.h * 0.5, grid.offX, grid.offY);
+
+  const ro = new ResizeObserver(() => {
+    setup = setupCanvas(canvas);
+    grid = buildGrid(setup.w, setup.h);
+    b0 = snapBeacon(setup.w * 0.22, setup.h * 0.5, grid.offX, grid.offY);
+    b1 = snapBeacon(setup.w * 0.78, setup.h * 0.5, grid.offX, grid.offY);
+  });
+  ro.observe(canvas);
+
+  function loop() {
+    const now = performance.now();
+    // Pulse runs B0 → B1 over 2.5s, then loops
+    const phase = (now / 2500) % 1;
+    // Each beacon "lights up" when pulse arrives (gaussian peak)
+    const peakAt = (target) => Math.max(0, 1 - Math.abs(phase - target) * 5);
+    const i0 = 0.7 + 0.3 * peakAt(0);
+    const i1 = 0.7 + 0.3 * peakAt(1);
+    const intensities = [
+      [i0, i0, i0, i0, i0],
+      [i1, i1, i1, i1, i1],
+    ];
+    renderFrame(setup.ctx, setup.w, setup.h, grid.dots, [b0, b1], intensities, phase);
+    requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+// === Render demo cards into the grid ===
+const demos = [
+  {
+    id: 'baseline',
+    num: '0',
+    title: 'Baseline · Sync Breathe',
+    desc:
+      'Hiện tại đang dùng. Cả 5 dots breathe đồng pha sin 3.5s. <span class="vibe">Calm, predictable.</span>',
+  },
+  {
+    id: 'ripple',
+    num: '1',
+    title: 'Ripple from Centre',
+    desc:
+      'Centre sáng trước, 4 cardinals theo sau với delay 0.8 rad. <span class="vibe">Cinematic, energy emitting outward.</span>',
+  },
+  {
+    id: 'rippleInverse',
+    num: '1b',
+    title: 'Ripple — Inverse',
+    desc:
+      'Cardinals sáng trước, centre "thu năng lượng" về cuối. <span class="vibe">Implosion / focus inward.</span>',
+  },
+  {
+    id: 'heartbeat',
+    num: '2',
+    title: 'Heartbeat',
+    desc:
+      'Lub-dub: 2 pulse nhanh rồi nghỉ dài (1.5s loop). <span class="vibe">Sống động, có nhịp.</span>',
+  },
+  {
+    id: 'rotation',
+    num: '3',
+    title: 'Cardinal Rotation',
+    desc:
+      'Centre sáng đều. Từng cardinal sáng nhất theo chiều kim đồng hồ. <span class="vibe">Radar scanning.</span>',
+  },
+  {
+    id: 'counter',
+    num: '4',
+    title: 'Counter-Phase',
+    desc:
+      'Centre vs cardinals đối nghịch — bright khi cái kia dim. <span class="vibe">Hypnotic, contemplative.</span>',
+  },
+  {
+    id: 'beam',
+    num: '5',
+    title: 'Beam-Synced Flow',
+    desc:
+      '2 beacons + pulse di chuyển dọc beam. Beacon bùng sáng khi pulse đến. <span class="vibe">Network nodes communicating.</span>',
+    isBeam: true,
+  },
+  {
+    id: 'twinkle',
+    num: '6',
+    title: 'Twinkle Scatter',
+    desc:
+      '5 dots pulse độc lập, 5 chu kỳ khác nhau (2.8s..4.2s). <span class="vibe">Organic, never the same.</span>',
+  },
+  {
+    id: 'bloom',
+    num: '7',
+    title: 'Bloom / Wilt',
+    desc:
+      'Cluster nở từng cánh (centre → top → right → bottom → left) rồi tàn ngược. <span class="vibe">Flower blooming.</span>',
+  },
+];
+
+const grid = document.getElementById('grid');
+demos.forEach((d) => {
+  const card = document.createElement('div');
+  card.className = 'demo';
+  card.innerHTML = `
+    <div class="stage"><canvas></canvas></div>
+    <h3><span class="num">#${d.num}</span> ${d.title}</h3>
+    <p>${d.desc}</p>
+  `;
+  grid.appendChild(card);
+  const canvas = card.querySelector('canvas');
+  if (d.isBeam) {
+    initBeamDemo(canvas);
+  } else {
+    initSingleBeaconDemo(canvas, d.id);
+  }
+});
+</script>
+
+</body>
+</html>

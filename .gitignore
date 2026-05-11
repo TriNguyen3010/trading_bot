@@ -41,3 +41,10 @@ coverage
 
 # superpowers brainstorming artifacts (mockups, sessions)
 .superpowers/
+
+# claude local
+.claude/settings.local.json
+.claude/worktrees/
+
+# temp files
+_tmp_*

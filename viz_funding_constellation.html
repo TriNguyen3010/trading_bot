@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Funding Rate Constellation · Detailed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<style>
+:root{
+  --bg-base:#0B0E11; --bg-surface:#14181F; --bg-elevated:#1E2329;
+  --bg-hover:#2B3139; --bg-input:#181C22;
+  --border-subtle:#1E2329; --border-default:#2B3139; --border-strong:#474D57;
+  --text-primary:#EAECEF; --text-secondary:#B7BDC6; --text-tertiary:#848E9C;
+  --brand-primary:#F0B90B; --brand-subtle:rgba(240,185,11,0.10); --brand-glow:rgba(240,185,11,0.4);
+  --bullish:#0ECB81; --bullish-subtle:rgba(14,203,129,0.12);
+  --bearish:#F6465D; --bearish-subtle:rgba(246,70,93,0.12);
+  --info:#3B82F6; --purple:#A78BFA; --pink:#F472B6;
+  --radius-sm:4px; --radius-md:6px; --radius-lg:8px; --radius-xl:12px;
+  --font-sans:'Inter',-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono','SF Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  background:var(--bg-base);color:var(--text-primary);
+  font-family:var(--font-sans);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;height:100vh;overflow:hidden;
+}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+
+/* TOPBAR */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 24px;background:var(--bg-surface);
+  border-bottom:1px solid var(--border-subtle);height:56px;
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand .logo{font-weight:700;color:var(--brand-primary);letter-spacing:-.3px}
+.brand .sep{width:1px;height:18px;background:var(--border-default)}
+.brand .title{font-size:14px;font-weight:600}
+.brand .pill{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 10px;
+  background:var(--bullish-subtle);color:var(--bullish);
+  border-radius:var(--radius-sm);font-size:11px;font-weight:600;
+}
+.brand .pill .dot{width:6px;height:6px;border-radius:50%;background:var(--bullish);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.controls{display:flex;align-items:center;gap:14px;color:var(--text-tertiary);font-size:12px}
+.range-pills{display:flex;background:var(--bg-elevated);border:1px solid var(--border-default);border-radius:var(--radius-md);overflow:hidden}
+.range-pills button{
+  background:transparent;border:0;color:var(--text-secondary);
+  padding:5px 12px;font:inherit;font-size:11px;cursor:pointer;font-weight:500;
+}
+.range-pills button:hover{color:var(--text-primary)}
+.range-pills button.active{background:var(--brand-subtle);color:var(--brand-primary)}
+
+/* LAYOUT */
+.layout{
+  display:grid;grid-template-columns:1fr 360px;gap:14px;
+  padding:14px;height:calc(100vh - 56px);
+}
+.main-viz{
+  position:relative;background:var(--bg-surface);
+  border:1px solid var(--border-subtle);border-radius:var(--radius-lg);
+  overflow:hidden;
+}
+#viz{display:block;width:100%;height:100%}
+
+/* SIDE PANELS */
+.side{display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.panel{
+  background:var(--bg-surface);border:1px solid var(--border-subtle);
+  border-radius:var(--radius-lg);padding:12px 14px;
+}
+.panel h4{
+  font-size:11px;font-weight:600;color:var(--text-tertiary);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.panel h4 .v{font-family:var(--font-mono);color:var(--text-primary);text-transform:none;letter-spacing:0;font-size:11px}
+
+/* BIAS METER */
+.bias{display:flex;flex-direction:column;gap:8px}
+.bias-bar{
+  height:14px;background:var(--bg-input);border-radius:var(--radius-sm);
+  display:flex;overflow:hidden;border:1px solid var(--border-default);
+}
+.bias-bar .l{background:linear-gradient(90deg,var(--bullish),rgba(14,203,129,.5));transition:width .4s ease}
+.bias-bar .r{background:linear-gradient(270deg,var(--bearish),rgba(246,70,93,.5));transition:width .4s ease}
+.bias-stats{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12px}
+.bias-stats .up{color:var(--bullish)}
+.bias-stats .dn{color:var(--bearish)}
+.bias-summary{font-size:11px;color:var(--text-tertiary);text-align:center;margin-top:4px}
+.bias-summary b{color:var(--brand-primary)}
+
+/* MOVERS LIST */
+.movers{display:flex;flex-direction:column;gap:7px}
+.mover-row{
+  display:grid;grid-template-columns:48px 60px 1fr 60px;gap:8px;
+  align-items:center;padding:6px 8px;background:var(--bg-elevated);
+  border-radius:var(--radius-sm);font-size:12px;cursor:pointer;
+  transition:background .15s;
+}
+.mover-row:hover{background:var(--bg-hover)}
+.mover-row .sym{font-weight:600;font-family:var(--font-mono)}
+.mover-row .fund{font-family:var(--font-mono);font-weight:700;text-align:right}
+.mover-row .fund.up{color:var(--bearish)}
+.mover-row .fund.dn{color:var(--bullish)}
+.mover-row .spark{height:18px}
+.mover-row .oi{font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);text-align:right}
+
+/* FLIPS LIST */
+.flips{display:flex;flex-direction:column;gap:6px}
+.flip-row{
+  display:grid;grid-template-columns:48px 1fr 80px;gap:8px;
+  align-items:center;padding:6px 8px;background:var(--bg-elevated);
+  border-radius:var(--radius-sm);font-size:11px;
+}
+.flip-row .sym{font-family:var(--font-mono);font-weight:600;font-size:12px}
+.flip-row .desc{color:var(--text-tertiary);font-size:10px}
+.flip-row .desc .arrow{margin:0 4px}
+.flip-row .ago{font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);text-align:right}
+.flip-empty{font-size:11px;color:var(--text-tertiary);text-align:center;padding:12px}
+
+/* PINNED CARD */
+.pinned-empty{
+  font-size:12px;color:var(--text-tertiary);text-align:center;
+  padding:18px 8px;font-style:italic;
+}
+.pinned-card{display:flex;flex-direction:column;gap:10px}
+.pinned-head{display:flex;align-items:center;justify-content:space-between}
+.pinned-sym{font-family:var(--font-mono);font-weight:700;font-size:18px}
+.pinned-sector{
+  font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  padding:2px 6px;border-radius:var(--radius-sm);
+}
+.pinned-fund{
+  font-family:var(--font-mono);font-size:24px;font-weight:700;line-height:1;
+}
+.pinned-fund.up{color:var(--bearish)}
+.pinned-fund.dn{color:var(--bullish)}
+.pinned-spark{height:36px;background:var(--bg-elevated);border-radius:var(--radius-sm);padding:6px}
+.pinned-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pinned-stat{background:var(--bg-elevated);padding:6px 8px;border-radius:var(--radius-sm)}
+.pinned-stat .l{font-size:10px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em}
+.pinned-stat .v{font-family:var(--font-mono);font-weight:600;font-size:12px;margin-top:2px}
+.pinned-cost{
+  font-size:11px;color:var(--text-tertiary);padding:6px 0;
+  border-top:1px solid var(--border-subtle);
+}
+.pinned-cost b{color:var(--brand-primary);font-family:var(--font-mono)}
+
+/* TOOLTIP */
+.tooltip{
+  position:absolute;background:var(--bg-elevated);border:1px solid var(--border-default);
+  border-radius:var(--radius-md);padding:8px 10px;font-size:11px;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);pointer-events:none;z-index:50;
+  min-width:160px;
+}
+.tooltip .sym{font-family:var(--font-mono);font-weight:700;font-size:13px;margin-bottom:4px}
+.tooltip .row{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;margin-top:2px}
+.tooltip .row .l{color:var(--text-tertiary)}
+.tooltip .row .v.up{color:var(--bearish)}
+.tooltip .row .v.dn{color:var(--bullish)}
+
+/* AXIS / GRID */
+.axis-label{font-family:var(--font-mono);font-size:10px;fill:var(--text-tertiary);letter-spacing:.04em}
+.axis-line{stroke:var(--border-default);stroke-width:1}
+.zero-line{stroke:var(--border-strong);stroke-dasharray:3 3;stroke-width:1}
+.grid-line{stroke:var(--border-subtle);stroke-width:1}
+.bg-tint{opacity:.04}
+
+/* QUADRANT LEGEND */
+.legend-overlay{
+  position:absolute;left:14px;bottom:14px;
+  background:rgba(11,14,17,.88);border:1px solid var(--border-default);
+  border-radius:var(--radius-md);padding:10px 12px;
+  font-size:11px;line-height:1.5;color:var(--text-secondary);max-width:300px;
+}
+.legend-overlay b{color:var(--text-primary)}
+.legend-overlay .key{display:flex;align-items:center;gap:6px;margin-top:4px}
+.legend-overlay .key .dot{width:8px;height:8px;border-radius:50%}
+
+/* HEADER STATS BAR */
+.macro-bar{
+  position:absolute;top:14px;left:14px;right:14px;display:flex;gap:14px;
+  background:rgba(11,14,17,.88);border:1px solid var(--border-default);
+  border-radius:var(--radius-md);padding:8px 14px;font-size:11px;
+  pointer-events:none;
+}
+.macro-bar .item{display:flex;flex-direction:column;gap:2px}
+.macro-bar .l{color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.08em;font-size:10px}
+.macro-bar .v{font-family:var(--font-mono);font-weight:700}
+.macro-bar .v.up{color:var(--bearish)}
+.macro-bar .v.dn{color:var(--bullish)}
+.macro-bar .v.brand{color:var(--brand-primary)}
+.macro-bar .sep{width:1px;background:var(--border-default);margin:2px 0}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">⚡ TradeBot</span>
+    <span class="sep"></span>
+    <span class="title">Funding Rate Constellation</span>
+    <span class="pill"><span class="dot"></span>LIVE · 30 PAIRS</span>
+  </div>
+  <div class="controls">
+    <span>Hyperliquid · <span class="num" id="updated">just now</span></span>
+    <div class="range-pills">
+      <button data-range="1h">1H</button>
+      <button data-range="4h">4H</button>
+      <button class="active" data-range="24h">24H</button>
+      <button data-range="7d">7D</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- MAIN VIZ -->
+  <div class="main-viz">
+    <svg id="viz">
+      <g id="bg-tints"></g>
+      <g id="bg-dots"></g>
+      <g id="grid"></g>
+      <g id="axis"></g>
+      <g id="bubbles"></g>
+      <g id="overlay"></g>
+    </svg>
+    <div class="macro-bar" id="macro-bar"></div>
+    <div class="legend-overlay">
+      <b>Cách đọc</b><br>
+      Mỗi điểm = 1 perp pair. <b>X</b> = funding rate (trái âm, phải dương). <b>Y</b> = OI (trên = nhiều tiền treo). <b>Size</b> ∝ OI. <b>Glow</b> ∝ |funding|. Cluster phải-trên = whale crowding theo hướng đó.
+      <div class="key"><span class="dot" style="background:var(--bearish)"></span><span><b>Funding +</b> · longs trả phí (heavy long)</span></div>
+      <div class="key"><span class="dot" style="background:var(--bullish)"></span><span><b>Funding −</b> · shorts trả phí (heavy short)</span></div>
+    </div>
+    <div class="tooltip" id="tip" style="display:none"></div>
+  </div>
+
+  <!-- SIDE PANELS -->
+  <aside class="side">
+
+    <!-- BIAS METER -->
+    <div class="panel">
+      <h4>Market funding bias <span class="v" id="bias-stamp">weighted by OI</span></h4>
+      <div class="bias">
+        <div class="bias-bar">
+          <div class="l" id="bias-l" style="width:40%"></div>
+          <div class="r" id="bias-r" style="width:60%"></div>
+        </div>
+        <div class="bias-stats">
+          <span class="up"><span id="bias-l-pct">40%</span> shorts paying</span>
+          <span class="dn"><span id="bias-r-pct">60%</span> longs paying</span>
+        </div>
+        <div class="bias-summary">Net bias: <b id="bias-summary">market leans LONG · contrarian short setup</b></div>
+      </div>
+    </div>
+
+    <!-- TOP MOVERS -->
+    <div class="panel">
+      <h4>Highest funding (most paid) <span class="v" id="paid-total">$24.8M/h</span></h4>
+      <div class="movers" id="movers"></div>
+    </div>
+
+    <!-- RECENT FLIPS -->
+    <div class="panel">
+      <h4>Recent flips <span class="v" id="flip-count">0 in 1h</span></h4>
+      <div class="flips" id="flips"></div>
+    </div>
+
+    <!-- PINNED -->
+    <div class="panel" id="pinned-panel">
+      <h4>Pinned pair</h4>
+      <div class="pinned-empty" id="pinned-empty">Click a star để pin và xem chi tiết.</div>
+      <div class="pinned-card" id="pinned-card" style="display:none"></div>
+    </div>
+
+  </aside>
+</div>
+
+<script>
+const $ = s=>document.querySelector(s);
+const rand = (a,b)=>a+Math.random()*(b-a);
+const ri = (a,b)=>Math.floor(rand(a,b));
+const fmtPct = v=>(v>=0?'+':'')+v.toFixed(4)+'%';
+const fmtPctShort = v=>(v>=0?'+':'')+v.toFixed(3)+'%';
+const fmtUSD = v => v>=1e9 ? '$'+(v/1e9).toFixed(2)+'B' : v>=1e6 ? '$'+(v/1e6).toFixed(1)+'M' : v>=1e3 ? '$'+(v/1e3).toFixed(0)+'k' : '$'+Math.round(v);
+
+// ============================================================
+// SECTORS
+// ============================================================
+const SECTORS = {
+  major:{c:'#F0B90B', label:'Major'},
+  l1:   {c:'#EAECEF', label:'L1'},
+  defi: {c:'#0ECB81', label:'DeFi'},
+  l2:   {c:'#3B82F6', label:'L2'},
+  ai:   {c:'#A78BFA', label:'AI'},
+  meme: {c:'#F472B6', label:'Meme'},
+};
+
+// ============================================================
+// PAIRS — 30 named foreground pairs with realistic shape
+// ============================================================
+const PAIRS = [
+  {sym:'BTC',  sector:'major', oi:850e6,  funding: 0.0042},
+  {sym:'ETH',  sector:'major', oi:520e6,  funding: 0.0028},
+  {sym:'SOL',  sector:'major', oi:280e6,  funding: 0.0095},
+  {sym:'BNB',  sector:'major', oi: 95e6,  funding:-0.0012},
+  {sym:'XRP',  sector:'major', oi: 70e6,  funding: 0.0024},
+
+  {sym:'AVAX', sector:'l1',    oi: 78e6,  funding: 0.0048},
+  {sym:'NEAR', sector:'l1',    oi: 42e6,  funding: 0.0072},
+  {sym:'TON',  sector:'l1',    oi: 32e6,  funding: 0.0018},
+  {sym:'INJ',  sector:'l1',    oi: 26e6,  funding:-0.0124},
+  {sym:'SUI',  sector:'l1',    oi: 38e6,  funding: 0.0156},
+  {sym:'APT',  sector:'l1',    oi: 22e6,  funding:-0.0026},
+  {sym:'ATOM', sector:'l1',    oi: 16e6,  funding: 0.0006},
+
+  {sym:'UNI',  sector:'defi',  oi: 38e6,  funding: 0.0018},
+  {sym:'AAVE', sector:'defi',  oi: 32e6,  funding:-0.0098},
+  {sym:'MKR',  sector:'defi',  oi: 22e6,  funding: 0.0008},
+  {sym:'CRV',  sector:'defi',  oi: 18e6,  funding:-0.0142},
+  {sym:'LDO',  sector:'defi',  oi: 25e6,  funding:-0.0054},
+
+  {sym:'ARB',  sector:'l2',    oi: 52e6,  funding: 0.0124},
+  {sym:'OP',   sector:'l2',    oi: 42e6,  funding: 0.0148},
+  {sym:'MATIC',sector:'l2',    oi: 34e6,  funding:-0.0034},
+  {sym:'STRK', sector:'l2',    oi: 16e6,  funding:-0.0084},
+  {sym:'MNT',  sector:'l2',    oi: 12e6,  funding: 0.0042},
+
+  {sym:'FET',  sector:'ai',    oi: 46e6,  funding: 0.0234},
+  {sym:'RNDR', sector:'ai',    oi: 34e6,  funding: 0.0184},
+  {sym:'TAO',  sector:'ai',    oi: 38e6,  funding: 0.0312},
+  {sym:'WLD',  sector:'ai',    oi: 28e6,  funding: 0.0124},
+
+  {sym:'DOGE', sector:'meme',  oi: 98e6,  funding: 0.0182},
+  {sym:'PEPE', sector:'meme',  oi: 56e6,  funding: 0.1240},
+  {sym:'WIF',  sector:'meme',  oi: 34e6,  funding: 0.0820},
+  {sym:'BONK', sector:'meme',  oi: 28e6,  funding: 0.0560},
+  {sym:'SHIB', sector:'meme',  oi: 30e6,  funding: 0.0280},
+];
+PAIRS.forEach(p=>{
+  p.history = [];
+  for(let i=0;i<30;i++) p.history.push(p.funding + rand(-0.003,0.003));
+  p.history.push(p.funding);
+});
+
+// background dots — fake the rest of ~100 small pairs
+const BG_DOTS = Array(120).fill(0).map(()=>({
+  funding: rand(-0.05, 0.08) + (Math.random()<0.1 ? rand(-0.1,0.15) : 0),
+  oi: Math.exp(rand(13.8, 16.2)), // ~1M to 12M USD
+  twinkle: rand(0,Math.PI*2),
+  r: rand(0.8, 1.6),
+}));
+
+// ============================================================
+// SVG SETUP
+// ============================================================
+const svg = d3.select('#viz');
+const main = $('.main-viz');
+let W=0, H=0;
+const margin = {top:54, right:40, bottom:50, left:44};
+
+function resize(){
+  W = main.clientWidth;
+  H = main.clientHeight;
+  svg.attr('viewBox', `0 0 ${W} ${H}`);
+  draw();
+}
+window.addEventListener('resize', resize);
+
+let xScale, yScale;
+function recalcScales(){
+  xScale = d3.scaleLinear()
+    .domain([-0.05, 0.13])
+    .range([margin.left, W - margin.right])
+    .clamp(true);
+  yScale = d3.scaleLog()
+    .domain([8e5, 1.2e9])
+    .range([H - margin.bottom, margin.top])
+    .clamp(true);
+}
+
+// ============================================================
+// AXIS + GRID + BG TINTS
+// ============================================================
+function drawAxis(){
+  const g = svg.select('#axis');
+  g.selectAll('*').remove();
+  // X axis line
+  g.append('line').attr('class','axis-line')
+    .attr('x1', margin.left).attr('x2', W-margin.right)
+    .attr('y1', H-margin.bottom).attr('y2', H-margin.bottom);
+  // Y axis line
+  g.append('line').attr('class','axis-line')
+    .attr('x1', margin.left).attr('x2', margin.left)
+    .attr('y1', margin.top).attr('y2', H-margin.bottom);
+  // X ticks
+  const xTicks = [-0.04, -0.02, 0, 0.02, 0.05, 0.10];
+  xTicks.forEach(t=>{
+    const x = xScale(t);
+    if(x<margin.left || x>W-margin.right) return;
+    g.append('line').attr('class', t===0?'zero-line':'grid-line')
+      .attr('x1',x).attr('x2',x).attr('y1',margin.top).attr('y2',H-margin.bottom);
+    g.append('text').attr('class','axis-label')
+      .attr('x',x).attr('y',H-margin.bottom+14).attr('text-anchor','middle')
+      .text((t>0?'+':'')+(t*100).toFixed(t===0?0:t<0.01?1:0)+'%');
+  });
+  // Y ticks (log)
+  [1e6, 1e7, 1e8, 1e9].forEach(v=>{
+    const y = yScale(v);
+    g.append('line').attr('class','grid-line')
+      .attr('x1',margin.left).attr('x2',W-margin.right).attr('y1',y).attr('y2',y);
+    g.append('text').attr('class','axis-label')
+      .attr('x',margin.left-8).attr('y',y+3).attr('text-anchor','end')
+      .text(fmtUSD(v));
+  });
+  // Axis titles
+  g.append('text').attr('class','axis-label').attr('x',W/2).attr('y',H-12).attr('text-anchor','middle')
+    .style('font-weight','600').style('letter-spacing','.08em').style('text-transform','uppercase')
+    .text('FUNDING RATE (per hour) →');
+  g.append('text').attr('class','axis-label').attr('x',-(H/2)).attr('y',12).attr('text-anchor','middle')
+    .attr('transform','rotate(-90)')
+    .style('font-weight','600').style('letter-spacing','.08em').style('text-transform','uppercase')
+    .text('OPEN INTEREST (log) ↑');
+}
+
+function drawTints(){
+  const g = svg.select('#bg-tints');
+  g.selectAll('*').remove();
+  const zeroX = xScale(0);
+  // left side green tint
+  g.append('rect').attr('class','bg-tint')
+    .attr('x',margin.left).attr('y',margin.top)
+    .attr('width',Math.max(0,zeroX-margin.left)).attr('height',H-margin.top-margin.bottom)
+    .attr('fill','var(--bullish)');
+  // right side red tint
+  g.append('rect').attr('class','bg-tint')
+    .attr('x',zeroX).attr('y',margin.top)
+    .attr('width',Math.max(0,W-margin.right-zeroX)).attr('height',H-margin.top-margin.bottom)
+    .attr('fill','var(--bearish)');
+}
+
+// ============================================================
+// BACKGROUND DOTS — the rest of the ~100 small pairs
+// ============================================================
+let bgDotsG;
+function drawBgDots(){
+  bgDotsG = svg.select('#bg-dots');
+  bgDotsG.selectAll('*').remove();
+  bgDotsG.selectAll('circle').data(BG_DOTS).join('circle')
+    .attr('cx', d => xScale(Math.max(-0.05, Math.min(0.13, d.funding))))
+    .attr('cy', d => yScale(d.oi))
+    .attr('r', d => d.r)
+    .attr('fill', d => d.funding>0?'#F6465D':'#0ECB81')
+    .attr('opacity', d => 0.18 + 0.18*Math.sin(d.twinkle));
+}
+
+function tickBgDots(){
+  BG_DOTS.forEach(d=>{
+    d.twinkle += 0.035;
+    d.funding += rand(-0.0008, 0.0008);
+    d.oi *= 1 + rand(-0.005, 0.005);
+  });
+  if(!bgDotsG) return;
+  bgDotsG.selectAll('circle')
+    .attr('cx', d => xScale(Math.max(-0.05, Math.min(0.13, d.funding))))
+    .attr('cy', d => yScale(Math.max(8e5, Math.min(1.2e9, d.oi))))
+    .attr('fill', d => d.funding>0?'#F6465D':'#0ECB81')
+    .attr('opacity', d => 0.15 + 0.18*Math.sin(d.twinkle));
+}
+
+// ============================================================
+// FOREGROUND BUBBLES
+// ============================================================
+let bubbleG, pinned=null;
+
+function bubbleR(p){
+  return 4 + Math.log10(p.oi/1e6) * 2.6;
+}
+function bubbleColor(p){
+  // sector color blended with funding
+  const sectorCol = SECTORS[p.sector].c;
+  // strong color when |funding| big, sector color subtle when neutral
+  const intensity = Math.min(1, Math.abs(p.funding)/0.05);
+  const fundCol = p.funding > 0 ? '#F6465D' : '#0ECB81';
+  return d3.interpolateRgb(sectorCol, fundCol)(0.4 + intensity*0.5);
+}
+function bubbleGlow(p){
+  return Math.min(0.55, Math.abs(p.funding)/0.05);
+}
+
+function drawBubbles(){
+  bubbleG = svg.select('#bubbles');
+  bubbleG.selectAll('*').remove();
+  const node = bubbleG.selectAll('g').data(PAIRS, d=>d.sym).join('g')
+    .attr('class','bubble')
+    .style('cursor','pointer')
+    .on('mouseenter', (e,d)=>showTip(e,d))
+    .on('mousemove', (e,d)=>moveTip(e))
+    .on('mouseleave', hideTip)
+    .on('click', (e,d)=>pinPair(d));
+
+  node.append('circle').attr('class','halo')
+    .attr('r', d => bubbleR(d)*2.4).attr('opacity',0).attr('fill', d => bubbleColor(d));
+  node.append('circle').attr('class','core')
+    .attr('r', d => bubbleR(d))
+    .attr('fill', d => bubbleColor(d))
+    .attr('stroke', '#0B0E11').attr('stroke-width', 1.2);
+  node.append('text').attr('class','lbl')
+    .attr('font-family','JetBrains Mono').attr('font-weight','700').attr('font-size', d => bubbleR(d)>7?11:9)
+    .attr('fill','#EAECEF').attr('dx', d => bubbleR(d)+5).attr('dy', 4)
+    .text(d=>d.sym);
+  node.append('text').attr('class','sub')
+    .attr('font-family','JetBrains Mono').attr('font-size',9)
+    .attr('fill','#848E9C').attr('dx', d => bubbleR(d)+5).attr('dy', 16)
+    .text(d=>fmtPctShort(p_funding_pct(d)));
+
+  positionBubbles();
+}
+
+function p_funding_pct(p){return p.funding}
+
+function positionBubbles(){
+  if(!bubbleG) return;
+  bubbleG.selectAll('g.bubble').transition().duration(400)
+    .attr('transform', d => `translate(${xScale(Math.max(-0.05, Math.min(0.13, d.funding)))}, ${yScale(d.oi)})`);
+  bubbleG.selectAll('g.bubble').select('.core').transition().duration(400)
+    .attr('fill', d => bubbleColor(d))
+    .attr('r', d => bubbleR(d));
+  bubbleG.selectAll('g.bubble').select('.halo').transition().duration(400)
+    .attr('opacity', d => bubbleGlow(d))
+    .attr('fill', d => bubbleColor(d))
+    .attr('r', d => bubbleR(d)*2.4);
+  bubbleG.selectAll('g.bubble').select('.sub').text(d=>fmtPctShort(d.funding));
+}
+
+// ============================================================
+// TOOLTIP
+// ============================================================
+const tip = $('#tip');
+function showTip(e, p){
+  tip.style.display='block';
+  tip.innerHTML = `
+    <div class="sym">${p.sym}<span style="float:right;color:var(--text-tertiary);font-size:10px">${SECTORS[p.sector].label}</span></div>
+    <div class="row"><span class="l">Funding (1h)</span><span class="v ${p.funding>0?'up':'dn'}">${fmtPct(p.funding)}</span></div>
+    <div class="row"><span class="l">OI</span><span>${fmtUSD(p.oi)}</span></div>
+    <div class="row"><span class="l">8h annualized</span><span>${fmtPct(p.funding*8*365)}</span></div>
+    <div class="row" style="margin-top:6px;border-top:1px solid var(--border-subtle);padding-top:4px;color:var(--text-tertiary);font-size:10px">Click để pin</div>
+  `;
+  moveTip(e);
+}
+function moveTip(e){
+  const rect = main.getBoundingClientRect();
+  let x = e.clientX - rect.left + 14, y = e.clientY - rect.top + 14;
+  if(x + 180 > rect.width) x = e.clientX - rect.left - 180;
+  if(y + 110 > rect.height) y = e.clientY - rect.top - 110;
+  tip.style.left = x+'px'; tip.style.top = y+'px';
+}
+function hideTip(){ tip.style.display='none'; }
+
+// ============================================================
+// PIN PAIR
+// ============================================================
+function pinPair(p){
+  pinned = p;
+  $('#pinned-empty').style.display='none';
+  const card = $('#pinned-card');
+  card.style.display='';
+  card.innerHTML = `
+    <div class="pinned-head">
+      <div class="pinned-sym">${p.sym}</div>
+      <div class="pinned-sector" style="background:${SECTORS[p.sector].c}22;color:${SECTORS[p.sector].c}">${SECTORS[p.sector].label}</div>
+    </div>
+    <div class="pinned-fund ${p.funding>0?'up':'dn'}">${fmtPct(p.funding)}</div>
+    <svg class="pinned-spark" id="pinned-spark" preserveAspectRatio="none"></svg>
+    <div class="pinned-stats">
+      <div class="pinned-stat"><div class="l">Open Interest</div><div class="v">${fmtUSD(p.oi)}</div></div>
+      <div class="pinned-stat"><div class="l">8h annualized</div><div class="v ${p.funding>0?'up':'dn'}" style="color:${p.funding>0?'var(--bearish)':'var(--bullish)'}">${fmtPct(p.funding*8*365)}</div></div>
+      <div class="pinned-stat"><div class="l">Direction</div><div class="v" style="color:${p.funding>0?'var(--bearish)':'var(--bullish)'}">${p.funding>0?'LONGS PAY':'SHORTS PAY'}</div></div>
+      <div class="pinned-stat"><div class="l">Bias</div><div class="v">${Math.abs(p.funding)>0.02?'CROWDED':Math.abs(p.funding)>0.005?'TILT':'NEUTRAL'}</div></div>
+    </div>
+    <div class="pinned-cost">
+      Phí cho 1 vị thế <b>$10,000</b> theo hướng đông: <b>~$${Math.abs(p.funding*10000*8).toFixed(2)}/ngày</b> · ~$${Math.abs(p.funding*10000*8*30).toFixed(0)}/tháng
+    </div>
+  `;
+  drawPinnedSpark();
+}
+
+function drawPinnedSpark(){
+  if(!pinned) return;
+  const sv = d3.select('#pinned-spark');
+  if(sv.empty()) return;
+  const w = sv.node().clientWidth, h = sv.node().clientHeight;
+  sv.attr('viewBox', `0 0 ${w} ${h}`);
+  sv.selectAll('*').remove();
+  const data = pinned.history;
+  const min = Math.min(...data), max = Math.max(...data);
+  const xs = i => (i/(data.length-1))*w;
+  const ys = v => h - ((v-min)/(max-min || 1))*(h*0.85) - h*0.075;
+  const line = d3.line().x((_,i)=>xs(i)).y(d=>ys(d));
+  const area = d3.area().x((_,i)=>xs(i)).y0(h).y1(d=>ys(d));
+  // zero line
+  if(min<0 && max>0){
+    sv.append('line').attr('x1',0).attr('x2',w).attr('y1',ys(0)).attr('y2',ys(0))
+      .attr('stroke','#474D57').attr('stroke-dasharray','2 2').attr('stroke-width',0.5);
+  }
+  const col = pinned.funding>0?'#F6465D':'#0ECB81';
+  sv.append('path').attr('d', area(data)).attr('fill',col).attr('opacity',0.18);
+  sv.append('path').attr('d', line(data)).attr('fill','none').attr('stroke',col).attr('stroke-width',1.5);
+  // last point
+  sv.append('circle').attr('cx', xs(data.length-1)).attr('cy', ys(data[data.length-1])).attr('r',2.5).attr('fill',col);
+}
+
+// ============================================================
+// SIDE: BIAS METER
+// ============================================================
+function updateBias(){
+  let longPay=0, shortPay=0;
+  PAIRS.forEach(p=>{
+    if(p.funding>0) longPay += p.oi * p.funding;
+    else shortPay += p.oi * Math.abs(p.funding);
+  });
+  const total = longPay + shortPay || 1;
+  const lPct = shortPay/total*100, rPct = longPay/total*100;
+  $('#bias-l').style.width = lPct+'%';
+  $('#bias-r').style.width = rPct+'%';
+  $('#bias-l-pct').textContent = lPct.toFixed(0)+'%';
+  $('#bias-r-pct').textContent = rPct.toFixed(0)+'%';
+
+  let summary;
+  if(rPct>62) summary = 'market <b>heavy LONG</b> — contrarian short setup, watch for unwind';
+  else if(lPct>62) summary = 'market <b>heavy SHORT</b> — squeeze risk, watch for rip';
+  else if(rPct>52) summary = 'market <b>tilts long</b> — caution on breakouts up';
+  else if(lPct>52) summary = 'market <b>tilts short</b> — caution on breakdowns';
+  else summary = 'market <b>balanced</b> — no funding edge';
+  $('#bias-summary').innerHTML = 'Net bias: '+summary;
+
+  // total funding paid in 1h (USD)
+  const totalPaidPerHour = PAIRS.reduce((a,p)=>a+Math.abs(p.oi*p.funding), 0);
+  $('#paid-total').textContent = fmtUSD(totalPaidPerHour)+'/h';
+}
+
+// ============================================================
+// SIDE: TOP MOVERS
+// ============================================================
+function updateMovers(){
+  const sorted = [...PAIRS].sort((a,b)=>Math.abs(b.funding)-Math.abs(a.funding)).slice(0,8);
+  const root = $('#movers');
+  root.innerHTML = sorted.map(p=>{
+    const sparkId = 'spark-'+p.sym;
+    return `<div class="mover-row" onclick="window._pinSym('${p.sym}')">
+      <div class="sym" style="color:${SECTORS[p.sector].c}">${p.sym}</div>
+      <svg class="spark" id="${sparkId}" preserveAspectRatio="none"></svg>
+      <div class="oi">${fmtUSD(p.oi)}</div>
+      <div class="fund ${p.funding>0?'up':'dn'}">${fmtPctShort(p.funding)}</div>
+    </div>`;
+  }).join('');
+  sorted.forEach(p=>{
+    const sv = d3.select('#spark-'+p.sym);
+    const node = sv.node(); if(!node) return;
+    const w = node.clientWidth || 100, h = 18;
+    sv.attr('viewBox',`0 0 ${w} ${h}`);
+    sv.selectAll('*').remove();
+    const data = p.history.slice(-20);
+    const min = Math.min(...data), max = Math.max(...data);
+    const xs = i => (i/(data.length-1))*w;
+    const ys = v => h - ((v-min)/(max-min || 1))*(h-2) - 1;
+    const line = d3.line().x((_,i)=>xs(i)).y(d=>ys(d));
+    sv.append('path').attr('d', line(data)).attr('fill','none')
+      .attr('stroke', p.funding>0?'#F6465D':'#0ECB81').attr('stroke-width',1.2);
+  });
+}
+window._pinSym = sym => { const p = PAIRS.find(x=>x.sym===sym); if(p) pinPair(p); };
+
+// ============================================================
+// SIDE: RECENT FLIPS
+// ============================================================
+const flipLog = [];
+function logFlip(p, fromSign){
+  flipLog.unshift({sym:p.sym, sector:p.sector, fromSign, toSign:Math.sign(p.funding), at:Date.now(), funding:p.funding});
+  if(flipLog.length>8) flipLog.pop();
+  renderFlips();
+}
+function renderFlips(){
+  const root = $('#flips');
+  if(flipLog.length===0){ root.innerHTML = '<div class="flip-empty">Chưa có pair nào đổi dấu funding gần đây.</div>'; }
+  else {
+    root.innerHTML = flipLog.map(f=>{
+      const ago = Math.round((Date.now()-f.at)/1000);
+      const agoTxt = ago<60 ? ago+'s' : Math.round(ago/60)+'m';
+      const fromTxt = f.fromSign>0?'+':'−';
+      const toTxt = f.toSign>0?'+':'−';
+      return `<div class="flip-row">
+        <div class="sym" style="color:${SECTORS[f.sector].c}">${f.sym}</div>
+        <div class="desc">funding <span style="color:${f.fromSign>0?'var(--bearish)':'var(--bullish)'}">${fromTxt}</span><span class="arrow">→</span><span style="color:${f.toSign>0?'var(--bearish)':'var(--bullish)'}">${toTxt}</span> · ${SECTORS[f.sector].label}</div>
+        <div class="ago">${agoTxt} ago</div>
+      </div>`;
+    }).join('');
+  }
+  $('#flip-count').textContent = flipLog.length+' in 1h';
+}
+
+// ============================================================
+// MACRO BAR
+// ============================================================
+function updateMacro(){
+  const totalOI = PAIRS.reduce((a,p)=>a+p.oi, 0);
+  const avgFund = PAIRS.reduce((a,p)=>a+p.funding,0)/PAIRS.length;
+  const longHeavy = PAIRS.filter(p=>p.funding>0.02).length;
+  const shortHeavy = PAIRS.filter(p=>p.funding<-0.005).length;
+  const max = PAIRS.reduce((m,p)=> Math.abs(p.funding)>Math.abs(m.funding)?p:m);
+  $('#macro-bar').innerHTML = `
+    <div class="item"><span class="l">Total OI tracked</span><span class="v brand">${fmtUSD(totalOI)}</span></div>
+    <div class="sep"></div>
+    <div class="item"><span class="l">Avg funding (1h)</span><span class="v ${avgFund>0?'up':'dn'}">${fmtPct(avgFund)}</span></div>
+    <div class="sep"></div>
+    <div class="item"><span class="l">Crowded long</span><span class="v up">${longHeavy} pairs</span></div>
+    <div class="sep"></div>
+    <div class="item"><span class="l">Crowded short</span><span class="v dn">${shortHeavy} pairs</span></div>
+    <div class="sep"></div>
+    <div class="item"><span class="l">Most paid</span><span class="v ${max.funding>0?'up':'dn'}">${max.sym} ${fmtPctShort(max.funding)}</span></div>
+  `;
+}
+
+// ============================================================
+// TICK LOOP — drift values, detect flips
+// ============================================================
+function tickPairs(){
+  const now = Date.now();
+  PAIRS.forEach(p=>{
+    const oldSign = Math.sign(p.funding);
+    // mean-revert + small drift
+    p.funding += (rand(-1,1) - p.funding*0.02) * 0.0008;
+    // PEPE & meme more volatile
+    if(p.sector==='meme' || p.sector==='ai') p.funding += rand(-0.0014, 0.0014);
+    // OI drift
+    p.oi *= 1 + rand(-0.006, 0.006);
+    p.oi = Math.max(5e6, Math.min(1.2e9, p.oi));
+    p.history.push(p.funding);
+    if(p.history.length>40) p.history.shift();
+    const newSign = Math.sign(p.funding);
+    if(oldSign !== newSign && oldSign !== 0 && Math.abs(p.funding)>0.001){
+      logFlip(p, oldSign);
+      // visual flash
+      flashFlip(p);
+    }
+  });
+  positionBubbles();
+  if(pinned){
+    $('.pinned-fund').textContent = fmtPct(pinned.funding);
+    $('.pinned-fund').className = 'pinned-fund '+(pinned.funding>0?'up':'dn');
+    drawPinnedSpark();
+  }
+  updateBias();
+  updateMovers();
+  updateMacro();
+  $('#updated').textContent = 'just now';
+}
+
+function flashFlip(p){
+  if(!bubbleG) return;
+  const sel = bubbleG.selectAll('g.bubble').filter(d => d.sym===p.sym);
+  if(sel.empty()) return;
+  const r0 = bubbleR(p);
+  const halo = sel.select('.halo');
+  halo.transition().duration(80).attr('r', r0*5).attr('opacity', 0.85)
+      .transition().duration(700).attr('r', r0*2.4).attr('opacity', bubbleGlow(p));
+}
+
+// ============================================================
+// RANGE PILLS
+// ============================================================
+document.querySelectorAll('.range-pills button').forEach(b=>{
+  b.addEventListener('click', e=>{
+    document.querySelectorAll('.range-pills button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    // (in real product, would refetch with different time window)
+  });
+});
+
+// ============================================================
+// INIT
+// ============================================================
+function draw(){
+  recalcScales();
+  drawTints();
+  drawAxis();
+  drawBgDots();
+  drawBubbles();
+}
+resize();
+updateBias();
+updateMovers();
+updateMacro();
+renderFlips();
+// auto-pin BTC for first impression
+setTimeout(()=>pinPair(PAIRS[0]), 300);
+
+setInterval(tickPairs, 1200);
+setInterval(tickBgDots, 220);
+</script>
+</body>
+</html>

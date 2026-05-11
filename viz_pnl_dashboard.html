@@ -1,0 +1,1519 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PnL Dashboard · Realistic Bubble Asset PnL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <style>
+    :root {
+      --bg-base: #0B0E11;
+      --bg-surface: #14181F;
+      --bg-elevated: #1E2329;
+      --bg-hover: #2B3139;
+      --bg-active: #363C45;
+      --bg-input: #181C22;
+      --border-subtle: #1E2329;
+      --border-default: #2B3139;
+      --border-strong: #474D57;
+      --text-primary: #EAECEF;
+      --text-secondary: #B7BDC6;
+      --text-tertiary: #848E9C;
+      --brand-primary: #F0B90B;
+      --brand-subtle: rgba(240, 185, 11, 0.10);
+      --bullish: #0ECB81;
+      --bullish-bright: #22D3A8;
+      --bullish-subtle: rgba(14, 203, 129, 0.12);
+      --bearish: #F6465D;
+      --bearish-bright: #FF647D;
+      --bearish-subtle: rgba(246, 70, 93, 0.12);
+      --info: #3B82F6;
+      --purple: #A78BFA;
+      --pink: #F472B6;
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --radius-xl: 12px;
+      --font-sans: 'Inter', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html,
+    body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .num {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums
+    }
+
+    /* TOPBAR */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      height: 56px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px
+    }
+
+    .brand .logo {
+      font-weight: 700;
+      color: var(--brand-primary)
+    }
+
+    .brand .sep {
+      width: 1px;
+      height: 18px;
+      background: var(--border-default)
+    }
+
+    .brand .title {
+      font-size: 14px;
+      font-weight: 600
+    }
+
+    .brand .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      background: var(--bullish-subtle);
+      color: var(--bullish);
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .brand .pill .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--bullish);
+      animation: pulse 1.6s infinite
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .35
+      }
+    }
+
+    .subtitle {
+      color: var(--text-tertiary);
+      font-size: 12px
+    }
+
+    /* LAYOUT */
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 14px;
+      padding: 14px;
+      height: calc(100vh - 56px);
+    }
+
+    /* CARD */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-head {
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .card-head h2 {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -.2px
+    }
+
+    /* PILL group */
+    .pill-group {
+      display: flex;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      padding: 2px;
+      gap: 2px
+    }
+
+    .pill-group button {
+      background: transparent;
+      border: 0;
+      color: var(--text-secondary);
+      padding: 4px 10px;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all .15s;
+    }
+
+    .pill-group button:hover {
+      color: var(--text-primary)
+    }
+
+    .pill-group button.active {
+      background: var(--bg-active);
+      color: var(--text-primary)
+    }
+
+    /* CALENDAR */
+    .cal-body {
+      padding: 14px 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px
+    }
+
+    .cal-total {
+      display: flex;
+      flex-direction: column
+    }
+
+    .cal-total .v {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -.4px;
+      line-height: 1.1
+    }
+
+    .cal-total .v.up {
+      color: var(--bullish)
+    }
+
+    .cal-total .v.dn {
+      color: var(--bearish)
+    }
+
+    .cal-total .pct {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin-top: 2px
+    }
+
+    .cal-total .pct.up {
+      color: var(--bullish)
+    }
+
+    .cal-total .pct.dn {
+      color: var(--bearish)
+    }
+
+    .cal-month {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px
+    }
+
+    .cal-month .m {
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500
+    }
+
+    .cal-nav {
+      display: flex;
+      gap: 4px
+    }
+
+    .cal-nav button {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      color: var(--text-secondary);
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font: inherit;
+      font-size: 12px;
+    }
+
+    .cal-nav button:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary)
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      flex: 1
+    }
+
+    .cal-h {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-align: center;
+      padding: 4px 0
+    }
+
+    .cell {
+      aspect-ratio: 1;
+      border-radius: var(--radius-sm);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      transition: transform .15s, border-color .15s;
+    }
+
+    .cell:hover {
+      transform: scale(1.05);
+      border-color: var(--border-strong);
+      z-index: 2
+    }
+
+    .cell .day {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      position: absolute;
+      top: 3px;
+      left: 5px;
+      line-height: 1
+    }
+
+    .cell .pnl {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 600;
+      line-height: 1.1;
+      margin-top: 9px;
+      text-align: center
+    }
+
+    .cell.empty {
+      background: transparent;
+      border-color: transparent
+    }
+
+    .cell.empty .day {
+      color: var(--text-disabled);
+      opacity: .4
+    }
+
+    .cell.empty:hover {
+      transform: none;
+      border-color: transparent
+    }
+
+    .cell.future .day {
+      color: var(--text-tertiary)
+    }
+
+    .cell.up {
+      background: rgba(14, 203, 129, var(--int))
+    }
+
+    .cell.up .pnl {
+      color: var(--bullish-bright)
+    }
+
+    .cell.dn {
+      background: rgba(246, 70, 93, var(--int))
+    }
+
+    .cell.dn .pnl {
+      color: var(--bearish-bright)
+    }
+
+    .cell.today {
+      box-shadow: 0 0 0 1px var(--brand-primary)
+    }
+
+    .cal-foot {
+      padding: 10px 16px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between
+    }
+
+    .cal-foot .num {
+      color: var(--text-primary);
+      font-weight: 600
+    }
+
+    /* GAINERS / BUBBLES */
+    .gain-body {
+      flex: 1;
+      position: relative;
+      background: radial-gradient(ellipse at center, rgba(14, 203, 129, .02), transparent 70%)
+    }
+
+    #gain-svg {
+      display: block;
+      width: 100%;
+      height: 100%
+    }
+
+    .gain-foot {
+      padding: 10px 16px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      gap: 18px;
+      justify-content: space-between;
+    }
+
+    .gain-foot .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 1px
+    }
+
+    .gain-foot .l {
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-size: 10px
+    }
+
+    .gain-foot .v {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--text-primary)
+    }
+
+    .gain-foot .v.up {
+      color: var(--bullish)
+    }
+
+    .gain-foot .v.dn {
+      color: var(--bearish)
+    }
+
+    .gain-foot .v.brand {
+      color: var(--brand-primary)
+    }
+
+    /* TOOLTIP */
+    .tooltip {
+      position: absolute;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      font-size: 11px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .6);
+      pointer-events: none;
+      z-index: 50;
+      min-width: 180px;
+    }
+
+    .tooltip .ttl {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .tooltip .row {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      margin-top: 3px
+    }
+
+    .tooltip .row .l {
+      color: var(--text-tertiary)
+    }
+
+    .tooltip .row .v.up {
+      color: var(--bullish)
+    }
+
+    .tooltip .row .v.dn {
+      color: var(--bearish)
+    }
+
+    /* MORE INDICATOR */
+    .more-indicator {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      background: rgba(11, 14, 17, .85);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      padding: 6px 10px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .more-indicator b {
+      color: var(--brand-primary);
+      font-weight: 700
+    }
+
+    /* SVG bubble cursors */
+    .bubble {
+      cursor: pointer
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">⚡ TradeBot</span>
+      <span class="sep"></span>
+      <span class="title">PnL Dashboard · Realistic Bubble Asset PnL</span>
+      <span class="pill"><span class="dot"></span>LIVE · MOCK</span>
+    </div>
+    <div class="subtitle">Mỗi bubble là 1 perp pair · size ∝ |PnL| · pop khi out top, float khi range đổi</div>
+  </header>
+
+  <div class="layout">
+
+    <!-- PNL CALENDAR (giữ nguyên) -->
+    <div class="card">
+      <div class="card-head">
+        <h2>PnL Calendar</h2>
+        <div class="pill-group" id="cal-mode">
+          <button data-mode="pct" class="active">PnL %</button>
+          <button data-mode="abs">PnL</button>
+        </div>
+      </div>
+      <div class="cal-body">
+        <div class="cal-total">
+          <div class="v up" id="cal-total-v">+$24.48</div>
+          <div class="pct up" id="cal-total-pct">(+3.21%)</div>
+        </div>
+        <div class="cal-month">
+          <div class="m" id="cal-month-label">August 2023</div>
+          <div class="cal-nav"><button id="cal-prev">‹</button><button id="cal-next">›</button></div>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div class="cal-foot">
+        <span><span class="num" id="cal-best">+$209.32</span> best day</span>
+        <span><span class="num" id="cal-worst">−$126.73</span> worst day</span>
+        <span><span class="num" id="cal-winrate">66%</span> win days</span>
+      </div>
+    </div>
+
+    <!-- GAINERS BUBBLES -->
+    <div class="card">
+      <div class="card-head">
+        <h2>Gainers &amp; Losers</h2>
+        <div class="pill-group" id="gain-range">
+          <button data-r="1">24H</button>
+          <button data-r="7" class="active">7D</button>
+          <button data-r="30">30D</button>
+          <button data-r="90">90D</button>
+          <button data-r="180">180D</button>
+        </div>
+      </div>
+      <div class="gain-body" id="gain-body">
+        <svg id="gain-svg"></svg>
+        <div class="more-indicator" id="more-ind" style="display:none">+<b id="more-count">0</b> pairs hidden</div>
+        <div class="tooltip" id="gain-tip" style="display:none"></div>
+      </div>
+      <div class="gain-foot">
+        <div class="stat"><span class="l">Net PnL (range)</span><span class="v" id="gf-net">+$1,083.94</span></div>
+        <div class="stat"><span class="l">Winners</span><span class="v up" id="gf-win">5 pairs</span></div>
+        <div class="stat"><span class="l">Losers</span><span class="v dn" id="gf-loss">3 pairs</span></div>
+        <div class="stat"><span class="l">Best</span><span class="v brand" id="gf-best">ETH +$1,251</span></div>
+        <div class="stat"><span class="l">Worst</span><span class="v dn" id="gf-worst">DOGE −$422</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    const rand = (a, b) => a + Math.random() * (b - a);
+    const ri = (a, b) => Math.floor(rand(a, b));
+    const fmtMoney = v => {
+      const a = Math.abs(v);
+      if (a >= 1000) return (v >= 0 ? '+$' : '−$') + a.toLocaleString('en-US', { maximumFractionDigits: 2 });
+      return (v >= 0 ? '+$' : '−$') + a.toFixed(2);
+    };
+    const fmtPct = v => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2) + '%';
+
+    // ============================================================
+    // CALENDAR (same as before, abridged)
+    // ============================================================
+    const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const STATE = { year: 2023, month: 7, mode: 'pct', range: 7 };
+    function genMonthData(year, month) {
+      const days = new Date(year, month + 1, 0).getDate();
+      const data = [];
+      let bal = 800;
+      for (let d = 1; d <= days; d++) {
+        const isWeekend = ([0, 6].includes(new Date(year, month, d).getDay()));
+        const r = rand(0, 1);
+        let pnl;
+        if (r < 0.15) pnl = -rand(60, 140);
+        else if (r < 0.25) pnl = -rand(30, 80);
+        else if (r < 0.5) pnl = rand(60, 220);
+        else if (r < 0.7) pnl = rand(20, 90);
+        else pnl = rand(-40, 40);
+        if (isWeekend) pnl *= 0.4;
+        bal += pnl;
+        data.push({ day: d, pnl, pct: pnl / bal * 100, trades: ri(2, 28), isWeekend });
+      }
+      return data;
+    }
+    let monthData = genMonthData(STATE.year, STATE.month);
+    function renderCalendar() {
+      const grid = $('#cal-grid'); grid.innerHTML = '';
+      ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(h => {
+        const el = document.createElement('div'); el.className = 'cal-h'; el.textContent = h; grid.appendChild(el);
+      });
+      const firstDay = new Date(STATE.year, STATE.month, 1).getDay();
+      const offset = (firstDay + 6) % 7;
+      for (let i = 0; i < offset; i++) { const el = document.createElement('div'); el.className = 'cell empty'; grid.appendChild(el); }
+      const maxAbs = Math.max(...monthData.map(d => Math.abs(d.pnl)));
+      const today = new Date();
+      const isCurrentMonth = today.getFullYear() === STATE.year && today.getMonth() === STATE.month;
+      monthData.forEach(d => {
+        const cell = document.createElement('div');
+        const isUp = d.pnl > 0;
+        const intensity = 0.10 + Math.min(0.40, Math.abs(d.pnl) / maxAbs * 0.40);
+        cell.className = 'cell ' + (isUp ? 'up' : 'dn');
+        cell.style.setProperty('--int', intensity);
+        if (isCurrentMonth && d.day === today.getDate()) cell.classList.add('today');
+        if (isCurrentMonth && d.day > today.getDate()) cell.classList.add('future');
+        const dayEl = document.createElement('div'); dayEl.className = 'day'; dayEl.textContent = d.day;
+        const pnlEl = document.createElement('div'); pnlEl.className = 'pnl';
+        pnlEl.textContent = STATE.mode === 'pct' ? (d.pnl >= 0 ? '+' : '−') + Math.abs(d.pct).toFixed(1) + '%' : (d.pnl >= 0 ? '+' : '−') + Math.abs(d.pnl).toFixed(0);
+        cell.appendChild(dayEl); cell.appendChild(pnlEl);
+        grid.appendChild(cell);
+      });
+      const total = monthData.reduce((a, d) => a + d.pnl, 0);
+      $('#cal-total-v').textContent = fmtMoney(total);
+      $('#cal-total-v').className = 'v ' + (total >= 0 ? 'up' : 'dn');
+      $('#cal-total-pct').textContent = '(' + fmtPct(total / 800 * 100) + ')';
+      $('#cal-total-pct').className = 'pct ' + (total >= 0 ? 'up' : 'dn');
+      $('#cal-month-label').textContent = MONTHS[STATE.month] + ' ' + STATE.year;
+      const best = monthData.reduce((m, d) => d.pnl > m.pnl ? d : m);
+      const worst = monthData.reduce((m, d) => d.pnl < m.pnl ? d : m);
+      $('#cal-best').textContent = fmtMoney(best.pnl);
+      $('#cal-worst').textContent = fmtMoney(worst.pnl);
+      const wins = monthData.filter(d => d.pnl > 0).length;
+      $('#cal-winrate').textContent = Math.round(wins / monthData.length * 100) + '%';
+    }
+    $('#cal-prev').addEventListener('click', () => { STATE.month--; if (STATE.month < 0) { STATE.month = 11; STATE.year-- } monthData = genMonthData(STATE.year, STATE.month); renderCalendar(); });
+    $('#cal-next').addEventListener('click', () => { STATE.month++; if (STATE.month > 11) { STATE.month = 0; STATE.year++ } monthData = genMonthData(STATE.year, STATE.month); renderCalendar(); });
+    document.querySelectorAll('#cal-mode button').forEach(b => b.addEventListener('click', () => { document.querySelectorAll('#cal-mode button').forEach(x => x.classList.remove('active')); b.classList.add('active'); STATE.mode = b.dataset.mode; renderCalendar(); }));
+
+    // ============================================================
+    // BUBBLE SYSTEM — REALISTIC + CUSTOM PHYSICS
+    // ============================================================
+
+    // Asset pool — each has 24h volume (millions USD, mock realistic).
+    // Volume drives bubble SIZE TIER, NOT PnL.
+    const ASSET_POOL = [
+      // ─── LARGE tier (vol >= 200M) ────────────────────────
+      { sym: 'BTC', color: '#F7931A', icon: '₿', vol: 1500 },
+      { sym: 'ETH', color: '#627EEA', icon: 'Ξ', vol: 750 },
+      { sym: 'SOL', color: '#9945FF', icon: 'S', vol: 320 },
+      { sym: 'DOGE', color: '#F472B6', icon: 'D', vol: 280 },
+      { sym: 'TAO', color: '#F0B90B', icon: 'τ', vol: 250 },
+      { sym: 'BNB', color: '#F0B90B', icon: 'B', vol: 220 },
+
+      // ─── MEDIUM tier (vol 30M – 200M) ────────────────────
+      { sym: 'XRP', color: '#23292F', icon: 'X', vol: 180 },
+      { sym: 'PEPE', color: '#0ECB81', icon: 'P', vol: 165 },
+      { sym: 'LINK', color: '#2A5ADA', icon: 'L', vol: 150 },
+      { sym: 'AVAX', color: '#E84142', icon: 'A', vol: 120 },
+      { sym: 'SUI', color: '#3B82F6', icon: '◆', vol: 110 },
+      { sym: 'WIF', color: '#FFE066', icon: 'W', vol: 95 },
+      { sym: 'FET', color: '#A78BFA', icon: 'F', vol: 85 },
+      { sym: 'OP', color: '#FF0420', icon: 'O', vol: 78 },
+      { sym: 'ARB', color: '#3B82F6', icon: 'A', vol: 72 },
+      { sym: 'ENA', color: '#FFFFFF', icon: 'E', vol: 68 },
+      { sym: 'JUP', color: '#FBB13C', icon: 'J', vol: 62 },
+      { sym: 'NEAR', color: '#EAECEF', icon: 'N', vol: 58 },
+      { sym: 'TON', color: '#0098EA', icon: 'T', vol: 52 },
+      { sym: 'ONDO', color: '#1B2A40', icon: 'O', vol: 48 },
+      { sym: 'UNI', color: '#FF007A', icon: 'U', vol: 45 },
+      { sym: 'RNDR', color: '#A78BFA', icon: 'R', vol: 42 },
+      { sym: 'AAVE', color: '#B6509E', icon: 'A', vol: 38 },
+      { sym: 'LTC', color: '#345D9D', icon: 'Ł', vol: 35 },
+      { sym: 'TIA', color: '#A78BFA', icon: 'T', vol: 32 },
+      { sym: 'ORDI', color: '#000000', icon: 'O', vol: 30 },
+
+      // ─── SMALL tier (vol < 30M) ──────────────────────────
+      { sym: 'MATIC', color: '#8247E5', icon: 'M', vol: 28 },
+      { sym: 'BONK', color: '#FF6B35', icon: 'B', vol: 26 },
+      { sym: 'INJ', color: '#22D3EE', icon: 'I', vol: 25 },
+      { sym: 'TRX', color: '#FF060A', icon: 'T', vol: 24 },
+      { sym: 'APT', color: '#F0B90B', icon: 'A', vol: 22 },
+      { sym: 'DOT', color: '#E6007A', icon: '•', vol: 20 },
+      { sym: 'WLD', color: '#1A1A1A', icon: 'W', vol: 18 },
+      { sym: 'SHIB', color: '#FF6B35', icon: 'S', vol: 18 },
+      { sym: 'FIL', color: '#0090FF', icon: 'F', vol: 17 },
+      { sym: 'PYTH', color: '#7B61FF', icon: 'P', vol: 16 },
+      { sym: 'LDO', color: '#F69988', icon: 'L', vol: 15 },
+      { sym: 'STRK', color: '#EC796B', icon: 'S', vol: 14 },
+      { sym: 'ATOM', color: '#2E3148', icon: '⚛', vol: 13 },
+      { sym: 'MKR', color: '#1AAB9B', icon: 'M', vol: 13 },
+      { sym: 'JTO', color: '#10C0AC', icon: 'J', vol: 12 },
+      { sym: 'CRV', color: '#FF0420', icon: 'C', vol: 11 },
+      { sym: 'AERO', color: '#0052FF', icon: 'A', vol: 10 },
+      { sym: 'ETHFI', color: '#3B82F6', icon: 'E', vol: 9 },
+      { sym: 'XLM', color: '#000000', icon: 'X', vol: 8 },
+    ];
+
+    // Size tiers — random R within range, mapped from volume
+    const SIZE_TIERS = {
+      large: { min: 80, max: 120, label: 'Large cap' },
+      medium: { min: 50, max: 60, label: 'Mid cap' },
+      small: { min: 30, max: 40, label: 'Small cap' },
+    };
+    function tierForVolume(vol) {
+      if (vol >= 200) return 'large';
+      if (vol >= 30) return 'medium';
+      return 'small';
+    }
+    function randomRInTier(tier) {
+      const t = SIZE_TIERS[tier];
+      return t.min + Math.random() * (t.max - t.min);
+    }
+
+    // Physics constants — tuned for HIGH bounce, no energy loss
+    const TARGET_BUBBLES = 36;
+    const PHYSICS = {
+      thermal: 0.05,          // brownian RẤT nhẹ — không lao đầu
+      centerPull: 0.0006,     // pull nhẹ về giữa, giữ phân bố
+      damping: 0.985,         // drag mạnh hơn → bubble chậm dần tự nhiên
+      restitution: 0.40,      // collision MỀM — hấp thụ 60% năng lượng, không bật mạnh
+      wallRestitution: 0.50,  // tường cũng hấp thụ — không nảy mạnh
+      minSpeed: 0.05,         // velocity floor thấp — cho phép gần đứng yên
+    };
+
+    // Jelly soft-body constants
+    const JELLY = {
+      springK: 0.20,          // RẤT cứng → restore gần như tức thì (~0.18s/cycle)
+      springDamp: 0.50,       // damping cực mạnh — vận tốc squash mất 50%/frame → tắt sau ~5 frame (0.08s)
+      squashGain: 0.0004,     // collision impact gần như zero — bubble hầu như không méo khi đụng
+      maxSquash: 0.020,       // cap RẤT chặt — biên độ tối đa 2% bán kính
+      wallSquashGain: 0.0005, // tường gần như không nén
+      perimAmp: 0.012,        // breathing wobble RẤT nhẹ — chỉ đủ thấy "đang sống"
+      perimVerts: 16,
+    };
+
+    // Build mock data per range — keep ALL 25 assets per range, will pick subset for bubbles
+    function genAssetsForRange(r) {
+      const pool = ASSET_POOL;  // always full pool now
+      return pool.map(a => {
+        const scale = r === 1 ? 0.04 : r === 7 ? 1 : r === 30 ? 5 : r === 90 ? 14 : r === 180 ? 28 : 1;
+        const isWin = Math.random() < 0.55;
+        const baseAmount = (Math.random() * Math.random() * 1500 + 30) * scale;
+        return {
+          ...a,
+          pnl: isWin ? baseAmount : -baseAmount,
+          pct: (Math.random() * 30 + 0.5) * (isWin ? 1 : -1),
+        };
+      });
+    }
+
+    let allAssets = {};
+    [1, 7, 30, 90, 180].forEach(r => allAssets[r] = genAssetsForRange(r));
+
+    // ------------------------------------------------------------
+    // BUBBLE class
+    // ------------------------------------------------------------
+    const BUBBLE_STATE = {
+      BIRTH: 'birth',
+      ALIVE: 'alive',
+      DYING_POP: 'dying-pop',
+      DYING_FLOAT: 'dying-float',
+      DYING_SHRINK: 'dying-shrink',
+      DEAD: 'dead',
+    };
+
+    class Bubble {
+      constructor(asset, simX, simY) {
+        Object.assign(this, asset);
+        this.id = asset.sym;
+        // Tier-based size — random within tier range based on asset volume
+        this.tier = tierForVolume(asset.vol);
+        this.targetR = randomRInTier(this.tier);
+        this.r = 1;  // start tiny
+        this.x = simX;
+        this.y = simY;
+        // physics velocity — gentle initial kick, drift instead of fly
+        this.vx = rand(-0.6, 0.6);
+        this.vy = rand(-0.6, 0.6);
+        // wobble phases
+        this.wobX = rand(0, Math.PI * 2);
+        this.wobY = rand(0, Math.PI * 2);
+        this.highlightPhase = rand(0, Math.PI * 2);
+        // jelly soft-body state
+        this.squashAxis = 0;     // angle (rad) along which bubble is squashed
+        this.squashAmount = 0;   // 0 = round, positive = squashed along axis
+        this.squashVel = 0;      // velocity for spring oscillation
+        this.perimPhase = rand(0, Math.PI * 2);  // perimeter wobble phase
+        // lifecycle
+        this.state = BUBBLE_STATE.BIRTH;
+        this.stateT = performance.now();
+        this.lifeT = performance.now();
+      }
+      startDying(reason) {
+        if (this.state.startsWith('dying')) return;
+        this.state = reason;
+        this.stateT = performance.now();
+      }
+      get isPhysical() { return this.state === BUBBLE_STATE.ALIVE; }
+      get mass() { return this.r * this.r; }
+    }
+
+    // bubbleR is no longer used — size driven by tier (volume).
+    // Kept stub for backward compat in case some code path still calls it.
+    function bubbleR() { return 24; }
+
+    // ------------------------------------------------------------
+    // SVG SETUP & DEFS
+    // ------------------------------------------------------------
+    const svg = d3.select('#gain-svg');
+    const gainBody = $('#gain-body');
+    const tip = $('#gain-tip');
+    let W = 0, H = 0;
+
+    function setupDefs() {
+      const defs = svg.append('defs');
+      // Iridescent rim gradient (cyan-magenta-gold)
+      const ir = defs.append('linearGradient').attr('id', 'iri-rim').attr('x1', '0%').attr('y1', '0%').attr('x2', '100%').attr('y2', '100%');
+      ir.append('stop').attr('offset', '0%').attr('stop-color', '#22D3EE');
+      ir.append('stop').attr('offset', '33%').attr('stop-color', '#F472B6');
+      ir.append('stop').attr('offset', '66%').attr('stop-color', '#FCD535');
+      ir.append('stop').attr('offset', '100%').attr('stop-color', '#22D3A8');
+
+      // Body gradients (one set for green, one for red)
+      ['gain', 'loss'].forEach(t => {
+        const baseCol = t === 'gain' ? '#0ECB81' : '#F6465D';
+        const lightCol = t === 'gain' ? '#7CFFCB' : '#FFAFB7';
+        const g = defs.append('radialGradient').attr('id', 'body-' + t).attr('cx', '38%').attr('cy', '35%').attr('r', '62%');
+        g.append('stop').attr('offset', '0%').attr('stop-color', lightCol).attr('stop-opacity', '0.55');
+        g.append('stop').attr('offset', '35%').attr('stop-color', baseCol).attr('stop-opacity', '0.40');
+        g.append('stop').attr('offset', '75%').attr('stop-color', baseCol).attr('stop-opacity', '0.18');
+        g.append('stop').attr('offset', '100%').attr('stop-color', baseCol).attr('stop-opacity', '0.55');
+      });
+
+      // Highlight gradient (white fading to transparent)
+      const hl = defs.append('radialGradient').attr('id', 'highlight').attr('cx', '50%').attr('cy', '50%').attr('r', '50%');
+      hl.append('stop').attr('offset', '0%').attr('stop-color', 'white').attr('stop-opacity', '0.85');
+      hl.append('stop').attr('offset', '60%').attr('stop-color', 'white').attr('stop-opacity', '0.15');
+      hl.append('stop').attr('offset', '100%').attr('stop-color', 'white').attr('stop-opacity', '0');
+
+      // Inner shadow gradient (bottom-right darker)
+      const is = defs.append('radialGradient').attr('id', 'inner-shadow').attr('cx', '75%').attr('cy', '75%').attr('r', '60%');
+      is.append('stop').attr('offset', '0%').attr('stop-color', 'black').attr('stop-opacity', '0');
+      is.append('stop').attr('offset', '85%').attr('stop-color', 'black').attr('stop-opacity', '0');
+      is.append('stop').attr('offset', '100%').attr('stop-color', 'black').attr('stop-opacity', '0.25');
+
+      // Outer atmospheric halo gradients
+      ['gain', 'loss'].forEach(t => {
+        const baseCol = t === 'gain' ? '#0ECB81' : '#F6465D';
+        const g = defs.append('radialGradient').attr('id', 'halo-' + t).attr('cx', '50%').attr('cy', '50%').attr('r', '50%');
+        g.append('stop').attr('offset', '0%').attr('stop-color', baseCol).attr('stop-opacity', '0.20');
+        g.append('stop').attr('offset', '60%').attr('stop-color', baseCol).attr('stop-opacity', '0.06');
+        g.append('stop').attr('offset', '100%').attr('stop-color', baseCol).attr('stop-opacity', '0');
+      });
+
+      // Filter for soft glow
+      const f = defs.append('filter').attr('id', 'soft-glow').attr('x', '-50%').attr('y', '-50%').attr('width', '200%').attr('height', '200%');
+      f.append('feGaussianBlur').attr('stdDeviation', '2');
+    }
+
+    // ------------------------------------------------------------
+    // CUSTOM PHYSICS — velocity Verlet + elastic collisions
+    // ------------------------------------------------------------
+    let bubbles = [];  // active bubbles
+    let bubblesG = null;
+
+    function resizeGain() {
+      W = gainBody.clientWidth;
+      H = gainBody.clientHeight;
+      svg.attr('viewBox', `0 0 ${W} ${H}`);
+    }
+
+    function physicsTick(dt) {
+      const cx = W / 2, cy = H / 2;
+      const physBubbles = bubbles.filter(b => b.isPhysical);
+
+      // 1. Apply forces & integrate
+      physBubbles.forEach(b => {
+        // Brownian thermal noise — bubble never sits still
+        b.vx += rand(-PHYSICS.thermal, PHYSICS.thermal);
+        b.vy += rand(-PHYSICS.thermal, PHYSICS.thermal);
+
+        // Soft center attraction (so they don't all drift to one corner)
+        b.vx += (cx - b.x) * PHYSICS.centerPull;
+        b.vy += (cy - b.y) * PHYSICS.centerPull;
+
+        // Damping
+        b.vx *= PHYSICS.damping;
+        b.vy *= PHYSICS.damping;
+
+        // Velocity floor — keep gentle drift even when settled
+        const sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+        if (sp < PHYSICS.minSpeed) {
+          const ang = rand(0, Math.PI * 2);
+          b.vx += Math.cos(ang) * PHYSICS.minSpeed * 0.3;
+          b.vy += Math.sin(ang) * PHYSICS.minSpeed * 0.3;
+        }
+
+        // Apply velocity
+        b.x += b.vx;
+        b.y += b.vy;
+      });
+
+      // 2. Wall bounce + squash on hit
+      physBubbles.forEach(b => {
+        let hit = 0, axis = 0;
+        if (b.x - b.r < 8) {
+          hit = Math.abs(b.vx); axis = 0;
+          b.x = b.r + 8; b.vx = Math.abs(b.vx) * PHYSICS.wallRestitution;
+        }
+        if (b.x + b.r > W - 8) {
+          hit = Math.abs(b.vx); axis = 0;
+          b.x = W - b.r - 8; b.vx = -Math.abs(b.vx) * PHYSICS.wallRestitution;
+        }
+        if (b.y - b.r < 8) {
+          hit = Math.abs(b.vy); axis = Math.PI / 2;
+          b.y = b.r + 8; b.vy = Math.abs(b.vy) * PHYSICS.wallRestitution;
+        }
+        if (b.y + b.r > H - 8) {
+          hit = Math.abs(b.vy); axis = Math.PI / 2;
+          b.y = H - b.r - 8; b.vy = -Math.abs(b.vy) * PHYSICS.wallRestitution;
+        }
+        if (hit > 0.5) {
+          applySquash(b, hit * JELLY.wallSquashGain, axis);
+        }
+      });
+
+      // 3. Pairwise elastic collisions (impulse exchange)
+      for (let i = 0; i < physBubbles.length; i++) {
+        for (let j = i + 1; j < physBubbles.length; j++) {
+          const a = physBubbles[i], b = physBubbles[j];
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const minDist = a.r + b.r + 2;  // small padding
+          if (dist < minDist && dist > 0.01) {
+            // Separate (positional correction)
+            const overlap = (minDist - dist) / 2;
+            const nx = dx / dist, ny = dy / dist;
+            a.x -= nx * overlap;
+            a.y -= ny * overlap;
+            b.x += nx * overlap;
+            b.y += ny * overlap;
+
+            // Relative velocity along normal
+            const dvx = b.vx - a.vx;
+            const dvy = b.vy - a.vy;
+            const vAlongNormal = dvx * nx + dvy * ny;
+
+            // If approaching → impulse exchange
+            if (vAlongNormal < 0) {
+              const ma = a.mass, mb = b.mass;
+              const j = -(1 + PHYSICS.restitution) * vAlongNormal / (1 / ma + 1 / mb);
+              const ix = j * nx, iy = j * ny;
+              a.vx -= ix / ma;
+              a.vy -= iy / ma;
+              b.vx += ix / mb;
+              b.vy += iy / mb;
+
+              // Apply jelly squash to both bubbles based on impulse strength
+              const impulseMag = Math.abs(j);
+              const collisionAxis = Math.atan2(ny, nx);
+              applySquash(a, impulseMag * JELLY.squashGain / Math.sqrt(ma), collisionAxis);
+              applySquash(b, impulseMag * JELLY.squashGain / Math.sqrt(mb), collisionAxis);
+            }
+          }
+        }
+      }
+    }
+
+    // ------------------------------------------------------------
+    // JELLY DEFORMATION — squash + spring decay
+    // ------------------------------------------------------------
+    function applySquash(b, amount, axis) {
+      // Push velocity directly — no extra multiplier so impact stays gentle
+      b.squashAxis = axis;
+      b.squashVel += amount;
+      // Hard clamp on amount in case multiple collisions in same frame
+      if (Math.abs(b.squashAmount) > JELLY.maxSquash) {
+        b.squashAmount = Math.sign(b.squashAmount) * JELLY.maxSquash;
+        b.squashVel *= 0.5;  // bleed velocity when capped to prevent build-up
+      }
+    }
+
+    function tickJelly() {
+      bubbles.forEach(b => {
+        if (b.state !== BUBBLE_STATE.ALIVE && b.state !== BUBBLE_STATE.BIRTH) return;
+        // Spring restoring force toward 0
+        b.squashVel += -b.squashAmount * JELLY.springK;
+        // Damping
+        b.squashVel *= JELLY.springDamp;
+        // Integrate
+        b.squashAmount += b.squashVel;
+        // Clamp
+        if (Math.abs(b.squashAmount) > JELLY.maxSquash) {
+          b.squashAmount = Math.sign(b.squashAmount) * JELLY.maxSquash;
+          b.squashVel *= -0.4;
+        }
+      });
+    }
+
+    // Generate organic blob path for one bubble (16 vertices, multi-freq sin wobble)
+    function blobPath(r, t, phase) {
+      const N = JELLY.perimVerts;
+      const A = JELLY.perimAmp;
+      const pts = [];
+      for (let i = 0; i < N; i++) {
+        const ang = (i / N) * Math.PI * 2;
+        // multi-frequency gentle wobble — slowed frequencies for calmer feel
+        const off =
+          A * Math.sin(t * 0.6 + i * 0.5 + phase) * 0.55 +
+          A * Math.sin(t * 1.0 + i * 0.9 + phase * 1.3) * 0.30 +
+          A * Math.sin(t * 0.35 + i * 0.3 + phase * 0.7) * 0.18;
+        const rr = r * (1 + off);
+        pts.push([Math.cos(ang) * rr, Math.sin(ang) * rr]);
+      }
+      return d3.line().curve(d3.curveCardinalClosed.tension(0.5))(pts);
+    }
+
+    // ------------------------------------------------------------
+    // ECOSYSTEM LOGIC — initial spawn + random swap cycle
+    // ------------------------------------------------------------
+    function getActiveCount() {
+      return bubbles.filter(b => b.state === BUBBLE_STATE.BIRTH || b.state === BUBBLE_STATE.ALIVE).length;
+    }
+    function getAliveSet() {
+      return new Set(bubbles.filter(b => b.state === BUBBLE_STATE.BIRTH || b.state === BUBBLE_STATE.ALIVE).map(b => b.sym));
+    }
+    function pickAvailable() {
+      const list = allAssets[STATE.range];
+      const alive = getAliveSet();
+      const candidates = list.filter(a => !alive.has(a.sym) && Math.abs(a.pnl) >= 1);
+      if (candidates.length === 0) return null;
+      return candidates[ri(0, candidates.length)];
+    }
+    function pickAlive() {
+      const aliveB = bubbles.filter(b => b.state === BUBBLE_STATE.ALIVE);
+      if (aliveB.length === 0) return null;
+      return aliveB[ri(0, aliveB.length)];
+    }
+
+    function spawnBubble(asset, fromEdge) {
+      let sx, sy;
+      const choice = fromEdge === undefined ? Math.random() : fromEdge;
+      if (choice < 0.6) {
+        // from bottom
+        sx = rand(W * 0.15, W * 0.85);
+        sy = H + 30;
+      } else if (choice < 0.8) {
+        // from sides
+        if (Math.random() < 0.5) { sx = -30; sy = rand(H * 0.2, H * 0.8); }
+        else { sx = W + 30; sy = rand(H * 0.2, H * 0.8); }
+      } else {
+        // somewhere inside (less common)
+        sx = rand(W * 0.25, W * 0.75);
+        sy = rand(H * 0.25, H * 0.75);
+      }
+      const b = new Bubble(asset, sx, sy);
+      bubbles.push(b);
+      return b;
+    }
+
+    function killBubbleRandom(b) {
+      // Only FLOAT or SHRINK — never POP/break
+      const r = Math.random();
+      if (r < 0.65) b.startDying(BUBBLE_STATE.DYING_FLOAT);
+      else b.startDying(BUBBLE_STATE.DYING_SHRINK);
+    }
+
+    function initialSpawn() {
+      // Sample across 3 tiers so initial 36 has good size variety:
+      // ~5 large, ~14 medium, ~17 small (proportional to pool)
+      const list = allAssets[STATE.range].filter(a => Math.abs(a.pnl) >= 1);
+      const byTier = { large: [], medium: [], small: [] };
+      list.forEach(a => byTier[tierForVolume(a.vol)].push(a));
+      // Shuffle each tier
+      Object.values(byTier).forEach(arr => arr.sort(() => Math.random() - 0.5));
+      const targetCounts = { large: 5, medium: 14, small: 17 };
+      const picked = [];
+      ['large', 'medium', 'small'].forEach(t => {
+        picked.push(...byTier[t].slice(0, targetCounts[t]));
+      });
+      // Shuffle final order so birth order isn't strictly tier-by-tier
+      picked.sort(() => Math.random() - 0.5);
+      picked.slice(0, TARGET_BUBBLES).forEach((a, i) => {
+        setTimeout(() => spawnBubble(a, Math.random()), 90 + i * 100);
+      });
+      updateMoreIndicator();
+    }
+
+    function swapCycle() {
+      const active = getActiveCount();
+      // Maintain target count with some hysteresis
+      if (active >= TARGET_BUBBLES) {
+        // Kill one
+        const victim = pickAlive();
+        if (victim) killBubbleRandom(victim);
+        // Spawn replacement after small delay
+        setTimeout(() => {
+          const newAsset = pickAvailable();
+          if (newAsset) spawnBubble(newAsset);
+          updateMoreIndicator();
+        }, ri(300, 800));
+      } else {
+        // Just spawn (catching up)
+        const newAsset = pickAvailable();
+        if (newAsset) spawnBubble(newAsset);
+        updateMoreIndicator();
+      }
+      updateGainStats();
+    }
+
+    function updateMoreIndicator() {
+      const total = allAssets[STATE.range].length;
+      const visible = getActiveCount();
+      const hidden = total - visible;
+      $('#more-ind').style.display = hidden > 0 ? '' : 'none';
+      $('#more-count').textContent = hidden;
+    }
+
+    function resetEcosystem() {
+      // Kill all alive bubbles fast (float them away)
+      bubbles.forEach(b => {
+        if (b.state === BUBBLE_STATE.ALIVE || b.state === BUBBLE_STATE.BIRTH) {
+          b.startDying(BUBBLE_STATE.DYING_FLOAT);
+        }
+      });
+      // Wait for cleanup, then respawn
+      setTimeout(initialSpawn, 700);
+    }
+
+    // ------------------------------------------------------------
+    // RENDER
+    // ------------------------------------------------------------
+    function setupSvgRoots() {
+      setupDefs();
+      // separate group for halos (background) and bubbles (foreground)
+      svg.append('g').attr('class', 'halos-g');
+      svg.append('g').attr('class', 'bubbles-g');
+      bubblesG = svg.select('.bubbles-g');
+    }
+
+    function renderFrame(now) {
+      // Run physics step before render
+      physicsTick(1);
+      tickJelly();
+
+      const halosG = svg.select('.halos-g');
+      // ENTER bubbles
+      const data = bubbles.filter(b => b.state !== BUBBLE_STATE.DEAD);
+      const join = bubblesG.selectAll('g.bubble').data(data, d => d.id);
+      join.exit().remove();
+      const enter = join.enter().append('g').attr('class', 'bubble')
+        .on('mouseenter', (e, d) => showTip(e, d))
+        .on('mousemove', moveTip)
+        .on('mouseleave', hideTip);
+
+      enter.each(function (d) {
+        const sel = d3.select(this);
+        const t = d.pnl >= 0 ? 'gain' : 'loss';
+        // SHELL group — gets squash transform applied; jelly outline lives here
+        const shell = sel.append('g').attr('class', 'shell');
+        // outer halo (still circle — it's just glow)
+        shell.append('circle').attr('class', 'halo').attr('r', 0).attr('fill', `url(#halo-${t})`).attr('opacity', 0);
+        // body — PATH (jelly outline)
+        shell.append('path').attr('class', 'body').attr('fill', `url(#body-${t})`).attr('opacity', 0);
+        // iridescent rim — PATH
+        shell.append('path').attr('class', 'rim').attr('fill', 'none').attr('stroke', 'url(#iri-rim)').attr('stroke-width', 1).attr('opacity', 0);
+        // inner shadow — PATH (clipped to body shape via same path)
+        shell.append('path').attr('class', 'inner-shadow').attr('fill', 'url(#inner-shadow)').attr('opacity', 0);
+        // primary specular highlight (ellipse OK, deforms with shell)
+        shell.append('ellipse').attr('class', 'spec').attr('rx', 0).attr('ry', 0).attr('fill', 'url(#highlight)').attr('opacity', 0);
+        // small secondary highlight
+        shell.append('circle').attr('class', 'spec2').attr('r', 0).attr('fill', 'white').attr('opacity', 0);
+        // content group — outside shell, stays upright (no squash distortion)
+        const content = sel.append('g').attr('class', 'content');
+        // icon background
+        content.append('circle').attr('class', 'icon-bg').attr('r', 0).attr('fill', d.color).attr('stroke', 'rgba(0,0,0,.5)').attr('stroke-width', 1);
+        content.append('text').attr('class', 'icon-text').attr('text-anchor', 'middle').attr('font-family', 'Inter').attr('font-weight', '700').attr('fill', 'white').text(d.icon);
+        content.append('text').attr('class', 'pnl-text').attr('text-anchor', 'middle').attr('font-family', 'Inter').attr('font-weight', '700').attr('fill', 'white');
+        content.append('text').attr('class', 'pct-text').attr('text-anchor', 'middle').attr('font-family', 'JetBrains Mono').attr('font-weight', '600');
+        content.append('text').attr('class', 'sym-only').attr('text-anchor', 'middle').attr('font-family', 'Inter').attr('font-weight', '700').attr('fill', 'white');
+        // birth ring
+        sel.append('circle').attr('class', 'birth-ring').attr('r', 0).attr('fill', 'none').attr('stroke', d.pnl >= 0 ? '#0ECB81' : '#F6465D').attr('stroke-width', 2).attr('opacity', 0);
+      });
+
+      // UPDATE all (apply state-driven attributes)
+      bubblesG.selectAll('g.bubble').each(function (d) {
+        const sel = d3.select(this);
+        const elapsed = now - d.stateT;
+        let r = d.r;
+        let opacity = 1;
+        let extraTrans = '';
+
+        // Lifecycle state machine
+        if (d.state === BUBBLE_STATE.BIRTH) {
+          const p = Math.min(1, elapsed / 700);
+          // elastic ease-out: overshoot
+          const e = 1 - Math.pow(1 - p, 3);
+          const overshoot = 1 + 0.18 * Math.sin(p * Math.PI);
+          r = d.targetR * (e * overshoot);
+          d.r = r;
+          opacity = e;
+          // birth ring
+          const ringR = d.targetR * (1 + p * 1.5);
+          const ringOpacity = (1 - p) * 0.6;
+          sel.select('.birth-ring').attr('r', ringR).attr('opacity', ringOpacity);
+          if (p >= 1) { d.state = BUBBLE_STATE.ALIVE; sel.select('.birth-ring').attr('opacity', 0); }
+        }
+        else if (d.state === BUBBLE_STATE.ALIVE) {
+          // approach target r smoothly
+          d.r += (d.targetR - d.r) * 0.06;
+          r = d.r;
+        }
+        else if (d.state === BUBBLE_STATE.DYING_POP) {
+          const p = Math.min(1, elapsed / 500);
+          // phase: 0-0.2 compress, 0.2-0.5 expand+fade, 0.5-1 fragments
+          let scl = 1;
+          if (p < 0.15) { scl = 1 - p * 0.5; }
+          else if (p < 0.5) { const q = (p - 0.15) / 0.35; scl = 0.92 + q * 0.6; }
+          else { const q = (p - 0.5) / 0.5; scl = 1.52 + q * 0.5; }
+          r = d.r * scl;
+          opacity = p < 0.15 ? 1 : Math.max(0, 1 - (p - 0.15) / 0.85);
+          // emit fragments
+          if (p > 0.5 && p < 0.55 && !d._fragsEmitted) {
+            d._fragsEmitted = true;
+            emitFragments(d);
+          }
+          if (p >= 1) d.state = BUBBLE_STATE.DEAD;
+        }
+        else if (d.state === BUBBLE_STATE.DYING_FLOAT) {
+          const p = Math.min(1, elapsed / 700);
+          const e = 1 - Math.pow(1 - p, 2);
+          r = d.r * (1 - e * 0.3);
+          opacity = 1 - e;
+          const yOffset = -e * 80;
+          const xOffset = e * rand(-15, 15) * (d._floatXdir || (d._floatXdir = Math.random() < 0.5 ? -1 : 1));
+          extraTrans = `translate(${xOffset},${yOffset})`;
+          if (p >= 1) d.state = BUBBLE_STATE.DEAD;
+        }
+        else if (d.state === BUBBLE_STATE.DYING_SHRINK) {
+          const p = Math.min(1, elapsed / 500);
+          r = d.r * (1 - p);
+          opacity = 1 - p;
+          if (p >= 1) d.state = BUBBLE_STATE.DEAD;
+        }
+
+        // Position from physics
+        const px = d.x;
+        const py = d.y;
+
+        // Outer transform: just translate + birth offset (no wobble scale here)
+        sel.attr('transform', `translate(${px},${py}) ${extraTrans}`);
+
+        // SQUASH transform on shell: rotate to axis, scale, unrotate
+        // Volume preservation: squash along axis, bulge perpendicular
+        const sq = d.squashAmount;
+        const squashSx = 1 - sq;
+        const squashSy = 1 + sq * 0.6;
+        const axisDeg = d.squashAxis * 180 / Math.PI;
+        const shell = sel.select('.shell');
+        shell.attr('transform', `rotate(${axisDeg}) scale(${squashSx},${squashSy}) rotate(${-axisDeg})`);
+
+        // Halo (circle, doesn't need wobble path)
+        shell.select('.halo').attr('r', r * 1.55).attr('opacity', opacity * 0.85);
+
+        // JELLY paths for body / rim / inner-shadow
+        const t = (now - d.lifeT) / 1000;
+        const jellyD = blobPath(r, t, d.perimPhase);
+        const jellyDInner = blobPath(r * 0.96, t, d.perimPhase);
+        shell.select('.body').attr('d', jellyD).attr('opacity', opacity * 0.95);
+        shell.select('.rim').attr('d', jellyDInner).attr('opacity', opacity * 0.35);
+        shell.select('.inner-shadow').attr('d', jellyD).attr('opacity', opacity * 0.7);
+
+        // Specular highlight — drift slowly
+        if (d.state === BUBBLE_STATE.ALIVE || d.state === BUBBLE_STATE.BIRTH) {
+          const t = (now - d.lifeT) / 1000;
+          const hAng = -Math.PI * 0.8 + 0.15 * Math.sin(t * 0.5 + d.highlightPhase);
+          const hDist = r * 0.42;
+          const hx = Math.cos(hAng) * hDist;
+          const hy = Math.sin(hAng) * hDist;
+          sel.select('.spec').attr('cx', hx).attr('cy', hy)
+            .attr('rx', r * 0.35).attr('ry', r * 0.20)
+            .attr('transform', `rotate(${(hAng * 180 / Math.PI) + 90},${hx},${hy})`)
+            .attr('opacity', opacity * 0.7);
+          sel.select('.spec2').attr('cx', hx * 0.6).attr('cy', hy * 0.85 - r * 0.12)
+            .attr('r', r * 0.06).attr('opacity', opacity * 0.85);
+        } else {
+          sel.select('.spec').attr('opacity', opacity * 0.5);
+          sel.select('.spec2').attr('opacity', opacity * 0.6);
+        }
+
+        // Content scaling
+        const c = sel.select('.content');
+        c.attr('opacity', opacity);
+        if (r > 30) {
+          c.select('.icon-bg').attr('cy', -r * 0.32).attr('r', Math.min(20, r * 0.22));
+          c.select('.icon-text').attr('y', -r * 0.32 + 4).attr('font-size', Math.min(14, r * 0.18)).text(d.icon).style('display', '');
+          c.select('.pnl-text').attr('y', r * 0.04).attr('font-size', Math.min(24, r * 0.30)).text(fmtMoney(d.pnl)).style('display', '');
+          c.select('.pct-text').attr('y', r * 0.30).attr('font-size', Math.min(11, r * 0.13)).attr('fill', d.pnl >= 0 ? '#7CFFCB' : '#FFAFB7').text(fmtPct(d.pct)).style('display', '');
+          c.select('.sym-only').style('display', 'none');
+        } else if (r > 18) {
+          c.select('.icon-bg').attr('r', 0);
+          c.select('.icon-text').style('display', 'none');
+          c.select('.sym-only').attr('y', -1).attr('font-size', Math.min(11, r * 0.30)).text(d.sym).style('display', '');
+          c.select('.pnl-text').attr('y', r * 0.32).attr('font-size', Math.min(9, r * 0.22)).text(fmtMoney(d.pnl)).style('display', '');
+          c.select('.pct-text').style('display', 'none');
+        } else {
+          c.select('.icon-bg').attr('r', 0);
+          c.select('.icon-text').style('display', 'none');
+          c.select('.sym-only').attr('y', 3).attr('font-size', Math.min(9, r * 0.42)).text(d.sym).style('display', '');
+          c.select('.pnl-text').style('display', 'none');
+          c.select('.pct-text').style('display', 'none');
+        }
+      });
+
+      // Remove dead bubbles after the frame
+      bubbles = bubbles.filter(b => b.state !== BUBBLE_STATE.DEAD);
+
+      // Process fragments
+      renderFragments(now);
+    }
+
+    // FRAGMENTS (pop debris)
+    let fragments = [];
+    function emitFragments(b) {
+      for (let i = 0; i < 8; i++) {
+        const ang = (i / 8) * Math.PI * 2 + rand(-0.15, 0.15);
+        const speed = rand(2.4, 4.5);
+        fragments.push({
+          x: b.x, y: b.y,
+          vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
+          r: rand(2, 5),
+          isUp: b.pnl >= 0,
+          life: 1,
+          birth: performance.now(),
+        });
+      }
+    }
+    let fragG;
+    function renderFragments(now) {
+      if (!fragG) fragG = svg.append('g').attr('class', 'frag-g');
+      fragments.forEach(f => {
+        const age = (now - f.birth) / 600;
+        f.life = Math.max(0, 1 - age);
+        f.x += f.vx; f.y += f.vy;
+        f.vy += 0.18;  // gravity
+        f.vx *= 0.96;
+      });
+      fragments = fragments.filter(f => f.life > 0.02);
+      const sel = fragG.selectAll('circle').data(fragments);
+      sel.exit().remove();
+      sel.enter().append('circle').merge(sel)
+        .attr('cx', d => d.x).attr('cy', d => d.y)
+        .attr('r', d => d.r * (0.5 + d.life * 0.5))
+        .attr('fill', d => d.isUp ? '#0ECB81' : '#F6465D')
+        .attr('opacity', d => d.life);
+    }
+
+
+    // ------------------------------------------------------------
+    // STATS
+    // ------------------------------------------------------------
+    function updateGainStats() {
+      const all = allAssets[STATE.range];
+      const net = all.reduce((a, b) => a + b.pnl, 0);
+      const wins = all.filter(a => a.pnl > 0);
+      const losses = all.filter(a => a.pnl < 0);
+      const best = all.reduce((m, a) => a.pnl > m.pnl ? a : m);
+      const worst = all.reduce((m, a) => a.pnl < m.pnl ? a : m);
+      $('#gf-net').textContent = fmtMoney(net);
+      $('#gf-net').className = 'v ' + (net >= 0 ? 'up' : 'dn');
+      $('#gf-win').textContent = wins.length + ' pairs';
+      $('#gf-loss').textContent = losses.length + ' pairs';
+      $('#gf-best').textContent = best.sym + ' ' + fmtMoney(best.pnl);
+      $('#gf-worst').textContent = worst.sym + ' ' + fmtMoney(worst.pnl);
+    }
+
+    // ------------------------------------------------------------
+    // TOOLTIP
+    // ------------------------------------------------------------
+    function showTip(e, d) {
+      tip.style.display = 'block';
+      const tierInfo = SIZE_TIERS[d.tier];
+      tip.innerHTML = `
+    <div class="ttl">
+      <span style="display:inline-flex;width:20px;height:20px;border-radius:50%;background:${d.color};align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white">${d.icon}</span>
+      ${d.sym}/USDT · perp
+    </div>
+    <div class="row"><span class="l">PnL (${rangeLabel(STATE.range)})</span><span class="v ${d.pnl >= 0 ? 'up' : 'dn'}">${fmtMoney(d.pnl)}</span></div>
+    <div class="row"><span class="l">% return</span><span class="v ${d.pnl >= 0 ? 'up' : 'dn'}">${fmtPct(d.pct)}</span></div>
+    <div class="row"><span class="l">24h volume</span><span>$${d.vol}M</span></div>
+    <div class="row"><span class="l">Cap tier</span><span style="color:${tierInfo ? '#F0B90B' : 'inherit'}">${tierInfo ? tierInfo.label : ''}</span></div>
+    <div class="row" style="margin-top:6px;color:var(--text-tertiary);font-size:10px;border-top:1px solid var(--border-subtle);padding-top:5px">≈ ${ri(8, 42)} fills · avg size $${ri(80, 420)}</div>
+  `;
+      moveTip(e);
+    }
+    function moveTip(e) {
+      const rect = gainBody.getBoundingClientRect();
+      let x = e.clientX - rect.left + 14, y = e.clientY - rect.top + 14;
+      if (x + 200 > rect.width) x = e.clientX - rect.left - 200;
+      if (y + 110 > rect.height) y = e.clientY - rect.top - 110;
+      tip.style.left = x + 'px'; tip.style.top = y + 'px';
+    }
+    function hideTip() { tip.style.display = 'none' }
+    function rangeLabel(r) { return r == 1 ? '24H' : r + 'D' }
+
+    // ------------------------------------------------------------
+    // RANGE SELECTOR
+    // ------------------------------------------------------------
+    document.querySelectorAll('#gain-range button').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('#gain-range button').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        STATE.range = +b.dataset.r;
+        resetEcosystem();
+      });
+    });
+
+    // ------------------------------------------------------------
+    // LIVE DRIFT — update PnL values smoothly + sync into bubbles
+    // ------------------------------------------------------------
+    function driftAssets() {
+      const list = allAssets[STATE.range];
+      list.forEach(a => {
+        a.pnl += rand(-0.4, 0.4) * Math.abs(a.pnl) * 0.005;
+        a.pct += rand(-0.04, 0.04);
+      });
+      // sync alive bubble values — only PnL/pct, NOT size (size locked to volume tier)
+      bubbles.forEach(b => {
+        if (b.state !== BUBBLE_STATE.ALIVE) return;
+        const fresh = list.find(a => a.sym === b.sym);
+        if (fresh) {
+          b.pnl = fresh.pnl;
+          b.pct = fresh.pct;
+        }
+      });
+      updateGainStats();
+    }
+    setInterval(driftAssets, 1500);
+
+    // ------------------------------------------------------------
+    // SWAP CYCLE — random replace bubble every ~3s
+    // ------------------------------------------------------------
+    function scheduleNextSwap() {
+      setTimeout(() => {
+        swapCycle();
+        scheduleNextSwap();
+      }, ri(2200, 3800));
+    }
+
+    function driftCalendar() {
+      if (monthData.length > 0 && Math.random() < 0.4) {
+        const idx = ri(0, Math.min(monthData.length, 28));
+        monthData[idx].pnl += rand(-2, 2);
+        monthData[idx].pct = monthData[idx].pnl / 800 * 100;
+      }
+      renderCalendar();
+    }
+    setInterval(driftCalendar, 2400);
+
+    // ------------------------------------------------------------
+    // ANIMATION LOOP
+    // ------------------------------------------------------------
+    function animLoop(now) {
+      renderFrame(now);
+      requestAnimationFrame(animLoop);
+    }
+
+    // ------------------------------------------------------------
+    // INIT
+    // ------------------------------------------------------------
+    window.addEventListener('resize', resizeGain);
+    function init() {
+      W = gainBody.clientWidth;
+      H = gainBody.clientHeight;
+      svg.attr('viewBox', `0 0 ${W} ${H}`);
+      setupSvgRoots();
+      resizeGain();
+      initialSpawn();
+      scheduleNextSwap();
+      updateGainStats();
+      renderCalendar();
+      requestAnimationFrame(animLoop);
+    }
+    init();
+  </script>
+</body>
+
+</html>
