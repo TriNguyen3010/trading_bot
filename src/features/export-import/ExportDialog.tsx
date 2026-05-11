@@ -21,7 +21,6 @@ import {
 } from './file-utils';
 import { unifiedBotStrategyCreateSchema } from '@/schemas/unified-bot-strategy.schema';
 import { botStrategyApi } from '@/features/bot-builder/bot-strategy.api';
-import { ValidationError } from '@/lib/http';
 import type { CreatePayload } from '@/types/api-helpers';
 import { formatBackendError } from '@/lib/format-error';
 
