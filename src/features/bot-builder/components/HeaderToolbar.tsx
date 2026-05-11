@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Activity,
   BookOpen,
   Download,
   Eye,
   EyeOff,
   FlaskConical,
+  List,
   LogOut,
   Pencil,
   Upload,
@@ -23,6 +23,8 @@ import {
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { ExportDialog } from '@/features/export-import/ExportDialog';
 import { useExportDialogStore } from '@/features/export-import/export-dialog.store';
+import { MyBotsDialog } from '@/features/bot-monitoring/MyBotsDialog';
+import { useMyBotsDialogStore } from '@/features/bot-monitoring/my-bots-dialog.store';
 import { ImportDialog } from '@/features/export-import/ImportDialog';
 import { useTemplatesDialogStore } from '@/features/templates/templates-dialog.store';
 import { AppliedTemplateBadge } from '@/features/templates/AppliedTemplateBadge';
@@ -55,6 +57,7 @@ export function HeaderToolbar() {
 
   const exportOpen = useExportDialogStore((s) => s.open);
   const setExportOpen = useExportDialogStore((s) => s.setOpen);
+  const setMyBotsOpen = useMyBotsDialogStore((s) => s.setOpen);
   const setTemplatesOpen = useTemplatesDialogStore((s) => s.setOpen);
   const botSummaryHidden = useLayoutPrefsStore((s) => s.botSummaryHidden);
   const toggleBotSummary = useLayoutPrefsStore((s) => s.toggleBotSummary);
@@ -268,24 +271,17 @@ export function HeaderToolbar() {
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={!canExport}
-                  onClick={() => navigate('/bots/bot-1')}
-                  className="rounded-full px-3"
-                >
-                  <Activity className="h-3.5 w-3.5" />
-                  Monitor
-                </Button>
-              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setMyBotsOpen(true)}
+                className="rounded-full px-3"
+              >
+                <List className="h-3.5 w-3.5" />
+                My Bots
+              </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              {canExport
-                ? 'View live monitoring dashboard'
-                : 'Fix issues before monitoring'}
-            </TooltipContent>
+            <TooltipContent>Browse and monitor all your bots.</TooltipContent>
           </Tooltip>
 
           <span
@@ -335,6 +331,7 @@ export function HeaderToolbar() {
 
       <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
+      <MyBotsDialog />
     </header>
   );
 }
