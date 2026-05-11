@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Copy, Download, ShieldAlert } from 'lucide-react';
+import { Copy, Download, Loader2, ShieldAlert, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -20,6 +20,9 @@ import {
   unifiedBotStrategyFilename,
 } from './file-utils';
 import { unifiedBotStrategyCreateSchema } from '@/schemas/unified-bot-strategy.schema';
+import { botStrategyApi } from '@/features/bot-builder/bot-strategy.api';
+import { ValidationError } from '@/lib/http';
+import type { CreatePayload } from '@/types/api-helpers';
 
 export interface ExportDialogProps {
   open: boolean;
@@ -30,6 +33,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   const state = useBuilderStore();
   const issues = useMemo(() => validateBuilder(state), [state]);
   const [parseError, setParseError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Build the unified payload + the 3 FE-only round-trip fields. We
@@ -78,17 +83,32 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     toast.success(`Saved ${filename}`);
   };
 
-  const handleDeploy = () => {
+  const handleSubmit = async () => {
     if (!bundle) return;
-    downloadJson(bundle, filename);
-    // Mock bot ID — real BE returns this from POST /bot-strategy/create.
-    const newBotId = `bot-${Date.now()}`;
-    toast.success(`${filename} saved · routing to monitor…`);
-    onOpenChange(false);
-    // Tiny delay so the dialog close animation reads cleanly before nav.
-    setTimeout(() => {
-      navigate(`/bots/${newBotId}`);
-    }, 150);
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const response = await botStrategyApi.create(bundle as unknown as CreatePayload);
+      toast.success(
+        `Bot #${response.bot.id} "${response.bot.bot_name ?? ''}" đã được tạo thành công`,
+      );
+      onOpenChange(false);
+      setTimeout(() => {
+        navigate(`/bots/${response.bot.id}`);
+      }, 150);
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        setSubmitError(
+          err.detail
+            .map((d) => `${d.loc.join('.')}: ${d.msg}`)
+            .join('\n'),
+        );
+      } else {
+        toast.error('Lỗi server, vui lòng thử lại');
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -127,6 +147,13 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           </div>
         ) : null}
 
+        {submitError ? (
+          <div className="rounded-lg border border-danger/40 bg-bearish-subtle p-4 text-xs text-bearish">
+            <p className="mb-1 font-semibold">Backend validation error:</p>
+            <pre className="whitespace-pre-wrap font-mono">{submitError}</pre>
+          </div>
+        ) : null}
+
         {bundle ? (
           <pre className="max-h-[420px] overflow-auto rounded-lg border border-border bg-canvas p-4 font-mono text-xs leading-5 text-fg-secondary scrollbar-thin">
             {json}
@@ -155,11 +182,15 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           </Button>
           <Button
             variant="primary"
-            disabled={!bundle}
-            onClick={handleDeploy}
+            disabled={!bundle || submitting}
+            onClick={handleSubmit}
           >
-            <Activity className="h-3.5 w-3.5" />
-            Deploy &amp; monitor
+            {submitting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Upload className="h-3.5 w-3.5" />
+            )}
+            {submitting ? 'Submitting…' : 'Submit to Backend'}
           </Button>
         </DialogFooter>
       </DialogContent>

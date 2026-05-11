@@ -7,8 +7,10 @@ import {
   Eye,
   EyeOff,
   FlaskConical,
+  LogOut,
   Pencil,
   Upload,
+  User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +30,12 @@ import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store'
 import { validateBuilder } from '@/lib/validator';
 import { strings } from '@/i18n/en';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/features/auth/auth.store';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 function relativeTime(ts: number | null) {
   if (!ts) return null;
@@ -57,6 +65,8 @@ export function HeaderToolbar() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const navigate = useNavigate();
+  const authUser = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
 
   const issues = useMemo(() => validateBuilder(state), [state]);
   const canExport = issues.length === 0;
@@ -277,6 +287,48 @@ export function HeaderToolbar() {
                 : 'Fix issues before monitoring'}
             </TooltipContent>
           </Tooltip>
+
+          <span
+            aria-hidden="true"
+            className="mx-1 h-5 w-px bg-border-subtle"
+          />
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full px-3"
+              >
+                <User className="h-3.5 w-3.5" />
+                <span className="max-w-[120px] truncate text-xs">
+                  {authUser?.email ?? 'User'}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-56 p-2">
+              <div className="mb-2 border-b border-border px-2 pb-2">
+                <p className="text-sm font-medium text-fg">
+                  {authUser?.email ?? 'User'}
+                </p>
+                <p className="text-xs text-fg-muted">
+                  {authUser?.is_admin ? 'Admin' : 'Member'}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-bearish"
+                onClick={() => {
+                  logout();
+                  navigate('/login', { replace: true });
+                }}
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Đăng xuất
+              </Button>
+            </PopoverContent>
+          </Popover>
         </div>
       </TooltipProvider>
       </div>

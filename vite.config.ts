@@ -13,6 +13,14 @@ export default defineConfig({
   server: {
     port: 5173,
     host: '127.0.0.1',
+    proxy: {
+      '/api': {
+        target: 'https://tradingbot.ne.com:8502',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
     watch: {
       usePolling: true,
     },
