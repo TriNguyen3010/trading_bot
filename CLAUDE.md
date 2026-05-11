@@ -80,7 +80,7 @@ pnpm test        # vitest run
 - Email: `trinm@coin98.finance`
 - Password: `Coin98@123`
 
-**BE Base URL (dev):** `https://tradingbot.ne.com:8502`
+**BE Base URL (dev):** `http://tradingbot.ne.com:8088` (HTTP only — BE chưa support HTTPS)
 
 **API docs:** Mở `http://localhost:8088/redoc` khi BE chạy local, hoặc check file `Data/openapi.json` local.
 
@@ -254,10 +254,11 @@ import { Button } from '@/components/ui/button';      // ← dùng '@/'
 ### 7.3. CORS ở dev
 
 FE dev dùng Vite proxy → bypass CORS:
-- FE gọi `/api/user/login` → Vite forward sang `https://tradingbot.ne.com:8502/user/login`.
+- FE gọi `/api/user/login` → Vite forward sang `http://tradingbot.ne.com:8088/user/login`.
 - `VITE_API_BASE_URL` ở dev phải là `/api` (không phải URL đầy đủ) — nếu không sẽ bypass proxy → lỗi CORS.
 - Cấu hình env theo mode đã commit sẵn: `.env.development` (= `/api`) và `.env.production` (= URL thật).
 - Production: BE phải config CORS allow origin của Vercel domain.
+- ⚠️ **Mixed-content**: BE chỉ serve HTTP. FE prod thường HTTPS → browser block request HTTP. Cần BE bật HTTPS, hoặc Vercel rewrite/proxy, hoặc deploy FE qua HTTP. Đang chờ BE bật HTTPS.
 
 ### 7.4. Tài liệu BE phải đọc
 
@@ -350,11 +351,8 @@ const form = useForm<FormValues>({ resolver: zodResolver(schema) });
 ### "Workspace still starting" khi bash
 Vite/dev server boot chậm. Đợi 5-10s rồi retry.
 
-### `pnpm dev` cảnh báo proxy SSL
-BE đang dùng self-signed cert. Trong `vite.config.ts` proxy có `secure: false`. OK ở dev.
-
 ### Lỗi `CORS` khi gọi BE
-Bạn đang gọi thẳng `https://tradingbot.ne.com:8502/...` thay vì qua `/api/...`. Sửa lại request path.
+Bạn đang gọi thẳng `http://tradingbot.ne.com:8088/...` thay vì qua `/api/...`. Sửa lại request path.
 
 ### Type error sau khi BE update spec
 ```bash
@@ -388,7 +386,7 @@ Check `localStorage` → key auth store có `token` không. Có thể BE đổi 
 
 - **Tech design owner:** Tuấn Nguyễn Anh (BE)
 - **FE owner (project này):** Tri Nguyen (`trinm@coin98.finance`)
-- **BE base URL dev:** `https://tradingbot.ne.com:8502`
+- **BE base URL dev:** `http://tradingbot.ne.com:8088`
 - **BE OpenAPI:** `http://localhost:8088/redoc` (khi BE chạy local) hoặc `Data/openapi.json`
 
 ---

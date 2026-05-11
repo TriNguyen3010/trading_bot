@@ -15,9 +15,10 @@ export default defineConfig({
     host: '127.0.0.1',
     proxy: {
       '/api': {
-        target: 'https://tradingbot.ne.com:8502',
+        // BE FastAPI ("Gamma Trade Platform") nằm ở port 8088 HTTP.
+        // Port 8502 là Streamlit dashboard, không phải BE. Confirmed 2026-05-11.
+        target: 'http://tradingbot.ne.com:8088',
         changeOrigin: true,
-        secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
