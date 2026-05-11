@@ -226,6 +226,24 @@ describe('http wrapper', () => {
     });
   });
 
+  it('does NOT toast on 5xx for /bot/* paths (MyBotsDialog handles it)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      text: async () => 'boom',
+    });
+
+    try {
+      await http('GET', '/bot/list');
+      expect.unreachable('should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(HttpError);
+      expect((err as HttpError).status).toBe(500);
+    }
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
   it('throws HttpError with status + toast on other server errors', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,

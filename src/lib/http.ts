@@ -74,7 +74,7 @@ const LOGIN_PATH = '/user/login';
 
 // Endpoints có error UX riêng (red box in dialog) → http.ts không fire toast.
 // 401 vẫn được xử lý global (clearAuth + redirect) vì có thể là token expired.
-const SILENT_TOAST_PREFIXES = ['/bot-strategy/'];
+const SILENT_TOAST_PREFIXES = ['/bot-strategy/', '/bot/'];
 
 function hasSilentToast(path: string): boolean {
   return (
