@@ -166,9 +166,10 @@ export function generateCycle(botId: string, now: number): ExecutionCycle {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Mock bot registry — 3 demo bots for the BotsListPage. Any other id
-// (e.g. one minted by the Builder Deploy CTA: `bot-${Date.now()}`) falls
-// through to the default Bollinger config.
+// Mock bot registry — 3 demo bots powering the BotMonitoringPage when
+// no real BE data is wired. Any other id (e.g. one minted by the Builder
+// Deploy CTA: `bot-${Date.now()}`) falls through to the default Bollinger
+// config.
 // ──────────────────────────────────────────────────────────────────────
 const DAY_MS = 86_400_000;
 const HOUR_MS = 3_600_000;

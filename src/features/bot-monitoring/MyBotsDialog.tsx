@@ -66,7 +66,9 @@ function ModeBadge({ config }: { config: FreqtradeConfig | null }) {
 }
 
 function Placeholder() {
-  return <span className="text-sm font-semibold tabular-nums text-fg-muted">&mdash;</span>;
+  return (
+    <span className="text-sm font-semibold tabular-nums text-fg-muted">—</span>
+  );
 }
 
 function BotCard({ row, onClick }: { row: BotRow; onClick: () => void }) {
@@ -106,7 +108,7 @@ function BotCard({ row, onClick }: { row: BotRow; onClick: () => void }) {
               ) : (
                 <code className="text-fg-secondary">{pair}</code>
               )}
-              <span className="mx-1.5 text-border-strong">&middot;</span>
+              <span className="mx-1.5 text-border-strong">·</span>
               {timeframe == null ? (
                 <span className="inline-block h-3 w-8 animate-pulse rounded bg-fg-muted/15" />
               ) : (
@@ -137,8 +139,8 @@ function BotCard({ row, onClick }: { row: BotRow; onClick: () => void }) {
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-fg-muted">&mdash;</span>
-        <span className="text-xs font-semibold text-brand">Monitor &rarr;</span>
+        <span className="text-xs text-fg-muted">—</span>
+        <span className="text-xs font-semibold text-brand">Monitor →</span>
       </div>
     </div>
   );
@@ -173,7 +175,7 @@ function EmptyState({ onClose }: { onClose: () => void }) {
             navigate('/builder');
           }}
         >
-          Build your first strategy &rarr;
+          Build your first strategy →
         </Button>
       </div>
     </div>
