@@ -20,6 +20,19 @@ import {
 
 const APP_VERSION = '0.1.0';
 
+// BE codegen Python file → `strategy_name` phải là valid Python class name
+// (PascalCase identifier, ví dụ `MyRSIStrategy`). User có thể đặt bot name
+// có dấu cách, ký tự đặc biệt, tiếng Việt — sanitize về PascalCase trước
+// khi gửi BE. NFD normalize để strip diacritics ("tăng" → "tang").
+export function toPythonClassName(input: string): string {
+  const stripped = input.normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const parts = stripped.split(/[^A-Za-z0-9]+/).filter(Boolean);
+  if (parts.length === 0) return 'MyStrategy';
+  let out = parts.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+  if (/^\d/.test(out)) out = `S${out}`;
+  return out;
+}
+
 const EMPTY_GROUP: SignalGroup = {
   logic: { type: 'AND', threshold: null },
   conditions: [],
@@ -77,9 +90,7 @@ function buildRisk(close: CloseMethodForm): RiskShape {
   // SL value in % (e.g. -3) -> ratio (-0.03). Default to -0.4 (=−40%) when
   // SL is disabled for the manual / indicator close methods.
   const sloss =
-    close.type === 'tp_sl' && close.slEnabled
-      ? close.slValue / 100
-      : -0.4;
+    close.type === 'tp_sl' && close.slEnabled ? close.slValue / 100 : -0.4;
   return {
     stoploss: sloss,
     trailing_stop: close.type === 'tp_sl' && close.trailingEnabled,
@@ -112,7 +123,7 @@ export function buildBotPayload(state: BuilderState): BotPayload {
   return {
     bot_name: state.botName,
     exchange_name: c.exchange,
-    strategy_name: state.strategy.name || state.botName,
+    strategy_name: toPythonClassName(state.strategy.name || state.botName),
     dry_run: dryRun,
     stake_currency: c.stakeCurrency,
     stake_amount: c.stakeAmount,
@@ -216,10 +227,7 @@ export function buildBundle(state: BuilderState): Bundle {
 /* Deserializer (Bundle → BuilderState patch)                                 */
 /* -------------------------------------------------------------------------- */
 
-import type {
-  Direction,
-  TpLevel,
-} from '@/types/builder.types';
+import type { Direction, TpLevel } from '@/types/builder.types';
 import type { BotConfigForm, EntryStrategyForm } from '@/types/builder.types';
 
 interface DeserializedState {
@@ -248,7 +256,11 @@ function deserializeGroup(g: SignalGroup): ConditionGroup {
 }
 
 function deserializeIndicators(
-  list: { name: string; type: string; parameters: Record<string, number | string> }[],
+  list: {
+    name: string;
+    type: string;
+    parameters: Record<string, number | string>;
+  }[],
 ): IndicatorItem[] {
   return list.map((i) => ({
     id: crypto.randomUUID(),
@@ -378,9 +390,7 @@ export interface UnifiedBundle extends UnifiedBotStrategyCreate {
   close_method_type?: CloseMethodForm['type'];
 }
 
-export function buildUnifiedPayload(
-  state: BuilderState,
-): UnifiedBundle {
+export function buildUnifiedPayload(state: BuilderState): UnifiedBundle {
   const bot = buildBotPayload(state);
   const strategy = buildStrategyPayload(state);
   const close = state.closeMethod;
@@ -394,7 +404,8 @@ export function buildUnifiedPayload(
     exchange_name: bot.exchange_name,
     strategy_name: bot.strategy_name,
     dry_run: bot.dry_run,
-    stake_currency: bot.stake_currency as UnifiedBotStrategyCreate['stake_currency'],
+    stake_currency:
+      bot.stake_currency as UnifiedBotStrategyCreate['stake_currency'],
     stake_amount: bot.stake_amount,
     max_open_trades: bot.max_open_trades,
     timeframe: bot.timeframe as UnifiedBotStrategyCreate['timeframe'],
@@ -452,7 +463,8 @@ export function buildUnifiedPayload(
     // object with the right shape — reuse it. We cast because the Zod
     // inferred type carries `defaults` whereas the legacy type doesn't, but
     // the runtime values are equivalent.
-    configurations: strategy.configurations as unknown as UnifiedBotStrategyCreate['configurations'],
+    configurations:
+      strategy.configurations as unknown as UnifiedBotStrategyCreate['configurations'],
 
     // Deprecated, but the BE accepts it. Emit `false` explicitly for clarity.
     ai_powered: false,
@@ -496,7 +508,9 @@ const EMPTY_DESERIALIZED_GROUP: ConditionGroup = {
  * mapping here and the legacy ops enum can stay narrow.
  */
 function coerceUnifiedSignalGroup(
-  g: NonNullable<UnifiedBotStrategyCreate['configurations']>['signals']['entry_long'],
+  g: NonNullable<
+    UnifiedBotStrategyCreate['configurations']
+  >['signals']['entry_long'],
 ): SignalGroup {
   if (!g) {
     return { logic: { type: 'AND', threshold: null }, conditions: [] };
@@ -529,12 +543,8 @@ export function deserializeUnifiedPayload(
     (cfg.signals.entry_short?.conditions.length ?? 0) > 0 ? 'short' : 'long';
   const isShort = direction === 'short';
 
-  const entryGroup = isShort
-    ? cfg.signals.entry_short
-    : cfg.signals.entry_long;
-  const exitGroup = isShort
-    ? cfg.signals.exit_short
-    : cfg.signals.exit_long;
+  const entryGroup = isShort ? cfg.signals.entry_short : cfg.signals.entry_long;
+  const exitGroup = isShort ? cfg.signals.exit_short : cfg.signals.exit_long;
 
   // Prefer the explicit FE round-trip field; fall back to inferring from
   // the strategy configuration so files exported from a non-FE source
@@ -544,8 +554,8 @@ export function deserializeUnifiedPayload(
     (cfg.roi_steps.length > 0
       ? 'roi'
       : cfg.use_exit_signal
-      ? 'indicator'
-      : 'tp_sl');
+        ? 'indicator'
+        : 'tp_sl');
 
   const customExit = cfg.custom_exit;
   const risk = cfg.risk;
@@ -575,8 +585,7 @@ export function deserializeUnifiedPayload(
       marginMode: (payload.margin_mode ??
         'cross') as BotConfigForm['marginMode'],
       maxOpenTrades: payload.max_open_trades,
-      stakeCurrency:
-        payload.stake_currency as BotConfigForm['stakeCurrency'],
+      stakeCurrency: payload.stake_currency as BotConfigForm['stakeCurrency'],
       stakeAmount,
       dryRunWallet: payload.dry_run_wallet ?? 1000,
     },
@@ -591,10 +600,7 @@ export function deserializeUnifiedPayload(
         cfg.signals.indicators.map((i) => ({
           name: i.name,
           type: i.type,
-          parameters: (i.parameters ?? {}) as Record<
-            string,
-            number | string
-          >,
+          parameters: (i.parameters ?? {}) as Record<string, number | string>,
         })),
       ),
       entryConditions: entryGroup
@@ -613,8 +619,7 @@ export function deserializeUnifiedPayload(
       type: closeType,
       tpEnabled: customExit?.partial_enabled ?? false,
       tpLevels,
-      slEnabled:
-        (risk?.stoploss ?? -0.4) > -0.4 || closeType === 'tp_sl',
+      slEnabled: (risk?.stoploss ?? -0.4) > -0.4 || closeType === 'tp_sl',
       slValue: (risk?.stoploss ?? -0.04) * 100,
       trailingEnabled: risk?.trailing_stop ?? false,
       trailingPositive: (risk?.trailing_stop_positive ?? 0) * 100,

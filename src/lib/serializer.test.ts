@@ -5,6 +5,7 @@ import {
   buildUnifiedPayload,
   deserializeBundle,
   deserializeUnifiedPayload,
+  toPythonClassName,
 } from './serializer';
 import { bundleSchema } from '@/schemas/bundle.schema';
 import { unifiedBotStrategyCreateSchema } from '@/schemas/unified-bot-strategy.schema';
@@ -71,6 +72,14 @@ describe('serializer', () => {
     expect(bundle.bot.pair).toBe('BTC/USDC:USDC');
   });
 
+  it('sanitizes strategy_name to a Python class name in the unified payload', () => {
+    const store = useBuilderStore.getState();
+    store.resetAll();
+    store.patchStrategy({ name: 'my BTC scalper v2' });
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    expect(payload.strategy_name).toBe('MyBTCScalperV2');
+  });
+
   it('puts conditions on entry_long when direction is long', () => {
     applyBollingerLong();
     const bundle = buildBundle(useBuilderStore.getState());
@@ -99,12 +108,10 @@ describe('serializer', () => {
   it('serializes TP levels into custom_exit.partial_levels', () => {
     applyBollingerLong();
     const bundle = buildBundle(useBuilderStore.getState());
-    expect(
-      bundle.strategy.configurations.custom_exit.partial_enabled,
-    ).toBe(true);
-    expect(
-      bundle.strategy.configurations.custom_exit.partial_levels,
-    ).toEqual([
+    expect(bundle.strategy.configurations.custom_exit.partial_enabled).toBe(
+      true,
+    );
+    expect(bundle.strategy.configurations.custom_exit.partial_levels).toEqual([
       { profit: 5, amount: 50 },
       { profit: 10, amount: 25 },
     ]);
@@ -132,7 +139,9 @@ describe('serializer', () => {
     expect(payload.pair).toBe('BTC/USDC:USDC');
     expect(payload.trading_mode).toBe('futures');
     expect(payload.margin_mode).toBe('cross');
-    expect(payload.configurations?.signals.entry_long?.conditions).toHaveLength(1);
+    expect(payload.configurations?.signals.entry_long?.conditions).toHaveLength(
+      1,
+    );
   });
 
   it('round-trips a bundle through deserializeBundle', () => {
@@ -222,5 +231,37 @@ describe('serializer', () => {
       { minutes: 0, roi: 5 },
       { minutes: 60, roi: 2 },
     ]);
+  });
+
+  describe('toPythonClassName', () => {
+    it('PascalCases a space-separated name', () => {
+      expect(toPythonClassName('Bollinger Breakout')).toBe('BollingerBreakout');
+    });
+
+    it('strips non-alphanumeric chars (dashes, dots, slashes)', () => {
+      expect(toPythonClassName('my-bot.v2')).toBe('MyBotV2');
+    });
+
+    it('handles Vietnamese diacritics by NFD-normalizing them', () => {
+      expect(toPythonClassName('Bot tăng giá')).toBe('BotTangGia');
+      expect(toPythonClassName('Chiến lược RSI')).toBe('ChienLuocRSI');
+    });
+
+    it('preserves uppercase acronyms when user types them', () => {
+      expect(toPythonClassName('My RSI strategy')).toBe('MyRSIStrategy');
+    });
+
+    it('prepends S when name starts with a digit', () => {
+      expect(toPythonClassName('1bot')).toBe('S1bot');
+    });
+
+    it('falls back to MyStrategy when input has no alphanumerics', () => {
+      expect(toPythonClassName('  --  ')).toBe('MyStrategy');
+      expect(toPythonClassName('')).toBe('MyStrategy');
+    });
+
+    it('keeps an already-valid PascalCase identifier intact', () => {
+      expect(toPythonClassName('MyRSIStrategy')).toBe('MyRSIStrategy');
+    });
   });
 });
