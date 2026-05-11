@@ -21,8 +21,33 @@ import {
 } from './file-utils';
 import { unifiedBotStrategyCreateSchema } from '@/schemas/unified-bot-strategy.schema';
 import { botStrategyApi } from '@/features/bot-builder/bot-strategy.api';
-import { ValidationError } from '@/lib/http';
+import { HttpError, ValidationError } from '@/lib/http';
 import type { CreatePayload } from '@/types/api-helpers';
+
+function formatBackendError(err: unknown): string {
+  if (err instanceof ValidationError) {
+    return err.detail
+      .map((d) => `${d.loc.join('.') || '(root)'}: ${d.msg}`)
+      .join('\n');
+  }
+  if (err instanceof HttpError) {
+    // Body từ BE thường là JSON `{detail: "..."}` hoặc text. Cố parse JSON trước.
+    try {
+      const parsed = JSON.parse(err.body) as { detail?: unknown };
+      if (typeof parsed.detail === 'string')
+        return `${err.status}: ${parsed.detail}`;
+      if (Array.isArray(parsed.detail))
+        return `${err.status}:\n${parsed.detail.map(String).join('\n')}`;
+      return `${err.status}: ${err.body || err.message}`;
+    } catch {
+      return `${err.status}: ${err.body || err.message}`;
+    }
+  }
+  if (err instanceof Error && err.message === 'Network error') {
+    return 'Không thể kết nối server';
+  }
+  return err instanceof Error ? err.message : String(err);
+}
 
 export interface ExportDialogProps {
   open: boolean;
@@ -88,7 +113,13 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const response = await botStrategyApi.create(bundle as unknown as CreatePayload);
+      // Parse the bundle via Zod to strip out FE-only fields (order_type, close_method_type, etc.)
+      // so the backend doesn't reject it with a 422 Unprocessable Entity error.
+      const backendPayload = unifiedBotStrategyCreateSchema.parse(bundle);
+
+      const response = await botStrategyApi.create(
+        backendPayload as unknown as CreatePayload,
+      );
       toast.success(
         `Bot #${response.bot.id} "${response.bot.bot_name ?? ''}" đã được tạo thành công`,
       );
@@ -97,15 +128,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         navigate(`/bots/${response.bot.id}`);
       }, 150);
     } catch (err) {
-      if (err instanceof ValidationError) {
-        setSubmitError(
-          err.detail
-            .map((d) => `${d.loc.join('.')}: ${d.msg}`)
-            .join('\n'),
-        );
-      } else {
-        toast.error('Lỗi server, vui lòng thử lại');
-      }
+      setSubmitError(formatBackendError(err));
     } finally {
       setSubmitting(false);
     }
@@ -123,7 +146,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         </DialogHeader>
 
         {issues.length > 0 ? (
-          <div className="rounded-lg border border-danger/40 bg-bearish-subtle p-4">
+          <div className="border-danger/40 rounded-lg border bg-bearish-subtle p-4">
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-bearish">
               <ShieldAlert className="h-4 w-4" />
               Fix {issues.length} issue{issues.length === 1 ? '' : 's'} before
@@ -141,21 +164,21 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         ) : null}
 
         {parseError ? (
-          <div className="rounded-lg border border-danger/40 bg-bearish-subtle p-4 text-xs text-bearish">
+          <div className="border-danger/40 rounded-lg border bg-bearish-subtle p-4 text-xs text-bearish">
             <p className="mb-1 font-semibold">Schema validation failed:</p>
             <pre className="whitespace-pre-wrap font-mono">{parseError}</pre>
           </div>
         ) : null}
 
         {submitError ? (
-          <div className="rounded-lg border border-danger/40 bg-bearish-subtle p-4 text-xs text-bearish">
+          <div className="border-danger/40 rounded-lg border bg-bearish-subtle p-4 text-xs text-bearish">
             <p className="mb-1 font-semibold">Backend validation error:</p>
             <pre className="whitespace-pre-wrap font-mono">{submitError}</pre>
           </div>
         ) : null}
 
         {bundle ? (
-          <pre className="max-h-[420px] overflow-auto rounded-lg border border-border bg-canvas p-4 font-mono text-xs leading-5 text-fg-secondary scrollbar-thin">
+          <pre className="scrollbar-thin max-h-[420px] overflow-auto rounded-lg border border-border bg-canvas p-4 font-mono text-xs leading-5 text-fg-secondary">
             {json}
           </pre>
         ) : null}
@@ -164,11 +187,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-          <Button
-            variant="secondary"
-            disabled={!bundle}
-            onClick={handleCopy}
-          >
+          <Button variant="secondary" disabled={!bundle} onClick={handleCopy}>
             <Copy className="h-3.5 w-3.5" />
             Copy
           </Button>

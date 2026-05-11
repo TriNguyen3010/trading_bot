@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { HttpError } from '@/lib/http';
 import { useAuthStore } from './auth.store';
 
 const loginSchema = z.object({
@@ -16,6 +17,18 @@ const loginSchema = z.object({
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
+
+function getLoginErrorMessage(err: unknown): string {
+  if (err instanceof HttpError) {
+    if (err.status === 401) return 'Email hoặc mật khẩu không đúng';
+    if (err.status >= 500) return 'Máy chủ đang gặp lỗi, vui lòng thử lại sau';
+    return `Đăng nhập thất bại (mã ${err.status})`;
+  }
+  if (err instanceof Error && err.message === 'Network error') {
+    return 'Không thể kết nối server';
+  }
+  return 'Đăng nhập thất bại';
+}
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -37,11 +50,7 @@ export function LoginPage() {
       await login(data.email, data.password);
       navigate('/builder', { replace: true });
     } catch (err) {
-      const msg =
-        err instanceof Error && err.message === 'Network error'
-          ? 'Không thể kết nối server'
-          : 'Email hoặc mật khẩu không đúng';
-      toast.error(msg);
+      toast.error(getLoginErrorMessage(err));
     } finally {
       setPending(false);
     }
