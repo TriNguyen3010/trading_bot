@@ -36,8 +36,12 @@ export function LoginPage() {
     try {
       await login(data.email, data.password);
       navigate('/builder', { replace: true });
-    } catch {
-      toast.error('Email hoặc mật khẩu không đúng');
+    } catch (err) {
+      const msg =
+        err instanceof Error && err.message === 'Network error'
+          ? 'Không thể kết nối server'
+          : 'Email hoặc mật khẩu không đúng';
+      toast.error(msg);
     } finally {
       setPending(false);
     }

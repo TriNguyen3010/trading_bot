@@ -48,11 +48,17 @@ export async function http<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body != null ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method,
+      headers,
+      body: body != null ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    toast.error('Không thể kết nối server. Vui lòng kiểm tra mạng.');
+    throw new Error('Network error');
+  }
 
   if (res.status === 401) {
     clearAuth();
