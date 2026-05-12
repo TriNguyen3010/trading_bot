@@ -97,7 +97,7 @@ export function CypheusPanel() {
     <TooltipProvider delayDuration={collapsed ? 100 : 250}>
       <aside
         className={cn(
-          'flex h-full flex-shrink-0 flex-col bg-black',
+          'card-coin98 flex h-full flex-shrink-0 flex-col',
           'transition-[width] duration-fast ease-out-quick',
         )}
         style={{ width: 'var(--layout-left-panel)' }}
@@ -284,7 +284,7 @@ function CypheusSectionBody({
   return (
     <>
       <CypheusChat />
-      <div className="bg-black">
+      <div>
         <CypheusInput onSubmit={onSubmit} disabled={inputDisabled} />
         <div className="px-4 pb-3">
           <CreateNewBotButton />
