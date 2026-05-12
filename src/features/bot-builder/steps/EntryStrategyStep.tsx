@@ -58,6 +58,7 @@ export function EntryStrategySetup() {
         indicators={fullIndicators}
         candlestickChannels={[...allCandle]}
         onChange={wrapOnChange((g) => patch({ entryConditions: g }))}
+        defaultRowOnMount
       />
     </>
   );
