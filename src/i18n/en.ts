@@ -168,12 +168,7 @@ export const strings = {
 
     gallery: {
       title: 'Bot Templates',
-      // The two `<kbd>Shift</kbd>` + `<strong>Use</strong>` markers are
-      // part of the React tree, not this string — kept here as a
-      // sentence with the inline keyword in plain prose.
-      descriptionLead: 'Pick a starter bot. Cypheus will set it up for you. Hold ',
-      descriptionMid: ' while clicking ',
-      descriptionTail: ' to skip the animation.',
+      description: 'Pick a starter bot — fields fill instantly.',
       empty: 'No templates match this filter. Try clearing one of the chips above.',
       cardCypheusHint: 'Cypheus animates the setup',
       cardUseLabel: 'Use',

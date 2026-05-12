@@ -15,8 +15,7 @@
  *   - No-op in non-DOM environments (vitest jsdom is fine; SSR/Node
  *     would fall through cleanly).
  *   - Honours `prefers-reduced-motion: reduce` — falls back to instant
- *     scroll for accessibility users (mirrors the same gate that
- *     `apply.ts` uses for skipAnimation).
+ *     scroll for accessibility users.
  *
  * `block: 'center'` keeps the anchor visually centred in the viewport
  * (the Sheet has its own scroll context so this stays inside the

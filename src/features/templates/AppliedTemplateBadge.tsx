@@ -20,8 +20,7 @@ import { useDivergedFromTemplate } from './useDivergedFromTemplate';
  * after edits" subtext when the user has modified the bot away from the
  * template snapshot. Click on the name re-opens the detail modal so the
  * user can re-read what the original template was about; the inline
- * "Reset" button reapplies the snapshot (skipping animation since the
- * user is presumably mid-flow and doesn't want a 6s timeout).
+ * "Reset" button reapplies the snapshot instantly.
  *
  * Renders nothing when no template has been applied.
  */

@@ -16,7 +16,7 @@ export const cypheusDefault: BotTemplate = {
   longDescription:
     "A balanced demo strategy. Goes long when RSI dips below 30 (oversold) and " +
     "candle volume is rising. Exits via two-tier take-profit (5% / 10%) and a " +
-    "−3% stop-loss. Designed to showcase the full magic-build flow.",
+    "−3% stop-loss. Cypheus's recommended starting point.",
   tags: ['btc', 'futures', 'breakout', 'rsi'],
   difficulty: 'intermediate',
   riskLevel: 'balanced',

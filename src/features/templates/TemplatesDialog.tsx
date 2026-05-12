@@ -81,13 +81,7 @@ export function TemplatesDialog() {
             </div>
             <DialogTitle>{strings.templates.gallery.title}</DialogTitle>
             <DialogDescription>
-              {strings.templates.gallery.descriptionLead}
-              <kbd className="rounded border border-border bg-canvas px-1 font-mono text-2xs">
-                Shift
-              </kbd>
-              {strings.templates.gallery.descriptionMid}
-              <strong>{strings.templates.gallery.cardUseLabel}</strong>
-              {strings.templates.gallery.descriptionTail}
+              {strings.templates.gallery.description}
             </DialogDescription>
           </DialogHeader>
 
