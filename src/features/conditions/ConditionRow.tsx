@@ -1,7 +1,6 @@
 import { X } from 'lucide-react';
 import { Select } from '@/components/ui/select';
 import { NumberInput } from '@/components/ui/number-input';
-import { ToggleGroup } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import { indicatorOutputId } from '../indicators/indicator-registry';
 import type {
@@ -80,20 +79,11 @@ export function ConditionRow({
        * and stays readable even with longer operator labels like
        * "crosses above". */}
       <div className="flex items-center gap-2">
-        {!isFirst ? (
-          <ToggleGroup
-            value={row.operator ?? 'AND'}
-            onChange={(v) => onChange({ operator: v as 'AND' | 'OR' })}
-            options={[
-              { value: 'AND', label: 'AND' },
-              { value: 'OR', label: 'OR' },
-            ]}
-          />
-        ) : (
+        {isFirst ? (
           <span className="w-12 shrink-0 text-center text-xs font-semibold uppercase tracking-wide text-fg-muted">
             IF
           </span>
-        )}
+        ) : null}
         <Select
           aria-label="Left side"
           value={row.left}
@@ -137,7 +127,7 @@ export function ConditionRow({
        *
        * Indented to visually align under the left dropdown above (skip
        * the AND/OR/IF glue width). Helps the eye read "X op Y". */}
-      <div className="mt-2 flex items-center gap-2 pl-12">
+      <div className={cn('mt-2 flex items-center gap-2', isFirst && 'pl-12')}>
         {needsRightValue ? (
           <>
             <Select
