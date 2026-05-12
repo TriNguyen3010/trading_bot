@@ -1,9 +1,9 @@
 /**
  * Steady DCA — BTC/USDC 1h.
  *
- * Spot, no leverage, tiny take-profit, deep stop-loss. The "buy the dip
- * and hold" philosophy expressed as a bot. Suited to people who think the
- * long-term BTC chart is up and to the right.
+ * Futures with 1× leverage to mimic spot exposure on Hyperliquid (the
+ * wizard is locked to futures). Tiny take-profit, deep stop-loss. The
+ * "buy the dip and hold" philosophy expressed as a bot.
  */
 import type { BotTemplate } from '../types';
 import { TEMPLATE_SCHEMA_VERSION } from '../types';
@@ -18,9 +18,10 @@ export const conservativeDcaBtc: BotTemplate = {
   longDescription:
     "Conservative dollar-cost-averaging. RSI<40 picks up dips that aren't quite " +
     "panic-level oversold. 1.5% take-profit sells partial gains; the deep -10% " +
-    "stop-loss only triggers in a real crash, not on noise. Spot only — no " +
-    "liquidation risk, no funding rates.",
-  tags: ['btc', 'dca', 'spot', 'beginner'],
+    "stop-loss only triggers in a real crash, not on noise. Futures with 1× " +
+    "leverage to mimic spot exposure on Hyperliquid — minimal liquidation risk " +
+    "at this leverage but funding rates still apply.",
+  tags: ['btc', 'dca', 'beginner'],
   difficulty: 'beginner',
   riskLevel: 'conservative',
 
@@ -32,7 +33,7 @@ export const conservativeDcaBtc: BotTemplate = {
       tradingMode: 'dry-run',
       leverage: 1,
       exchange: 'hyperliquid',
-      marketType: 'spot',
+      marketType: 'futures',
       marginMode: 'cross',
       maxOpenTrades: 5,
       stakeCurrency: 'USDT',

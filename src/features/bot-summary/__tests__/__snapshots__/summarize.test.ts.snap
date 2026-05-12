@@ -27,12 +27,12 @@ Telegram notifications disabled."
 
 exports[`summarizeBot — 8 built-in templates > summarizes conservative-dca-btc with no translation gaps 1`] = `
 "## Market
-BTC/USDC spot on Hyperliquid, 1-hour candles.
+BTC/USDC perpetual futures on Hyperliquid, 1-hour candles.
 
 ## Risk
 Dry-run mode with a $1,000 USDT simulated wallet.
 $100 USDT stake per trade, up to 5 concurrent positions.
-Spot trading — no leverage, no liquidation risk.
+No leverage (1×), cross-margin futures.
 
 ## Entry
 Buys long when RSI(14) is below 40.
