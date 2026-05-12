@@ -30,7 +30,7 @@ export const macdMomentumBnb: BotTemplate = {
       timeframe: '30m',
       tradingMode: 'dry-run',
       leverage: 10,
-      exchange: 'binance',
+      exchange: 'hyperliquid',
       marketType: 'futures',
       marginMode: 'cross',
       maxOpenTrades: 4,

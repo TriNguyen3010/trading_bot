@@ -30,7 +30,7 @@ const defaultBotConfig: BotConfigForm = {
   timeframe: '5m',
   tradingMode: 'dry-run',
   leverage: 1,
-  exchange: 'binance',
+  exchange: 'hyperliquid',
   marketType: 'futures',
   marginMode: 'cross',
   maxOpenTrades: 10,

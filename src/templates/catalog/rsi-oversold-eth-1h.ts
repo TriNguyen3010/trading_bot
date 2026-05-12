@@ -32,7 +32,7 @@ export const rsiOversoldEth1h: BotTemplate = {
       timeframe: '1h',
       tradingMode: 'dry-run',
       leverage: 1,
-      exchange: 'binance',
+      exchange: 'hyperliquid',
       marketType: 'futures',
       marginMode: 'cross',
       maxOpenTrades: 3,

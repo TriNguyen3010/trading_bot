@@ -31,7 +31,7 @@ export const scalpingBtc1m: BotTemplate = {
       timeframe: '1m',
       tradingMode: 'dry-run',
       leverage: 20,
-      exchange: 'binance',
+      exchange: 'hyperliquid',
       marketType: 'futures',
       marginMode: 'cross',
       maxOpenTrades: 3,

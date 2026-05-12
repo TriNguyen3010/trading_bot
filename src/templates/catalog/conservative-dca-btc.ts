@@ -31,7 +31,7 @@ export const conservativeDcaBtc: BotTemplate = {
       timeframe: '1h',
       tradingMode: 'dry-run',
       leverage: 1,
-      exchange: 'binance',
+      exchange: 'hyperliquid',
       marketType: 'spot',
       marginMode: 'cross',
       maxOpenTrades: 5,

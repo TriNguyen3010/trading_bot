@@ -31,7 +31,7 @@ export const multiTfTrendAlts: BotTemplate = {
       timeframe: '4h',
       tradingMode: 'dry-run',
       leverage: 3,
-      exchange: 'binance',
+      exchange: 'hyperliquid',
       marketType: 'futures',
       marginMode: 'cross',
       maxOpenTrades: 3,

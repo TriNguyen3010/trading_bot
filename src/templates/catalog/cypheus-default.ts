@@ -36,7 +36,7 @@ export const cypheusDefault: BotTemplate = {
       tradingMode: 'dry-run',
       leverage: 20,
       // Defaults below — kept stable across template loads.
-      exchange: 'binance',
+      exchange: 'hyperliquid',
       marketType: 'futures',
       marginMode: 'cross',
       maxOpenTrades: 10,

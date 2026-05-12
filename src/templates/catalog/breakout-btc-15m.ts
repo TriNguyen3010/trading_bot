@@ -30,7 +30,7 @@ export const breakoutBtc15m: BotTemplate = {
       timeframe: '15m',
       tradingMode: 'dry-run',
       leverage: 5,
-      exchange: 'binance',
+      exchange: 'hyperliquid',
       marketType: 'futures',
       marginMode: 'cross',
       maxOpenTrades: 5,

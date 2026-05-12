@@ -12,7 +12,7 @@ const ID = 'grid-stable-usdt-pairs';
 
 export const gridStableUsdtPairs: BotTemplate = {
   id: ID,
-  name: 'Grid Trading — USDC/USDT 5m',
+  name: 'Stable USDT Pairs Grid (Futures Cross)',
   description:
     'Spot stablecoin grid. Limit buys with a small offset, time-decaying ROI exit.',
   longDescription:
@@ -31,8 +31,8 @@ export const gridStableUsdtPairs: BotTemplate = {
       timeframe: '5m',
       tradingMode: 'dry-run',
       leverage: 1,
-      exchange: 'binance',
-      marketType: 'spot',
+      exchange: 'hyperliquid',
+      marketType: 'futures',
       marginMode: 'cross',
       maxOpenTrades: 10,
       stakeCurrency: 'USDT',
