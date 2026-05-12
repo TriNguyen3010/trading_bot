@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Compress the bot-basics drawer (`BotConfigSetup` + `BotConfigConfigure`) into a tighter, opinionated form. Pair+Timeframe go on one row; Exchange and Market type become read-only "Hyperliquid" / "Futures" chips on a shared row; Max open + Stake currency + Stake amount share a 3-column row; Leverage becomes a slider; the M3 dashed-border note disappears. Templates and the store default get updated so `exchange === 'hyperliquid'` and `marketType === 'futures'` everywhere.
+**Goal:** Compress the bot-basics drawer (`BotConfigSetup` + `BotConfigConfigure`) into a tighter, opinionated form. Bot name surfaces as the first input in `BotConfigSetup`; Pair+Timeframe go on one row; Exchange and Market type become read-only "Hyperliquid" / "Futures" chips on a shared row; Max open + Stake currency + Stake amount share a 3-column row; Leverage becomes a slider; the M3 dashed-border note disappears. Templates and the store default get updated so `exchange === 'hyperliquid'` and `marketType === 'futures'` everywhere.
 
 **Architecture:** New `Slider` primitive in `src/components/ui/` is a thin Tailwind-styled wrapper over native `<input type="range">` (no Radix dep). `BotConfigStep.tsx` gets a layout rewrite with `grid-cols-2` and `grid-cols-3` wrappers around existing FormFields. Store default + 8 template files swap exchange/marketType to the locked values. Existing user state (Zustand persist) that still has `'binance'` gets a silent on-mount migration. No serializer or BE schema changes — payload still carries `exchange` and `marketType` as plain strings.
 
@@ -325,6 +325,8 @@ import type { TradingMode, MarginMode } from '@/types/builder.types';
 export function BotConfigSetup() {
   const config = useBuilderStore((s) => s.botConfig);
   const patch = useBuilderStore((s) => s.patchBotConfig);
+  const botName = useBuilderStore((s) => s.botName);
+  const setBotName = useBuilderStore((s) => s.setBotName);
   const [pendingLive, setPendingLive] = useState(false);
 
   const handleTradingMode = (next: TradingMode) => {
@@ -337,6 +339,21 @@ export function BotConfigSetup() {
 
   return (
     <>
+      {/* Bot name is the first thing users name — same store value as
+       *  the header inline-edit affordance, just surfaced as a proper
+       *  form field. */}
+      <FormField
+        label="Bot name"
+        required
+        hint="Sent as `bot_name` to the backend. A Python class name is auto-derived from this."
+      >
+        <Input
+          value={botName}
+          onChange={(e) => setBotName(e.target.value)}
+          placeholder="My RSI Bot"
+        />
+      </FormField>
+
       {/* Pair + Timeframe sit on one row to compress the form. */}
       <div className="grid grid-cols-2 gap-4">
         <div data-cy-anchor="bot-config:pair">
@@ -582,8 +599,10 @@ If lint complains about the unused `EXCHANGES` import being gone (it shouldn't, 
 ```bash
 git add src/features/bot-builder/steps/BotConfigStep.tsx
 git commit -m "$(cat <<'EOF'
-refactor(bot-config): compress drawer layout
+refactor(bot-config): compress drawer layout + surface bot name
 
+- Bot name is now the first field in BotConfigSetup (same store value
+  as the header inline-edit, just exposed as a proper form input).
 - Pair + Timeframe share a 2-col row.
 - Leverage uses the new Slider primitive (was NumberInput).
 - Exchange + Market type render as locked read-only chips
@@ -617,7 +636,7 @@ Run `pnpm dev`. Wait for "ready in <Xms>" on `http://127.0.0.1:5173`.
 
 Log in (`trinm@coin98.finance` / `Coin98@123`). Clear builder state: DevTools → Application → Local Storage → remove `trading-bot-builder` key. Reload.
 
-1. Open the Bot Basics step. Confirm `Pair` and `Timeframe` are on the same row, side by side.
+1. Open the Bot Basics step. Confirm `Bot name` is the first field (full-width Input, pre-filled with "Untitled bot"). Confirm `Pair` and `Timeframe` are on the next row, side by side. Type a new name (e.g. "RSI Bot") in the step's Bot name field — confirm the header inline title updates live to match.
 2. Confirm Leverage is a slider — drag from 1 to 25, see the value chip on the right update to `25x` live. Confirm dragging beyond 125 clamps to 125.
 3. Open the Bot Basics step's lower content (or scroll). Confirm `Exchange` field shows a chip reading "Hyperliquid" (NOT a select) and is non-interactive. Same for `Market type` → "Futures". Both share one row.
 4. Confirm `Margin mode` toggle (Cross / Isolated) is shown right below.

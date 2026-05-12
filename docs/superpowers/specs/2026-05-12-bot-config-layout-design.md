@@ -8,15 +8,16 @@
 
 ## 1. Goal
 
-Reorganize the bot-basics drawer into a tighter, opinionated form. Six concrete changes:
+Reorganize the bot-basics drawer into a tighter, opinionated form. Eight concrete changes:
 
-1. **Pair + Timeframe in one row** (currently stacked).
-2. **Leverage as a slider** (currently a `NumberInput`).
-3. **Exchange locked to "Hyperliquid"** — replace the multi-option `Select` with a read-only chip. The wizard no longer offers other exchanges.
-4. **Market type locked to "Futures"** — replace the `Spot / Futures` toggle with a read-only chip. Wizard no longer offers spot.
-5. **Exchange + Market type share one row** (two read-only chips side by side).
-6. **Max open trades + Stake currency + Stake amount share one row** (3-column grid).
-7. **Remove the M3 note** ("Telegram, position adjustment…") at the bottom of `BotConfigConfigure`.
+1. **Add a Bot name field at the top of `BotConfigSetup`** — currently bot name is only editable via the header inline title; this surfaces it as the first step input so new users name their bot before configuring pair/leverage.
+2. **Pair + Timeframe in one row** (currently stacked).
+3. **Leverage as a slider** (currently a `NumberInput`).
+4. **Exchange locked to "Hyperliquid"** — replace the multi-option `Select` with a read-only chip. The wizard no longer offers other exchanges.
+5. **Market type locked to "Futures"** — replace the `Spot / Futures` toggle with a read-only chip. Wizard no longer offers spot.
+6. **Exchange + Market type share one row** (two read-only chips side by side).
+7. **Max open trades + Stake currency + Stake amount share one row** (3-column grid).
+8. **Remove the M3 note** ("Telegram, position adjustment…") at the bottom of `BotConfigConfigure`.
 
 Dry-run wallet stays conditional (`tradingMode === 'dry-run'`) on its own row, below the 3-col stake row.
 
@@ -32,6 +33,9 @@ Dry-run wallet stays conditional (`tradingMode === 'dry-run'`) on its own row, b
 ### `BotConfigSetup`
 
 ```
+Bot name *
+[My RSI Bot                                  ]   (full-width Input, bound to state.botName)
+
 ┌─ grid-cols-2 ──────────────────────────────┐
 │  Pair *                  Timeframe *       │
 │  [BTC-USDC          ]    [5 minutes ▼]     │
@@ -98,7 +102,9 @@ interface SliderProps {
 
 ### 4.2 Modified: `src/features/bot-builder/steps/BotConfigStep.tsx`
 
-Both `BotConfigSetup` and `BotConfigConfigure` get rewritten layouts. The store reads/writes stay the same (still `patchBotConfig`); only the JSX changes plus the `Leverage` swap from `NumberInput` to the new `Slider`.
+Both `BotConfigSetup` and `BotConfigConfigure` get rewritten layouts. The store reads/writes stay the same (still `patchBotConfig` for the config fields, plus `setBotName` for the new bot-name field); only the JSX changes plus the `Leverage` swap from `NumberInput` to the new `Slider`.
+
+The new Bot name field at the top of `BotConfigSetup` reads `botName` from the store and calls `setBotName` on change. The header inline-edit affordance stays — it just becomes a redundant second entry point that always reflects the same store value. Required-marked (`required` flag on `FormField`) since `bot_name` is mandatory in the BE payload.
 
 For the Exchange and Market type chips, render a small label + value pair:
 
