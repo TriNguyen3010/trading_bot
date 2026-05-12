@@ -2,10 +2,7 @@
  * Type definitions for bot templates — see Spec/Phase 1/bot_templates_plan.md.
  *
  * A `BotTemplate` is a static, pre-built BuilderState snapshot + metadata
- * for the gallery + an optional Cypheus narration script. The engine
- * (`animation.ts`) drives the same magic-build experience users already
- * see, just parameterised by the chosen template instead of hard-coded
- * Bollinger Breakout BTC.
+ * for the gallery. Templates snap-apply via `apply.ts`.
  */
 import type { BuilderState } from '@/types/builder.types';
 
@@ -19,45 +16,6 @@ export type TemplateStateSnapshot = Pick<
   BuilderState,
   'botName' | 'botConfig' | 'strategy' | 'directionForm' | 'closeMethod'
 >;
-
-/** A single Cypheus chat line. We may upgrade to `{ text, delay }` objects
- * later; for now plain strings are enough. */
-export type NarrationLine = string;
-
-/** One narration "slot" can be a single line or a sequence played with
- * built-in inter-message delays. */
-export type Narration = NarrationLine | readonly NarrationLine[];
-
-/**
- * Cypheus narration hooks the engine plays at specific moments during
- * the animation. Every field is optional — when absent, the engine falls
- * back to a generic line derived from `template.name` / `description`.
- *
- * Phase 2's strategy hooks are sub-divided so a template can comment
- * after the entry conditions are filled but before direction is set, etc.
- */
-export interface TemplateAnimationScript {
-  intro?: Narration;
-  phaseNarration?: {
-    botBasics?: { pre?: Narration; post?: Narration };
-    strategy?: {
-      pre?: Narration;
-      preEntry?: Narration;
-      postEntry?: Narration;
-      preDirection?: Narration;
-      postDirection?: Narration;
-      preClose?: Narration;
-      postClose?: Narration;
-      post?: Narration;
-    };
-  };
-  /** Outro is split because the existing magic-build flow shows the
-   * summary view between the two outro messages. */
-  outro?: {
-    preSummary?: Narration;
-    postSummary?: Narration;
-  };
-}
 
 export interface BotTemplate {
   /** Stable id used for tracking + (future) deeplinks. Lowercase-kebab. */
@@ -74,10 +32,6 @@ export interface BotTemplate {
   riskLevel: TemplateRisk;
   /** The builder state snapshot that gets applied. */
   state: TemplateStateSnapshot;
-  /** Optional Cypheus narration override. Defaults work fine for a
-   * generic template; only override when there's something interesting
-   * to say. */
-  script?: TemplateAnimationScript;
   meta: {
     author: 'Cypheus' | (string & {});
     /** State schema version — bump when BuilderState shape changes. The

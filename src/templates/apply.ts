@@ -1,8 +1,8 @@
 /**
  * `applyTemplate(template, opts)` — the user-facing entry point that
- * decides whether to animate via Cypheus or snap-apply, and surfaces
- * a `TemplateConflictError` when the current builder state is dirty
- * so the caller (gallery/detail modal) can render the confirm dialog.
+ * snap-applies a template snapshot to the builder, and surfaces a
+ * `TemplateConflictError` when the current builder state is dirty so
+ * the caller (gallery/detail modal) can render the confirm dialog.
  *
  * See Spec/Phase 1/bot_templates_plan.md §6.
  */
@@ -11,26 +11,12 @@ import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { strings } from '@/i18n/en';
 import type { StepId, StepStatus } from '@/types/builder.types';
-import { runTemplateAnimation } from './animation';
 import { useTemplateTrackingStore } from './store';
 import {
   TEMPLATE_SCHEMA_VERSION,
   type BotTemplate,
   type TemplateStateSnapshot,
 } from './types';
-
-/** Detect the user's `prefers-reduced-motion` setting. Defensive: returns
- * false in non-DOM contexts (SSR, vitest) where matchMedia is undefined. */
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-    return false;
-  }
-  try {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  } catch {
-    return false;
-  }
-}
 
 export class TemplateConflictError extends Error {
   constructor(message = 'Builder state is dirty — confirm replace.') {
@@ -40,18 +26,13 @@ export class TemplateConflictError extends Error {
 }
 
 export interface ApplyTemplateOptions {
-  /** Skip the Cypheus animation, snap-apply state instantly. Set this to
-   * `true` when the user holds Shift while clicking "Use" (per plan D2)
-   * or when `prefers-reduced-motion` is set. */
-  skipAnimation?: boolean;
   /** Skip the dirty-state guard. The gallery/detail modal sets this
    * after the user confirms the replace. */
   force?: boolean;
 }
 
 /**
- * Apply a template to the builder. Returns a Promise that resolves when
- * the animation completes (or immediately for the skip-animation path).
+ * Apply a template to the builder. Snap-applies the state synchronously.
  *
  * Throws `TemplateConflictError` synchronously when state.isDirty=true
  * and `force` isn't set — caller catches and shows a confirm dialog.
@@ -75,18 +56,7 @@ export async function applyTemplate(
     template.meta.schemaVersion,
   );
 
-  // Resolve `skipAnimation`. Explicit caller value wins; otherwise fall
-  // back to the user's `prefers-reduced-motion: reduce` preference. So
-  // accessibility users get instant apply by default and don't have to
-  // hold Shift or know about it.
-  const skipAnimation = opts.skipAnimation ?? prefersReducedMotion();
-
-  if (skipAnimation) {
-    snapApply(template, migrated);
-    return;
-  }
-
-  await runTemplateAnimation(template);
+  snapApply(template, migrated);
 }
 
 /* -------------------------------------------------------------------------- */

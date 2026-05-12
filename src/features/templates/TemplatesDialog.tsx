@@ -28,13 +28,11 @@ import { TemplateDetailModal } from './TemplateDetailModal';
  *
  * Apply flow:
  *   1. User clicks "Use" on a card.
- *   2. We close the gallery first so the Cypheus animation drawer has a
- *      clean canvas to draw onto.
- *   3. Call `applyTemplate(template)`.
+ *   2. We close the gallery first.
+ *   3. Call `applyTemplate(template)` — snap-applies state instantly.
  *   4. If state is dirty, `applyTemplate` throws TemplateConflictError —
  *      we open the ConfirmReplaceDialog with the pending template.
  *   5. On confirm, re-call `applyTemplate(t, { force: true })`.
- *   6. Shift+click on the Use button skips the animation (per plan D2).
  */
 export function TemplatesDialog() {
   const open = useTemplatesDialogStore((s) => s.open);
@@ -43,7 +41,6 @@ export function TemplatesDialog() {
   const [filter, setFilter] = useState<TemplateFilter>({});
   const [pendingReplace, setPendingReplace] = useState<{
     template: BotTemplate;
-    skipAnimation: boolean;
   } | null>(null);
 
   const visible = useMemo(
@@ -53,16 +50,14 @@ export function TemplatesDialog() {
 
   const handleUse = async (
     template: BotTemplate,
-    event: MouseEvent<HTMLButtonElement>,
+    _event: MouseEvent<HTMLButtonElement>,
   ) => {
-    const skipAnimation = event.shiftKey;
-    // Close the gallery first so the Cypheus animation owns the canvas.
     setOpen(false);
     try {
-      await applyTemplate(template, { skipAnimation });
+      await applyTemplate(template);
     } catch (err) {
       if (err instanceof TemplateConflictError) {
-        setPendingReplace({ template, skipAnimation });
+        setPendingReplace({ template });
         return;
       }
       throw err;
@@ -71,9 +66,9 @@ export function TemplatesDialog() {
 
   const handleConfirmReplace = async () => {
     if (!pendingReplace) return;
-    const { template, skipAnimation } = pendingReplace;
+    const { template } = pendingReplace;
     setPendingReplace(null);
-    await applyTemplate(template, { force: true, skipAnimation });
+    await applyTemplate(template, { force: true });
   };
 
   return (

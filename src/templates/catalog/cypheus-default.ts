@@ -2,18 +2,11 @@
  * Cypheus's default starter template — Bollinger Breakout BTC.
  *
  * Historically this was the hard-coded `magic-build.script.ts` demo;
- * extracted into a template so the same engine can drive it AND any
- * other template the user picks from the gallery.
- *
- * The narration deliberately preserves the existing chat copy so users
- * who type "build me a btc bot" see the exact same Cypheus messages they
- * always have.
+ * extracted into a template so users can pick it from the gallery and
+ * snap-apply the same starter config.
  */
 import type { BotTemplate } from '../types';
 import { TEMPLATE_SCHEMA_VERSION } from '../types';
-import { strings } from '@/i18n/en';
-
-const m = strings.cypheus.magicBuild;
 
 export const cypheusDefault: BotTemplate = {
   id: 'cypheus-default',
@@ -95,27 +88,6 @@ export const cypheusDefault: BotTemplate = {
         logic: { type: 'AND', threshold: null },
         conditions: [],
       },
-    },
-  },
-
-  script: {
-    intro: [m.ack, m.note],
-    phaseNarration: {
-      botBasics: {
-        pre: m.step1,
-        post: m.step1Comment,
-      },
-      strategy: {
-        preEntry: m.step2,
-        postEntry: m.step2Comment,
-        preDirection: m.step3,
-        preClose: m.step4,
-        postClose: m.step4Comment,
-      },
-    },
-    outro: {
-      preSummary: m.doneA,
-      postSummary: m.doneB,
     },
   },
 

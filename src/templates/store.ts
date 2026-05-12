@@ -16,9 +16,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 interface TemplateTrackingStore {
-  /** Id of the template last applied via runTemplateAnimation /
-   * applyTemplate. `null` when the user started blank or hit
-   * "Create new bot". */
+  /** Id of the template last applied via `applyTemplate`. `null` when
+   * the user started blank or hit "Create new bot". */
   appliedId: string | null;
   /** Wall-clock ms when the apply happened — useful for sorting if
    * we ever surface "recently applied". */

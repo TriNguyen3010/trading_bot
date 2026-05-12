@@ -88,21 +88,6 @@ export const rsiOversoldEth1h: BotTemplate = {
     },
   },
 
-  script: {
-    intro: [
-      "Setting up an RSI oversold strategy on ETH/USDC.",
-      "This one is a beginner classic — no leverage, single TP, tight SL.",
-    ],
-    phaseNarration: {
-      botBasics: { post: '1-hour candles smooth out noise. Leverage off for safety.' },
-      strategy: {
-        postEntry: 'RSI < 30 = oversold. We buy when the market overreacts.',
-        postClose: '3% take-profit on the whole position. 2% stop-loss caps the downside.',
-      },
-    },
-    outro: { preSummary: 'Done!', postSummary: 'Open Export when you\'re ready to ship.' },
-  },
-
   meta: {
     author: 'Cypheus',
     schemaVersion: TEMPLATE_SCHEMA_VERSION,

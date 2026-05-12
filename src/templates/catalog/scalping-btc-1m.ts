@@ -106,17 +106,6 @@ export const scalpingBtc1m: BotTemplate = {
     },
   },
 
-  script: {
-    intro: ['Strapping in for high-frequency scalping.', '20x leverage, 1-minute chart, hair-trigger SL.'],
-    phaseNarration: {
-      strategy: {
-        postEntry:
-          'RSI < 25 = panic, but only if price is still above MA-20 — meaning we\'re catching a dip in an uptrend, not a falling knife.',
-        postClose: '0.5% / 1% TP in two waves. 0.3% SL — the moment it goes wrong, we\'re out.',
-      },
-    },
-  },
-
   meta: {
     author: 'Cypheus',
     schemaVersion: TEMPLATE_SCHEMA_VERSION,

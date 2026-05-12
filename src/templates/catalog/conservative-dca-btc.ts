@@ -88,19 +88,6 @@ export const conservativeDcaBtc: BotTemplate = {
     },
   },
 
-  script: {
-    intro: ['Steady wins the race.', 'Setting up a buy-the-dip DCA on BTC.'],
-    phaseNarration: {
-      botBasics: {
-        post: '1× leverage on futures keeps exposure near spot — minimal liquidation risk.',
-      },
-      strategy: {
-        postClose:
-          'Tiny 1.5% TP for frequent wins. Wide -10% SL only triggers in a real crash.',
-      },
-    },
-  },
-
   meta: {
     author: 'Cypheus',
     schemaVersion: TEMPLATE_SCHEMA_VERSION,

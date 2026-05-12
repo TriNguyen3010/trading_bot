@@ -39,9 +39,7 @@ export function AppliedTemplateBadge() {
 
   const handleReset = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Skip animation on reset — user is mid-flow and wants their bot back
-    // quickly, not another 6-second Cypheus theatrical performance.
-    await applyTemplate(template, { force: true, skipAnimation: true });
+    await applyTemplate(template, { force: true });
   };
 
   return (

@@ -106,17 +106,6 @@ export const multiTfTrendAlts: BotTemplate = {
     },
   },
 
-  script: {
-    intro: 'Setting up a multi-timeframe trend bot on SOL/USDC.',
-    phaseNarration: {
-      strategy: {
-        postEntry:
-          'Two filters: candle above the 200-MA, RSI above 50. Only the cleanest trends survive.',
-        postClose: 'Two-tier TP plus a 3% trailing stop locks in profits once the move extends.',
-      },
-    },
-  },
-
   meta: {
     author: 'Cypheus',
     schemaVersion: TEMPLATE_SCHEMA_VERSION,

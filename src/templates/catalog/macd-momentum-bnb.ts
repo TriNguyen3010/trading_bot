@@ -89,16 +89,6 @@ export const macdMomentumBnb: BotTemplate = {
     },
   },
 
-  script: {
-    intro: 'Time for some momentum. MACD on BNB.',
-    phaseNarration: {
-      strategy: {
-        postEntry: 'MACD line above zero = bulls in control. Simple and effective.',
-        postClose: '5% / 10% TPs in halves. 3% SL catches you if the wave breaks.',
-      },
-    },
-  },
-
   meta: {
     author: 'Cypheus',
     schemaVersion: TEMPLATE_SCHEMA_VERSION,

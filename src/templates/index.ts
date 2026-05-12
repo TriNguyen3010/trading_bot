@@ -36,16 +36,12 @@ export function getTemplateById(id: string): BotTemplate | undefined {
 
 export type {
   BotTemplate,
-  TemplateAnimationScript,
   TemplateDifficulty,
   TemplateRisk,
   TemplateStateSnapshot,
-  Narration,
-  NarrationLine,
 } from './types';
 
 export { TEMPLATE_SCHEMA_VERSION } from './types';
-export { runTemplateAnimation } from './animation';
 export { applyTemplate, TemplateConflictError } from './apply';
 export type { ApplyTemplateOptions } from './apply';
 export { useTemplateTrackingStore } from './store';
