@@ -15,13 +15,6 @@ export const TIMEFRAMES = [
   { value: '1d', label: '1 day' },
 ] as const;
 
-export const EXCHANGES = [
-  { value: 'binance', label: 'Binance' },
-  { value: 'okx', label: 'OKX' },
-  { value: 'bybit', label: 'Bybit' },
-  { value: 'kraken', label: 'Kraken' },
-] as const;
-
 export const STAKE_CURRENCIES = ['USDT', 'USDC', 'BUSD'] as const;
 
 export const CANDLESTICK_OPTIONS: { value: 'open' | 'close' | 'high' | 'low' | 'volume'; label: string }[] = [
