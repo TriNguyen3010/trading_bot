@@ -32,12 +32,7 @@ export function TpSlForm() {
     <div className="flex flex-col gap-5">
       <section className="rounded-xl border border-border bg-canvas/40 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-fg">Take profit</p>
-            <p className="text-xs text-fg-muted">
-              Close part of the position at each profit target.
-            </p>
-          </div>
+          <p className="text-sm font-semibold text-fg">Take profit</p>
           <Switch
             checked={close.tpEnabled}
             onCheckedChange={(v) => patch({ tpEnabled: v })}
@@ -115,12 +110,7 @@ export function TpSlForm() {
 
       <section className="rounded-xl border border-border bg-canvas/40 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-fg">Stop loss</p>
-            <p className="text-xs text-fg-muted">
-              Cut the position when the loss exceeds this threshold.
-            </p>
-          </div>
+          <p className="text-sm font-semibold text-fg">Stop loss</p>
           <Switch
             checked={close.slEnabled}
             onCheckedChange={(v) => patch({ slEnabled: v })}
@@ -146,12 +136,7 @@ export function TpSlForm() {
 
       <section className="rounded-xl border border-border bg-canvas/40 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-fg">Trailing stop</p>
-            <p className="text-xs text-fg-muted">
-              Move SL up as the price advances in profit.
-            </p>
-          </div>
+          <p className="text-sm font-semibold text-fg">Trailing stop</p>
           <Switch
             checked={close.trailingEnabled}
             onCheckedChange={(v) => patch({ trailingEnabled: v })}
