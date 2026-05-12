@@ -1,9 +1,10 @@
 /**
  * Grid Trading — USDC/USDT (stablecoin) 5m.
  *
- * Spot grid using the ROI close-method instead of TP/SL. Targets the
- * micro-spread on a stablecoin pair. No leverage, no SL, time-decaying
- * profit target — exits via ROI table after each step.
+ * Stablecoin grid using the ROI close-method instead of TP/SL. Targets
+ * the micro-spread on a stablecoin pair. 1× futures (no real leverage),
+ * no SL, time-decaying profit target — exits via ROI table after each
+ * step.
  */
 import type { BotTemplate } from '../types';
 import { TEMPLATE_SCHEMA_VERSION } from '../types';
@@ -14,13 +15,13 @@ export const gridStableUsdtPairs: BotTemplate = {
   id: ID,
   name: 'Stable USDT Pairs Grid (Futures Cross)',
   description:
-    'Spot stablecoin grid. Limit buys with a small offset, time-decaying ROI exit.',
+    'Stablecoin grid. Limit buys with a small offset, time-decaying ROI exit.',
   longDescription:
     "Grid bots farm tiny spreads on highly stable pairs. We use a limit order " +
     "0.05% below market to catch micro-dips, then exit via the ROI table — 0.5% " +
-    "target immediately, falling to break-even after 2 hours. Spot only, no " +
-    "leverage. Boring is the feature, not the bug.",
-  tags: ['stable', 'grid', 'roi', 'spot', 'beginner'],
+    "target immediately, falling to break-even after 2 hours. 1× leverage on " +
+    "futures to mimic spot grid behaviour. Boring is the feature, not the bug.",
+  tags: ['stable', 'grid', 'roi', 'beginner'],
   difficulty: 'beginner',
   riskLevel: 'conservative',
 
