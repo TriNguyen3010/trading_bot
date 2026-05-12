@@ -170,7 +170,7 @@ export const strings = {
       title: 'Bot Templates',
       description: 'Pick a starter bot — fields fill instantly.',
       empty: 'No templates match this filter. Try clearing one of the chips above.',
-      cardCypheusHint: 'Cypheus animates the setup',
+      cardCypheusHint: 'Instant setup',
       cardUseLabel: 'Use',
       cardUseAria: (name: string) => `Use ${name}`,
       cardPreviewAria: (name: string) => `Preview ${name}`,
