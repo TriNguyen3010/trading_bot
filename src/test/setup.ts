@@ -1,5 +1,19 @@
 import '@testing-library/jest-dom/vitest';
 
+// jsdom doesn't ship ResizeObserver. DrawerProgressGlow uses it to
+// re-evaluate overflow state when content height changes; without a
+// global stub any test that mounts a drawer (StepDrawer integration
+// tests, future composite-drawer tests) throws "ResizeObserver is not
+// defined". A noop polyfill is enough — tests that care about resize
+// behavior install their own mock locally.
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+}
+
 // jsdom 25 ships a Storage stub whose `setItem` may not be a function in
 // some Node + vitest combinations — surfaces as "storage.setItem is not a
 // function" the first time zustand's persist middleware tries to write.

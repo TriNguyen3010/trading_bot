@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { SheetBody, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +17,7 @@ import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { isPhaseSetupComplete } from '@/lib/phase-helpers';
 import { strings } from '@/i18n/en';
 import { StrategySection } from './StrategySection';
+import { DrawerProgressGlow } from './DrawerProgressGlow';
 
 export interface StrategyDrawerContentProps {
   onCancel: () => void;
@@ -40,10 +42,11 @@ export function StrategyDrawerContent({
   // sub-form patches.
   const state = useBuilderStore();
   const setupComplete = isPhaseSetupComplete(state, 'strategy');
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
     <>
-      <SheetBody>
+      <SheetBody ref={scrollRef} className="drawer-no-scrollbar">
         <div className="space-y-0">
           {/* `data-cy-anchor` lets the Cypheus animation engine scroll
            *  the drawer body to whichever phase is currently being
@@ -69,6 +72,7 @@ export function StrategyDrawerContent({
           </div>
         </div>
       </SheetBody>
+      <DrawerProgressGlow scrollRef={scrollRef} />
 
       <SheetFooter>
         <Button variant="ghost" onClick={onCancel}>

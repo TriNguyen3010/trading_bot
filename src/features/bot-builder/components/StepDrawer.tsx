@@ -28,6 +28,7 @@ import { isStepSetupComplete } from '@/lib/validator';
 import { STRATEGY_SUB_STEPS } from '@/lib/phase-helpers';
 import { cn } from '@/lib/utils';
 import { strings } from '@/i18n/en';
+import { DrawerProgressGlow } from './DrawerProgressGlow';
 import { DrawerProgressIndicator } from './DrawerProgressIndicator';
 import { CypheusPinnedFooter } from './CypheusPinnedFooter';
 import { CypheusSummaryView } from './CypheusSummaryView';
@@ -167,6 +168,10 @@ export function StepDrawer({
     () => (activeStepId ? isStepSetupComplete(activeStepId, builderState) : false),
     [activeStepId, builderState],
   );
+
+  // Scroll container ref for the legacy Setup/Configure tab body — wired
+  // to DrawerProgressGlow for the visual scroll indicator.
+  const legacyScrollRef = useRef<HTMLDivElement>(null);
 
   // One-shot highlight ring on the Configure dot when setup just unlocked.
   const prevSetupCompleteRef = useRef(setupComplete);
@@ -321,7 +326,7 @@ export function StepDrawer({
                   />
                 </TabsList>
               </div>
-              <SheetBody>
+              <SheetBody ref={legacyScrollRef} className="drawer-no-scrollbar">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={`${activeStepId}-${drawerTab}`}
@@ -346,6 +351,7 @@ export function StepDrawer({
                   </motion.div>
                 </AnimatePresence>
               </SheetBody>
+              <DrawerProgressGlow scrollRef={legacyScrollRef} />
             </Tabs>
 
             {effectiveMode === 'cypheus-pinned' ? (

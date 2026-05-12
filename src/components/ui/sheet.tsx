@@ -121,18 +121,19 @@ export const SheetDescription = React.forwardRef<
 ));
 SheetDescription.displayName = 'SheetDescription';
 
-export const SheetBody = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
+export const SheetBody = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
   <div
+    ref={ref}
     className={cn(
       'flex-1 overflow-y-auto px-6 py-5 scrollbar-thin',
       className,
     )}
     {...props}
   />
-);
+));
 SheetBody.displayName = 'SheetBody';
 
 export const SheetFooter = ({

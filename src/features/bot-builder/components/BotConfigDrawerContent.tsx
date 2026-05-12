@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { SheetBody, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +14,7 @@ import {
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { isStepSetupComplete } from '@/lib/validator';
 import { strings } from '@/i18n/en';
+import { DrawerProgressGlow } from './DrawerProgressGlow';
 
 export interface BotConfigDrawerContentProps {
   onCancel: () => void;
@@ -39,15 +41,17 @@ export function BotConfigDrawerContent({
 }: BotConfigDrawerContentProps) {
   const state = useBuilderStore();
   const setupComplete = isStepSetupComplete('bot-config', state);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
     <>
-      <SheetBody>
+      <SheetBody ref={scrollRef} className="drawer-no-scrollbar">
         <div className="space-y-5">
           <BotConfigSetup />
           <BotConfigConfigure />
         </div>
       </SheetBody>
+      <DrawerProgressGlow scrollRef={scrollRef} />
 
       <SheetFooter>
         <Button variant="ghost" onClick={onCancel}>
