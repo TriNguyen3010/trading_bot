@@ -9,10 +9,9 @@
 **Tech Stack:** React 18, TypeScript 5.7, Zustand 5, Vitest 2 + @testing-library/react.
 
 **Approved design decisions** (Tri 2026-05-12):
-- **Param edit**: defaults only in v1 (RSI=14, MA=50 close, MACD 12/26/9, BB 20/2, ATR 14, Stochastic 14/3/3). Power users tune via templates or JSON import.
-- **Component cleanup**: `IndicatorChip.tsx` + `IndicatorPicker.tsx` deleted — no other call sites (verified via grep).
-- **Backward compat**: indicators with custom params from templates (e.g. `scalping-btc-1m` ships `MA-12`) coexist with the default `MA-50` in the dropdown. Both appear; user picks whichever.
 - **GC**: additive only. Un-referenced indicators/channels stay in state until explicit clear (e.g. via JSON import overwrite or template apply).
+- **Param edit retained via IndicatorChip**: the standalone "Add indicator" picker button goes away, but the existing chip strip listing added indicators **stays**. Each chip keeps its settings icon (popover with `timeperiod` / `price` / etc.) so users can still tune RSI-14 → RSI-21, MA-50 close → MA-200 high, etc. The strip auto-populates from condition picks (no more manual Add).
+- **Backward compat with templates**: a template can ship `{name: MA, params: timeperiod 12}` → state has `MA-12`. The condition dropdown shows BOTH `MA-12` (from state) and `MA-50` (registry default) since `MA-50` isn't in state yet. User picks either. The chip strip shows `MA-12` because that's what state has — clicking its settings lets the user change `MA-12` → `MA-100` (or whatever).
 
 ---
 
@@ -30,11 +29,15 @@
 | `src/features/bot-builder/steps/EntryStrategyStep.tsx` | Delete Candlestick FormField + Indicators FormField + `toggleCandle` helper + unused imports. Replace with hook call + augmented `ConditionBuilder` props. |
 | `src/features/close-method/IndicatorExitForm.tsx` | Use the hook so exit conditions also get full catalog + auto-add. |
 
-**Deleted files (2):**
+**Deleted files (1):**
 | Path | Reason |
 |---|---|
-| `src/features/indicators/IndicatorChip.tsx` | No call sites after EntryStrategyStep refactor (verified — only the deleted FormField used it). |
-| `src/features/indicators/IndicatorPicker.tsx` | Same — only the deleted FormField used it. |
+| `src/features/indicators/IndicatorPicker.tsx` | The "Add indicator" popover. No call sites after refactor — indicators auto-add from condition picks. |
+
+**Kept** (formerly slated for deletion):
+| Path | Reason |
+|---|---|
+| `src/features/indicators/IndicatorChip.tsx` | Per Tri's Q2 clarification: each chip's settings icon stays so users can edit params (RSI period 14→21, etc.). The chip strip itself stays in `EntryStrategySetup`, auto-populated from condition picks (no manual Add button). |
 
 ---
 
@@ -405,6 +408,7 @@ Replace the entire file with:
 import { useBuilderStore } from '../store/builder.store';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
+import { IndicatorChip } from '@/features/indicators/IndicatorChip';
 import { ConditionBuilder } from '@/features/conditions/ConditionBuilder';
 import { useConditionMetrics } from '@/features/conditions/useConditionMetrics';
 
@@ -426,6 +430,36 @@ export function EntryStrategySetup() {
         />
       </FormField>
 
+      {strategy.indicators.length > 0 ? (
+        <FormField
+          label="Indicators"
+          hint="Click the settings icon on any chip to tune its parameters."
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            {strategy.indicators.map((ind) => (
+              <IndicatorChip
+                key={ind.id}
+                item={ind}
+                onChange={(next) =>
+                  patch({
+                    indicators: strategy.indicators.map((i) =>
+                      i.id === next.id ? next : i,
+                    ),
+                  })
+                }
+                onRemove={() =>
+                  patch({
+                    indicators: strategy.indicators.filter(
+                      (i) => i.id !== ind.id,
+                    ),
+                  })
+                }
+              />
+            ))}
+          </div>
+        </FormField>
+      ) : null}
+
       <ConditionBuilder
         group={strategy.entryConditions}
         indicators={fullIndicators}
@@ -437,7 +471,9 @@ export function EntryStrategySetup() {
 }
 ```
 
-Removed: `toggleCandle`, the `Candlestick price data` FormField, the `Indicators` FormField, imports for `Chip`, `CANDLESTICK_OPTIONS`, `IndicatorPicker`, `IndicatorChip`, `makeIndicator`, and the `Candlestick` type alias.
+Removed: `toggleCandle`, the `Candlestick price data` FormField, the `IndicatorPicker` import + Add-button section, the empty-state copy, imports for `Chip`, `CANDLESTICK_OPTIONS`, `IndicatorPicker`, `makeIndicator`, and the `Candlestick` type alias.
+
+Kept: the `IndicatorChip` strip — now auto-populated (no Add button), hidden when `strategy.indicators` is empty. Each chip's settings popover remains the way users tune params (RSI period, MA source, etc.).
 
 - [ ] **Step 2: Run typecheck**
 
@@ -528,23 +564,27 @@ EOF
 
 ---
 
-## Task 4: Delete `IndicatorChip.tsx` and `IndicatorPicker.tsx`
+## Task 4: Delete `IndicatorPicker.tsx`
 
-Both components have zero remaining call sites after Task 2.
+The "Add indicator" popover button has no remaining call sites after Task 2. `IndicatorChip.tsx` stays — it's used by the auto-populated chip strip for param editing.
 
 **Files:**
-- Delete: `src/features/indicators/IndicatorChip.tsx`
 - Delete: `src/features/indicators/IndicatorPicker.tsx`
 
 - [ ] **Step 1: Verify zero remaining references**
 
-Run: `grep -rn "IndicatorChip\|IndicatorPicker" src --include="*.ts" --include="*.tsx"`
-Expected: only the two files themselves. If anything else matches, STOP and investigate.
+Run: `grep -rn "IndicatorPicker" src --include="*.ts" --include="*.tsx"`
+Expected: only `src/features/indicators/IndicatorPicker.tsx` itself. If anything else matches, STOP and investigate.
 
-- [ ] **Step 2: Delete the files**
+Also confirm `IndicatorChip` IS still referenced (it should be — by `EntryStrategyStep.tsx`):
+
+Run: `grep -rn "IndicatorChip" src --include="*.ts" --include="*.tsx" | grep -v "IndicatorChip.tsx"`
+Expected: `src/features/bot-builder/steps/EntryStrategyStep.tsx` matches (import + JSX). If nothing matches, the IndicatorChip strip in Task 2 was forgotten.
+
+- [ ] **Step 2: Delete the file**
 
 ```bash
-git rm src/features/indicators/IndicatorChip.tsx src/features/indicators/IndicatorPicker.tsx
+git rm src/features/indicators/IndicatorPicker.tsx
 ```
 
 - [ ] **Step 3: Run typecheck + tests**
@@ -556,12 +596,12 @@ Expected: clean.
 
 ```bash
 git commit -m "$(cat <<'EOF'
-chore(indicators): delete IndicatorChip + IndicatorPicker
+chore(indicators): delete IndicatorPicker (Add button)
 
 No call sites remaining after entry/exit condition forms switched
-to inline picking via useConditionMetrics. Custom param editing
-moves out of the wizard UI (still available via templates and
-JSON import).
+to inline picking via useConditionMetrics. IndicatorChip stays —
+the chip strip auto-populates from condition picks and each chip
+keeps its settings popover for param tuning.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 EOF
@@ -585,16 +625,16 @@ Wait until Vite reports `ready in <Xms>` on http://127.0.0.1:5173.
 
 1. Log in (`trinm@coin98.finance` / `Coin98@123`).
 2. Open the Strategy drawer.
-3. Confirm: no "Candlestick price data" chip row. No "Indicators" chip+picker row. Only "Strategy name" + the conditions builder.
+3. Confirm: no "Candlestick price data" chip row. No "Add indicator" button. Only "Strategy name" + (empty) Indicators FormField + the conditions builder.
 4. Click "Add condition".
 5. In the LEFT dropdown, confirm all 5 candle channels (`candle.open`, `candle.close`, `candle.high`, `candle.low`, `candle.volume`) AND all 6 registry indicators (`RSI-14`, `MA-50`, `MACD-12-26-9`, `BB-20`, `ATR-14`, `Stochastic-14`) appear.
 6. Pick `RSI-14`. Set operator to `<`. Set right type `Number`, value `30`.
-7. Open DevTools → Application → Local Storage → `trading-bot-builder` (or whichever zustand persist key). Confirm `strategy.indicators` now contains an RSI entry with `timeperiod: 14`.
+7. Confirm the **Indicators chip strip now appears above the conditions** with one `RSI-14` chip. Click its settings icon — the popover should let you edit `Time period` from 14 to e.g. 21. After save, the chip label updates to `RSI-21`.
 8. Set right type to `Indicator`. Confirm right dropdown also lists all 6 registry indicators. Pick `MA-50`.
-9. Confirm `strategy.indicators` now contains both RSI-14 AND MA-50.
-10. Click `crosses_above` operator with left `candle.close`. Confirm `strategy.candlestick` contains `'close'`.
-11. Open the Close method step → switch to "Indicator exit" → confirm the same picker behavior in the exit-condition builder.
-12. Apply a template (e.g. `scalping-btc-1m`). Confirm template indicators (with custom params) appear in the condition dropdown alongside the default versions.
+9. Confirm the chip strip now shows `RSI-21` AND `MA-50`. Open DevTools → Application → Local Storage → confirm `strategy.indicators` has both entries.
+10. Click `crosses_above` operator with left `candle.close`. Confirm `strategy.candlestick` (in localStorage) contains `'close'`.
+11. Open the Close method step → switch to "Indicator exit" → confirm the same picker behavior in the exit-condition builder. The Entry strip should also show any new indicator picked here (since they share `strategy.indicators`).
+12. Apply a template (e.g. `scalping-btc-1m`). Confirm template indicators (with custom params like `MA-12`) appear in the chip strip AND in the condition dropdown alongside the default `MA-50`. Click `MA-12` chip's settings — confirm you can edit its period.
 
 - [ ] **Step 3: If any issue surfaces, fix and commit separately. Otherwise no commit.**
 
