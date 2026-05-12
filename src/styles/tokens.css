@@ -306,7 +306,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  right: 0;
+  left: 0;
   width: 1px;
   background: linear-gradient(
     to bottom,
@@ -323,7 +323,7 @@
 .drawer-progress-glow {
   position: absolute;
   top: 0;
-  right: -2px;
+  left: -2px;
   width: 5px;
   height: 160px;
   background: linear-gradient(
@@ -346,14 +346,14 @@
 
 .drawer-progress-line[data-visible='false'],
 .drawer-progress-glow[data-visible='false'] {
-  display: none;
+  display: none !important;
 }
 
 /* Hide the native scrollbar — used on SheetBody when DrawerProgressGlow
  * is the scroll indicator. */
 .drawer-no-scrollbar {
-  scrollbar-width: none;
+  scrollbar-width: none !important;
 }
 .drawer-no-scrollbar::-webkit-scrollbar {
-  display: none;
+  display: none !important;
 }
