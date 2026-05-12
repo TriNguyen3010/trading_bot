@@ -333,7 +333,6 @@ export function deserializeBundle(bundle: Bundle): DeserializedState {
       direction,
       orderType: bot.order_type ?? 'market',
       limitOffsetPct: bot.limit_offset_pct ?? null,
-      slippageTolerance: 0.5,
     },
     closeMethod: {
       type: closeType,
@@ -613,7 +612,6 @@ export function deserializeUnifiedPayload(
       direction,
       orderType: payload.order_type ?? 'market',
       limitOffsetPct: payload.limit_offset_pct ?? null,
-      slippageTolerance: 0.5,
     },
     closeMethod: {
       type: closeType,

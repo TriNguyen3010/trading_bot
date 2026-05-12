@@ -1,9 +1,8 @@
 import { useBuilderStore } from '../store/builder.store';
 import { Chip } from '@/components/ui/chip';
 import { Input } from '@/components/ui/input';
-import { NumberInput } from '@/components/ui/number-input';
 import { FormField } from '@/components/ui/form-field';
-import { CANDLESTICK_OPTIONS, TIMEFRAMES } from '@/lib/constants';
+import { CANDLESTICK_OPTIONS } from '@/lib/constants';
 import { IndicatorPicker } from '@/features/indicators/IndicatorPicker';
 import { IndicatorChip } from '@/features/indicators/IndicatorChip';
 import { ConditionBuilder } from '@/features/conditions/ConditionBuilder';
@@ -100,61 +99,6 @@ export function EntryStrategySetup() {
         candlestickChannels={strategy.candlestick}
         onChange={(g) => patch({ entryConditions: g })}
       />
-    </>
-  );
-}
-
-export function EntryStrategyConfigure() {
-  const strategy = useBuilderStore((s) => s.strategy);
-  const patch = useBuilderStore((s) => s.patchStrategy);
-
-  const toggleInformative = (tf: string) => {
-    const has = strategy.informativeTimeframes.includes(tf);
-    patch({
-      informativeTimeframes: has
-        ? strategy.informativeTimeframes.filter((x) => x !== tf)
-        : [...strategy.informativeTimeframes, tf],
-    });
-  };
-
-  return (
-    <>
-      <FormField
-        label="Startup candle count"
-        hint="Number of historical candles required before signals can fire."
-      >
-        <NumberInput
-          value={strategy.startupCandleCount}
-          onValueChange={(v) =>
-            patch({ startupCandleCount: Math.max(1, v ?? 200) })
-          }
-          min={1}
-          step={10}
-        />
-      </FormField>
-
-      <FormField
-        label="Informative timeframes"
-        hint="Higher timeframes available to multi-timeframe indicators (e.g. MA200_1h)."
-      >
-        <div className="flex flex-wrap gap-2">
-          {TIMEFRAMES.map((tf) => (
-            <Chip
-              key={tf.value}
-              selected={strategy.informativeTimeframes.includes(tf.value)}
-              onClick={() => toggleInformative(tf.value)}
-            >
-              {tf.label}
-            </Chip>
-          ))}
-        </div>
-      </FormField>
-
-      <div className="rounded-md border border-dashed border-border bg-canvas/40 p-4 text-xs text-fg-muted">
-        Custom indicator items (e.g. <code>MA200_1h</code>) and group threshold
-        settings ship with M3 once the serializer covers the full
-        <code>strategy.json</code> schema.
-      </div>
     </>
   );
 }

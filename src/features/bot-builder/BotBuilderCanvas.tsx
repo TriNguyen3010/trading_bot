@@ -12,11 +12,8 @@ import {
   BotConfigSetup,
   BotConfigConfigure,
 } from './steps/BotConfigStep';
-import {
-  EntryStrategySetup,
-  EntryStrategyConfigure,
-} from './steps/EntryStrategyStep';
-import { DirectionSetup, DirectionConfigure } from './steps/DirectionStep';
+import { EntryStrategySetup } from './steps/EntryStrategyStep';
+import { DirectionSetup } from './steps/DirectionStep';
 import {
   CloseMethodSetup,
   CloseMethodConfigure,
@@ -44,14 +41,14 @@ const CONTENT_BY_STEP: Record<StepId, StepContentMap> = {
   },
   'entry-strategy': {
     setup: <EntryStrategySetup />,
-    configure: <EntryStrategyConfigure />,
+    configure: null,
     title: strings.steps.entryStrategy.title,
     description: strings.steps.entryStrategy.description,
     index: 2,
   },
   direction: {
     setup: <DirectionSetup />,
-    configure: <DirectionConfigure />,
+    configure: null,
     title: strings.steps.direction.title,
     description: strings.steps.direction.description,
     index: 3,

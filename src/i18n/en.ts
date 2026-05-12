@@ -245,7 +245,6 @@ export const strings = {
     sections: {
       entry: 'Entry conditions',
       action: 'Action',
-      advanced: 'Advanced',
     },
     saveDisabledTooltip:
       'Fill the required fields in Entry conditions and Action to enable Save.',

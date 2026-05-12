@@ -77,7 +77,6 @@ export const cypheusDefault: BotTemplate = {
       direction: 'long',
       orderType: 'market',
       limitOffsetPct: null,
-      slippageTolerance: 0.5,
     },
     closeMethod: {
       type: 'tp_sl',

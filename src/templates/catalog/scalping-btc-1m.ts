@@ -88,7 +88,6 @@ export const scalpingBtc1m: BotTemplate = {
       direction: 'long',
       orderType: 'market',
       limitOffsetPct: null,
-      slippageTolerance: 0.05,
     },
     closeMethod: {
       type: 'tp_sl',

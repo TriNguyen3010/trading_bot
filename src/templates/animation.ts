@@ -167,7 +167,6 @@ async function applyDirectionAnimated(
   builder().patchDirection({
     orderType: d.orderType,
     limitOffsetPct: d.limitOffsetPct,
-    slippageTolerance: d.slippageTolerance,
   });
   await sleep(400, ctx);
 }

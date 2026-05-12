@@ -6,14 +6,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  EntryStrategySetup,
-  EntryStrategyConfigure,
-} from '@/features/bot-builder/steps/EntryStrategyStep';
-import {
-  DirectionSetup,
-  DirectionConfigure,
-} from '@/features/bot-builder/steps/DirectionStep';
+import { EntryStrategySetup } from '@/features/bot-builder/steps/EntryStrategyStep';
+import { DirectionSetup } from '@/features/bot-builder/steps/DirectionStep';
 import {
   CloseMethodSetup,
   CloseMethodConfigure,
@@ -29,9 +23,9 @@ export interface StrategyDrawerContentProps {
 }
 
 /**
- * Composite drawer body for the "Strategy" phase. Renders three accordion
- * sections (Entry / Action / Advanced) instead of the legacy Setup/Configure
- * tabs — see Spec/Phase 1/two_phase_ui_plan.md §6.4 + decision D1.
+ * Composite drawer body for the "Strategy" phase. Renders two accordion
+ * sections (Entry / Action) — see design spec
+ * docs/superpowers/specs/2026-05-12-remove-strategy-advanced-section-design.md.
  *
  * Save calls `onSave` only when the strategy phase setup gate passes
  * (entry-strategy + direction + close-method all setup-complete). The
@@ -73,14 +67,6 @@ export function StrategyDrawerContent({
               <CloseMethodConfigure />
             </StrategySection>
           </div>
-
-          <StrategySection
-            title={strings.strategyDrawer.sections.advanced}
-            defaultOpen={false}
-          >
-            <DirectionConfigure />
-            <EntryStrategyConfigure />
-          </StrategySection>
         </div>
       </SheetBody>
 

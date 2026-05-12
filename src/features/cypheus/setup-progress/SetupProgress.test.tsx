@@ -39,7 +39,6 @@ function fillValidDirection() {
     direction: 'long',
     orderType: 'market',
     limitOffsetPct: null,
-    slippageTolerance: 0.5,
   });
 }
 

@@ -1,11 +1,9 @@
 /**
- * Action block: direction + order type + (optional) limit offset +
- * slippage tolerance.
+ * Action block: direction + order type + (optional) limit offset.
  *
  * Examples:
  *   "Goes Long with Market orders (fills immediately at best price)."
- *   "Goes Short with Limit orders, placed 0.05% below market.
- *    Slippage tolerance 0.5%."
+ *   "Goes Short with Limit orders, placed 0.05% below market."
  */
 import type { DirectionForm } from '@/types/builder.types';
 import type { SummaryLine } from '../types';
@@ -39,13 +37,6 @@ export function translateDirection(d: DirectionForm): SummaryLine[] {
         t(dirText, dirTone),
         t(` with Limit orders${offsetSuffix}.`),
       ),
-    );
-  }
-
-  // Slippage on the same block
-  if (d.slippageTolerance > 0) {
-    lines.push(
-      line(t(`Slippage tolerance ${d.slippageTolerance}%.`)),
     );
   }
 

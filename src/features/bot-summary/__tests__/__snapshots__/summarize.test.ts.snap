@@ -16,7 +16,6 @@ Buys long when all of these are true:
 
 ## Action
 Goes Long with Market orders (fills immediately at best price).
-Slippage tolerance 0.5%.
 
 ## Exit
 Take profit: +4% closes 50%, +8% closes 50%.
@@ -40,7 +39,6 @@ Buys long when RSI(14) is below 40.
 
 ## Action
 Goes Long with Market orders (fills immediately at best price).
-Slippage tolerance 0.5%.
 
 ## Exit
 Take profit at +1.5% (closes the full position).
@@ -64,7 +62,6 @@ Buys long when RSI(14) is below 30.
 
 ## Action
 Goes Long with Market orders (fills immediately at best price).
-Slippage tolerance 0.5%.
 
 ## Exit
 Take profit: +5% closes 50%, +10% closes 25%.
@@ -88,7 +85,6 @@ Buys long when RSI(14) is below 55.
 
 ## Action
 Goes Long with Limit orders, placed 0.05% below market.
-Slippage tolerance 0.1%.
 
 ## Exit
 Time-based ROI: 0.50% target immediately, 0.30% target after 30 min, 0.10% target after 1 hour, break-even after 2 hours.
@@ -111,7 +107,6 @@ Buys long when MACD line is above 0.
 
 ## Action
 Goes Long with Market orders (fills immediately at best price).
-Slippage tolerance 0.5%.
 
 ## Exit
 Take profit: +5% closes 50%, +10% closes 50%.
@@ -137,7 +132,6 @@ Buys long when all of these are true:
 
 ## Action
 Goes Long with Market orders (fills immediately at best price).
-Slippage tolerance 0.5%.
 
 ## Exit
 Take profit: +8% closes 60%, +15% closes 40%.
@@ -162,7 +156,6 @@ Buys long when RSI(14) is below 30.
 
 ## Action
 Goes Long with Market orders (fills immediately at best price).
-Slippage tolerance 0.5%.
 
 ## Exit
 Take profit at +3% (closes the full position).
@@ -188,7 +181,6 @@ Buys long when all of these are true:
 
 ## Action
 Goes Long with Market orders (fills immediately at best price).
-Slippage tolerance 0.05%.
 
 ## Exit
 Take profit: +0.5% closes 70%, +1% closes 30%.

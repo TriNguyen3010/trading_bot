@@ -104,7 +104,9 @@ export interface EntryStrategyForm {
   candlestick: Candlestick[];
   indicators: IndicatorItem[];
   entryConditions: ConditionGroup;
+  /** Set via templates / JSON import only — not exposed in the wizard UI. */
   startupCandleCount: number;
+  /** Set via templates / JSON import only — not exposed in the wizard UI. */
   informativeTimeframes: string[];
 }
 
@@ -112,7 +114,6 @@ export interface DirectionForm {
   direction: Direction;
   orderType: OrderType;
   limitOffsetPct: number | null;
-  slippageTolerance: number;
 }
 
 export interface BuilderState {

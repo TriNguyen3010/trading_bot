@@ -62,17 +62,8 @@ export function DirectionSetup() {
           ]}
         />
       </FormField>
-    </>
-  );
-}
 
-export function DirectionConfigure() {
-  const form = useBuilderStore((s) => s.directionForm);
-  const patch = useBuilderStore((s) => s.patchDirection);
-
-  return (
-    <>
-      {form.orderType === 'limit' ? (
+      {form.orderType === 'limit' && (
         <FormField
           label="Limit offset"
           hint="Offset (%) from market price when placing the limit order. Negative = below market."
@@ -84,28 +75,7 @@ export function DirectionConfigure() {
             suffix="%"
           />
         </FormField>
-      ) : (
-        <div className="rounded-md border border-dashed border-border bg-canvas/40 p-4 text-xs text-fg-muted">
-          Switch order type to <span className="text-fg">Limit</span> to set
-          offset.
-        </div>
       )}
-
-      <FormField
-        label="Slippage tolerance"
-        hint="Max acceptable slippage on market orders."
-      >
-        <NumberInput
-          value={form.slippageTolerance}
-          onValueChange={(v) =>
-            patch({ slippageTolerance: Math.max(0, v ?? 0) })
-          }
-          min={0}
-          max={5}
-          step={0.05}
-          suffix="%"
-        />
-      </FormField>
     </>
   );
 }

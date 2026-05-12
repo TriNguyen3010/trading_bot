@@ -75,7 +75,6 @@ export const gridStableUsdtPairs: BotTemplate = {
       direction: 'long',
       orderType: 'limit',
       limitOffsetPct: -0.05,
-      slippageTolerance: 0.1,
     },
     closeMethod: {
       type: 'roi',

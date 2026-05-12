@@ -53,7 +53,6 @@ const defaultDirection: DirectionForm = {
   direction: 'long',
   orderType: 'market',
   limitOffsetPct: null,
-  slippageTolerance: 0.5,
 };
 
 const defaultCloseMethod: CloseMethodForm = {
