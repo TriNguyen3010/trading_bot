@@ -10,33 +10,12 @@ import type { CloseMethodType } from '@/types/builder.types';
 const METHODS: {
   value: CloseMethodType;
   label: string;
-  description: string;
   icon: typeof Hand;
 }[] = [
-  {
-    value: 'manual',
-    label: 'Manual',
-    description: 'No automatic exit. You close trades by hand.',
-    icon: Hand,
-  },
-  {
-    value: 'tp_sl',
-    label: 'TP / SL',
-    description: 'Take profit at multiple levels and stop loss.',
-    icon: Target,
-  },
-  {
-    value: 'indicator',
-    label: 'Indicator',
-    description: 'Exit when an indicator condition fires (e.g. RSI > 70).',
-    icon: LineChart,
-  },
-  {
-    value: 'roi',
-    label: 'ROI table',
-    description: 'Time-based exit: lower target as the trade ages.',
-    icon: Clock,
-  },
+  { value: 'manual', label: 'Manual', icon: Hand },
+  { value: 'tp_sl', label: 'TP / SL', icon: Target },
+  { value: 'indicator', label: 'Indicator', icon: LineChart },
+  { value: 'roi', label: 'ROI table', icon: Clock },
 ];
 
 export function CloseMethodSetup() {
@@ -77,7 +56,6 @@ export function CloseMethodSetup() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-fg">{m.label}</p>
-                <p className="mt-0.5 text-xs text-fg-muted">{m.description}</p>
               </div>
             </button>
           );
@@ -92,12 +70,7 @@ export function CloseMethodConfigure() {
 
   switch (close.type) {
     case 'manual':
-      return (
-        <div className="rounded-md border border-dashed border-border bg-canvas/40 p-6 text-center text-sm text-fg-muted">
-          Manual exit selected — no further configuration needed. The bot
-          will keep trades open until you close them by hand.
-        </div>
-      );
+      return null;
     case 'tp_sl':
       return <TpSlForm />;
     case 'roi':

@@ -160,7 +160,7 @@ export function TpSlForm() {
         </div>
         {close.trailingEnabled ? (
           <div className="grid grid-cols-2 gap-4">
-            <FormField label="Activate at" hint="Profit % required to enable trailing.">
+            <FormField label="Activate at">
               <NumberInput
                 value={close.trailingPositive}
                 onValueChange={(v) => patch({ trailingPositive: v ?? 0 })}

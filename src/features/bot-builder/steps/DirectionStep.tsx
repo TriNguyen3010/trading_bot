@@ -14,7 +14,6 @@ export function DirectionSetup() {
       <FormField
         label="Direction"
         required
-        hint="Long profits when price rises. Short profits when it falls."
       >
         <ToggleGroup<Direction>
           value={form.direction}
@@ -49,7 +48,6 @@ export function DirectionSetup() {
       <FormField
         label="Order type"
         required
-        hint="Market fills immediately. Limit waits for a target price."
       >
         <ToggleGroup<OrderType>
           value={form.orderType}
@@ -66,7 +64,6 @@ export function DirectionSetup() {
       {form.orderType === 'limit' && (
         <FormField
           label="Limit offset"
-          hint="Offset (%) from market price when placing the limit order. Negative = below market."
         >
           <NumberInput
             value={form.limitOffsetPct}

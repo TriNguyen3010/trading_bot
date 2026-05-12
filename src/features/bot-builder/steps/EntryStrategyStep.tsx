@@ -14,7 +14,6 @@ export function EntryStrategySetup() {
     <>
       <FormField
         label="Strategy name"
-        hint="Internal label — used as `name` in strategy.json."
       >
         <Input
           value={strategy.name}
@@ -26,7 +25,6 @@ export function EntryStrategySetup() {
       {strategy.indicators.length > 0 ? (
         <FormField
           label="Indicators"
-          hint="Click the settings icon on any chip to tune its parameters."
         >
           <div className="flex flex-wrap items-center gap-2">
             {strategy.indicators.map((ind) => (

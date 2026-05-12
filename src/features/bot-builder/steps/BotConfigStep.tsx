@@ -46,7 +46,6 @@ export function BotConfigSetup() {
       <FormField
         label="Bot name"
         required
-        hint="Sent as `bot_name` to the backend. A Python class name is auto-derived from this."
       >
         <Input
           value={botName}
@@ -61,7 +60,6 @@ export function BotConfigSetup() {
           <FormField
             label="Pair"
             required
-            hint="Format: BASE-QUOTE (e.g. BTC-USDC)."
           >
             <Input
               list="pair-suggestions"
@@ -99,17 +97,8 @@ export function BotConfigSetup() {
           fullWidth
           ariaLabel="Trading mode"
           options={[
-            {
-              value: 'dry-run',
-              label: 'Dry-run',
-              description: 'Simulated wallet, safe to test.',
-            },
-            {
-              value: 'live',
-              label: 'Live trade',
-              description: 'Real funds — confirmation required.',
-              tone: 'bearish',
-            },
+            { value: 'dry-run', label: 'Dry-run' },
+            { value: 'live', label: 'Live trade', tone: 'bearish' },
           ]}
         />
       </FormField>
@@ -117,7 +106,6 @@ export function BotConfigSetup() {
       <div data-cy-anchor="bot-config:leverage">
         <FormField
           label="Leverage"
-          hint="Multiplier applied to your stake. ≥10× will warn at export."
         >
           <Slider
             value={config.leverage}
@@ -225,7 +213,7 @@ export function BotConfigConfigure() {
 
       {/* Max open + Stake currency + Stake amount on one 3-col row. */}
       <div className="grid grid-cols-3 gap-4">
-        <FormField label="Max open trades" hint="−1 = unlimited">
+        <FormField label="Max open trades">
           <NumberInput
             value={config.maxOpenTrades}
             onValueChange={(v) => patch({ maxOpenTrades: v ?? -1 })}
@@ -245,7 +233,7 @@ export function BotConfigConfigure() {
             ))}
           </Select>
         </FormField>
-        <FormField label="Stake amount" hint="Per-trade stake.">
+        <FormField label="Stake amount">
           <NumberInput
             value={config.stakeAmount}
             onValueChange={(v) =>
@@ -261,7 +249,7 @@ export function BotConfigConfigure() {
       {/* Dry-run wallet appears on its own row only while in dry-run
        *  mode. Hidden in Live mode. */}
       {config.tradingMode === 'dry-run' ? (
-        <FormField label="Dry-run wallet" hint="Simulated total balance.">
+        <FormField label="Dry-run wallet">
           <NumberInput
             value={config.dryRunWallet}
             onValueChange={(v) =>

@@ -249,22 +249,21 @@ export function StepDrawer({
                             ? `${strings.drawer.stepLabel(content.index)}: ${content.title}`
                             : (content?.title ?? '')}
                   </SheetTitle>
+                  {/* Subtitle removed by user request — only the Cypheus
+                      "step N of M" progress badge stays, and only when
+                      Cypheus is pinned. The Description element is kept
+                      around so Radix Dialog's a11y `aria-describedby`
+                      link doesn't warn. */}
                   {effectiveMode !== 'cypheus-summary' && (
                     <SheetDescription>
-                      {isCompositeStrategy && strategyHeader
-                        ? strategyHeader.description
-                        : isCompositeBotConfig && botConfigHeader
-                          ? botConfigHeader.description
-                          : (content?.description ?? '')}
-                      {isPinned && (
-                        <span className="ml-2 text-fg-muted">
-                          ·{' '}
+                      {isPinned ? (
+                        <span className="text-fg-muted">
                           {strings.cypheus.magicBuild.progressLabel(
                             indexOfActive,
                             TOTAL_STEPS,
                           )}
                         </span>
-                      )}
+                      ) : null}
                     </SheetDescription>
                   )}
                   {/* Setup/Configure stepper only renders in the legacy
