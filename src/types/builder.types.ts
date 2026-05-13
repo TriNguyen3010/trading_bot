@@ -58,6 +58,35 @@ export interface ConditionGroup {
   conditions: ConditionRow[];
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// ConditionTree (new model, exposed by the redesigned grouped UI).
+// Mirrors what BE accepts: a top-level list joined by ONE connector, where
+// each item is a NAMED group joined internally by ONE connector. BE supports
+// arbitrary nesting; FE exposes one level per the mockup.
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface ConditionRule {
+  id: string;
+  left: string;
+  op: ConditionOp;
+  right_type: 'indicator' | 'number' | 'none';
+  right_number: number | null;
+  right_indicator: string | null;
+  lookback: number;
+  percentage?: number;
+}
+
+export interface ConditionGroupNode {
+  id: string;
+  intraConnector: 'AND' | 'OR';
+  rules: ConditionRule[];
+}
+
+export interface ConditionTree {
+  groupConnector: 'AND' | 'OR';
+  groups: ConditionGroupNode[];
+}
+
 export interface RoiStep {
   minutes: number;
   roi: number; // percentage

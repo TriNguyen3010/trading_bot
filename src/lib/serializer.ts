@@ -238,10 +238,40 @@ interface DeserializedState {
   closeMethod: CloseMethodForm;
 }
 
+type PlainConditionItem = Exclude<
+  SignalGroup['conditions'][number],
+  { type: 'group' }
+>;
+
+function isPlainConditionItem(
+  c: SignalGroup['conditions'][number],
+): c is PlainConditionItem {
+  return !('type' in c) || c.type !== 'group';
+}
+
+function flattenPlain(
+  items: SignalGroup['conditions'],
+): PlainConditionItem[] {
+  const out: PlainConditionItem[] = [];
+  for (const item of items) {
+    if (isPlainConditionItem(item)) {
+      out.push(item);
+    } else {
+      out.push(...flattenPlain(item.conditions));
+    }
+  }
+  return out;
+}
+
 function deserializeGroup(g: SignalGroup): ConditionGroup {
+  // Legacy path: flatten any nested `{type:'group'}` items into plain ones.
+  // Phase 3 swaps this entire path over to `deserializeBEToTree`, so the
+  // lossy flatten here is intentional and short-lived.
+  const plainItems = flattenPlain(g.conditions);
+
   return {
     logic: { type: g.logic.type, threshold: g.logic.threshold },
-    conditions: g.conditions.map((c) => ({
+    conditions: plainItems.map((c) => ({
       id: crypto.randomUUID(),
       left: c.left,
       op: c.op,

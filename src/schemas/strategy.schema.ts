@@ -19,16 +19,40 @@ export const conditionOpSchema = z.enum([
 
 export const conditionRightTypeSchema = z.enum(['indicator', 'number', 'none']);
 
-export const conditionItemSchema = z.object({
+// `lookback` is required (BE always emits it; FE always sets it). Avoid
+// `.default(0)` so the inferred input/output types match the manually-declared
+// recursive `ConditionListItem` union below.
+export const conditionPlainSchema = z.object({
   left: z.string(),
   op: conditionOpSchema,
   right_type: conditionRightTypeSchema,
   right_number: z.number().nullable(),
   right_indicator: z.string().nullable(),
-  lookback: z.number().int().min(0).default(0),
+  lookback: z.number().int().min(0),
   percentage: z.number().optional(),
   operator: z.enum(['AND', 'OR']).optional(),
 });
+
+// BE accepts list items that are EITHER a plain condition OR a nested group
+// (`{type:'group', conditions:[...], operator?}`). Groups can nest recursively.
+export type ConditionListItem =
+  | z.infer<typeof conditionPlainSchema>
+  | { type: 'group'; conditions: ConditionListItem[]; operator?: 'AND' | 'OR' };
+
+export const conditionListItemSchema: z.ZodType<ConditionListItem> = z.lazy(
+  () =>
+    z.union([
+      conditionPlainSchema,
+      z.object({
+        type: z.literal('group'),
+        conditions: z.array(conditionListItemSchema),
+        operator: z.enum(['AND', 'OR']).optional(),
+      }),
+    ]),
+);
+
+// Backwards-compat alias — callers that only emit plain items keep using this.
+export const conditionItemSchema = conditionPlainSchema;
 
 export const logicSchema = z.object({
   type: z.enum(['AND', 'OR']),
@@ -37,7 +61,7 @@ export const logicSchema = z.object({
 
 export const signalGroupSchema = z.object({
   logic: logicSchema,
-  conditions: z.array(conditionItemSchema),
+  conditions: z.array(conditionListItemSchema),
 });
 
 export const indicatorSchema = z.object({
