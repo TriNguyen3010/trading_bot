@@ -304,8 +304,10 @@
  * ────────────────────────────────────────────────────────────────────── */
 .drawer-progress-line {
   position: absolute;
-  top: 0;
-  bottom: 0;
+  /* Inset by the panel's corner radius (rounded-l-3xl = 24px) so the line
+   * stops where the curve begins instead of bleeding past it. */
+  top: 24px;
+  bottom: 24px;
   left: 0;
   width: 1px;
   background: linear-gradient(
@@ -322,7 +324,10 @@
 
 .drawer-progress-glow {
   position: absolute;
-  top: 0;
+  /* Rest position matches the line's inset (rounded-l-3xl = 24px) so the
+   * glow never travels into the rounded corner. JS keeps it within the
+   * inset range as the user scrolls. */
+  top: 24px;
   left: -2px;
   width: 5px;
   height: 160px;
