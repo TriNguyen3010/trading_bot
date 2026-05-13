@@ -15,6 +15,7 @@ import {
   FIXED_DRAWER_WIDTH,
   useBuilderStore,
 } from '@/features/bot-builder/store/builder.store';
+import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
@@ -27,6 +28,8 @@ export function BuilderPage() {
   const drawerWidth = FIXED_DRAWER_WIDTH;
   const setTemplatesOpen = useTemplatesDialogStore((s) => s.setOpen);
   const leftPanelCollapsed = useLayoutPrefsStore((s) => s.leftPanelCollapsed);
+  const phase = useCypheusStore((s) => s.phase);
+  const setPhase = useCypheusStore((s) => s.setPhase);
 
   const drawerVisible = openStep !== null;
 
@@ -48,6 +51,17 @@ export function BuilderPage() {
       leftPanelCollapsed ? '48px' : '400px',
     );
   }, [leftPanelCollapsed]);
+
+  // Page-level catch-all: the first time any step opens (StepCard click,
+  // Strategy card click, template-driven openStep change, etc.) the
+  // Cypheus dock transitions from idle → active. The `phase === 'idle'`
+  // guard makes the effect inert once we've advanced past idle, so
+  // re-opening a step after `completed` does NOT flip back to active.
+  useEffect(() => {
+    if (openStep !== null && phase === 'idle') {
+      setPhase('active');
+    }
+  }, [openStep, phase, setPhase]);
 
   // `--dock-height` is owned by <CypheusDock> via ResizeObserver — it knows
   // its own measured height. The canvas just reads the CSS var below.
