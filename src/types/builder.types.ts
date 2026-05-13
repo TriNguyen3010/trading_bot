@@ -110,7 +110,7 @@ export interface CloseMethodForm {
   // ROI
   roiSteps: RoiStep[];
   // Indicator exit
-  exitConditions: ConditionGroup;
+  exitConditions: ConditionTree;
 }
 
 export interface BotConfigForm {
@@ -132,7 +132,7 @@ export interface EntryStrategyForm {
   name: string;
   candlestick: Candlestick[];
   indicators: IndicatorItem[];
-  entryConditions: ConditionGroup;
+  entryConditions: ConditionTree;
   /** Set via templates / JSON import only — not exposed in the wizard UI. */
   startupCandleCount: number;
   /** Set via templates / JSON import only — not exposed in the wizard UI. */

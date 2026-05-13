@@ -26,16 +26,22 @@ function fillAllSetupValid() {
   s.patchStrategy({
     candlestick: ['close'],
     entryConditions: {
-      logic: { type: 'AND', threshold: null },
-      conditions: [
+      groupConnector: 'AND',
+      groups: [
         {
-          id: 'c1',
-          left: 'candle.close',
-          op: '>',
-          right_type: 'number',
-          right_number: 100,
-          right_indicator: null,
-          lookback: 0,
+          id: 'g1',
+          intraConnector: 'AND',
+          rules: [
+            {
+              id: 'c1',
+              left: 'candle.close',
+              op: '>',
+              right_type: 'number',
+              right_number: 100,
+              right_indicator: null,
+              lookback: 0,
+            },
+          ],
         },
       ],
     },

@@ -56,16 +56,22 @@ export const gridStableUsdtPairs: BotTemplate = {
       // Grid bots don't really need a strict entry, just something that
       // satisfies the validator.
       entryConditions: {
-        logic: { type: 'AND', threshold: null },
-        conditions: [
+        groupConnector: 'AND',
+        groups: [
           {
-            id: `${ID}-cond-1`,
-            left: 'RSI-14',
-            op: '<',
-            right_type: 'number',
-            right_number: 55,
-            right_indicator: null,
-            lookback: 0,
+            id: `${ID}-grp-1`,
+            intraConnector: 'AND',
+            rules: [
+              {
+                id: `${ID}-cond-1`,
+                left: 'RSI-14',
+                op: '<',
+                right_type: 'number',
+                right_number: 55,
+                right_indicator: null,
+                lookback: 0,
+              },
+            ],
           },
         ],
       },
@@ -95,7 +101,7 @@ export const gridStableUsdtPairs: BotTemplate = {
         { minutes: 60, roi: 0.001 },
         { minutes: 120, roi: 0 },
       ],
-      exitConditions: { logic: { type: 'AND', threshold: null }, conditions: [] },
+      exitConditions: { groupConnector: 'AND', groups: [] },
     },
   },
 

@@ -2,6 +2,7 @@ import {
   Hand, Target, LineChart, Clock, AlertTriangle, type LucideIcon,
 } from 'lucide-react';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import { allRules } from '@/lib/condition-tree';
 import { ReadOnlyChip } from './shared/ReadOnlyChip';
 import { ConditionPreview } from './shared/ConditionPreview';
 import type { CloseMethodType } from '@/types/builder.types';
@@ -27,6 +28,7 @@ export function CloseMethodSummary() {
   const Icon = meta.icon;
   const totalTpAmount = tpLevels.reduce((sum, l) => sum + (l.amount ?? 0), 0);
   const tpOver100 = totalTpAmount > 100;
+  const exitRules = allRules(exitConditions);
 
   return (
     <div className="flex flex-col gap-2">
@@ -51,8 +53,7 @@ export function CloseMethodSummary() {
         ) : null}
         {type === 'indicator' ? (
           <ReadOnlyChip tone="neutral">
-            {exitConditions.conditions.length} rule
-            {exitConditions.conditions.length === 1 ? '' : 's'}
+            {exitRules.length} rule{exitRules.length === 1 ? '' : 's'}
           </ReadOnlyChip>
         ) : null}
       </div>
@@ -109,12 +110,12 @@ export function CloseMethodSummary() {
       ) : null}
 
       {/* Indicator exit preview */}
-      {type === 'indicator' && exitConditions.conditions.length > 0 ? (
+      {type === 'indicator' && exitRules.length > 0 ? (
         <div className="pl-1">
-          <ConditionPreview row={exitConditions.conditions[0]} />
-          {exitConditions.conditions.length > 1 ? (
+          <ConditionPreview row={exitRules[0]} />
+          {exitRules.length > 1 ? (
             <span className="ml-2 text-2xs text-fg-muted">
-              + {exitConditions.conditions.length - 1} more
+              + {exitRules.length - 1} more
             </span>
           ) : null}
         </div>

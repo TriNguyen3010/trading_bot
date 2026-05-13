@@ -1,5 +1,6 @@
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { indicatorOutputId } from '@/features/indicators/indicator-registry';
+import { allRules } from '@/lib/condition-tree';
 import { ReadOnlyChip } from './shared/ReadOnlyChip';
 import { ConditionPreview } from './shared/ConditionPreview';
 import { cn } from '@/lib/utils';
@@ -18,7 +19,7 @@ const MAX_INLINE_CONDITIONS = 2;
 export function EntryStrategySummary() {
   const strategy = useBuilderStore((s) => s.strategy);
   const { candlestick, indicators, entryConditions } = strategy;
-  const conditions = entryConditions.conditions;
+  const conditions = allRules(entryConditions);
 
   const isEmpty =
     candlestick.length === 0 && indicators.length === 0 && conditions.length === 0;
@@ -40,12 +41,16 @@ export function EntryStrategySummary() {
             </span>
             <span className="text-2xs text-fg-muted">
               {conditions.length} condition{conditions.length === 1 ? '' : 's'}
-              {entryConditions.logic.type === 'OR' ? ' · OR' : ''}
+              {entryConditions.groupConnector === 'OR' ? ' · OR' : ''}
             </span>
           </div>
           <div className="flex flex-col gap-0.5 font-mono text-sm text-fg">
-            {inlineConditions.map((row, idx) => (
-              <ConditionPreview key={row.id} row={row} showOperator={idx > 0} />
+            {inlineConditions.map((rule, idx) => (
+              <ConditionPreview
+                key={rule.id}
+                row={{ ...rule, operator: idx > 0 ? entryConditions.groupConnector : undefined }}
+                showOperator={idx > 0}
+              />
             ))}
             {moreCount > 0 ? (
               <span className="text-2xs text-fg-muted">+ {moreCount} more</span>

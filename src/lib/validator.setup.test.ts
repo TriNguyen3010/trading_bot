@@ -34,6 +34,13 @@ describe('isStepSetupComplete', () => {
         .patchBotConfig({ pair: 'BTC-USDC', timeframe: '5m', leverage: 0 });
       expect(isStepSetupComplete('bot-config', snapshot())).toBe(false);
     });
+
+    it('returns false when leverage is above the app max', () => {
+      useBuilderStore
+        .getState()
+        .patchBotConfig({ pair: 'BTC-USDC', timeframe: '5m', leverage: 51 });
+      expect(isStepSetupComplete('bot-config', snapshot())).toBe(false);
+    });
   });
 
   describe('entry-strategy', () => {
@@ -50,16 +57,22 @@ describe('isStepSetupComplete', () => {
       useBuilderStore.getState().patchStrategy({
         candlestick: ['close'],
         entryConditions: {
-          logic: { type: 'AND', threshold: null },
-          conditions: [
+          groupConnector: 'AND',
+          groups: [
             {
-              id: 'c1',
-              left: 'candle.close',
-              op: '>',
-              right_type: 'number',
-              right_number: 100,
-              right_indicator: null,
-              lookback: 0,
+              id: 'g1',
+              intraConnector: 'AND',
+              rules: [
+                {
+                  id: 'c1',
+                  left: 'candle.close',
+                  op: '>',
+                  right_type: 'number',
+                  right_number: 100,
+                  right_indicator: null,
+                  lookback: 0,
+                },
+              ],
             },
           ],
         },

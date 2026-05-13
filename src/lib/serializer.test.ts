@@ -32,16 +32,22 @@ describe('serializer', () => {
       candlestick: ['close', 'volume'],
       indicators: [rsi],
       entryConditions: {
-        logic: { type: 'AND', threshold: null },
-        conditions: [
+        groupConnector: 'AND',
+        groups: [
           {
-            id: 'c1',
-            left: 'RSI-14',
-            op: '<',
-            right_type: 'number',
-            right_number: 30,
-            right_indicator: null,
-            lookback: 0,
+            id: 'g1',
+            intraConnector: 'AND',
+            rules: [
+              {
+                id: 'c1',
+                left: 'RSI-14',
+                op: '<',
+                right_type: 'number',
+                right_number: 30,
+                right_indicator: null,
+                lookback: 0,
+              },
+            ],
           },
         ],
       },
@@ -181,7 +187,7 @@ describe('serializer', () => {
     expect(restored.closeMethod.slEnabled).toBe(true);
     expect(restored.closeMethod.slValue).toBeCloseTo(-3, 5);
     expect(restored.strategy.indicators).toHaveLength(1);
-    expect(restored.strategy.entryConditions.conditions).toHaveLength(1);
+    expect(restored.strategy.entryConditions.groups[0].rules).toHaveLength(1);
   });
 
   it('preserves limit order details across unified round-trip', () => {
@@ -207,7 +213,7 @@ describe('serializer', () => {
     const restored = deserializeUnifiedPayload(wire);
 
     expect(restored.directionForm.direction).toBe('short');
-    expect(restored.strategy.entryConditions.conditions).toHaveLength(1);
+    expect(restored.strategy.entryConditions.groups[0].rules).toHaveLength(1);
   });
 
   it('infers close_method_type=roi when the FE-only field is missing', () => {

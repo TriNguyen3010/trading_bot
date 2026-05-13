@@ -19,6 +19,7 @@ import type {
 import type { SummaryLine, TranslationGap } from '../types';
 import { t, line } from '../types';
 import { translateConditionGroup } from './condition';
+import { flattenTreeToLegacy, ruleCount } from '@/lib/condition-tree';
 
 export interface TranslateExitResult {
   lines: SummaryLine[];
@@ -216,7 +217,7 @@ function translateIndicatorExit(
   direction: Direction,
   gaps: TranslationGap[],
 ): TranslateExitResult {
-  if (close.exitConditions.conditions.length === 0) {
+  if (ruleCount(close.exitConditions) === 0) {
     return {
       lines: [
         line(
@@ -233,7 +234,7 @@ function translateIndicatorExit(
   // Reuse the entry condition translator. Verb depends on direction:
   // long position → "Sells when …"; short position → "Buys to cover when …".
   const verb = direction === 'long' ? 'Sells when' : 'Covers when';
-  const lines = translateConditionGroup(close.exitConditions, {
+  const lines = translateConditionGroup(flattenTreeToLegacy(close.exitConditions), {
     verb,
     emptyPhrase: 'Indicator-based exit (no conditions defined yet).',
     section: 'exit',

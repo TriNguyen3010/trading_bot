@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LEVERAGE_MAX, LEVERAGE_MIN } from '@/lib/constants';
 import type { BuilderState, StepId } from '@/types/builder.types';
 
 // ── Bot Config Setup: pair + timeframe + tradingMode + leverage ──────────────
@@ -6,7 +7,7 @@ const botConfigSetupSchema = z.object({
   pair: z.string().min(3, 'Required'),
   timeframe: z.string().min(1, 'Required'),
   tradingMode: z.enum(['dry-run', 'live']),
-  leverage: z.number().min(1).max(125),
+  leverage: z.number().min(LEVERAGE_MIN).max(LEVERAGE_MAX),
 });
 
 // ── Entry Strategy Setup: ≥1 candlestick + ≥1 indicator + ≥1 condition ───────
@@ -14,7 +15,15 @@ const entryStrategySetupSchema = z.object({
   candlestick: z.array(z.string()).min(1, 'Select at least one price channel'),
   indicators: z.array(z.any()).min(1, 'Add at least one indicator'),
   entryConditions: z.object({
-    conditions: z.array(z.any()).min(1, 'Add at least one condition'),
+    groups: z
+      .array(
+        z.object({
+          rules: z.array(z.any()),
+        }),
+      )
+      .refine((gs) => gs.some((g) => g.rules.length > 0), {
+        message: 'Add at least one condition',
+      }),
   }),
 });
 

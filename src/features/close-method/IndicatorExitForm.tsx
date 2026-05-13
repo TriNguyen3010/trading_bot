@@ -1,5 +1,5 @@
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
-import { ConditionBuilder } from '@/features/conditions/ConditionBuilder';
+import { ConditionTreeBuilder } from '@/features/conditions/ConditionTreeBuilder';
 import { useConditionMetrics } from '@/features/conditions/useConditionMetrics';
 
 export function IndicatorExitForm() {
@@ -8,13 +8,13 @@ export function IndicatorExitForm() {
   const { allCandle, fullIndicators, wrapOnChange } = useConditionMetrics();
 
   return (
-    <ConditionBuilder
-      group={close.exitConditions}
+    <ConditionTreeBuilder
+      tree={close.exitConditions}
       indicators={fullIndicators}
       candlestickChannels={[...allCandle]}
-      onChange={wrapOnChange((g) => patch({ exitConditions: g }))}
+      onChange={wrapOnChange((tree) => patch({ exitConditions: tree }))}
       label="Exit conditions"
-      emptyHint="Add a condition (e.g. RSI > 70) to exit when indicators signal."
+      emptyHint="Add a group (e.g. RSI > 70) to exit when indicators signal."
     />
   );
 }

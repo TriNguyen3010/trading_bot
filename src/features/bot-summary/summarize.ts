@@ -16,6 +16,7 @@ import { translateRisk } from './translators/risk';
 import { translateConditionGroup } from './translators/condition';
 import { translateDirection } from './translators/direction';
 import { translateExit } from './translators/close-method';
+import { flattenTreeToLegacy } from '@/lib/condition-tree';
 
 export function summarizeBot(state: BuilderState): SummarizeResult {
   const gaps: TranslationGap[] = [];
@@ -47,7 +48,7 @@ export function summarizeBot(state: BuilderState): SummarizeResult {
     id: 'entry',
     icon: 'TrendingUp',
     title: 'Entry',
-    lines: translateConditionGroup(state.strategy.entryConditions, {
+    lines: translateConditionGroup(flattenTreeToLegacy(state.strategy.entryConditions), {
       verb: entryVerb,
       emptyPhrase: "No entry conditions defined yet — bot won't enter trades.",
       section: 'entry',

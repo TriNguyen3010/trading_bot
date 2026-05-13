@@ -1,14 +1,12 @@
 import type { BotPayload } from '@/schemas/bot.schema';
 import type {
-  ConditionItem,
   SignalGroup,
   StrategyPayload,
 } from '@/schemas/strategy.schema';
 import type {
   BuilderState,
   CloseMethodForm,
-  ConditionGroup,
-  ConditionRow,
+  ConditionTree,
   IndicatorItem,
 } from '@/types/builder.types';
 import type { Bundle } from '@/schemas/bundle.schema';
@@ -17,6 +15,11 @@ import {
   INDICATOR_REGISTRY,
   indicatorOutputId,
 } from '@/features/indicators/indicator-registry';
+import {
+  deserializeBEToTree,
+  emptyConditionTree,
+  serializeTreeToBE,
+} from './condition-tree';
 
 const APP_VERSION = '0.1.0';
 
@@ -38,26 +41,11 @@ const EMPTY_GROUP: SignalGroup = {
   conditions: [],
 };
 
-function serializeConditionRow(row: ConditionRow): ConditionItem {
-  const out: ConditionItem = {
-    left: row.left,
-    op: row.op,
-    right_type: row.right_type,
-    right_number: row.right_type === 'number' ? row.right_number : null,
-    right_indicator:
-      row.right_type === 'indicator' ? row.right_indicator : null,
-    lookback: row.lookback,
-  };
-  if (row.percentage !== undefined) out.percentage = row.percentage;
-  if (row.operator) out.operator = row.operator;
-  return out;
-}
-
-function serializeGroup(group: ConditionGroup): SignalGroup {
-  return {
-    logic: { type: group.logic.type, threshold: group.logic.threshold },
-    conditions: group.conditions.map(serializeConditionRow),
-  };
+// Serialize a `ConditionTree` to BE `SignalGroup`. Single-rule groups
+// flatten to plain conditions; multi-rule groups become `{type:'group',
+// conditions:[...]}` per the schema confirmed by Tuấn 2026-04-24.
+function serializeGroup(tree: ConditionTree): SignalGroup {
+  return serializeTreeToBE(tree);
 }
 
 function serializeIndicators(indicators: IndicatorItem[]) {
@@ -238,51 +226,8 @@ interface DeserializedState {
   closeMethod: CloseMethodForm;
 }
 
-type PlainConditionItem = Exclude<
-  SignalGroup['conditions'][number],
-  { type: 'group' }
->;
-
-function isPlainConditionItem(
-  c: SignalGroup['conditions'][number],
-): c is PlainConditionItem {
-  return !('type' in c) || c.type !== 'group';
-}
-
-function flattenPlain(
-  items: SignalGroup['conditions'],
-): PlainConditionItem[] {
-  const out: PlainConditionItem[] = [];
-  for (const item of items) {
-    if (isPlainConditionItem(item)) {
-      out.push(item);
-    } else {
-      out.push(...flattenPlain(item.conditions));
-    }
-  }
-  return out;
-}
-
-function deserializeGroup(g: SignalGroup): ConditionGroup {
-  // Legacy path: flatten any nested `{type:'group'}` items into plain ones.
-  // Phase 3 swaps this entire path over to `deserializeBEToTree`, so the
-  // lossy flatten here is intentional and short-lived.
-  const plainItems = flattenPlain(g.conditions);
-
-  return {
-    logic: { type: g.logic.type, threshold: g.logic.threshold },
-    conditions: plainItems.map((c) => ({
-      id: crypto.randomUUID(),
-      left: c.left,
-      op: c.op,
-      right_type: c.right_type,
-      right_number: c.right_number,
-      right_indicator: c.right_indicator,
-      lookback: c.lookback ?? 0,
-      percentage: c.percentage,
-      operator: c.operator,
-    })),
-  };
+function deserializeGroup(g: SignalGroup): ConditionTree {
+  return deserializeBEToTree(g);
 }
 
 function deserializeIndicators(
@@ -518,10 +463,7 @@ export function buildUnifiedPayload(state: BuilderState): UnifiedBundle {
 /*  Export/Import flow is removed, only this entry point will be used.        */
 /* -------------------------------------------------------------------------- */
 
-const EMPTY_DESERIALIZED_GROUP: ConditionGroup = {
-  logic: { type: 'AND', threshold: null },
-  conditions: [],
-};
+const EMPTY_DESERIALIZED_GROUP: ConditionTree = emptyConditionTree();
 
 /**
  * Coerce a Zod-inferred unified `SignalsBlock` into the narrower
@@ -536,6 +478,43 @@ const EMPTY_DESERIALIZED_GROUP: ConditionGroup = {
  * Future-proof: when BE settles on a single canonical tense, drop the
  * mapping here and the legacy ops enum can stay narrow.
  */
+// Recursively coerce a unified-schema list item (plain or nested group)
+// into the local `SignalGroup['conditions'][number]` shape, normalizing
+// past/present tense for cross ops along the way.
+function coerceUnifiedItem(c: unknown): SignalGroup['conditions'][number] {
+  if (
+    typeof c === 'object' &&
+    c !== null &&
+    'type' in c &&
+    (c as { type: string }).type === 'group'
+  ) {
+    const g = c as {
+      type: 'group';
+      conditions: unknown[];
+      operator?: 'AND' | 'OR';
+    };
+    return {
+      type: 'group',
+      conditions: g.conditions.map(coerceUnifiedItem),
+      ...(g.operator ? { operator: g.operator } : {}),
+    };
+  }
+  const plain = c as SignalGroup['conditions'][number] & { op: string };
+  return {
+    ...plain,
+    op:
+      plain.op === 'crossed_above'
+        ? 'crosses_above'
+        : plain.op === 'crossed_below'
+          ? 'crosses_below'
+          : (plain.op as SignalGroup['conditions'][number] extends infer T
+              ? T extends { op: infer O }
+                ? O
+                : never
+              : never),
+  };
+}
+
 function coerceUnifiedSignalGroup(
   g: NonNullable<
     UnifiedBotStrategyCreate['configurations']
@@ -546,15 +525,7 @@ function coerceUnifiedSignalGroup(
   }
   return {
     logic: { type: g.logic.type, threshold: g.logic.threshold },
-    conditions: g.conditions.map((c) => ({
-      ...c,
-      op:
-        c.op === 'crossed_above'
-          ? 'crosses_above'
-          : c.op === 'crossed_below'
-            ? 'crosses_below'
-            : c.op,
-    })),
+    conditions: g.conditions.map(coerceUnifiedItem),
   };
 }
 

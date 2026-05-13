@@ -231,13 +231,15 @@ export const conditionRightTypeSchema = z.enum([
   'none',
 ]);
 
+// `lookback` required (BE always emits; FE always sets). Avoid `.default(0)`
+// to keep the recursive `ConditionListItem` union's input/output aligned.
 const baseConditionSchema = z.object({
   left: z.string().min(1),
   op: conditionOpSchema,
   right_type: conditionRightTypeSchema,
   right_number: z.number().nullable(),
   right_indicator: z.string().nullable(),
-  lookback: z.number().int().min(0).default(0),
+  lookback: z.number().int().min(0),
   /** Boolean glue connecting this condition to the previous one in the array.
    * Per spec §8.bis: condition[0] has no `operator`; conditions[1..] do. */
   operator: z.enum(['AND', 'OR']).optional(),
@@ -281,9 +283,29 @@ export const logicSchema = z.object({
   threshold: z.number().nullable(),
 });
 
+// BE accepts list items that are EITHER plain conditions OR nested
+// `{type:'group', conditions:[...]}` groups. Mirrors strategy.schema.ts
+// — see Data/payload_entry_conditions_nested_sample.json for the
+// authoritative shape (Tuấn, 2026-04-24).
+export type ConditionListItem =
+  | z.infer<typeof baseConditionSchema>
+  | { type: 'group'; conditions: ConditionListItem[]; operator?: 'AND' | 'OR' };
+
+export const conditionListItemSchema: z.ZodType<ConditionListItem> = z.lazy(
+  () =>
+    z.union([
+      conditionItemSchema,
+      z.object({
+        type: z.literal('group'),
+        conditions: z.array(conditionListItemSchema),
+        operator: z.enum(['AND', 'OR']).optional(),
+      }),
+    ]),
+);
+
 export const signalsBlockSchema = z.object({
   logic: logicSchema,
-  conditions: z.array(conditionItemSchema),
+  conditions: z.array(conditionListItemSchema),
 });
 
 export const signalsConfigSchema = z.object({

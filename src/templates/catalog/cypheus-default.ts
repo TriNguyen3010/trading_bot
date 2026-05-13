@@ -47,16 +47,22 @@ export const cypheusDefault: BotTemplate = {
         },
       ],
       entryConditions: {
-        logic: { type: 'AND', threshold: null },
-        conditions: [
+        groupConnector: 'AND',
+        groups: [
           {
-            id: 'cypheus-default-entry-1',
-            left: 'RSI-14',
-            op: '<',
-            right_type: 'number',
-            right_number: 30,
-            right_indicator: null,
-            lookback: 0,
+            id: 'cypheus-default-grp-1',
+            intraConnector: 'AND',
+            rules: [
+              {
+                id: 'cypheus-default-entry-1',
+                left: 'RSI-14',
+                op: '<',
+                right_type: 'number',
+                right_number: 30,
+                right_indicator: null,
+                lookback: 0,
+              },
+            ],
           },
         ],
       },
@@ -81,10 +87,7 @@ export const cypheusDefault: BotTemplate = {
       trailingPositive: 1,
       trailingOffset: 1.5,
       roiSteps: [],
-      exitConditions: {
-        logic: { type: 'AND', threshold: null },
-        conditions: [],
-      },
+      exitConditions: { groupConnector: 'AND', groups: [] },
     },
   },
 

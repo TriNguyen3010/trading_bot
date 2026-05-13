@@ -69,19 +69,24 @@ function seedEntryStrategy() {
         },
       ],
       entryConditions: {
-        ...s.strategy.entryConditions,
-        conditions: [
+        groupConnector: 'AND',
+        groups: [
           {
-            id: 'cond-1',
-            left: 'RSI-14',
-            op: '<',
-            right_type: 'number',
-            right_number: 40,
-            right_indicator: null,
-            lookback: 0,
+            id: 'grp-1',
+            intraConnector: 'AND',
+            rules: [
+              {
+                id: 'cond-1',
+                left: 'RSI-14',
+                op: '<',
+                right_type: 'number',
+                right_number: 40,
+                right_indicator: null,
+                lookback: 0,
+              },
+            ],
           },
         ],
-        logic: { type: 'AND', threshold: null },
       },
     },
   }));
@@ -189,19 +194,24 @@ function seedFullStrategy() {
         },
       ],
       entryConditions: {
-        ...s.strategy.entryConditions,
-        conditions: [
+        groupConnector: 'AND' as const,
+        groups: [
           {
-            id: 'cond-1',
-            left: 'RSI-14',
-            op: '<' as const,
-            right_type: 'number' as const,
-            right_number: 40,
-            right_indicator: null,
-            lookback: 0,
+            id: 'grp-1',
+            intraConnector: 'AND' as const,
+            rules: [
+              {
+                id: 'cond-1',
+                left: 'RSI-14',
+                op: '<' as const,
+                right_type: 'number' as const,
+                right_number: 40,
+                right_indicator: null,
+                lookback: 0,
+              },
+            ],
           },
         ],
-        logic: { type: 'AND' as const, threshold: null },
       },
     },
     directionForm: {

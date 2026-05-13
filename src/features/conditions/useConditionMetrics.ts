@@ -7,7 +7,7 @@ import {
 } from '@/features/indicators/indicator-registry';
 import type {
   Candlestick,
-  ConditionGroup,
+  ConditionTree,
   IndicatorItem,
 } from '@/types/builder.types';
 
@@ -47,9 +47,9 @@ export function useConditionMetrics() {
   }, [strategy.indicators]);
 
   function wrapOnChange(
-    onChange: (g: ConditionGroup) => void,
-  ): (g: ConditionGroup) => void {
-    return (g) => {
+    onChange: (tree: ConditionTree) => void,
+  ): (tree: ConditionTree) => void {
+    return (tree) => {
       const newCandle = new Set<Candlestick>();
       const newIndicators = new Map<string, IndicatorItem>();
 
@@ -75,9 +75,13 @@ export function useConditionMetrics() {
         }
       };
 
-      for (const c of g.conditions) {
-        considerRef(c.left);
-        if (c.right_type === 'indicator') considerRef(c.right_indicator);
+      for (const group of tree.groups) {
+        for (const rule of group.rules) {
+          considerRef(rule.left);
+          if (rule.right_type === 'indicator') {
+            considerRef(rule.right_indicator);
+          }
+        }
       }
 
       if (newCandle.size > 0 || newIndicators.size > 0) {
@@ -91,7 +95,7 @@ export function useConditionMetrics() {
         });
       }
 
-      onChange(g);
+      onChange(tree);
     };
   }
 

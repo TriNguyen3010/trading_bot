@@ -3,12 +3,16 @@ import { renderHook } from '@testing-library/react';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { indicatorOutputId } from '@/features/indicators/indicator-registry';
 import { useConditionMetrics } from './useConditionMetrics';
-import type { ConditionGroup } from '@/types/builder.types';
+import { emptyConditionTree } from '@/lib/condition-tree';
+import type { ConditionRule, ConditionTree } from '@/types/builder.types';
 
-const emptyGroup: ConditionGroup = {
-  logic: { type: 'AND', threshold: null },
-  conditions: [],
-};
+function tree(rules: ConditionRule[]): ConditionTree {
+  if (rules.length === 0) return emptyConditionTree();
+  return {
+    groupConnector: 'AND',
+    groups: [{ id: 'g1', intraConnector: 'AND', rules }],
+  };
+}
 
 describe('useConditionMetrics', () => {
   beforeEach(() => {
@@ -60,29 +64,26 @@ describe('useConditionMetrics', () => {
   });
 
   it('wrapOnChange auto-adds candle channel when condition references unselected candle', () => {
-    const calls: ConditionGroup[] = [];
+    const calls: ConditionTree[] = [];
     const { result } = renderHook(() => useConditionMetrics());
 
-    const wrapped = result.current.wrapOnChange((g) => calls.push(g));
-    const newGroup: ConditionGroup = {
-      ...emptyGroup,
-      conditions: [
-        {
-          id: 'c1',
-          left: 'candle.close',
-          op: '>',
-          right_type: 'number',
-          right_number: 0,
-          right_indicator: null,
-          lookback: 0,
-        },
-      ],
-    };
-    wrapped(newGroup);
+    const wrapped = result.current.wrapOnChange((t) => calls.push(t));
+    const newTree = tree([
+      {
+        id: 'c1',
+        left: 'candle.close',
+        op: '>',
+        right_type: 'number',
+        right_number: 0,
+        right_indicator: null,
+        lookback: 0,
+      },
+    ]);
+    wrapped(newTree);
 
     // onChange forwarded
     expect(calls).toHaveLength(1);
-    expect(calls[0]).toBe(newGroup);
+    expect(calls[0]).toBe(newTree);
     // state patched
     expect(useBuilderStore.getState().strategy.candlestick).toContain('close');
   });
@@ -91,21 +92,18 @@ describe('useConditionMetrics', () => {
     const { result } = renderHook(() => useConditionMetrics());
     const wrapped = result.current.wrapOnChange(() => {});
 
-    const g: ConditionGroup = {
-      ...emptyGroup,
-      conditions: [
-        {
-          id: 'c1',
-          left: 'RSI-14',
-          op: '<',
-          right_type: 'number',
-          right_number: 30,
-          right_indicator: null,
-          lookback: 0,
-        },
-      ],
-    };
-    wrapped(g);
+    const t = tree([
+      {
+        id: 'c1',
+        left: 'RSI-14',
+        op: '<',
+        right_type: 'number',
+        right_number: 30,
+        right_indicator: null,
+        lookback: 0,
+      },
+    ]);
+    wrapped(t);
 
     const indicators = useBuilderStore.getState().strategy.indicators;
     const rsi = indicators.find((i) => indicatorOutputId(i) === 'RSI-14');
@@ -117,21 +115,18 @@ describe('useConditionMetrics', () => {
     const { result } = renderHook(() => useConditionMetrics());
     const wrapped = result.current.wrapOnChange(() => {});
 
-    const g: ConditionGroup = {
-      ...emptyGroup,
-      conditions: [
-        {
-          id: 'c1',
-          left: 'candle.close',
-          op: 'crosses_above',
-          right_type: 'indicator',
-          right_number: null,
-          right_indicator: 'MA-50',
-          lookback: 0,
-        },
-      ],
-    };
-    wrapped(g);
+    const t = tree([
+      {
+        id: 'c1',
+        left: 'candle.close',
+        op: 'crosses_above',
+        right_type: 'indicator',
+        right_number: null,
+        right_indicator: 'MA-50',
+        lookback: 0,
+      },
+    ]);
+    wrapped(t);
 
     const indicators = useBuilderStore.getState().strategy.indicators;
     expect(indicators.some((i) => indicatorOutputId(i) === 'MA-50')).toBe(true);
@@ -156,21 +151,18 @@ describe('useConditionMetrics', () => {
 
     const { result } = renderHook(() => useConditionMetrics());
     const wrapped = result.current.wrapOnChange(() => {});
-    const g: ConditionGroup = {
-      ...emptyGroup,
-      conditions: [
-        {
-          id: 'c1',
-          left: 'candle.close',
-          op: '<',
-          right_type: 'indicator',
-          right_number: null,
-          right_indicator: 'RSI-14',
-          lookback: 0,
-        },
-      ],
-    };
-    wrapped(g);
+    const t = tree([
+      {
+        id: 'c1',
+        left: 'candle.close',
+        op: '<',
+        right_type: 'indicator',
+        right_number: null,
+        right_indicator: 'RSI-14',
+        lookback: 0,
+      },
+    ]);
+    wrapped(t);
 
     expect(useBuilderStore.getState().strategy.candlestick).toEqual(['close']);
     expect(useBuilderStore.getState().strategy.indicators).toHaveLength(1);
@@ -194,8 +186,8 @@ describe('useConditionMetrics', () => {
 
     const { result } = renderHook(() => useConditionMetrics());
     const wrapped = result.current.wrapOnChange(() => {});
-    // New group references neither 'open' nor RSI
-    wrapped({ ...emptyGroup, conditions: [] });
+    // Empty tree → no references
+    wrapped(emptyConditionTree());
 
     expect(useBuilderStore.getState().strategy.candlestick).toEqual([
       'open',

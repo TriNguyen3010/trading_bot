@@ -4,13 +4,13 @@ import type {
   BuilderState,
   BotConfigForm,
   CloseMethodForm,
-  ConditionGroup,
   DirectionForm,
   DrawerTab,
   EntryStrategyForm,
   StepId,
   StepStatus,
 } from '@/types/builder.types';
+import { emptyConditionTree, migrateLegacyGroup } from '@/lib/condition-tree';
 
 /** Per user request 2026-04-30: drawer is locked at this width — the
  * adjustable min/max + DrawerResizeHandle were removed. Exported so
@@ -19,11 +19,6 @@ export const FIXED_DRAWER_WIDTH = 480;
 const MIN_DRAWER_WIDTH = FIXED_DRAWER_WIDTH;
 const MAX_DRAWER_WIDTH = FIXED_DRAWER_WIDTH;
 const DEFAULT_DRAWER_WIDTH = FIXED_DRAWER_WIDTH;
-
-const emptyConditionGroup: ConditionGroup = {
-  logic: { type: 'AND', threshold: null },
-  conditions: [],
-};
 
 const defaultBotConfig: BotConfigForm = {
   pair: '',
@@ -44,7 +39,7 @@ const defaultStrategy: EntryStrategyForm = {
   name: 'Entry Strategy 1',
   candlestick: [],
   indicators: [],
-  entryConditions: { ...emptyConditionGroup, conditions: [] },
+  entryConditions: emptyConditionTree(),
   startupCandleCount: 200,
   informativeTimeframes: [],
 };
@@ -65,7 +60,7 @@ const defaultCloseMethod: CloseMethodForm = {
   trailingPositive: 1,
   trailingOffset: 1.5,
   roiSteps: [],
-  exitConditions: { ...emptyConditionGroup, conditions: [] },
+  exitConditions: emptyConditionTree(),
 };
 
 const buildInitialState = (): BuilderState => ({
@@ -168,7 +163,7 @@ export const useBuilderStore = create<BuilderStore>()(
     }),
     {
       name: 'trading-bot-builder',
-      version: 2,
+      version: 3,
       partialize: (state) => ({
         botName: state.botName,
         botConfig: state.botConfig,
@@ -179,6 +174,40 @@ export const useBuilderStore = create<BuilderStore>()(
         drawerWidth: state.drawerWidth,
         lastSavedAt: state.lastSavedAt,
       }),
+      // v2 → v3: flat `ConditionGroup` becomes `ConditionTree`. Reuse the
+      // legacy migration helper so existing OR-chains are preserved instead
+      // of collapsed into one giant AND group.
+      migrate: (persisted: unknown, fromVersion: number) => {
+        if (!persisted || typeof persisted !== 'object') return persisted;
+        if (fromVersion >= 3) return persisted;
+        const s = persisted as {
+          strategy?: { entryConditions?: unknown };
+          closeMethod?: { exitConditions?: unknown };
+        };
+        if (
+          s.strategy?.entryConditions &&
+          'conditions' in (s.strategy.entryConditions as object) &&
+          !('groups' in (s.strategy.entryConditions as object))
+        ) {
+          s.strategy.entryConditions = migrateLegacyGroup(
+            s.strategy.entryConditions as Parameters<
+              typeof migrateLegacyGroup
+            >[0],
+          );
+        }
+        if (
+          s.closeMethod?.exitConditions &&
+          'conditions' in (s.closeMethod.exitConditions as object) &&
+          !('groups' in (s.closeMethod.exitConditions as object))
+        ) {
+          s.closeMethod.exitConditions = migrateLegacyGroup(
+            s.closeMethod.exitConditions as Parameters<
+              typeof migrateLegacyGroup
+            >[0],
+          );
+        }
+        return s;
+      },
     },
   ),
 );

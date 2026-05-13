@@ -20,6 +20,7 @@
  */
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { indicatorOutputId } from '@/features/indicators/indicator-registry';
+import { allRules, ruleCount } from '@/lib/condition-tree';
 import { conditionToString } from './shared/ConditionPreview';
 import type { CloseMethodForm } from '@/types/builder.types';
 
@@ -37,7 +38,7 @@ export function StrategyNarrativeSummary() {
   const closeMethod = useBuilderStore((s) => s.closeMethod);
   const timeframe = useBuilderStore((s) => s.botConfig.timeframe);
 
-  const conditions = strategy.entryConditions.conditions;
+  const conditions = allRules(strategy.entryConditions);
   const isLong = directionForm.direction === 'long';
   const isLimit = directionForm.orderType === 'limit';
 
@@ -63,7 +64,7 @@ export function StrategyNarrativeSummary() {
   // Issue #1 & #2 — use conditionToString() which handles OP_LABEL + right_type='none'
   const firstCond = conditions[0];
   const moreCount = Math.max(0, conditions.length - 1);
-  const logicWord = strategy.entryConditions.logic.type === 'OR' ? 'or' : 'and';
+  const logicWord = strategy.entryConditions.groupConnector === 'OR' ? 'or' : 'and';
 
   const triggerText = firstCond ? conditionToString(firstCond) : 'no rule yet';
 
@@ -206,7 +207,7 @@ function renderExitNarrative(closeMethod: CloseMethodForm) {
   }
 
   if (type === 'indicator') {
-    const count = exitConditions.conditions.length;
+    const count = ruleCount(exitConditions);
     return (
       <>
         Exit when{' '}

@@ -79,7 +79,7 @@ describe('summarizeBot — edge cases', () => {
         name: 'Entry Strategy 1',
         candlestick: [],
         indicators: [],
-        entryConditions: { logic: { type: 'AND', threshold: null }, conditions: [] },
+        entryConditions: { groupConnector: 'AND', groups: [] },
         startupCandleCount: 200,
         informativeTimeframes: [],
       },
@@ -98,7 +98,7 @@ describe('summarizeBot — edge cases', () => {
         trailingPositive: 1,
         trailingOffset: 1.5,
         roiSteps: [],
-        exitConditions: { logic: { type: 'AND', threshold: null }, conditions: [] },
+        exitConditions: { groupConnector: 'AND', groups: [] },
       },
       stepStatus: {
         'bot-config': 'pending',

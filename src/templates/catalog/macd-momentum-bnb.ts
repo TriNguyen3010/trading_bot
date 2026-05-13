@@ -51,16 +51,22 @@ export const macdMomentumBnb: BotTemplate = {
         },
       ],
       entryConditions: {
-        logic: { type: 'AND', threshold: null },
-        conditions: [
+        groupConnector: 'AND',
+        groups: [
           {
-            id: `${ID}-cond-1`,
-            left: 'MACD-12-26-9',
-            op: '>',
-            right_type: 'number',
-            right_number: 0,
-            right_indicator: null,
-            lookback: 0,
+            id: `${ID}-grp-1`,
+            intraConnector: 'AND',
+            rules: [
+              {
+                id: `${ID}-cond-1`,
+                left: 'MACD-12-26-9',
+                op: '>',
+                right_type: 'number',
+                right_number: 0,
+                right_indicator: null,
+                lookback: 0,
+              },
+            ],
           },
         ],
       },
@@ -85,7 +91,7 @@ export const macdMomentumBnb: BotTemplate = {
       trailingPositive: 1,
       trailingOffset: 1.5,
       roiSteps: [],
-      exitConditions: { logic: { type: 'AND', threshold: null }, conditions: [] },
+      exitConditions: { groupConnector: 'AND', groups: [] },
     },
   },
 

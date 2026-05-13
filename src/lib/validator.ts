@@ -1,5 +1,7 @@
 import type { BuilderState, StepId } from '@/types/builder.types';
+import { LEVERAGE_MAX, LEVERAGE_MIN } from './constants';
 import { parseUiPair } from './pair-format';
+import { allRules, ruleCount } from './condition-tree';
 
 export interface BuilderIssue {
   stepId: StepId;
@@ -30,8 +32,13 @@ export function validateBuilder(state: BuilderState): BuilderIssue[] {
   if (!c.timeframe) {
     issues.push({ stepId: 'bot-config', message: 'Pick a timeframe.' });
   }
-  if (c.leverage < 1) {
+  if (c.leverage < LEVERAGE_MIN) {
     issues.push({ stepId: 'bot-config', message: 'Leverage must be ≥ 1.' });
+  } else if (c.leverage > LEVERAGE_MAX) {
+    issues.push({
+      stepId: 'bot-config',
+      message: `Leverage must be ≤ ${LEVERAGE_MAX}.`,
+    });
   }
   if (c.stakeAmount <= 0) {
     issues.push({
@@ -48,13 +55,13 @@ export function validateBuilder(state: BuilderState): BuilderIssue[] {
       message: 'Pick at least one candle channel or indicator.',
     });
   }
-  if (s.entryConditions.conditions.length === 0) {
+  if (ruleCount(s.entryConditions) === 0) {
     issues.push({
       stepId: 'entry-strategy',
       message: 'Add at least one entry condition.',
     });
   } else {
-    for (const cond of s.entryConditions.conditions) {
+    for (const cond of allRules(s.entryConditions)) {
       if (
         cond.right_type === 'number' &&
         (cond.right_number === null || Number.isNaN(cond.right_number))
@@ -116,7 +123,7 @@ export function validateBuilder(state: BuilderState): BuilderIssue[] {
       message: 'Add at least one ROI step.',
     });
   }
-  if (cm.type === 'indicator' && cm.exitConditions.conditions.length === 0) {
+  if (cm.type === 'indicator' && ruleCount(cm.exitConditions) === 0) {
     issues.push({
       stepId: 'close-method',
       message: 'Add at least one exit condition.',
@@ -148,13 +155,13 @@ export function isStepSetupComplete(
       if (!c.pair.trim()) return false;
       if (!parseUiPair(c.pair)) return false;
       if (!c.timeframe) return false;
-      if (c.leverage < 1 || c.leverage > 125) return false;
+      if (c.leverage < LEVERAGE_MIN || c.leverage > LEVERAGE_MAX) return false;
       return true;
     }
     case 'entry-strategy': {
       const s = state.strategy;
       const hasSource = s.candlestick.length > 0 || s.indicators.length > 0;
-      const hasCondition = s.entryConditions.conditions.length > 0;
+      const hasCondition = ruleCount(s.entryConditions) > 0;
       return hasSource && hasCondition;
     }
     case 'direction': {

@@ -232,3 +232,53 @@ export function migrateLegacyGroup(legacy: ConditionGroup): ConditionTree {
 export function emptyConditionTree(): ConditionTree {
   return { groupConnector: 'AND', groups: [] };
 }
+
+/** Flatten every rule from every group into a single ordered list. */
+export function allRules(tree: ConditionTree): ConditionRule[] {
+  return tree.groups.flatMap((g) => g.rules);
+}
+
+/** Convenience: total rule count across all groups. */
+export function ruleCount(tree: ConditionTree): number {
+  return tree.groups.reduce((sum, g) => sum + g.rules.length, 0);
+}
+
+/**
+ * Lossy projection back to the legacy `ConditionGroup` shape: emits all
+ * rules in order with per-row operators that reflect the tree's
+ * intra/inter connectors. Useful for code paths that still expect the
+ * flat list (templates, narrative summaries) until Phase 5 sweeps them.
+ *
+ * NOTE: this collapses multi-group structure if reparsed — round-trip
+ * through `migrateLegacyGroup` will NOT necessarily reproduce the
+ * original group boundaries.
+ */
+export function flattenTreeToLegacy(tree: ConditionTree): ConditionGroup {
+  const conditions: ConditionRow[] = [];
+  tree.groups.forEach((group, gi) => {
+    group.rules.forEach((rule, ri) => {
+      const operator: 'AND' | 'OR' | undefined =
+        gi === 0 && ri === 0
+          ? undefined
+          : ri === 0
+            ? tree.groupConnector
+            : group.intraConnector;
+      const row: ConditionRow = {
+        id: rule.id,
+        left: rule.left,
+        op: rule.op,
+        right_type: rule.right_type,
+        right_number: rule.right_number,
+        right_indicator: rule.right_indicator,
+        lookback: rule.lookback,
+      };
+      if (rule.percentage !== undefined) row.percentage = rule.percentage;
+      if (operator) row.operator = operator;
+      conditions.push(row);
+    });
+  });
+  return {
+    logic: { type: tree.groupConnector, threshold: null },
+    conditions,
+  };
+}

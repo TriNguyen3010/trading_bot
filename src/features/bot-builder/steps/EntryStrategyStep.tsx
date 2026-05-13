@@ -2,7 +2,7 @@ import { useBuilderStore } from '../store/builder.store';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
 import { IndicatorChip } from '@/features/indicators/IndicatorChip';
-import { ConditionBuilder } from '@/features/conditions/ConditionBuilder';
+import { ConditionTreeBuilder } from '@/features/conditions/ConditionTreeBuilder';
 import { useConditionMetrics } from '@/features/conditions/useConditionMetrics';
 
 export function EntryStrategySetup() {
@@ -51,12 +51,12 @@ export function EntryStrategySetup() {
         </FormField>
       ) : null}
 
-      <ConditionBuilder
-        group={strategy.entryConditions}
+      <ConditionTreeBuilder
+        tree={strategy.entryConditions}
         indicators={fullIndicators}
         candlestickChannels={[...allCandle]}
-        onChange={wrapOnChange((g) => patch({ entryConditions: g }))}
-        defaultRowOnMount
+        onChange={wrapOnChange((tree) => patch({ entryConditions: tree }))}
+        defaultGroupOnMount
       />
     </>
   );
