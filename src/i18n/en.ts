@@ -153,6 +153,10 @@ export const strings = {
     summaryHideAria: 'Hide bot summary',
     summaryShowTooltip: 'Show "What this bot does" widget',
     summaryHideTooltip: 'Hide "What this bot does" widget',
+    summaryModeVisualAria: 'Switch to narrative summary',
+    summaryModeNarrativeAria: 'Switch to visual summary',
+    summaryModeVisualTooltip: 'Plain English (sentence form)',
+    summaryModeNarrativeTooltip: 'Compact visual (chips & data)',
   },
 
   // Bot templates feature — see Spec/Phase 1/bot_templates_plan.md.
