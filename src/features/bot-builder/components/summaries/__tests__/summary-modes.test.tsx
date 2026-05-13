@@ -248,4 +248,78 @@ describe('StrategyNarrativeSummary (Phase 2 composite)', () => {
     expect(text.toLowerCase()).toMatch(/when/);
     expect(text.toLowerCase()).toMatch(/enter|then/);
   });
+
+  it('uses human-readable operator label (< becomes <, not raw token)', () => {
+    const { container } = render(<StrategyNarrativeSummary />);
+    const text = container.textContent ?? '';
+    // RSI-14 < 40 — the '<' op should render as '<' (OP_LABEL maps it to '<')
+    expect(text).toMatch(/RSI-14\s*</);
+  });
+});
+
+describe('StrategyNarrativeSummary · tp_sl quadrants', () => {
+  beforeEach(() => {
+    useLayoutPrefsStore.setState({ summaryMode: 'narrative' });
+  });
+
+  it('SL-only: renders "Hold until stop loss" and "no take profit target"', () => {
+    seedFullStrategy();
+    useBuilderStore.setState((s) => ({
+      ...s,
+      closeMethod: {
+        ...s.closeMethod,
+        type: 'tp_sl',
+        tpEnabled: false,
+        tpLevels: [],
+        slEnabled: true,
+        slValue: -8,
+        trailingEnabled: false,
+      },
+    }));
+    const { container } = render(<StrategyNarrativeSummary />);
+    const text = container.textContent ?? '';
+    expect(text).toMatch(/hold until/i);
+    expect(text).toMatch(/stop loss/i);
+    expect(text).toMatch(/no take profit/i);
+  });
+
+  it('TP-only: renders "Take profit" and "no stop loss"', () => {
+    seedFullStrategy();
+    useBuilderStore.setState((s) => ({
+      ...s,
+      closeMethod: {
+        ...s.closeMethod,
+        type: 'tp_sl',
+        tpEnabled: true,
+        tpLevels: [{ profit: 2, amount: 100 }],
+        slEnabled: false,
+        slValue: -10,
+        trailingEnabled: false,
+      },
+    }));
+    const { container } = render(<StrategyNarrativeSummary />);
+    const text = container.textContent ?? '';
+    expect(text).toMatch(/take profit/i);
+    expect(text).toMatch(/no stop loss/i);
+  });
+
+  it('Neither: renders "No TP or SL configured"', () => {
+    seedFullStrategy();
+    useBuilderStore.setState((s) => ({
+      ...s,
+      closeMethod: {
+        ...s.closeMethod,
+        type: 'tp_sl',
+        tpEnabled: false,
+        tpLevels: [],
+        slEnabled: false,
+        slValue: -10,
+        trailingEnabled: false,
+      },
+    }));
+    const { container } = render(<StrategyNarrativeSummary />);
+    const text = container.textContent ?? '';
+    expect(text).toMatch(/no tp or sl/i);
+    expect(text).toMatch(/manually closed/i);
+  });
 });

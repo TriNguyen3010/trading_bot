@@ -20,7 +20,8 @@
  */
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { indicatorOutputId } from '@/features/indicators/indicator-registry';
-import type { CloseMethodForm, ConditionRow } from '@/types/builder.types';
+import { conditionToString } from './shared/ConditionPreview';
+import type { CloseMethodForm } from '@/types/builder.types';
 
 const CANDLE_LABEL: Record<string, string> = {
   open: 'Open',
@@ -39,7 +40,17 @@ export function StrategyNarrativeSummary() {
   const conditions = strategy.entryConditions.conditions;
   const isLong = directionForm.direction === 'long';
   const isLimit = directionForm.orderType === 'limit';
-  const orderLabel = isLimit ? 'Limit' : 'Market';
+
+  // Issue #3 — include limitOffsetPct in the label when it is a Limit order,
+  // matching the pattern already used in DirectionSummary.tsx.
+  const { limitOffsetPct } = directionForm;
+  const orderLabel = isLimit
+    ? `Limit${
+        limitOffsetPct != null
+          ? ` ${limitOffsetPct > 0 ? '+' : ''}${limitOffsetPct}%`
+          : ''
+      }`
+    : 'Market';
 
   // Prefer Close channel; fall back to first enabled; else generic label.
   const candleSource =
@@ -49,13 +60,12 @@ export function StrategyNarrativeSummary() {
   const candleText = candleSource ? (CANDLE_LABEL[candleSource] ?? candleSource) : 'the candle';
 
   // First entry condition as headline trigger; mention extras as a count.
+  // Issue #1 & #2 — use conditionToString() which handles OP_LABEL + right_type='none'
   const firstCond = conditions[0];
   const moreCount = Math.max(0, conditions.length - 1);
   const logicWord = strategy.entryConditions.logic.type === 'OR' ? 'or' : 'and';
 
-  const triggerText = firstCond
-    ? `${firstCond.left} ${firstCond.op} ${describeRight(firstCond)}`
-    : 'no rule yet';
+  const triggerText = firstCond ? conditionToString(firstCond) : 'no rule yet';
 
   const indicatorList = strategy.indicators
     .map((ind) => indicatorOutputId(ind))
@@ -99,17 +109,6 @@ export function StrategyNarrativeSummary() {
   );
 }
 
-/** Render the right-hand side of a ConditionRow as readable text. */
-function describeRight(cond: ConditionRow): string {
-  if (cond.right_type === 'number' && cond.right_number !== null) {
-    return String(cond.right_number);
-  }
-  if (cond.right_type === 'indicator' && cond.right_indicator !== null) {
-    return cond.right_indicator;
-  }
-  return '';
-}
-
 /** Exit-clause text varies by close-method type. */
 function renderExitNarrative(closeMethod: CloseMethodForm) {
   const {
@@ -135,42 +134,74 @@ function renderExitNarrative(closeMethod: CloseMethodForm) {
   if (type === 'tp_sl') {
     const firstTp = tpLevels[0];
     const totalTp = tpLevels.reduce((s, l) => s + (l.amount ?? 0), 0);
-    return (
-      <>
-        {tpEnabled && firstTp ? (
-          <>
-            Take profit at{' '}
-            <span className="font-mono font-medium text-bullish">
-              +{firstTp.profit}%
-            </span>{' '}
-            ({firstTp.amount}% of size)
-            {tpLevels.length > 1 ? (
-              <span className="text-fg-muted">
-                {' '}
-                with {tpLevels.length - 1} more level
-                {tpLevels.length - 1 === 1 ? '' : 's'} ({totalTp}% total)
-              </span>
-            ) : null}
-            .{' '}
-          </>
-        ) : (
-          <>Take profit is off.{' '}</>
-        )}
-        {slEnabled ? (
-          <>
-            Stop loss at{' '}
-            <span className="font-mono font-medium text-bearish">
-              {slValue}%
+
+    // Issue #4 — branch by (tpEnabled, slEnabled) quadrant to avoid
+    // disjoint "X is off. Y at Z." double-sentence anti-pattern.
+    const tpNode =
+      tpEnabled && firstTp ? (
+        <>
+          Take profit at{' '}
+          <span className="font-mono font-medium text-bullish">
+            +{firstTp.profit}%
+          </span>{' '}
+          ({firstTp.amount}% of size)
+          {tpLevels.length > 1 ? (
+            <span className="text-fg-muted">
+              {' '}
+              with {tpLevels.length - 1} more level
+              {tpLevels.length - 1 === 1 ? '' : 's'} ({totalTp}% total)
             </span>
-            {trailingEnabled ? (
-              <span className="text-fg-muted"> (trailing)</span>
-            ) : null}
-            .
-          </>
-        ) : (
-          <>Stop loss is off.</>
-        )}
+          ) : null}
+        </>
+      ) : null;
+
+    const slNode = slEnabled ? (
+      <>
+        stop loss at{' '}
+        <span className="font-mono font-medium text-bearish">{slValue}%</span>
+        {trailingEnabled ? (
+          <span className="text-fg-muted"> (trailing)</span>
+        ) : null}
       </>
+    ) : null;
+
+    // Both on
+    if (tpEnabled && slEnabled) {
+      return (
+        <>
+          {tpNode}. Stop loss at{' '}
+          <span className="font-mono font-medium text-bearish">{slValue}%</span>
+          {trailingEnabled ? (
+            <span className="text-fg-muted"> (trailing)</span>
+          ) : null}
+          .
+        </>
+      );
+    }
+
+    // TP only
+    if (tpEnabled && !slEnabled) {
+      return (
+        <>
+          {tpNode} — no stop loss.
+        </>
+      );
+    }
+
+    // SL only
+    if (!tpEnabled && slEnabled) {
+      return (
+        <>
+          Hold until {slNode} — no take profit target.
+        </>
+      );
+    }
+
+    // Neither
+    return (
+      <span>
+        No TP or SL configured — trades stay open until manually closed.
+      </span>
     );
   }
 
