@@ -21,6 +21,29 @@ if (typeof Element !== 'undefined' && !Element.prototype.scrollTo) {
   Element.prototype.scrollTo = function () {};
 }
 
+// jsdom doesn't ship `window.matchMedia`. DotGridSpotlight (mounted by
+// BuilderPage) and drawer-scroll both read it for prefers-reduced-motion
+// detection. Default `matches: true` routes consumers through the
+// reduced-motion code path, which skips the canvas/animation code that
+// jsdom can't run and silences "HTMLCanvasElement.prototype.getContext
+// not implemented" warnings.
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: (query: string) => ({
+      matches: query.includes('prefers-reduced-motion'),
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
 // jsdom 25 ships a Storage stub whose `setItem` may not be a function in
 // some Node + vitest combinations — surfaces as "storage.setItem is not a
 // function" the first time zustand's persist middleware tries to write.
