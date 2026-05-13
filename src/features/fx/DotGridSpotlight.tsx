@@ -615,6 +615,13 @@ export function DotGridSpotlight({
   dimmed?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Asymmetric dim transition: snap dark on drawer-open, on drawer-close
+  // the brightness radiates from canvas center outward as a wave. The
+  // refs persist across effect re-runs so toggling `dimmed` doesn't
+  // reset the in-flight reveal.
+  const dimDisplayRef = useRef(dimmed ? 0.3 : 1);
+  const revealStartRef = useRef<number | null>(null);
+  const prevDimmedRef = useRef<boolean>(!!dimmed);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -689,13 +696,67 @@ export function DotGridSpotlight({
       isInside = false;
     };
 
+    let lastFrame = performance.now();
+    // Wave reveal speed (px/s) — picked so the wave reaches a typical
+    // viewport corner in roughly the same time the global tween used to
+    // take (~0.9s for a 1440px diagonal).
+    const REVEAL_SPEED_PX_PER_S = 1600;
+    const REVEAL_EDGE_FADE_PX = 220;
+
     const draw = () => {
       const w = cachedRect.width;
       const h = cachedRect.height;
       ctx.clearRect(0, 0, w, h);
 
       const now = performance.now();
-      const dimMul = dimmed ? 0.3 : 1;
+
+      // Detect drawer transition. On close (true → false) start a fresh
+      // reveal wave from canvas centre. On open (false → true) cancel
+      // any in-flight wave so the next close starts clean.
+      if (prevDimmedRef.current && !dimmed) {
+        revealStartRef.current = now;
+        dimDisplayRef.current = 0.3; // keep ambient fallback dark while wave runs
+      } else if (!prevDimmedRef.current && dimmed) {
+        revealStartRef.current = null;
+      }
+      prevDimmedRef.current = !!dimmed;
+
+      // Ambient `dimMul` is used by beams + plus highlights (full-canvas
+      // animations where a per-dot radial mask would be wrong). The grid
+      // dot loop further down ignores this and computes its own per-dot
+      // value off the wave.
+      const target = dimmed ? 0.3 : 1;
+      const cur = dimDisplayRef.current;
+      if (target <= cur) {
+        dimDisplayRef.current = target;
+      } else {
+        const dt = Math.min(0.05, (now - lastFrame) / 1000);
+        const k = 5;
+        const next = cur + (target - cur) * (1 - Math.exp(-k * dt));
+        dimDisplayRef.current = target - next < 0.001 ? target : next;
+      }
+      lastFrame = now;
+      const dimMul = dimDisplayRef.current;
+
+      // Wave reveal state for per-dot computation in the grid loop.
+      const revealStart = revealStartRef.current;
+      const cxReveal = w / 2;
+      const cyReveal = h / 2;
+      const waveActive = !dimmed && revealStart !== null;
+      const waveRadius = waveActive
+        ? ((now - revealStart) * REVEAL_SPEED_PX_PER_S) / 1000
+        : 0;
+      // Once the wave has cleared every corner, retire the reveal — falls
+      // back to uniform `dimMul = 1` from then on.
+      if (waveActive) {
+        const maxDx = Math.max(cxReveal, w - cxReveal);
+        const maxDy = Math.max(cyReveal, h - cyReveal);
+        const maxDist = Math.sqrt(maxDx * maxDx + maxDy * maxDy);
+        if (waveRadius > maxDist + REVEAL_EDGE_FADE_PX) {
+          revealStartRef.current = null;
+          dimDisplayRef.current = 1;
+        }
+      }
 
       // Spawn / refresh the beam session when the previous one finishes
       // its idle gap. Each new session has its own random positions,
@@ -934,7 +995,27 @@ export function DotGridSpotlight({
           if (haloAlpha > alpha) alpha = haloAlpha;
         }
 
-        alpha *= dimMul;
+        // Per-dot dim: when a reveal wave is active, brightness expands
+        // from canvas centre outward. Outside the wave → still dark;
+        // inside → bright; in the trailing fade band → smooth ramp.
+        // When idle (no wave) fall back to the global ambient `dimMul`.
+        let localDim: number;
+        if (waveActive) {
+          const ddx = dot.x - cxReveal;
+          const ddy = dot.y - cyReveal;
+          const dist = Math.sqrt(ddx * ddx + ddy * ddy);
+          if (dist <= waveRadius) {
+            localDim = 1;
+          } else if (dist <= waveRadius + REVEAL_EDGE_FADE_PX) {
+            const t = (waveRadius + REVEAL_EDGE_FADE_PX - dist) / REVEAL_EDGE_FADE_PX;
+            localDim = 0.3 + 0.7 * t;
+          } else {
+            localDim = 0.3;
+          }
+        } else {
+          localDim = dimMul;
+        }
+        alpha *= localDim;
         // Each dim dot is rendered via the pre-built sprite (dot core +
         // baked-in shadowBlur glow). globalAlpha scales the whole sprite,
         // so the glow halo proportions stay consistent and we avoid
