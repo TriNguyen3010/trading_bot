@@ -1,4 +1,11 @@
 import '@testing-library/jest-dom/vitest';
+import { vi } from 'vitest';
+
+// Force the auth-bypass demo flag OFF for tests — `.env.local` carries
+// `VITE_BYPASS_AUTH=true` for local demo purposes and would otherwise
+// leak into vitest's Vite env, masking the real 401-redirect behaviour
+// http.test.ts exercises.
+vi.stubEnv('VITE_BYPASS_AUTH', 'false');
 
 // jsdom doesn't ship ResizeObserver. DrawerProgressGlow uses it to
 // re-evaluate overflow state when content height changes; without a

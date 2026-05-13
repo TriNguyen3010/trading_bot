@@ -103,6 +103,13 @@ function clearAuth() {
 
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? '';
 
+// Read per-call so tests can override via `vi.stubEnv`. The .env.local
+// demo bypass would otherwise leak into vitest and skip the 401 redirect
+// path that http.test.ts asserts.
+function isAuthBypassed() {
+  return import.meta.env.VITE_BYPASS_AUTH === 'true';
+}
+
 export async function http<T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
@@ -137,7 +144,7 @@ export async function http<T>(
 
   // 401 on /user/login = wrong credentials → LoginPage render error, no redirect.
   // 401 elsewhere = session expired → clear auth + redirect to login.
-  if (res.status === 401 && !isLoginRequest) {
+  if (res.status === 401 && !isLoginRequest && !isAuthBypassed()) {
     clearAuth();
     toast.warning('Phiên hết hạn, vui lòng đăng nhập lại.');
     window.location.href = '/login';
