@@ -137,3 +137,36 @@ describe('DirectionSummary · visual mode (mockup B)', () => {
     expect(screen.getByText('Market')).toBeInTheDocument();
   });
 });
+
+import { CloseMethodSummary } from '../CloseMethodSummary';
+
+function seedTpSl() {
+  useBuilderStore.setState((s) => ({
+    ...s,
+    closeMethod: {
+      ...s.closeMethod,
+      type: 'tp_sl',
+      tpEnabled: true,
+      tpLevels: [{ profit: 1.5, amount: 100 }],
+      slEnabled: true,
+      slValue: -10,
+      trailingEnabled: false,
+    },
+  }));
+}
+
+describe('CloseMethodSummary · visual mode (mockup B)', () => {
+  beforeEach(() => {
+    seedTpSl();
+    useLayoutPrefsStore.setState({ summaryMode: 'visual' });
+  });
+
+  it('renders TP and SL as a 2-cell grid with values', () => {
+    const { container } = render(<CloseMethodSummary />);
+    const text = container.textContent ?? '';
+    expect(text).toMatch(/take profit/i);
+    expect(text).toMatch(/stop loss/i);
+    expect(text).toMatch(/\+?1\.5%/);
+    expect(text).toMatch(/-?−?10%/);
+  });
+});
