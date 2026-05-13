@@ -14,6 +14,13 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
   } as unknown as typeof ResizeObserver;
 }
 
+// jsdom doesn't implement Element.scrollTo. CypheusChat calls it when
+// new messages arrive — without this polyfill mounting the panel during
+// tests crashes the React tree with "el.scrollTo is not a function".
+if (typeof Element !== 'undefined' && !Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = function () {};
+}
+
 // jsdom 25 ships a Storage stub whose `setItem` may not be a function in
 // some Node + vitest combinations — surfaces as "storage.setItem is not a
 // function" the first time zustand's persist middleware tries to write.

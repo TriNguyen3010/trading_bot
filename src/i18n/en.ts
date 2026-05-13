@@ -17,10 +17,6 @@ export const strings = {
   },
   cypheus: {
     panelTitle: 'Cypheus',
-    tabLabel: 'Chat',
-    jsonTabLabel: 'JSON',
-    inputPlaceholder: "Tell Cypheus what you're building...",
-    send: 'Send',
     createNewBot: 'Create new bot',
     confirmReset: {
       title: 'Start a new bot?',
@@ -31,42 +27,9 @@ export const strings = {
     greeting: {
       hello: "Hi, I'm Cypheus.",
       pitch:
-        "I'll help you build your first trading bot. Tell me what you have in mind.",
-    },
-    magicBuild: {
-      ack: 'Got it. Let me build a Bollinger Breakout strategy on BTC-USDC for you.',
-      note: 'Note: This is demo content prepared to showcase the AI flow.',
-      step1: 'Setting up bot configuration...',
-      step1Comment:
-        'BTC-USDC offers high liquidity. 5-minute timeframe is ideal for scalping.',
-      step2: 'Defining entry conditions...',
-      step2Comment:
-        'RSI below 30 signals oversold – a classic buy entry.',
-      step3: 'Going Long with Market orders for fast fills.',
-      step4: 'Setting take-profit and stop-loss.',
-      step4Comment:
-        '5% take-profit at half position, another 25% at 10% profit. 3% stop-loss.',
-      doneA: 'All set.',
-      doneB:
-        'Review the JSON in the {} JSON tab, then click Export when ready.',
-      pinnedFooter: 'Cypheus is configuring...',
-      closeDisabledTooltip:
-        "Cypheus is building. Click 'Create new bot' to stop.",
-      progressLabel: (current: number, total: number) =>
-        `Step ${current} of ${total}`,
-      summary: {
-        title: 'All set ✓',
-        reviewJson: 'Review JSON',
-        close: 'Close',
-      },
-    },
-    afterDone:
-      'Demo complete. Click Create new bot to start over, or explore the configuration manually.',
-    json: {
-      emptyTitle: "Your bot's JSON will live here",
-      emptySubtitle: 'Configure any step to see the live preview.',
-      emptyCtaConfig: 'Open Bot Config',
-      emptyCtaAsk: 'Ask Cypheus',
+        "I'm your AI co-pilot — soon I'll be able to build trading bots from just a conversation.",
+      comingSoon:
+        "**Coming soon.** For now, pick a template or build manually with the step cards.",
     },
     progress: {
       empty: 'Set up your bot to get started',

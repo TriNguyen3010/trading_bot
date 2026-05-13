@@ -1,4 +1,3 @@
-import { useCypheusStore } from '../store/cypheus.store';
 import {
   isCurrent,
   sleep,
@@ -7,24 +6,25 @@ import {
 } from './script-runner';
 import { strings } from '@/i18n/en';
 
+/**
+ * Runs the one-way Cypheus intro on first mount with an empty chat.
+ * Three bubbles: hello, pitch, coming-soon. No interaction follows —
+ * the panel has no input, the chat is purely informational until real
+ * AI ships (see docs/superpowers/specs/2026-05-12-cypheus-coming-soon-redesign-design.md).
+ */
 export async function runGreeting(): Promise<void> {
   const ctx = startScript();
-  const cy = useCypheusStore.getState();
 
-  cy.setState('greeting');
-  cy.setAvatar('hello');
   await sleep(500, ctx);
   if (!isCurrent(ctx)) return;
 
   await typewriterMessage(strings.cypheus.greeting.hello, ctx);
   if (!isCurrent(ctx)) return;
   await sleep(400, ctx);
+
   await typewriterMessage(strings.cypheus.greeting.pitch, ctx);
   if (!isCurrent(ctx)) return;
+  await sleep(400, ctx);
 
-  // Stay on 'hello' so the avatar keeps looping while the user reads the
-  // greeting. The magic-build script flips it to 'coding' on first
-  // interaction, and CreateNewBotButton resets back to 'hello' when the
-  // user starts over.
-  useCypheusStore.getState().setState('idle');
+  await typewriterMessage(strings.cypheus.greeting.comingSoon, ctx);
 }
