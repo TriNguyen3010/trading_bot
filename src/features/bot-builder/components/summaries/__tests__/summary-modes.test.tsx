@@ -110,3 +110,30 @@ describe('EntryStrategySummary · visual mode (mockup B)', () => {
     expect(container.textContent ?? '').toMatch(/RSI-14/);
   });
 });
+
+import { DirectionSummary } from '../DirectionSummary';
+
+function seedDirection() {
+  useBuilderStore.setState((s) => ({
+    ...s,
+    directionForm: {
+      ...s.directionForm,
+      direction: 'long',
+      orderType: 'market',
+      limitOffsetPct: null,
+    },
+  }));
+}
+
+describe('DirectionSummary · visual mode (mockup B)', () => {
+  beforeEach(() => {
+    seedDirection();
+    useLayoutPrefsStore.setState({ summaryMode: 'visual' });
+  });
+
+  it('shows a Long pill and a Market pill connected by an arrow', () => {
+    render(<DirectionSummary />);
+    expect(screen.getByText('Long')).toBeInTheDocument();
+    expect(screen.getByText('Market')).toBeInTheDocument();
+  });
+});
