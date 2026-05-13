@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Close method tabs — 3 options</title>
+  <style>
+    :root {
+      --canvas:#0a0a0a;
+      --surface:#161616;
+      --surface-2:#1f1f1f;
+      --border:rgba(255,255,255,0.10);
+      --border-subtle:rgba(255,255,255,0.06);
+      --border-strong:rgba(255,255,255,0.20);
+      --fg:#ffffff;
+      --fg-inverse:#0a0a0a;
+      --fg-muted:rgba(255,255,255,0.45);
+      --fg-secondary:rgba(255,255,255,0.72);
+      --brand:#F0B90B;
+      --brand-subtle:rgba(240,185,11,0.12);
+      --brand-glow:rgba(240,185,11,0.55);
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      background:var(--canvas);
+      color:var(--fg);
+      font-family:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;
+      padding:32px 24px 56px;
+    }
+    h1{font-size:20px;font-weight:600;margin:0 0 6px;text-align:center;}
+    .page-sub{text-align:center;color:var(--fg-muted);font-size:13px;margin-bottom:32px;}
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0, 1fr));
+      gap:28px;
+      max-width:1500px;
+      margin:0 auto;
+    }
+    .option{
+      background:var(--surface);
+      border-radius:18px;
+      border:1px solid var(--border);
+      overflow:hidden;
+    }
+    .option-header{padding:14px 20px;border-bottom:1px solid var(--border-subtle);background:var(--surface-2);}
+    .option-title{font-size:14px;font-weight:600;}
+    .option-subtitle{font-size:11.5px;color:var(--fg-muted);margin-top:4px;line-height:1.4;}
+    .panel{padding:20px;}
+    .label{
+      display:block;
+      font-size:12px;
+      color:var(--fg-muted);
+      margin-bottom:10px;
+    }
+    .label .req{color:#ff5d5d;margin-left:2px;}
+    /* Mock form panel that lives BELOW the tabs */
+    .form-panel{
+      margin-top:18px;
+      padding:14px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:var(--canvas);
+      font-size:13px;
+      color:var(--fg-muted);
+    }
+    .form-panel strong{display:block;color:var(--fg);margin-bottom:6px;font-size:13px;font-weight:600;}
+    .form-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:12.5px;}
+    .form-row .v{color:var(--fg);font-weight:500;}
+    .form-row+.form-row{border-top:1px solid var(--border-subtle);}
+
+    /* =================== OPTION A — UNDERLINE TABS =================== */
+    .tabsA{
+      display:flex;
+      align-items:flex-end;
+      gap:0;
+      border-bottom:1px solid var(--border-subtle);
+    }
+    .tabA{
+      flex:1;
+      padding:10px 12px;
+      background:transparent;
+      border:none;
+      border-bottom:2px solid transparent;
+      color:var(--fg-muted);
+      font-size:13.5px;
+      font-weight:500;
+      cursor:pointer;
+      transition:color 180ms, border-color 180ms;
+    }
+    .tabA:hover{color:var(--fg-secondary);}
+    .tabA.active{
+      color:var(--fg);
+      font-weight:600;
+      border-bottom-color:var(--brand);
+    }
+
+    /* =================== OPTION B — PILL TABS ======================== */
+    .tabsB{
+      display:grid;
+      grid-template-columns:repeat(4, 1fr);
+      gap:8px;
+      padding:0;
+    }
+    .tabB{
+      padding:9px 8px;
+      border-radius:999px;
+      background:transparent;
+      border:1px solid var(--border);
+      color:var(--fg-secondary);
+      font-size:13px;
+      font-weight:500;
+      cursor:pointer;
+      transition:all 180ms;
+    }
+    .tabB:hover{border-color:var(--border-strong);color:var(--fg);}
+    .tabB.active{
+      background:var(--brand);
+      color:var(--fg-inverse);
+      border-color:var(--brand);
+      font-weight:600;
+      box-shadow:0 0 12px var(--brand-glow);
+    }
+
+    /* =================== OPTION C — SEGMENTED CONTROL ================ */
+    .tabsC{
+      display:grid;
+      grid-template-columns:repeat(4, 1fr);
+      gap:2px;
+      padding:4px;
+      background:var(--canvas);
+      border-radius:14px;
+      border:1px solid var(--border);
+      position:relative;
+    }
+    .tabC{
+      padding:8px 6px;
+      border-radius:10px;
+      background:transparent;
+      border:none;
+      color:var(--fg-muted);
+      font-size:12.5px;
+      font-weight:500;
+      cursor:pointer;
+      transition:all 180ms;
+      position:relative;
+      z-index:1;
+    }
+    .tabC:hover{color:var(--fg-secondary);}
+    .tabC.active{
+      background:var(--surface-2);
+      color:var(--fg);
+      font-weight:600;
+      box-shadow:0 1px 3px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(240,185,11,0.4);
+    }
+  </style>
+</head>
+<body>
+  <h1>Close method tab styles — 3 options</h1>
+  <p class="page-sub">Click any tab in each panel to see the active state. The form below changes accordingly.</p>
+
+  <div class="grid">
+    <!-- ============================ OPTION A ============================ -->
+    <div class="option">
+      <div class="option-header">
+        <div class="option-title">A · Underline</div>
+        <div class="option-subtitle">Text-only buttons with a yellow underline on the active tab. Editorial, minimal, Notion/Stripe-style.</div>
+      </div>
+      <div class="panel">
+        <label class="label">Close method<span class="req">*</span></label>
+        <div class="tabsA" data-variant="A">
+          <button class="tabA" data-method="manual">Manual</button>
+          <button class="tabA active" data-method="tp_sl">TP / SL</button>
+          <button class="tabA" data-method="indicator">Indicator</button>
+          <button class="tabA" data-method="roi">ROI table</button>
+        </div>
+        <div class="form-panel" data-panel="A">
+          <strong>TP / SL</strong>
+          <div class="form-row"><span>Take profit</span><span class="v">On</span></div>
+          <div class="form-row"><span>Stop loss</span><span class="v">−3%</span></div>
+          <div class="form-row"><span>Trailing stop</span><span class="v">Off</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================ OPTION B ============================ -->
+    <div class="option">
+      <div class="option-header">
+        <div class="option-title">B · Pill (filled active)</div>
+        <div class="option-subtitle">Rounded pill buttons. Active tab is a solid brand-yellow pill with a halo. Bold and unmistakable.</div>
+      </div>
+      <div class="panel">
+        <label class="label">Close method<span class="req">*</span></label>
+        <div class="tabsB" data-variant="B">
+          <button class="tabB" data-method="manual">Manual</button>
+          <button class="tabB active" data-method="tp_sl">TP / SL</button>
+          <button class="tabB" data-method="indicator">Indicator</button>
+          <button class="tabB" data-method="roi">ROI table</button>
+        </div>
+        <div class="form-panel" data-panel="B">
+          <strong>TP / SL</strong>
+          <div class="form-row"><span>Take profit</span><span class="v">On</span></div>
+          <div class="form-row"><span>Stop loss</span><span class="v">−3%</span></div>
+          <div class="form-row"><span>Trailing stop</span><span class="v">Off</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================ OPTION C ============================ -->
+    <div class="option">
+      <div class="option-header">
+        <div class="option-title">C · Segmented control</div>
+        <div class="option-subtitle">All four tabs live inside one container. Active slot has a raised surface + thin yellow inner border. Cohesive, iOS-feel.</div>
+      </div>
+      <div class="panel">
+        <label class="label">Close method<span class="req">*</span></label>
+        <div class="tabsC" data-variant="C">
+          <button class="tabC" data-method="manual">Manual</button>
+          <button class="tabC active" data-method="tp_sl">TP / SL</button>
+          <button class="tabC" data-method="indicator">Indicator</button>
+          <button class="tabC" data-method="roi">ROI table</button>
+        </div>
+        <div class="form-panel" data-panel="C">
+          <strong>TP / SL</strong>
+          <div class="form-row"><span>Take profit</span><span class="v">On</span></div>
+          <div class="form-row"><span>Stop loss</span><span class="v">−3%</span></div>
+          <div class="form-row"><span>Trailing stop</span><span class="v">Off</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const FORMS = {
+      manual: { title: 'Manual', rows: [['Configuration', 'None (you close trades by hand)']] },
+      tp_sl: { title: 'TP / SL', rows: [['Take profit', 'On'], ['Stop loss', '−3%'], ['Trailing stop', 'Off']] },
+      indicator: { title: 'Indicator', rows: [['Exit condition 1', 'RSI-14 > 70'], ['Exit condition 2', '(none)']] },
+      roi: { title: 'ROI table', rows: [['0 min', '5.0%'], ['30 min', '2.5%'], ['60 min', '1.0%']] },
+    };
+
+    document.querySelectorAll('[data-variant]').forEach((tabsEl) => {
+      const v = tabsEl.dataset.variant;
+      const panel = document.querySelector(`[data-panel="${v}"]`);
+      const klass = { A: 'tabA', B: 'tabB', C: 'tabC' }[v];
+      tabsEl.querySelectorAll('button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          tabsEl.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          const method = btn.dataset.method;
+          const f = FORMS[method];
+          panel.innerHTML = `<strong>${f.title}</strong>` + f.rows.map(([k, val]) => `<div class="form-row"><span>${k}</span><span class="v">${val}</span></div>`).join('');
+          void klass; // referenced to keep linter quiet
+        });
+      });
+    });
+  </script>
+</body>
+</html>
