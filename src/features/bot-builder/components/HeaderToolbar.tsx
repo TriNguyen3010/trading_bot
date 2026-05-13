@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AlignLeft,
   BookOpen,
   Download,
   Eye,
   EyeOff,
   FlaskConical,
+  Layers,
   Pencil,
   Upload,
 } from 'lucide-react';
@@ -48,6 +50,8 @@ export function HeaderToolbar() {
   const setTemplatesOpen = useTemplatesDialogStore((s) => s.setOpen);
   const botSummaryHidden = useLayoutPrefsStore((s) => s.botSummaryHidden);
   const toggleBotSummary = useLayoutPrefsStore((s) => s.toggleBotSummary);
+  const summaryMode = useLayoutPrefsStore((s) => s.summaryMode);
+  const toggleSummaryMode = useLayoutPrefsStore((s) => s.toggleSummaryMode);
 
   const [isEditing, setEditing] = useState(false);
   const [draft, setDraft] = useState(botName);
@@ -176,6 +180,33 @@ export function HeaderToolbar() {
               {botSummaryHidden
                 ? strings.layoutToggles.summaryShowTooltip
                 : strings.layoutToggles.summaryHideTooltip}
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSummaryMode}
+                className="rounded-full"
+                aria-label={
+                  summaryMode === 'visual'
+                    ? strings.layoutToggles.summaryModeVisualAria
+                    : strings.layoutToggles.summaryModeNarrativeAria
+                }
+                aria-pressed={summaryMode === 'narrative'}
+              >
+                {summaryMode === 'visual' ? (
+                  <Layers className="h-3.5 w-3.5" />
+                ) : (
+                  <AlignLeft className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {summaryMode === 'visual'
+                ? strings.layoutToggles.summaryModeVisualTooltip
+                : strings.layoutToggles.summaryModeNarrativeTooltip}
             </TooltipContent>
           </Tooltip>
           {/* Visual divider between view toggles and primary actions. */}
