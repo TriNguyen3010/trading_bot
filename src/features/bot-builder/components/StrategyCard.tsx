@@ -25,6 +25,8 @@ import {
 } from '@/components/ui/tooltip';
 import type { StepStatus, StepId } from '@/types/builder.types';
 import { StepCardSummary } from './summaries/StepCardSummary';
+import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
+import { StrategyNarrativeSummary } from './summaries/StrategyNarrativeSummary';
 
 const statusIcon: Record<
   StepStatus,
@@ -79,6 +81,7 @@ export function StrategyCard() {
   const openStep = useBuilderStore((s) => s.openStep);
   const drawerMode = useCypheusStore((s) => s.drawerMode);
   const cypheusActiveStepId = useCypheusStore((s) => s.cypheusActiveStepId);
+  const summaryMode = useLayoutPrefsStore((s) => s.summaryMode);
   const isPinned = drawerMode === 'cypheus-pinned';
   const isCypheusActive =
     isPinned &&
@@ -202,9 +205,15 @@ export function StrategyCard() {
           className="w-full space-y-3 border-t border-border-subtle px-5 py-3 cursor-default"
           onClick={(e) => e.stopPropagation()}
         >
-          <StepCardSummary stepId="entry-strategy" />
-          <StepCardSummary stepId="direction" />
-          <StepCardSummary stepId="close-method" />
+          {summaryMode === 'narrative' ? (
+            <StrategyNarrativeSummary />
+          ) : (
+            <>
+              <StepCardSummary stepId="entry-strategy" />
+              <StepCardSummary stepId="direction" />
+              <StepCardSummary stepId="close-method" />
+            </>
+          )}
         </div>
       )}
     </button>

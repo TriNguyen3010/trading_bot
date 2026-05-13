@@ -170,3 +170,82 @@ describe('CloseMethodSummary · visual mode (mockup B)', () => {
     expect(text).toMatch(/-?−?10%/);
   });
 });
+
+import { StrategyNarrativeSummary } from '../StrategyNarrativeSummary';
+
+function seedFullStrategy() {
+  useBuilderStore.setState((s) => ({
+    ...s,
+    botConfig: { ...s.botConfig, pair: 'BTC-USDC', timeframe: '1h' },
+    strategy: {
+      ...s.strategy,
+      candlestick: ['close'],
+      indicators: [
+        {
+          id: 'rsi-1',
+          name: 'RSI',
+          type: 'talib' as const,
+          parameters: { timeperiod: 14 },
+        },
+      ],
+      entryConditions: {
+        ...s.strategy.entryConditions,
+        conditions: [
+          {
+            id: 'cond-1',
+            left: 'RSI-14',
+            op: '<' as const,
+            right_type: 'number' as const,
+            right_number: 40,
+            right_indicator: null,
+            lookback: 0,
+          },
+        ],
+        logic: { type: 'AND' as const, threshold: null },
+      },
+    },
+    directionForm: {
+      ...s.directionForm,
+      direction: 'long' as const,
+      orderType: 'market' as const,
+      limitOffsetPct: null,
+    },
+    closeMethod: {
+      ...s.closeMethod,
+      type: 'tp_sl' as const,
+      tpEnabled: true,
+      tpLevels: [{ profit: 1.5, amount: 100 }],
+      slEnabled: true,
+      slValue: -10,
+      trailingEnabled: false,
+    },
+  }));
+}
+
+describe('StrategyNarrativeSummary (Phase 2 composite)', () => {
+  beforeEach(() => {
+    seedFullStrategy();
+    useLayoutPrefsStore.setState({ summaryMode: 'narrative' });
+  });
+
+  it('renders a single prose paragraph covering trigger + direction + exit', () => {
+    const { container } = render(<StrategyNarrativeSummary />);
+    const text = container.textContent ?? '';
+    // Trigger
+    expect(text).toMatch(/RSI-14/);
+    expect(text).toMatch(/40/);
+    expect(text).toMatch(/Close/);
+    expect(text).toMatch(/1h/);
+    // Direction
+    expect(text).toMatch(/Long/i);
+    expect(text).toMatch(/Market/i);
+    // Exit
+    expect(text).toMatch(/take profit/i);
+    expect(text).toMatch(/1\.5/);
+    expect(text).toMatch(/stop loss|cut loss/i);
+    expect(text).toMatch(/10/);
+    // Sentence connectors so the prose reads naturally
+    expect(text.toLowerCase()).toMatch(/when/);
+    expect(text.toLowerCase()).toMatch(/enter|then/);
+  });
+});
