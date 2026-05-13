@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { BotConfigSummary } from '../BotConfigSummary';
+import { EntryStrategySummary } from '../EntryStrategySummary';
 
 function seedBotConfig() {
   useBuilderStore.setState((s) => ({
@@ -50,5 +51,62 @@ describe('BotConfigSummary · narrative mode', () => {
     expect(text).toMatch(/Dry-run/i);
     expect(text).toMatch(/\$100/);
     expect(text.toLowerCase()).toMatch(/trade|with|on/);
+  });
+});
+
+function seedEntryStrategy() {
+  useBuilderStore.setState((s) => ({
+    ...s,
+    strategy: {
+      ...s.strategy,
+      candlestick: ['close'],
+      indicators: [
+        {
+          id: 'rsi-1',
+          name: 'RSI',
+          type: 'talib',
+          parameters: { timeperiod: 14 },
+        },
+      ],
+      entryConditions: {
+        ...s.strategy.entryConditions,
+        conditions: [
+          {
+            id: 'cond-1',
+            left: 'RSI-14',
+            op: '<',
+            right_type: 'number',
+            right_number: 40,
+            right_indicator: null,
+            lookback: 0,
+          },
+        ],
+        logic: { type: 'AND', threshold: null },
+      },
+    },
+  }));
+}
+
+describe('EntryStrategySummary · visual mode (mockup B)', () => {
+  beforeEach(() => {
+    seedEntryStrategy();
+    useLayoutPrefsStore.setState({ summaryMode: 'visual' });
+  });
+
+  it('renders the rule expression in a code-styled block', () => {
+    const { container } = render(<EntryStrategySummary />);
+    const text = container.textContent ?? '';
+    expect(text).toMatch(/RSI-14/);
+    expect(text).toMatch(/<\s*40/);
+  });
+
+  it('shows the Close candle channel as selected', () => {
+    render(<EntryStrategySummary />);
+    expect(screen.getByText('Close')).toBeInTheDocument();
+  });
+
+  it('shows indicator pill', () => {
+    const { container } = render(<EntryStrategySummary />);
+    expect(container.textContent ?? '').toMatch(/RSI-14/);
   });
 });
