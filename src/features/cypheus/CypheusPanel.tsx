@@ -55,9 +55,17 @@ export function CypheusPanel() {
           )}
         >
           {!collapsed && (
-            <h2 className="truncate text-xs font-semibold uppercase tracking-wider text-fg-muted">
-              {strings.cypheus.panelTitle}
-            </h2>
+            <div className="flex items-center gap-2 truncate">
+              <h2 className="truncate text-xs font-semibold uppercase tracking-wider text-fg-muted">
+                {strings.cypheus.panelTitle}
+              </h2>
+              <span
+                data-pill="coming-soon"
+                className="rounded-full bg-brand/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand"
+              >
+                {strings.cypheus.comingSoonPill}
+              </span>
+            </div>
           )}
           <Tooltip>
             <TooltipTrigger asChild>

@@ -17,6 +17,7 @@ export const strings = {
   },
   cypheus: {
     panelTitle: 'Cypheus',
+    comingSoonPill: 'Coming Soon',
     createNewBot: 'Create new bot',
     confirmReset: {
       title: 'Start a new bot?',
