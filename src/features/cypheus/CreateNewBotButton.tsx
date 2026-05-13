@@ -38,14 +38,15 @@ export function CreateNewBotButton() {
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={() => setOpen(true)}
-        className="mt-2 flex w-full items-center justify-center gap-2 rounded-full card-coin98 px-3 py-2.5 text-xs font-medium text-fg-secondary transition-colors hover:bg-brand-subtle hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        className="rounded-full px-3"
       >
         <RotateCcw className="h-3.5 w-3.5" />
         {strings.cypheus.createNewBot}
-      </button>
+      </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>

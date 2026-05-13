@@ -21,6 +21,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import { CreateNewBotButton } from '@/features/cypheus/CreateNewBotButton';
 import { ExportDialog } from '@/features/export-import/ExportDialog';
 import { useExportDialogStore } from '@/features/export-import/export-dialog.store';
 import { MyBotsDialog } from '@/features/bot-monitoring/MyBotsDialog';
@@ -269,6 +270,7 @@ export function HeaderToolbar() {
                 : `${issues.length} issue${issues.length === 1 ? '' : 's'} to fix.`}
             </TooltipContent>
           </Tooltip>
+          <CreateNewBotButton />
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
