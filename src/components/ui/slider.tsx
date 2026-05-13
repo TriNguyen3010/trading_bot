@@ -1,3 +1,5 @@
+import { cn } from '@/lib/utils';
+
 export interface SliderProps {
   value: number;
   onValueChange: (next: number) => void;
@@ -6,6 +8,8 @@ export interface SliderProps {
   step?: number;
   suffix?: string;
   ariaLabel?: string;
+  showValue?: boolean;
+  className?: string;
 }
 
 /**
@@ -24,9 +28,11 @@ export function Slider({
   step = 1,
   suffix = '',
   ariaLabel,
+  showValue = true,
+  className,
 }: SliderProps) {
   return (
-    <div role="group" className="flex items-center gap-3">
+    <div role="group" className={cn('flex items-center gap-3', className)}>
       <input
         type="range"
         min={min}
@@ -37,10 +43,12 @@ export function Slider({
         aria-label={ariaLabel}
         className="h-1 flex-1 cursor-pointer accent-brand"
       />
-      <span className="min-w-[3rem] text-right text-sm font-medium tabular-nums text-fg">
-        {value}
-        {suffix}
-      </span>
+      {showValue ? (
+        <span className="min-w-[3rem] text-right text-sm font-medium tabular-nums text-fg">
+          {value}
+          {suffix}
+        </span>
+      ) : null}
     </div>
   );
 }

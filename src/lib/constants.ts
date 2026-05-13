@@ -15,6 +15,9 @@ export const TIMEFRAMES = [
 
 export const STAKE_CURRENCIES = ['USDT', 'USDC', 'BUSD'] as const;
 
+export const LEVERAGE_MIN = 1;
+export const LEVERAGE_MAX = 50;
+
 export const CANDLESTICK_OPTIONS: { value: 'open' | 'close' | 'high' | 'low' | 'volume'; label: string }[] = [
   { value: 'open', label: 'Open' },
   { value: 'close', label: 'Close' },

@@ -17,11 +17,18 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import {
+  LEVERAGE_MAX,
+  LEVERAGE_MIN,
   TIMEFRAMES,
   STAKE_CURRENCIES,
   PAIR_SUGGESTIONS,
 } from '@/lib/constants';
 import type { TradingMode, MarginMode } from '@/types/builder.types';
+
+function clampLeverage(value: number | null) {
+  const next = value ?? LEVERAGE_MIN;
+  return Math.max(LEVERAGE_MIN, Math.min(LEVERAGE_MAX, Math.round(next)));
+}
 
 export function BotConfigSetup() {
   const config = useBuilderStore((s) => s.botConfig);
@@ -107,17 +114,28 @@ export function BotConfigSetup() {
         <FormField
           label="Leverage"
         >
-          <Slider
-            value={config.leverage}
-            onValueChange={(v) =>
-              patch({ leverage: Math.max(1, Math.min(125, v)) })
-            }
-            min={1}
-            max={125}
-            step={1}
-            suffix="x"
-            ariaLabel="Leverage"
-          />
+          <div className="flex items-center gap-3">
+            <Slider
+              className="min-w-0 flex-1"
+              value={config.leverage}
+              onValueChange={(v) => patch({ leverage: clampLeverage(v) })}
+              min={LEVERAGE_MIN}
+              max={LEVERAGE_MAX}
+              step={1}
+              ariaLabel="Leverage"
+              showValue={false}
+            />
+            <NumberInput
+              value={config.leverage}
+              onValueChange={(v) => patch({ leverage: clampLeverage(v) })}
+              min={LEVERAGE_MIN}
+              max={LEVERAGE_MAX}
+              step={1}
+              suffix="x"
+              aria-label="Leverage value"
+              className="w-20 pr-8 text-right"
+            />
+          </div>
         </FormField>
       </div>
 
