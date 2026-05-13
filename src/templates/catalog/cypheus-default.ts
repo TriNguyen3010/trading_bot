@@ -1,9 +1,6 @@
 /**
  * Cypheus's default starter template — Bollinger Breakout BTC.
- *
- * Historically this was the hard-coded `magic-build.script.ts` demo;
- * extracted into a template so users can pick it from the gallery and
- * snap-apply the same starter config.
+ * The canonical starting point surfaced in the gallery.
  */
 import type { BotTemplate } from '../types';
 import { TEMPLATE_SCHEMA_VERSION } from '../types';

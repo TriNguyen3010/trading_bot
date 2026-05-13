@@ -12,28 +12,15 @@ export function CypheusChat() {
   }, [messages.length]);
 
   return (
-    <>
-      {messages.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-          <p className="text-sm font-medium text-fg">
-            Cypheus is ready to help.
-          </p>
-          <p className="text-xs text-fg-muted">
-            Send a message to start the demo build.
-          </p>
-        </div>
-      ) : (
-        <div
-          ref={scrollerRef}
-          className="flex-1 overflow-y-auto px-4 py-3 scrollbar-thin"
-        >
-          <div className="flex flex-col gap-3">
-            {messages.map((m) => (
-              <MessageBubble key={m.id} message={m} />
-            ))}
-          </div>
-        </div>
-      )}
-    </>
+    <div
+      ref={scrollerRef}
+      className="flex-1 overflow-y-auto px-4 py-3 scrollbar-thin"
+    >
+      <div className="flex flex-col gap-3">
+        {messages.map((m) => (
+          <MessageBubble key={m.id} message={m} />
+        ))}
+      </div>
+    </div>
   );
 }

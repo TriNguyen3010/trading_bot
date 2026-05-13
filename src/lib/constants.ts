@@ -1,8 +1,6 @@
 /**
- * Static option lists used by the builder forms.
- *
- * Single source of truth — touched by both the form selects and (later) the
- * Cypheus magic-build script when it autofills the demo bot.
+ * Static option lists used by the builder forms. Single source of truth
+ * for the form selects.
  */
 
 export const TIMEFRAMES = [

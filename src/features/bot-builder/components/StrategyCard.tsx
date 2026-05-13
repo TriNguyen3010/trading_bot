@@ -69,9 +69,6 @@ const SUB_STEP_LABEL: Record<StepId, string> = {
  * Click → sets `openStep` to 'entry-strategy', which routes the StepDrawer
  * into composite mode (since 'entry-strategy' ∈ STRATEGY_SUB_STEPS and the
  * caller passes `strategyCompositeContent`).
- *
- * Cypheus pinned highlight: when the pinned step belongs to any of the 3
- * sub-steps, this card lights up with brand glow (decision D3).
  */
 export function StrategyCard() {
   const setOpenStep = useBuilderStore((s) => s.setOpenStep);

@@ -46,6 +46,16 @@ describe('cypheus.store (slim surface)', () => {
     expect(messages[0].ts).toBeGreaterThan(0);
   });
 
+  it('updateMessage patches an existing message in place', () => {
+    const id = useCypheusStore
+      .getState()
+      .pushMessage({ role: 'cypheus', text: 'a', typing: true });
+    useCypheusStore.getState().updateMessage(id, { text: 'b', typing: false });
+    const m = useCypheusStore.getState().messages[0];
+    expect(m.text).toBe('b');
+    expect(m.typing).toBe(false);
+  });
+
   it('resetAll clears messages and phase', () => {
     useCypheusStore.getState().pushMessage({ role: 'cypheus', text: 'x' });
     useCypheusStore.getState().setPhase('active');

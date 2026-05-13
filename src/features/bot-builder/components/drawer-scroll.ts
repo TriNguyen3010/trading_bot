@@ -1,12 +1,10 @@
 /**
- * Scroll the right-side drawer body to a tagged anchor — used during
- * the Cypheus template / magic-build animation so the user can follow
- * which section is currently being filled.
+ * Scroll the right-side drawer body to a tagged anchor — kept around so
+ * future flows (e.g. validation jumps, AI streaming when it ships) can
+ * focus a specific field group programmatically.
  *
  * Anchors are `[data-cy-anchor="<id>"]` elements placed on field-group
- * wrappers in BotConfigStep / StrategyDrawerContent. The animation
- * engine in `templates/animation.ts` calls this before each phase /
- * sub-section transition.
+ * wrappers in BotConfigStep / StrategyDrawerContent.
  *
  * Behaviour:
  *   - No-op when no element with the given anchor exists. The drawer
