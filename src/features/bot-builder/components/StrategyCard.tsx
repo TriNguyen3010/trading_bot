@@ -121,13 +121,18 @@ export function StrategyCard() {
       onClick={handleClick}
       aria-pressed={isOpen}
       className={cn(
-        'group relative flex w-full flex-col items-stretch overflow-hidden rounded-xl glass-card glass-card-hover text-left',
-        'hover:border-brand/60',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-        visualStatus === 'pending' && 'border-brand/15',
-        visualStatus === 'editing' && 'border-brand shadow-glow',
-        visualStatus === 'configured' && 'border-brand/80 bg-brand-subtle/20',
-        visualStatus === 'error' && 'border-brand ring-2 ring-brand/40',
+        // Variant C — unified shell with StepCard (rounded-3xl + glow when
+        // selected) while keeping the square `Layers` icon below to carry
+        // the "composite stack" semantics that distinguish this from Phase 1.
+        'group relative flex w-full flex-col items-stretch overflow-hidden rounded-3xl glass-card text-left',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-black',
+        // 2-state frame ring (matches StepCard):
+        //   normal   — ring-1 white/15
+        //   selected — ring-2 brand
+        isOpen
+          ? 'ring-2 ring-brand shadow-[0_0_24px_rgba(240,185,11,0.3)]'
+          : 'ring-1 ring-white/15',
+        visualStatus === 'configured' && !isOpen && 'bg-brand-subtle/20',
       )}
     >
       <header className="flex w-full items-center gap-4 px-5 py-3">

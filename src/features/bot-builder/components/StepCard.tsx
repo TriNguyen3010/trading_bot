@@ -94,15 +94,18 @@ export function StepCard({
       onClick={handleClick}
       aria-pressed={isOpen}
       className={cn(
-        'group relative flex w-full flex-col items-stretch overflow-hidden rounded-3xl glass-card glass-card-hover text-left',
-        'hover:ring-1 hover:ring-brand/40',
+        'group relative flex w-full flex-col items-stretch overflow-hidden rounded-3xl glass-card text-left',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-black',
+        // 2-state frame ring:
+        //   normal   — ring-1 white/15  (default)
+        //   selected — ring-2 brand     (yellow, drawer is open)
+        isOpen
+          ? 'ring-2 ring-brand shadow-[0_0_24px_rgba(240,185,11,0.3)]'
+          : 'ring-1 ring-white/15',
         isStep1Idle && styles.highlighted,
-        !isStep1Idle && visualStatus === 'pending' && 'ring-1 ring-brand/10',
-        visualStatus === 'editing' && 'ring-2 ring-brand shadow-[0_0_24px_rgba(240,185,11,0.3)]',
-        // "Done" state — soft yellow tint inset + bright ring
-        visualStatus === 'configured' && 'ring-1 ring-brand/60 bg-brand-subtle/20',
-        visualStatus === 'error' && 'ring-2 ring-brand/80 shadow-[0_0_18px_rgba(240,185,11,0.25)]',
+        // Configured tint stays as a soft inset background; the frame
+        // colour is now reserved for selected/hover/normal only.
+        visualStatus === 'configured' && !isOpen && 'bg-brand-subtle/20',
       )}
     >
       <header className="flex w-full items-center gap-4 px-5 py-3">
@@ -123,7 +126,7 @@ export function StepCard({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 text-2xs uppercase tracking-wide text-fg-muted">
-            <span>Step {index}</span>
+            <span>Phase {index}</span>
           </div>
           <h3 className="truncate text-md font-semibold text-fg">
             {title}
@@ -143,7 +146,7 @@ export function StepCard({
                 Tap to configure
                 <ArrowRight className="h-3 w-3" />
               </span>
-              <CypheusAvatar size="xl" />
+              <CypheusAvatar size="xl" variant="hello" />
             </motion.div>
           ) : (
             <motion.div

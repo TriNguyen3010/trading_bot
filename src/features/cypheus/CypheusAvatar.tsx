@@ -6,6 +6,12 @@ export interface CypheusAvatarProps {
   className?: string;
   /** Framer Motion layoutId for shared element transitions. */
   layoutId?: string;
+  /**
+   * Which Cypheus pose to render.
+   *   'static' (default) — the PNG avatar.
+   *   'hello'  — looping `hello.webm` for the Phase 1 idle hero.
+   */
+  variant?: 'static' | 'hello';
 }
 
 const sizeMap = {
@@ -16,14 +22,17 @@ const sizeMap = {
 } as const;
 
 /**
- * Static Cypheus avatar. The animated `hello.webm` / `coding.webm`
- * variants were tied to the magic-build script — removed alongside the
- * scripted demo. Re-introduce video variants when real AI ships.
+ * Cypheus avatar — static PNG by default, or a looping webm for the
+ * `hello` pose (used as the Phase 1 idle hero on the canvas). Other
+ * animated variants (e.g. `coding`) will land alongside as real flows
+ * need them; the surface stays identical so callers don't care which
+ * pose is mounted.
  */
 export function CypheusAvatar({
   size = 'md',
   className,
   layoutId,
+  variant = 'static',
 }: CypheusAvatarProps) {
   const sizeClass = sizeMap[size];
   const wrapperClass = cn(
@@ -39,12 +48,23 @@ export function CypheusAvatar({
 
   return (
     <Wrapper className={wrapperClass} aria-hidden {...wrapperProps}>
-      <img
-        src="/cypheus/avatar.png"
-        alt=""
-        loading="eager"
-        className={cn('h-full w-full object-cover', sizeClass)}
-      />
+      {variant === 'hello' ? (
+        <video
+          src="/cypheus/hello.webm"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className={cn('h-full w-full object-cover', sizeClass)}
+        />
+      ) : (
+        <img
+          src="/cypheus/avatar.png"
+          alt=""
+          loading="eager"
+          className={cn('h-full w-full object-cover', sizeClass)}
+        />
+      )}
     </Wrapper>
   );
 }
