@@ -19,7 +19,6 @@ import {
   CloseMethodConfigure,
 } from './steps/CloseMethodStep';
 import { useBuilderStore } from './store/builder.store';
-import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { configuredPhaseCount } from '@/lib/phase-helpers';
 import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { cn } from '@/lib/utils';
@@ -79,9 +78,6 @@ export function BotBuilderCanvas() {
   const openStep = useBuilderStore((s) => s.openStep);
   const setOpenStep = useBuilderStore((s) => s.setOpenStep);
   const setStepStatus = useBuilderStore((s) => s.setStepStatus);
-  const closeCypheusDrawer = useCypheusStore((s) => s.closeCypheusDrawer);
-  const setPanelTab = useCypheusStore((s) => s.setPanelTab);
-  const cypheusActiveStepId = useCypheusStore((s) => s.cypheusActiveStepId);
   // Full state read used to decide the canvas layout — `configuredPhaseCount`
   // recomputes whenever stepStatus changes so the layout flips between
   // single-column (pristine) and 2-column (configured) automatically.
@@ -90,7 +86,7 @@ export function BotBuilderCanvas() {
   // Same scroll-into-view pattern as the legacy StepList — keeps the
   // active card visible above the dock and below the header.
   const cardRefs = useRef<{ [k: string]: HTMLLIElement | null }>({});
-  const activeStepId: StepId | null = cypheusActiveStepId ?? openStep;
+  const activeStepId: StepId | null = openStep;
   const activePhase = activeStepId
     ? activeStepId === 'bot-config'
       ? 'bot-basics'
@@ -155,12 +151,6 @@ export function BotBuilderCanvas() {
    * For the composite Strategy itself there's no further phase — wizard
    * footer never renders there since composite mode owns its own footer. */
   const hasNext = openStep === 'bot-config';
-
-  const handleSummaryDismiss = () => closeCypheusDrawer();
-  const handleSummaryReviewJson = () => {
-    closeCypheusDrawer();
-    setPanelTab('json');
-  };
 
   const compositeContent: ReactNode = (
     <StrategyDrawerContent
@@ -273,8 +263,6 @@ export function BotBuilderCanvas() {
         onManualSave={handleLegacySave}
         onManualSaveAndNext={handleLegacySaveAndNext}
         hasNext={hasNext}
-        onSummaryDismiss={handleSummaryDismiss}
-        onSummaryReviewJson={handleSummaryReviewJson}
         strategyCompositeContent={compositeContent}
         strategyHeader={{
           title: strings.strategyDrawer.title,

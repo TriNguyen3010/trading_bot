@@ -1,8 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { StepDrawer, type StepContentMap } from './StepDrawer';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
-import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import type { StepId } from '@/types/builder.types';
 
 const CONTENT: Record<StepId, StepContentMap> = {
@@ -44,14 +43,11 @@ const baseProps = {
   onManualSave: noop,
   onManualSaveAndNext: noop,
   hasNext: true,
-  onSummaryDismiss: noop,
-  onSummaryReviewJson: noop,
 };
 
 describe('StepDrawer integration', () => {
   beforeEach(() => {
     useBuilderStore.getState().resetAll();
-    useCypheusStore.getState().resetAll();
   });
 
   it('Phase 1 (setup tab, !setupComplete): renders Cancel + Continue disabled', async () => {
@@ -78,37 +74,6 @@ describe('StepDrawer integration', () => {
     expect(screen.getByRole('button', { name: /skip & save/i })).toBeInTheDocument();
     const cont = screen.getByRole('button', { name: /continue/i });
     expect(cont).not.toBeDisabled();
-  });
-
-  it('shows the pinned footer and the cypheus active step content', async () => {
-    useCypheusStore.getState().startCypheusDrawer('entry-strategy');
-    render(<StepDrawer {...baseProps} />);
-    expect(
-      await screen.findByText(/Cypheus is configuring/i),
-    ).toBeInTheDocument();
-    expect(screen.queryByText('Cancel')).not.toBeInTheDocument();
-    expect(screen.getByTestId('entry-setup')).toBeInTheDocument();
-  });
-
-  it('switches content when cypheusActiveStepId changes', async () => {
-    useCypheusStore.getState().startCypheusDrawer('bot-config');
-    const view = render(<StepDrawer {...baseProps} />);
-    expect(await screen.findByTestId('bot-config-setup')).toBeInTheDocument();
-
-    useCypheusStore.getState().switchCypheusStep('direction');
-    view.rerender(<StepDrawer {...baseProps} />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('dir-setup')).toBeInTheDocument();
-    });
-  });
-
-  it('renders the summary view in cypheus-summary mode', async () => {
-    useCypheusStore.getState().startCypheusDrawer('close-method');
-    useCypheusStore.getState().showCypheusSummary();
-    render(<StepDrawer {...baseProps} hasNext={false} />);
-    expect(await screen.findByText('All set ✓')).toBeInTheDocument();
-    expect(screen.getByText('Review JSON')).toBeInTheDocument();
   });
 
   it('Phase 1 composite (bot-config): renders the merged body, no Setup/Configure tabs', async () => {

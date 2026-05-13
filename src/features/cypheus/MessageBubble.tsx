@@ -15,7 +15,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         isCypheus ? 'justify-start' : 'justify-end',
       )}
     >
-      {isCypheus ? <CypheusAvatar size="sm" state="idle" /> : null}
+      {isCypheus ? <CypheusAvatar size="sm" /> : null}
       <div
         className={cn(
           'max-w-[280px] rounded-2xl px-3.5 py-2.5 text-sm',

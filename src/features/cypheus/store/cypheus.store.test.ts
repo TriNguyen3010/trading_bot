@@ -1,54 +1,56 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { useCypheusStore } from './cypheus.store';
 
-describe('cypheus store — drawer state', () => {
+describe('cypheus.store (slim surface)', () => {
   beforeEach(() => {
     useCypheusStore.getState().resetAll();
   });
 
-  it('defaults to closed drawer with no active step', () => {
+  it('exposes only the slim surface: phase, messages, resetAll', () => {
     const s = useCypheusStore.getState();
-    expect(s.drawerMode).toBe('closed');
-    expect(s.cypheusActiveStepId).toBeNull();
+    expect(s.phase).toBe('idle');
+    expect(s.messages).toEqual([]);
+    expect(typeof s.setPhase).toBe('function');
+    expect(typeof s.pushMessage).toBe('function');
+    expect(typeof s.clearMessages).toBe('function');
+    expect(typeof s.resetAll).toBe('function');
   });
 
-  it('startCypheusDrawer pins the drawer and sets first step', () => {
-    useCypheusStore.getState().startCypheusDrawer('bot-config');
-    const s = useCypheusStore.getState();
-    expect(s.drawerMode).toBe('cypheus-pinned');
-    expect(s.cypheusActiveStepId).toBe('bot-config');
+  it('does NOT expose magic-build or panel-tab surface', () => {
+    const s = useCypheusStore.getState() as unknown as Record<string, unknown>;
+    expect(s.panelTab).toBeUndefined();
+    expect(s.jsonViewedAt).toBeUndefined();
+    expect(s.drawerMode).toBeUndefined();
+    expect(s.cypheusActiveStepId).toBeUndefined();
+    expect(s.startCypheusDrawer).toBeUndefined();
+    expect(s.switchCypheusStep).toBeUndefined();
+    expect(s.showCypheusSummary).toBeUndefined();
+    expect(s.closeCypheusDrawer).toBeUndefined();
   });
 
-  it('switchCypheusStep updates active step but keeps mode pinned', () => {
-    useCypheusStore.getState().startCypheusDrawer('bot-config');
-    useCypheusStore.getState().switchCypheusStep('entry-strategy');
-    const s = useCypheusStore.getState();
-    expect(s.drawerMode).toBe('cypheus-pinned');
-    expect(s.cypheusActiveStepId).toBe('entry-strategy');
+  it('setPhase updates the phase', () => {
+    useCypheusStore.getState().setPhase('active');
+    expect(useCypheusStore.getState().phase).toBe('active');
+    useCypheusStore.getState().setPhase('completed');
+    expect(useCypheusStore.getState().phase).toBe('completed');
   });
 
-  it('showCypheusSummary flips mode to summary, keeps last step', () => {
-    useCypheusStore.getState().startCypheusDrawer('bot-config');
-    useCypheusStore.getState().switchCypheusStep('close-method');
-    useCypheusStore.getState().showCypheusSummary();
-    const s = useCypheusStore.getState();
-    expect(s.drawerMode).toBe('cypheus-summary');
-    expect(s.cypheusActiveStepId).toBe('close-method');
+  it('pushMessage appends a message with a generated id + timestamp', () => {
+    const id = useCypheusStore
+      .getState()
+      .pushMessage({ role: 'cypheus', text: 'hi' });
+    const messages = useCypheusStore.getState().messages;
+    expect(messages).toHaveLength(1);
+    expect(messages[0].id).toBe(id);
+    expect(messages[0].text).toBe('hi');
+    expect(messages[0].ts).toBeGreaterThan(0);
   });
 
-  it('closeCypheusDrawer resets drawer and step', () => {
-    useCypheusStore.getState().startCypheusDrawer('bot-config');
-    useCypheusStore.getState().closeCypheusDrawer();
-    const s = useCypheusStore.getState();
-    expect(s.drawerMode).toBe('closed');
-    expect(s.cypheusActiveStepId).toBeNull();
-  });
-
-  it('resetAll clears drawer state', () => {
-    useCypheusStore.getState().startCypheusDrawer('bot-config');
+  it('resetAll clears messages and phase', () => {
+    useCypheusStore.getState().pushMessage({ role: 'cypheus', text: 'x' });
+    useCypheusStore.getState().setPhase('active');
     useCypheusStore.getState().resetAll();
-    const s = useCypheusStore.getState();
-    expect(s.drawerMode).toBe('closed');
-    expect(s.cypheusActiveStepId).toBeNull();
+    expect(useCypheusStore.getState().messages).toEqual([]);
+    expect(useCypheusStore.getState().phase).toBe('idle');
   });
 });

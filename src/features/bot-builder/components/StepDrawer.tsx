@@ -23,15 +23,12 @@ import {
   FIXED_DRAWER_WIDTH,
   useBuilderStore,
 } from '@/features/bot-builder/store/builder.store';
-import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { isStepSetupComplete } from '@/lib/validator';
 import { STRATEGY_SUB_STEPS } from '@/lib/phase-helpers';
 import { cn } from '@/lib/utils';
 import { strings } from '@/i18n/en';
 import { DrawerProgressGlow } from './DrawerProgressGlow';
 import { DrawerProgressIndicator } from './DrawerProgressIndicator';
-import { CypheusPinnedFooter } from './CypheusPinnedFooter';
-import { CypheusSummaryView } from './CypheusSummaryView';
 import type { DrawerTab, StepId } from '@/types/builder.types';
 
 export interface StepContentMap {
@@ -54,10 +51,6 @@ export interface StepDrawerProps {
   onManualSaveAndNext: () => void;
   /** Hide Save & Next when at last step. */
   hasNext: boolean;
-  /** Called when the summary view requests dismiss (Close or auto-close). */
-  onSummaryDismiss: () => void;
-  /** Called when the summary view's Review JSON button is clicked. */
-  onSummaryReviewJson: () => void;
   /** Composite body + footer rendered when the active step belongs to the
    * Strategy phase (entry/direction/close-method). When provided + active,
    * suppresses the legacy Setup/Configure tabs and the wizard footer.
@@ -76,17 +69,12 @@ export interface StepDrawerProps {
   botConfigHeader?: { title: string; description: string };
 }
 
-const TOTAL_STEPS = 4;
-
 /**
- * Single shared drawer. Visibility and content are derived from two stores:
- * - In `manual` mode the drawer is driven by `builder.openStep`.
- * - In `cypheus-pinned` / `cypheus-summary` mode it is driven by
- *   `cypheus.cypheusActiveStepId` so it stays mounted across step changes.
+ * Single shared drawer driven by `builder.openStep`.
  *
- * Wizard rules apply only to manual mode:
+ * Wizard rules:
  * 1. Setup is the gate. Configure tab locked until setup passes.
- * 2. Footer buttons follow a 4-phase sequence (see DrawerFooter below).
+ * 2. Footer buttons follow a 4-phase sequence (see ManualWizardFooter below).
  * 3. If user breaks Setup after passing, Configure auto-relocks.
  */
 export function StepDrawer({
@@ -95,8 +83,6 @@ export function StepDrawer({
   onManualSave,
   onManualSaveAndNext,
   hasNext,
-  onSummaryDismiss,
-  onSummaryReviewJson,
   strategyCompositeContent,
   strategyHeader,
   botConfigCompositeContent,
@@ -112,34 +98,15 @@ export function StepDrawer({
   const drawerWidth = FIXED_DRAWER_WIDTH;
   const builderState = useBuilderStore();
 
-  const drawerMode = useCypheusStore((s) => s.drawerMode);
-  const cypheusActiveStepId = useCypheusStore((s) => s.cypheusActiveStepId);
-
-  const effectiveMode =
-    drawerMode === 'closed'
-      ? openStep
-        ? 'manual'
-        : 'closed'
-      : drawerMode;
-
-  const activeStepId: StepId | null =
-    effectiveMode === 'cypheus-pinned' || effectiveMode === 'cypheus-summary'
-      ? cypheusActiveStepId
-      : openStep;
-
-  const isOpen = effectiveMode !== 'closed' && activeStepId !== null;
-  const isPinned =
-    effectiveMode === 'cypheus-pinned' || effectiveMode === 'cypheus-summary';
-  const isManual = effectiveMode === 'manual';
+  const activeStepId: StepId | null = openStep;
+  const isOpen = activeStepId !== null;
 
   // Composite Strategy mode: when the active step belongs to the Strategy
   // phase (entry / direction / close-method) AND the parent has provided a
   // composite content node, suppress the legacy Setup/Configure tabs +
-  // wizard footer and render the composite body instead. Applies in both
-  // manual and cypheus-pinned modes (cypheus-summary still uses its own
-  // dedicated view). See Spec/Phase 1/two_phase_ui_plan.md §6.4.
+  // wizard footer and render the composite body instead.
+  // See Spec/Phase 1/two_phase_ui_plan.md §6.4.
   const isCompositeStrategy =
-    effectiveMode !== 'cypheus-summary' &&
     Boolean(strategyCompositeContent) &&
     activeStepId !== null &&
     STRATEGY_SUB_STEPS.includes(activeStepId);
@@ -150,9 +117,7 @@ export function StepDrawer({
   // dead code for the moment; once we're confident we won't roll back,
   // a follow-up PR can rip it out.
   const isCompositeBotConfig =
-    effectiveMode !== 'cypheus-summary' &&
-    Boolean(botConfigCompositeContent) &&
-    activeStepId === 'bot-config';
+    Boolean(botConfigCompositeContent) && activeStepId === 'bot-config';
 
   const isComposite = isCompositeStrategy || isCompositeBotConfig;
 
@@ -161,9 +126,7 @@ export function StepDrawer({
     return contentByStep[activeStepId];
   }, [activeStepId, contentByStep]);
 
-  const indexOfActive = content?.index ?? 1;
-
-  // Wizard state — only meaningful in manual mode but cheap to compute always.
+  // Wizard state — meaningful in manual (legacy tabs) mode.
   const setupComplete = useMemo(
     () => (activeStepId ? isStepSetupComplete(activeStepId, builderState) : false),
     [activeStepId, builderState],
@@ -178,7 +141,6 @@ export function StepDrawer({
   const [justUnlocked, setJustUnlocked] = useState(false);
   useEffect(() => {
     if (
-      isManual &&
       setupComplete &&
       !prevSetupCompleteRef.current &&
       drawerTab === 'setup'
@@ -188,23 +150,21 @@ export function StepDrawer({
       return () => window.clearTimeout(t);
     }
     prevSetupCompleteRef.current = setupComplete;
-  }, [setupComplete, isManual, drawerTab]);
+  }, [setupComplete, drawerTab]);
 
   // Auto-relock: if user broke setup while on configure tab, switch back.
   useEffect(() => {
-    if (isManual && !setupComplete && drawerTab === 'configure') {
+    if (!setupComplete && drawerTab === 'configure') {
       setDrawerTab('setup');
     }
-  }, [isManual, setupComplete, drawerTab, setDrawerTab]);
+  }, [setupComplete, drawerTab, setDrawerTab]);
 
   const handleOpenChange = (next: boolean) => {
     if (next) return;
-    if (isPinned) return;
     onManualClose();
   };
 
   const handleTabChange = (next: string) => {
-    if (isPinned) return;
     if (next === 'configure' && !setupComplete) {
       toast.error(strings.drawer.toasts.configureLocked);
       return;
@@ -219,9 +179,6 @@ export function StepDrawer({
         hideCloseButton
         width={drawerWidth}
         onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => {
-          if (isPinned) e.preventDefault();
-        }}
         overlayClassName="left-[var(--layout-left-panel)]"
       >
         {/* DrawerResizeHandle removed 2026-04-30 — drawer is now locked
@@ -239,37 +196,21 @@ export function StepDrawer({
                   transition={{ duration: 0.15 }}
                 >
                   <SheetTitle>
-                    {effectiveMode === 'cypheus-summary'
-                      ? strings.cypheus.magicBuild.summary.title
-                      : isCompositeStrategy && strategyHeader
-                        ? strategyHeader.title
-                        : isCompositeBotConfig && botConfigHeader
-                          ? botConfigHeader.title
-                          : isManual && content
-                            ? `${strings.drawer.stepLabel(content.index)}: ${content.title}`
-                            : (content?.title ?? '')}
+                    {isCompositeStrategy && strategyHeader
+                      ? strategyHeader.title
+                      : isCompositeBotConfig && botConfigHeader
+                        ? botConfigHeader.title
+                        : content
+                          ? `${strings.drawer.stepLabel(content.index)}: ${content.title}`
+                          : ''}
                   </SheetTitle>
-                  {/* Subtitle removed by user request — only the Cypheus
-                      "step N of M" progress badge stays, and only when
-                      Cypheus is pinned. The Description element is kept
-                      around so Radix Dialog's a11y `aria-describedby`
-                      link doesn't warn. */}
-                  {effectiveMode !== 'cypheus-summary' && (
-                    <SheetDescription>
-                      {isPinned ? (
-                        <span className="text-fg-muted">
-                          {strings.cypheus.magicBuild.progressLabel(
-                            indexOfActive,
-                            TOTAL_STEPS,
-                          )}
-                        </span>
-                      ) : null}
-                    </SheetDescription>
-                  )}
+                  {/* Description kept (empty) so Radix Dialog's a11y
+                      `aria-describedby` link doesn't warn. */}
+                  <SheetDescription />
                   {/* Setup/Configure stepper only renders in the legacy
                       tabbed mode. Both Phase 1 (composite bot-config) and
                       Phase 2 (composite Strategy) drop it. */}
-                  {isManual && content && !isComposite && (
+                  {content && !isComposite && (
                     <DrawerProgressIndicator
                       activeTab={drawerTab}
                       setupComplete={setupComplete}
@@ -279,34 +220,18 @@ export function StepDrawer({
                 </motion.div>
               </AnimatePresence>
             </div>
-            <CloseButton
-              disabled={isPinned}
-              onClick={() => handleOpenChange(false)}
-            />
+            <CloseButton onClick={() => handleOpenChange(false)} />
           </div>
         </SheetHeader>
 
-        {effectiveMode === 'cypheus-summary' ? (
-          <CypheusSummaryView
-            onDismiss={onSummaryDismiss}
-            onReviewJson={onSummaryReviewJson}
-          />
-        ) : isCompositeStrategy ? (
+        {isCompositeStrategy ? (
           // Composite Strategy phase body — supplied by parent via
-          // `strategyCompositeContent`. Pinned mode keeps the Cypheus
-          // pinned footer; manual mode footer is owned by the composite.
-          <>
-            {strategyCompositeContent}
-            {isPinned && <CypheusPinnedFooter />}
-          </>
+          // `strategyCompositeContent`. Owns its own footer.
+          strategyCompositeContent
         ) : isCompositeBotConfig ? (
           // Composite Bot Basics body — supplied by parent via
-          // `botConfigCompositeContent`. Pinned mode keeps the Cypheus
-          // pinned footer; manual mode footer is owned by the composite.
-          <>
-            {botConfigCompositeContent}
-            {isPinned && <CypheusPinnedFooter />}
-          </>
+          // `botConfigCompositeContent`. Owns its own footer.
+          botConfigCompositeContent
         ) : (
           <>
             <Tabs
@@ -316,13 +241,10 @@ export function StepDrawer({
             >
               <div className="px-6 pt-4">
                 <TabsList>
-                  <TabsTrigger value="setup" disabled={isPinned}>
+                  <TabsTrigger value="setup">
                     {strings.drawer.setupTab}
                   </TabsTrigger>
-                  <ConfigureTabTrigger
-                    locked={isManual && !setupComplete}
-                    pinned={isPinned}
-                  />
+                  <ConfigureTabTrigger locked={!setupComplete} />
                 </TabsList>
               </div>
               <SheetBody ref={legacyScrollRef} className="drawer-no-scrollbar">
@@ -353,25 +275,21 @@ export function StepDrawer({
               <DrawerProgressGlow scrollRef={legacyScrollRef} />
             </Tabs>
 
-            {effectiveMode === 'cypheus-pinned' ? (
-              <CypheusPinnedFooter />
-            ) : (
-              <SheetFooter>
-                <ManualWizardFooter
-                  activeTab={drawerTab}
-                  setupComplete={setupComplete}
-                  hasNext={hasNext}
-                  onCancel={onManualClose}
-                  onContinue={() => setDrawerTab('configure')}
-                  onBack={() => setDrawerTab('setup')}
-                  onSkipSave={() => onManualSave('skip-save')}
-                  onSave={() =>
-                    onManualSave(hasNext ? 'save' : 'save-and-finish')
-                  }
-                  onSaveAndNext={onManualSaveAndNext}
-                />
-              </SheetFooter>
-            )}
+            <SheetFooter>
+              <ManualWizardFooter
+                activeTab={drawerTab}
+                setupComplete={setupComplete}
+                hasNext={hasNext}
+                onCancel={onManualClose}
+                onContinue={() => setDrawerTab('configure')}
+                onBack={() => setDrawerTab('setup')}
+                onSkipSave={() => onManualSave('skip-save')}
+                onSave={() =>
+                  onManualSave(hasNext ? 'save' : 'save-and-finish')
+                }
+                onSaveAndNext={onManualSaveAndNext}
+              />
+            </SheetFooter>
           </>
         )}
       </SheetContent>
@@ -380,22 +298,14 @@ export function StepDrawer({
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Configure tab trigger — keeps Radix-disabled UX intact for pinned mode    */
-/*  but uses a "soft lock" in manual mode (clickable but onValueChange        */
-/*  intercepts and shows a toast).                                            */
+/*  Configure tab trigger — "soft lock" (clickable but onValueChange           */
+/*  intercepts and shows a toast).                                             */
 /* -------------------------------------------------------------------------- */
-function ConfigureTabTrigger({
-  locked,
-  pinned,
-}: {
-  locked: boolean;
-  pinned: boolean;
-}) {
+function ConfigureTabTrigger({ locked }: { locked: boolean }) {
   const trigger = (
     <TabsTrigger
       value="configure"
-      disabled={pinned}
-      aria-disabled={locked || pinned}
+      aria-disabled={locked}
       className={cn(locked && 'cursor-not-allowed opacity-70')}
     >
       <span className="inline-flex items-center gap-1.5">
@@ -404,7 +314,7 @@ function ConfigureTabTrigger({
       </span>
     </TabsTrigger>
   );
-  if (!locked || pinned) return trigger;
+  if (!locked) return trigger;
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
@@ -517,44 +427,17 @@ function ManualWizardFooter({
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Close button — disabled & tooltip when Cypheus pinned                      */
+/*  Close button                                                              */
 /* -------------------------------------------------------------------------- */
-function CloseButton({
-  disabled,
-  onClick,
-}: {
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  if (!disabled) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label="Close drawer"
-        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-secondary transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-      >
-        ×
-      </button>
-    );
-  }
+function CloseButton({ onClick }: { onClick: () => void }) {
   return (
-    <TooltipProvider delayDuration={150}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            disabled
-            aria-label="Close disabled while Cypheus is configuring"
-            className="inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-md text-fg-muted opacity-40"
-          >
-            ×
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="left" className="max-w-xs">
-          {strings.cypheus.magicBuild.closeDisabledTooltip}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Close drawer"
+      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-secondary transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+    >
+      ×
+    </button>
   );
 }

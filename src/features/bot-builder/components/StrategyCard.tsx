@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
-import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { validateBuilder, type BuilderIssue } from '@/lib/validator';
 import {
   STRATEGY_SUB_STEPS,
@@ -77,13 +76,6 @@ const SUB_STEP_LABEL: Record<StepId, string> = {
 export function StrategyCard() {
   const setOpenStep = useBuilderStore((s) => s.setOpenStep);
   const openStep = useBuilderStore((s) => s.openStep);
-  const drawerMode = useCypheusStore((s) => s.drawerMode);
-  const cypheusActiveStepId = useCypheusStore((s) => s.cypheusActiveStepId);
-  const isPinned = drawerMode === 'cypheus-pinned';
-  const isCypheusActive =
-    isPinned &&
-    cypheusActiveStepId !== null &&
-    STRATEGY_SUB_STEPS.includes(cypheusActiveStepId);
   const state = useBuilderStore();
 
   // Derive the composite phase status. Note: `derivePhaseStatus` itself
@@ -117,7 +109,6 @@ export function StrategyCard() {
   const StatusIcon = statusIcon[visualStatus].icon;
 
   const handleClick = () => {
-    if (isPinned) return;
     // Open the drawer; routing to composite mode happens because the parent
     // (BotBuilderCanvas) supplies `strategyCompositeContent` and the
     // StepDrawer detects activeStepId ∈ STRATEGY_SUB_STEPS.
@@ -129,7 +120,6 @@ export function StrategyCard() {
       type="button"
       onClick={handleClick}
       aria-pressed={isOpen}
-      aria-disabled={isPinned}
       className={cn(
         'group relative flex w-full flex-col items-stretch overflow-hidden rounded-xl glass-card glass-card-hover text-left',
         'hover:border-brand/60',
@@ -138,8 +128,6 @@ export function StrategyCard() {
         visualStatus === 'editing' && 'border-brand shadow-glow',
         visualStatus === 'configured' && 'border-brand/80 bg-brand-subtle/20',
         visualStatus === 'error' && 'border-brand ring-2 ring-brand/40',
-        isCypheusActive && 'border-brand shadow-glow',
-        isPinned && !isCypheusActive && 'cursor-not-allowed opacity-60',
       )}
     >
       <header className="flex w-full items-center gap-4 px-5 py-3">

@@ -16,7 +16,6 @@ import {
   useBuilderStore,
 } from '@/features/bot-builder/store/builder.store';
 import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
-import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 export function BuilderPage() {
@@ -26,11 +25,10 @@ export function BuilderPage() {
   );
   const openStep = useBuilderStore((s) => s.openStep);
   const drawerWidth = FIXED_DRAWER_WIDTH;
-  const cypheusDrawerMode = useCypheusStore((s) => s.drawerMode);
   const setTemplatesOpen = useTemplatesDialogStore((s) => s.setOpen);
   const leftPanelCollapsed = useLayoutPrefsStore((s) => s.leftPanelCollapsed);
 
-  const drawerVisible = openStep !== null || cypheusDrawerMode !== 'closed';
+  const drawerVisible = openStep !== null;
 
   useEffect(() => {
     document.documentElement.style.setProperty(

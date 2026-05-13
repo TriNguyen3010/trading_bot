@@ -57,12 +57,8 @@ export function StepCard({
   const status = useBuilderStore((s) => s.stepStatus[stepId]);
   const openStep = useBuilderStore((s) => s.openStep);
   const setOpenStep = useBuilderStore((s) => s.setOpenStep);
-  const drawerMode = useCypheusStore((s) => s.drawerMode);
-  const cypheusActiveStepId = useCypheusStore((s) => s.cypheusActiveStepId);
   const phase = useCypheusStore((s) => s.phase);
   const setPhase = useCypheusStore((s) => s.setPhase);
-  const isPinned = drawerMode === 'cypheus-pinned';
-  const isCypheusActive = isPinned && cypheusActiveStepId === stepId;
   const state = useBuilderStore();
 
   // Step 1 anchor only kicks in for a brand-new session (phase still
@@ -88,7 +84,6 @@ export function StepCard({
   const StatusIcon = statusIcon[visualStatus].icon;
 
   const handleClick = () => {
-    if (isPinned) return;
     if (phase === 'idle') setPhase('active');
     setOpenStep(stepId);
   };
@@ -98,7 +93,6 @@ export function StepCard({
       type="button"
       onClick={handleClick}
       aria-pressed={isOpen}
-      aria-disabled={isPinned}
       className={cn(
         'group relative flex w-full flex-col items-stretch overflow-hidden rounded-3xl glass-card glass-card-hover text-left',
         'hover:ring-1 hover:ring-brand/40',
@@ -109,8 +103,6 @@ export function StepCard({
         // "Done" state — soft yellow tint inset + bright ring
         visualStatus === 'configured' && 'ring-1 ring-brand/60 bg-brand-subtle/20',
         visualStatus === 'error' && 'ring-2 ring-brand/80 shadow-[0_0_18px_rgba(240,185,11,0.25)]',
-        isCypheusActive && 'ring-2 ring-brand shadow-[0_0_24px_rgba(240,185,11,0.3)]',
-        isPinned && !isCypheusActive && 'cursor-not-allowed opacity-60',
       )}
     >
       <header className="flex w-full items-center gap-4 px-5 py-3">

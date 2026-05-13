@@ -8,60 +8,37 @@ import {
   PHASE_IDS,
   configuredPhaseCount,
   stepIdToPhase,
-  type PhaseId,
 } from '@/lib/phase-helpers';
 import styles from './CypheusDock.module.css';
-
-/**
- * Per-phase building copy. The 4-step model used to map each sub-step to its
- * own message (e.g. "Setting direction & order…"); in the 2-phase model
- * Cypheus only pins twice — once for Bot Basics, once for Strategy — so we
- * collapse the 4 messages into 2 phase-level lines. See
- * Spec/Phase 1/two_phase_ui_plan.md §6.6.
- */
-const BUILDING_PHASE_TEXT: Record<PhaseId, string> = {
-  'bot-basics': 'Configuring bot…',
-  strategy: 'Building your strategy…',
-};
 
 export function CypheusDock() {
   const phase = useCypheusStore((s) => s.phase);
   const setPhase = useCypheusStore((s) => s.setPhase);
-  const cypheusState = useCypheusStore((s) => s.state);
-  const activeStepId = useCypheusStore((s) => s.cypheusActiveStepId);
   const openStep = useBuilderStore((s) => s.openStep);
   const builderState = useBuilderStore();
   const totalPhases = PHASE_IDS.length; // 2
 
-  // Configured-phase count (0/1/2) — works for both Cypheus magic build and
-  // manual user setup.
+  // Configured-phase count (0/1/2) — driven entirely by manual user setup
+  // since the magic-build engine is gone.
   const completedPhases = useMemo(
     () => configuredPhaseCount(builderState),
     [builderState],
   );
 
-  // Index of the phase currently being configured. Cypheus pinned step takes
-  // priority; otherwise whichever step the user has opened manually.
-  // −1 when nothing is active.
+  // Index of the phase currently being configured — whichever step the
+  // user has opened. −1 when nothing is open.
   const activeIndex = useMemo(() => {
-    const id = activeStepId ?? openStep;
-    if (!id) return -1;
-    return PHASE_IDS.indexOf(stepIdToPhase(id));
-  }, [activeStepId, openStep]);
+    if (!openStep) return -1;
+    return PHASE_IDS.indexOf(stepIdToPhase(openStep));
+  }, [openStep]);
 
   const allDone = completedPhases === totalPhases;
 
   const statusText = useMemo(() => {
-    if (cypheusState === 'thinking') return 'Thinking…';
-    if (cypheusState === 'building') {
-      const id = activeStepId ?? openStep;
-      const p = id ? stepIdToPhase(id) : null;
-      return p ? BUILDING_PHASE_TEXT[p] : 'Building…';
-    }
     if (allDone) return 'All set – ready to export';
     if (completedPhases === 0) return 'Set up your bot to get started';
     return `${completedPhases} of ${totalPhases} phases configured`;
-  }, [cypheusState, activeStepId, openStep, completedPhases, allDone, totalPhases]);
+  }, [completedPhases, allDone, totalPhases]);
 
   // Auto-dismiss the dock 3s after the user finishes configuring all phases
   // and the build is no longer in flight. We move to the 'completed' phase
@@ -72,10 +49,9 @@ export function CypheusDock() {
   useEffect(() => {
     if (phase !== 'active') return;
     if (!allDone) return;
-    if (cypheusState === 'thinking' || cypheusState === 'building') return;
     const t = window.setTimeout(() => setPhase('completed'), 3000);
     return () => window.clearTimeout(t);
-  }, [phase, allDone, cypheusState, setPhase]);
+  }, [phase, allDone, setPhase]);
 
   // Measure the dock's actual rendered height (progress dots + pill +
   // gaps) and expose it via the `--dock-height` CSS var so the canvas
