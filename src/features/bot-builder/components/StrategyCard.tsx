@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/tooltip';
 import type { StepStatus, StepId } from '@/types/builder.types';
 import { StepCardSummary } from './summaries/StepCardSummary';
+import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
+import { StrategyNarrativeSummary } from './summaries/StrategyNarrativeSummary';
 
 const statusIcon: Record<
   StepStatus,
@@ -73,6 +75,7 @@ const SUB_STEP_LABEL: Record<StepId, string> = {
 export function StrategyCard() {
   const setOpenStep = useBuilderStore((s) => s.setOpenStep);
   const openStep = useBuilderStore((s) => s.openStep);
+  const summaryMode = useLayoutPrefsStore((s) => s.summaryMode);
   const state = useBuilderStore();
 
   // Derive the composite phase status. Note: `derivePhaseStatus` itself
@@ -187,9 +190,15 @@ export function StrategyCard() {
           className="w-full space-y-3 border-t border-border-subtle px-5 py-3 cursor-default"
           onClick={(e) => e.stopPropagation()}
         >
-          <StepCardSummary stepId="entry-strategy" />
-          <StepCardSummary stepId="direction" />
-          <StepCardSummary stepId="close-method" />
+          {summaryMode === 'narrative' ? (
+            <StrategyNarrativeSummary />
+          ) : (
+            <>
+              <StepCardSummary stepId="entry-strategy" />
+              <StepCardSummary stepId="direction" />
+              <StepCardSummary stepId="close-method" />
+            </>
+          )}
         </div>
       )}
     </button>

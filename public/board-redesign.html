@@ -1,0 +1,1574 @@
+<!doctype html>
+<html lang="vi" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Board redesign · 6 variations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ── Tokens (mirror src/styles/tokens.css) ─────────────────────────────── */
+  :root {
+    color-scheme: dark;
+    --bg-canvas: #0a0a0b;
+    --bg-surface: #14181f;
+    --bg-surface-2: #1e2329;
+    --bg-input: #181c22;
+    --border-subtle: #1e2329;
+    --border-default: #2b3139;
+    --border-strong: #474d57;
+    --text-primary: #eaecef;
+    --text-secondary: #b7bdc6;
+    --text-muted: #848e9c;
+    --text-disabled: #5e6673;
+    --brand: #f0b90b;
+    --brand-hover: #fcd535;
+    --brand-subtle: rgba(240, 185, 11, 0.10);
+    --brand-ring: rgba(240, 185, 11, 0.30);
+    --bullish: #0ecb81;
+    --bullish-subtle: rgba(14, 203, 129, 0.12);
+    --bearish: #f6465d;
+    --bearish-subtle: rgba(246, 70, 93, 0.12);
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
+    --radius-full: 9999px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg-canvas);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    /* Subtle dot-grid background mirroring DotGridSpotlight in-app */
+    background-image:
+      radial-gradient(rgba(255, 210, 80, 0.07) 1px, transparent 1.5px);
+    background-size: 17px 17px;
+    background-position: 0 0;
+  }
+
+  .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+  /* ── Page chrome ──────────────────────────────────────────────────────── */
+  .page {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 40px 32px 80px;
+  }
+  .page-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 32px;
+  }
+  .page-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .page-subtitle {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--text-muted);
+    max-width: 640px;
+  }
+  .page-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: right;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 28px;
+    align-items: start;
+  }
+  @media (max-width: 1100px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .col-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+  .col-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--brand);
+  }
+  .col-tag .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--brand);
+    box-shadow: 0 0 8px var(--brand-ring);
+  }
+  .col-title { font-size: 18px; font-weight: 600; margin: 0; }
+  .col-desc { font-size: 12.5px; color: var(--text-muted); margin: 0; line-height: 1.55; }
+
+  /* ── Generic card ─────────────────────────────────────────────────────── */
+  .card {
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-xl);
+    box-shadow:
+      0 8px 32px rgba(0,0,0,0.42),
+      0 1px 0 rgba(255,255,255,0.04) inset;
+    overflow: hidden;
+  }
+  .card + .card { margin-top: 16px; }
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .card-head-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--brand-subtle);
+    color: var(--brand);
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: none;
+  }
+  .card-head-meta { flex: 1; min-width: 0; }
+  .card-eyebrow {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .card-name { font-size: 16px; font-weight: 700; margin-top: 2px; }
+  .check {
+    width: 22px; height: 22px;
+    color: var(--text-muted);
+    flex: none;
+  }
+  .card-body { padding: 16px 18px 18px; }
+
+  /* ── Common chip / pill ───────────────────────────────────────────────── */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 22px;
+    padding: 0 10px;
+    border-radius: var(--radius-full);
+    font-size: 11.5px; font-weight: 500;
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    background: transparent;
+    line-height: 1; white-space: nowrap;
+  }
+  .pill.brand  { color: var(--brand);    border-color: var(--brand-ring);    background: var(--brand-subtle); }
+  .pill.bull   { color: var(--bullish);  border-color: rgba(14,203,129,0.40); background: var(--bullish-subtle); }
+  .pill.bear   { color: var(--bearish);  border-color: rgba(246,70,93,0.40);  background: var(--bearish-subtle); }
+  .pill.dim    { color: var(--text-disabled); border-color: var(--border-subtle); opacity: 0.65; }
+
+  /* Token coin */
+  .coin {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #f7931a 0%, #cd7c14 100%);
+    color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px;
+    border: 1px solid rgba(255,255,255,0.10);
+  }
+  .coin.usdc { background: linear-gradient(180deg, #2775ca 0%, #1e5fa3 100%); }
+  .pair-row { display: inline-flex; align-items: center; gap: 8px; }
+
+  /* Phase connector */
+  .connector {
+    height: 28px;
+    margin-left: 36px;
+    border-left: 2px dashed var(--brand-ring);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+   * VARIATION A — Spec Sheet
+   * Field/value rows, table-like. Label dim left, value strong right.
+   * ═══════════════════════════════════════════════════════════════════════ */
+  .a-card .card-body { padding: 4px 0 4px; }
+  .a-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 18px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .a-row:first-child { border-top: 0; }
+  .a-label {
+    font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .a-value {
+    font-size: 13.5px; font-weight: 500;
+    color: var(--text-primary);
+    display: flex; align-items: center; gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .a-value.mono { letter-spacing: 0.01em; }
+  .a-value .unit { color: var(--text-muted); font-weight: 400; font-size: 12px; margin-left: 2px; }
+  .a-section-head {
+    padding: 10px 18px 6px;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--brand);
+    border-top: 1px solid var(--border-subtle);
+    background: rgba(240, 185, 11, 0.035);
+  }
+  .a-section-head:first-child { border-top: 0; }
+  /* Channel cluster (Candle) */
+  .a-channels { display: inline-flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+  .a-channels .pill { height: 20px; padding: 0 8px; font-size: 10.5px; }
+  /* Rule expression as code line */
+  .a-rule {
+    padding: 8px 18px 14px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .a-rule-line {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; line-height: 1.5;
+    color: var(--text-primary);
+    background: rgba(0,0,0,0.30);
+    border: 1px solid var(--border-subtle);
+    border-left: 2px solid var(--brand);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .a-rule-line .tok-ind   { color: var(--brand); font-weight: 600; }
+  .a-rule-line .tok-op    { color: var(--text-muted); font-weight: 500; padding: 0 2px; }
+  .a-rule-line .tok-val   { color: var(--text-primary); font-weight: 600; }
+  .a-rule-meta { font-size: 11px; color: var(--text-muted); margin-top: 8px; padding-left: 4px; }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+   * VARIATION B — Hero Stack
+   * Pair as hero headline, metrics as inline row with separators,
+   * rule as prominent code block.
+   * ═══════════════════════════════════════════════════════════════════════ */
+  .b-card .card-body { padding: 18px 20px 20px; }
+  .b-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .b-hero-pair {
+    display: inline-flex; align-items: center; gap: 12px;
+  }
+  .b-hero-pair .coin { width: 32px; height: 32px; font-size: 15px; }
+  .b-hero-name {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.01em;
+  }
+  .b-hero-name .quote { color: var(--text-muted); font-weight: 500; }
+  .b-stats {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.30);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+  }
+  .b-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .b-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 17px; font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .b-stat-value .unit { color: var(--text-muted); font-size: 12px; font-weight: 500; margin-left: 4px; }
+  .b-stat-label {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .b-stat-sep {
+    width: 1px; align-self: stretch;
+    background: var(--border-default);
+  }
+
+  /* Strategy variant */
+  .b-strat { display: flex; flex-direction: column; gap: 14px; }
+  .b-rule-block {
+    background: rgba(0,0,0,0.30);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .b-rule-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(240, 185, 11, 0.04);
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--brand);
+  }
+  .b-rule-body {
+    padding: 14px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    color: var(--text-primary);
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
+  }
+  .b-rule-body .tok-ind { color: var(--brand); font-weight: 600; }
+  .b-rule-body .tok-op  { color: var(--text-muted); }
+  .b-rule-body .tok-val { color: var(--text-primary); font-weight: 600; }
+  .b-rule-foot {
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 11.5px;
+    color: var(--text-muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .b-action-row {
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
+  }
+  .b-action-arrow {
+    display: inline-flex; align-items: center;
+    color: var(--text-disabled); padding: 0 4px;
+  }
+  .b-exit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .b-exit-cell {
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.25);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .b-exit-label {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.10em; text-transform: uppercase;
+  }
+  .b-exit-label.tp { color: var(--bullish); }
+  .b-exit-label.sl { color: var(--bearish); }
+  .b-exit-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px; font-weight: 600;
+    color: var(--text-primary);
+  }
+  .b-exit-meta { font-size: 10.5px; color: var(--text-muted); }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+   * VARIATION C — Narrative
+   * Reads as a sentence, keywords highlighted with color.
+   * ═══════════════════════════════════════════════════════════════════════ */
+  .c-card .card-body { padding: 20px 22px 22px; }
+  .c-prose {
+    font-size: 15.5px;
+    line-height: 1.75;
+    color: var(--text-secondary);
+    letter-spacing: 0.005em;
+    text-wrap: pretty;
+  }
+  .c-prose p { margin: 0; }
+  .c-prose p + p { margin-top: 8px; }
+  .c-prose .kw {
+    color: var(--text-primary);
+    font-weight: 600;
+    border-bottom: 1px dashed var(--border-strong);
+    padding-bottom: 1px;
+  }
+  .c-prose .kw.brand { color: var(--brand); border-color: var(--brand-ring); }
+  .c-prose .kw.bull  { color: var(--bullish); border-color: rgba(14,203,129,0.4); }
+  .c-prose .kw.bear  { color: var(--bearish); border-color: rgba(246,70,93,0.4); }
+  .c-prose .kw.mono  { font-family: 'JetBrains Mono', monospace; font-size: 14px; }
+  .c-pair-inline {
+    display: inline-flex; align-items: center; gap: 6px;
+    vertical-align: -2px;
+  }
+  .c-pair-inline .coin { width: 18px; height: 18px; font-size: 10px; }
+  .c-pair-inline .name { color: var(--text-primary); font-weight: 700; }
+  .c-aside {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border-subtle);
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .c-aside-item { display: flex; flex-direction: column; gap: 2px; }
+  .c-aside-label {
+    font-size: 9.5px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .c-aside-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; color: var(--text-primary);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+   * VARIATION D — Trading Slip
+   * Broker order-ticket / receipt metaphor. Heavy mono, perforated dividers.
+   * ═══════════════════════════════════════════════════════════════════════ */
+  .d-card {
+    background:
+      linear-gradient(180deg, rgba(255, 240, 200, 0.018), rgba(255, 240, 200, 0.004)),
+      rgba(20, 24, 31, 0.6);
+    border-top: 1px dashed var(--border-strong);
+    border-bottom: 1px dashed var(--border-strong);
+    border-left: 1px solid var(--border-subtle);
+    border-right: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+  }
+  .d-slip-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    border-bottom: 1px dashed var(--border-default);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .d-slip-id { color: var(--brand); font-weight: 600; }
+  .d-slip-stamp {
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .d-slip-stamp .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--bullish); box-shadow: 0 0 6px rgba(14, 203, 129, 0.7);
+  }
+  .d-slip-title {
+    text-align: center;
+    padding: 14px 16px 4px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: var(--brand);
+  }
+  .d-slip-title::before,
+  .d-slip-title::after {
+    content: " ══ ";
+    color: var(--border-default);
+    font-weight: 400;
+  }
+  .d-slip-sub {
+    text-align: center;
+    font-size: 9.5px;
+    color: var(--text-muted);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 0 16px 12px;
+    border-bottom: 1px dashed var(--border-default);
+  }
+  .d-rows {
+    padding: 10px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .d-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 12.5px;
+    line-height: 1.65;
+  }
+  .d-row .key {
+    width: 72px;
+    flex: none;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 10.5px;
+  }
+  .d-row .dots {
+    flex: 1;
+    border-bottom: 1px dotted var(--border-default);
+    transform: translateY(-2px);
+    min-width: 12px;
+  }
+  .d-row .val {
+    color: var(--text-primary);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .d-row .val.bull { color: var(--bullish); }
+  .d-row .val.bear { color: var(--bearish); }
+  .d-row .val.brand { color: var(--brand); }
+  .d-row .val.big { font-size: 13.5px; font-weight: 600; }
+  .d-section {
+    margin: 0 16px;
+    padding: 8px 0 6px;
+    border-top: 1px dashed var(--border-default);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--brand);
+  }
+  .d-section::before { content: "» "; color: var(--text-muted); }
+  .d-slip-foot {
+    text-align: center;
+    padding: 10px 16px;
+    border-top: 1px dashed var(--border-default);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.20em;
+    color: var(--bullish);
+  }
+  .d-slip-foot .check {
+    display: inline-block;
+    margin-right: 6px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+   * VARIATION E — Chart Card
+   * Visual / diagrammatic — sparkline + RSI gauge + TP/SL ladder.
+   * ═══════════════════════════════════════════════════════════════════════ */
+  .e-card .card-body { padding: 18px 20px 20px; }
+  .e-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .e-hero-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .e-hero-name {
+    font-size: 19px; font-weight: 700; letter-spacing: -0.01em;
+  }
+  .e-hero-name .quote { color: var(--text-muted); font-weight: 500; }
+  .e-hero-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--bullish);
+    margin-top: 2px;
+    display: block;
+  }
+  .e-spark { height: 50px; flex: none; }
+  .e-stat-row {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border-subtle);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .e-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .e-stat-label {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .e-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .e-stat-value.bull { color: var(--bullish); }
+
+  /* RSI gauge block */
+  .e-trigger {
+    background: rgba(0, 0, 0, 0.30);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px 18px;
+  }
+  .e-trigger-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 18px;
+  }
+  .e-trigger-head .title {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .e-trigger-head .expr {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+  }
+  .e-trigger-head .expr .ind { color: var(--brand); font-weight: 600; }
+  .e-trigger-head .expr .op  { color: var(--text-muted); }
+  .e-trigger-head .expr .val { color: var(--text-primary); font-weight: 600; }
+
+  .e-gauge {
+    position: relative;
+    height: 18px;
+    background:
+      linear-gradient(90deg,
+        rgba(14, 203, 129, 0.18) 0%,
+        rgba(14, 203, 129, 0.18) 30%,
+        rgba(132, 142, 156, 0.10) 30%,
+        rgba(132, 142, 156, 0.10) 70%,
+        rgba(246, 70, 93, 0.18) 70%,
+        rgba(246, 70, 93, 0.18) 100%);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+  }
+  .e-gauge-threshold {
+    position: absolute;
+    top: -3px; bottom: -3px;
+    left: 40%;
+    width: 2px;
+    background: var(--brand);
+    box-shadow: 0 0 8px var(--brand-ring);
+  }
+  .e-gauge-threshold-label {
+    position: absolute;
+    top: -16px;
+    left: 40%;
+    transform: translateX(-50%);
+    font-size: 9.5px;
+    color: var(--brand);
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .e-gauge-marker {
+    position: absolute;
+    top: 50%;
+    left: 32%;
+    transform: translate(-50%, -50%);
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--bullish);
+    border: 2px solid var(--bg-canvas);
+    box-shadow:
+      0 0 0 1px var(--bullish),
+      0 0 12px rgba(14, 203, 129, 0.55);
+    z-index: 1;
+  }
+  .e-gauge-marker-label {
+    position: absolute;
+    bottom: -16px;
+    left: 32%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--bullish);
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .e-gauge-scale {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 22px;
+    font-size: 9px;
+    color: var(--text-disabled);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  /* Direction strip */
+  .e-direction {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 14px 0;
+    padding: 10px 14px;
+    background: rgba(14, 203, 129, 0.06);
+    border: 1px dashed rgba(14, 203, 129, 0.32);
+    border-radius: var(--radius-lg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-primary);
+  }
+  .e-direction .bull { color: var(--bullish); font-weight: 700; }
+  .e-direction .mute { color: var(--text-muted); }
+
+  /* TP/SL ladder */
+  .e-ladder {
+    background: rgba(0, 0, 0, 0.30);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 0 14px;
+    align-items: stretch;
+  }
+  .e-ladder-rail {
+    position: relative;
+    grid-row: 1 / span 3;
+  }
+  .e-ladder-rail::before {
+    content: "";
+    position: absolute;
+    left: 50%; top: 14px; bottom: 14px;
+    width: 2px;
+    background: linear-gradient(180deg,
+      var(--bullish) 0%,
+      var(--brand) 50%,
+      var(--bearish) 100%);
+    transform: translateX(-50%);
+    opacity: 0.6;
+    border-radius: 1px;
+  }
+  .e-ladder-dot {
+    position: absolute;
+    left: 50%;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    border: 2px solid var(--bg-surface);
+    z-index: 1;
+  }
+  .e-ladder-dot.tp    { top: 14px;  background: var(--bullish); box-shadow: 0 0 0 1px var(--bullish), 0 0 10px rgba(14, 203, 129, 0.6); }
+  .e-ladder-dot.entry { top: 50%;   background: var(--brand);   box-shadow: 0 0 0 1px var(--brand),   0 0 10px var(--brand-ring); }
+  .e-ladder-dot.sl    { bottom: 14px; top: auto; background: var(--bearish); box-shadow: 0 0 0 1px var(--bearish), 0 0 10px rgba(246, 70, 93, 0.6); transform: translate(-50%, 50%); }
+  .e-ladder-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 28px;
+  }
+  .e-ladder-row + .e-ladder-row { margin-top: 4px; }
+  .e-ladder-row .label {
+    font-size: 9.5px; font-weight: 700;
+    letter-spacing: 0.10em; text-transform: uppercase;
+  }
+  .e-ladder-row.tp .label    { color: var(--bullish); }
+  .e-ladder-row.entry .label { color: var(--brand); }
+  .e-ladder-row.sl .label    { color: var(--bearish); }
+  .e-ladder-row .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .e-ladder-row .meta {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    margin-left: auto;
+    text-align: right;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+   * VARIATION F — JSON Config
+   * Show actual submit payload, syntax-highlighted code-editor feel.
+   * ═══════════════════════════════════════════════════════════════════════ */
+  .f-card .card-body { padding: 0; }
+  .f-tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    background: rgba(0, 0, 0, 0.45);
+    border-bottom: 1px solid var(--border-subtle);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .f-tab .file-icon {
+    width: 13px; height: 13px; flex: none;
+    color: var(--brand);
+  }
+  .f-tab .filename {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  .f-tab .dim { color: var(--text-disabled); }
+  .f-tab .badge {
+    margin-left: auto;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bullish);
+    padding: 2px 7px;
+    border: 1px solid rgba(14, 203, 129, 0.34);
+    border-radius: 4px;
+    background: rgba(14, 203, 129, 0.06);
+  }
+  .f-code {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    background: #0a0d12;
+    overflow-x: auto;
+  }
+  .f-gutter {
+    padding: 12px 0;
+    color: var(--text-disabled);
+    user-select: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.85;
+    text-align: right;
+    padding-right: 8px;
+  }
+  .f-gutter span { display: block; }
+  .f-lines {
+    padding: 12px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.85;
+    color: var(--text-secondary);
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .f-lines > div { min-height: 1.85em; }
+  .f-key   { color: #7dc1ff; }  /* keys */
+  .f-str   { color: var(--bullish); }  /* string values */
+  .f-num   { color: var(--brand); }  /* numbers */
+  .f-bool  { color: var(--bearish); }
+  .f-punct { color: var(--text-disabled); }
+  .f-brace { color: var(--text-secondary); }
+  .f-comm  { color: var(--text-disabled); font-style: italic; }
+
+  /* Footer */
+  .footer-note {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px dashed var(--border-subtle);
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    max-width: 880px;
+  }
+  .footer-note b { color: var(--text-secondary); font-weight: 600; }
+  .footer-note kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 1px 6px;
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Page header -->
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Board redesign · 6 variations</h1>
+      <p class="page-subtitle">
+        Cùng 1 dữ liệu (BTC-USDC, 1h, 1×, Dry-run, $100 USDT, RSI-14 &lt; 40, Long Market, TP +1.5% × 100%, SL −10%) — render theo 6 design philosophy khác nhau. <b style="color:var(--text-secondary)">Hàng 1 (A · B · C)</b> = round 1 (table / hero / sentence). <b style="color:var(--text-secondary)">Hàng 2 (D · E · F)</b> = round 2 (trading-slip / chart-diagram / json-config).
+      </p>
+    </div>
+    <div class="page-meta">
+      Trading-bot-builder · 2026-05-13
+    </div>
+  </header>
+
+  <!-- 3-column grid -->
+  <div class="grid">
+
+    <!-- ═════════════════════════════════════════════════════════════════
+         COLUMN A — Spec Sheet
+    ════════════════════════════════════════════════════════════════════ -->
+    <section>
+      <div class="col-head">
+        <span class="col-tag"><span class="dot"></span>Variation A</span>
+        <h2 class="col-title">Spec Sheet</h2>
+        <p class="col-desc">
+          Mỗi field 1 row · label trái dim, value phải sáng. Như datasheet Bloomberg / Linear settings. <b style="color:var(--text-secondary)">Win khi user cần scan nhanh "field X = gì"</b>.
+        </p>
+      </div>
+
+      <!-- Bot Basics -->
+      <article class="card a-card">
+        <header class="card-head">
+          <div class="card-head-icon">
+            <!-- sliders icon -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></svg>
+          </div>
+          <div class="card-head-meta">
+            <div class="card-eyebrow">Step 1</div>
+            <div class="card-name">Bot Basics</div>
+          </div>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand)"><polyline points="20 6 9 17 4 12"/></svg>
+        </header>
+        <div class="card-body">
+          <div class="a-row">
+            <span class="a-label">Trading pair</span>
+            <span class="a-value">
+              <span class="pair-row">
+                <span class="coin">₿</span>
+                <span>BTC<span style="color:var(--text-muted)">/</span>USDC</span>
+              </span>
+            </span>
+          </div>
+          <div class="a-row">
+            <span class="a-label">Timeframe</span>
+            <span class="a-value mono">1<span class="unit">h</span></span>
+          </div>
+          <div class="a-row">
+            <span class="a-label">Leverage</span>
+            <span class="a-value mono">1<span class="unit">×</span></span>
+          </div>
+          <div class="a-row">
+            <span class="a-label">Mode</span>
+            <span class="a-value"><span class="pill bull">● Dry-run</span></span>
+          </div>
+          <div class="a-row">
+            <span class="a-label">Stake / position</span>
+            <span class="a-value mono">$100<span class="unit">USDT</span></span>
+          </div>
+        </div>
+      </article>
+
+      <div class="connector"></div>
+
+      <!-- Strategy -->
+      <article class="card a-card">
+        <header class="card-head">
+          <div class="card-head-icon">
+            <!-- layers icon -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
+          <div class="card-head-meta">
+            <div class="card-eyebrow">Phase 2</div>
+            <div class="card-name">Strategy</div>
+          </div>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand)"><polyline points="20 6 9 17 4 12"/></svg>
+        </header>
+        <div class="card-body">
+          <div class="a-section-head">Signal</div>
+          <div class="a-row">
+            <span class="a-label">Source</span>
+            <span class="a-value a-channels">
+              <span class="pill dim">Open</span>
+              <span class="pill brand">Close</span>
+              <span class="pill dim">High</span>
+              <span class="pill dim">Low</span>
+              <span class="pill dim">Volume</span>
+            </span>
+          </div>
+          <div class="a-row">
+            <span class="a-label">Indicators</span>
+            <span class="a-value"><span class="pill brand mono">RSI-14</span></span>
+          </div>
+
+          <div class="a-section-head">Entry rule · 1 condition</div>
+          <div class="a-rule">
+            <div class="a-rule-line">
+              <span class="tok-ind">RSI-14</span>
+              <span class="tok-op">&lt;</span>
+              <span class="tok-val">40</span>
+            </div>
+            <div class="a-rule-meta">Triggers a Long entry when this condition becomes true on a closed candle.</div>
+          </div>
+
+          <div class="a-section-head">Action</div>
+          <div class="a-row">
+            <span class="a-label">Direction</span>
+            <span class="a-value">
+              <span class="pill bull">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 17 17 7"/><polyline points="7 7 17 7 17 17"/></svg>
+                Long
+              </span>
+              <span class="pill">Market</span>
+            </span>
+          </div>
+
+          <div class="a-section-head">Exit · TP / SL</div>
+          <div class="a-row">
+            <span class="a-label">Take profit</span>
+            <span class="a-value mono" style="color:var(--bullish);">+1.5% <span class="unit">× 100% size</span></span>
+          </div>
+          <div class="a-row">
+            <span class="a-label">Stop loss</span>
+            <span class="a-value mono" style="color:var(--bearish);">−10%</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════════════════
+         COLUMN B — Hero Stack
+    ════════════════════════════════════════════════════════════════════ -->
+    <section>
+      <div class="col-head">
+        <span class="col-tag"><span class="dot"></span>Variation B</span>
+        <h2 class="col-title">Hero Stack</h2>
+        <p class="col-desc">
+          Pair làm headline lớn · metrics inline có separator · rule là code block nổi bật. <b style="color:var(--text-secondary)">Win khi bot là "tâm điểm" — screenshot-able, demo-friendly</b>.
+        </p>
+      </div>
+
+      <article class="card b-card">
+        <header class="card-head">
+          <div class="card-head-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></svg>
+          </div>
+          <div class="card-head-meta">
+            <div class="card-eyebrow">Step 1 · Bot Basics</div>
+            <div class="card-name" style="font-size:13px; color: var(--text-muted); font-weight:500;">What to trade</div>
+          </div>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand)"><polyline points="20 6 9 17 4 12"/></svg>
+        </header>
+        <div class="card-body">
+          <div class="b-hero">
+            <div class="b-hero-pair">
+              <span class="coin">₿</span>
+              <span class="b-hero-name">BTC<span class="quote">/USDC</span></span>
+            </div>
+            <span class="pill bull" style="height: 26px; font-size: 12px; padding: 0 12px;">● Dry-run</span>
+          </div>
+          <div class="b-stats">
+            <div class="b-stat">
+              <span class="b-stat-value">1<span class="unit">h</span></span>
+              <span class="b-stat-label">Timeframe</span>
+            </div>
+            <span class="b-stat-sep"></span>
+            <div class="b-stat">
+              <span class="b-stat-value">1<span class="unit">×</span></span>
+              <span class="b-stat-label">Leverage</span>
+            </div>
+            <span class="b-stat-sep"></span>
+            <div class="b-stat">
+              <span class="b-stat-value">$100<span class="unit">USDT</span></span>
+              <span class="b-stat-label">Per position</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <div class="connector"></div>
+
+      <article class="card b-card">
+        <header class="card-head">
+          <div class="card-head-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
+          <div class="card-head-meta">
+            <div class="card-eyebrow">Phase 2 · Strategy</div>
+            <div class="card-name" style="font-size:13px; color: var(--text-muted); font-weight:500;">When to enter, how to exit</div>
+          </div>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand)"><polyline points="20 6 9 17 4 12"/></svg>
+        </header>
+        <div class="card-body b-strat">
+
+          <div class="b-rule-block">
+            <div class="b-rule-head">
+              <span>Entry rule</span>
+              <span style="color:var(--text-muted); font-weight:500; letter-spacing:0;">1 condition · on Close</span>
+            </div>
+            <div class="b-rule-body">
+              <span class="tok-ind">RSI-14</span>
+              <span class="tok-op">&lt;</span>
+              <span class="tok-val">40</span>
+            </div>
+            <div class="b-rule-foot">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              Signal source: <b style="color:var(--brand);font-weight:600;margin-left:4px;">Close</b> &nbsp;·&nbsp; 4 other candle channels available
+            </div>
+          </div>
+
+          <div class="b-action-row">
+            <span class="pill bull" style="height:26px; font-size: 12px; padding: 0 12px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 17 17 7"/><polyline points="7 7 17 7 17 17"/></svg>
+              Long
+            </span>
+            <span class="b-action-arrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+            <span class="pill" style="height:26px; font-size: 12px; padding: 0 12px;">Market order</span>
+          </div>
+
+          <div class="b-exit-grid">
+            <div class="b-exit-cell">
+              <span class="b-exit-label tp">Take profit</span>
+              <span class="b-exit-value">+1.5%</span>
+              <span class="b-exit-meta">1 level · 100% of size</span>
+            </div>
+            <div class="b-exit-cell">
+              <span class="b-exit-label sl">Stop loss</span>
+              <span class="b-exit-value">−10%</span>
+              <span class="b-exit-meta">Hard stop · whole position</span>
+            </div>
+          </div>
+
+        </div>
+      </article>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════════════════
+         COLUMN C — Narrative
+    ════════════════════════════════════════════════════════════════════ -->
+    <section>
+      <div class="col-head">
+        <span class="col-tag"><span class="dot"></span>Variation C</span>
+        <h2 class="col-title">Narrative</h2>
+        <p class="col-desc">
+          Đọc như câu hoàn chỉnh · keyword highlight bằng màu · ít cognitive load. <b style="color:var(--text-secondary)">Win khi user không quen kỹ thuật — như review 1 sentence summary</b>.
+        </p>
+      </div>
+
+      <article class="card c-card">
+        <header class="card-head">
+          <div class="card-head-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></svg>
+          </div>
+          <div class="card-head-meta">
+            <div class="card-eyebrow">Step 1</div>
+            <div class="card-name">Bot Basics</div>
+          </div>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand)"><polyline points="20 6 9 17 4 12"/></svg>
+        </header>
+        <div class="card-body">
+          <div class="c-prose">
+            <p>
+              Trade
+              <span class="c-pair-inline"><span class="coin">₿</span><span class="name">BTC-USDC</span></span>
+              on <span class="kw mono">1h</span> candles with
+              <span class="kw mono">1×</span> leverage.
+            </p>
+            <p>
+              Run in <span class="kw bull">Dry-run</span> mode (paper trading — no real money) using
+              <span class="kw mono">$100 USDT</span> per position.
+            </p>
+          </div>
+
+          <div class="c-aside">
+            <div class="c-aside-item">
+              <span class="c-aside-label">Timeframe</span>
+              <span class="c-aside-value">1h</span>
+            </div>
+            <div class="c-aside-item">
+              <span class="c-aside-label">Leverage</span>
+              <span class="c-aside-value">1×</span>
+            </div>
+            <div class="c-aside-item">
+              <span class="c-aside-label">Mode</span>
+              <span class="c-aside-value" style="color:var(--bullish)">Dry-run</span>
+            </div>
+            <div class="c-aside-item">
+              <span class="c-aside-label">Stake</span>
+              <span class="c-aside-value">$100 USDT</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <div class="connector"></div>
+
+      <article class="card c-card">
+        <header class="card-head">
+          <div class="card-head-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
+          <div class="card-head-meta">
+            <div class="card-eyebrow">Phase 2</div>
+            <div class="card-name">Strategy</div>
+          </div>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand)"><polyline points="20 6 9 17 4 12"/></svg>
+        </header>
+        <div class="card-body">
+          <div class="c-prose">
+            <p>
+              When <span class="kw brand mono">RSI-14</span> drops below
+              <span class="kw mono">40</span> on the
+              <span class="kw">Close</span> of a 1h candle,
+            </p>
+            <p>
+              enter a <span class="kw bull">Long</span> position at the
+              <span class="kw">Market</span> price.
+            </p>
+            <p>
+              Take profit at <span class="kw bull mono">+1.5%</span>
+              (100% of size) · cut loss at
+              <span class="kw bear mono">−10%</span>.
+            </p>
+          </div>
+
+          <div class="c-aside">
+            <div class="c-aside-item">
+              <span class="c-aside-label">Signal source</span>
+              <span class="c-aside-value">Close</span>
+            </div>
+            <div class="c-aside-item">
+              <span class="c-aside-label">Indicators</span>
+              <span class="c-aside-value" style="color:var(--brand)">RSI-14</span>
+            </div>
+            <div class="c-aside-item">
+              <span class="c-aside-label">Conditions</span>
+              <span class="c-aside-value">1</span>
+            </div>
+            <div class="c-aside-item">
+              <span class="c-aside-label">TP levels</span>
+              <span class="c-aside-value">1 (100%)</span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════════════════
+         COLUMN D — Trading Slip
+    ════════════════════════════════════════════════════════════════════ -->
+    <section>
+      <div class="col-head">
+        <span class="col-tag"><span class="dot"></span>Variation D</span>
+        <h2 class="col-title">Trading Slip</h2>
+        <p class="col-desc">
+          Phong cách phiếu lệnh broker · mono toàn cục · dashed perforation · ASCII section header. <b style="color:var(--text-secondary)">Win với trader thực thụ — quen format ticker / order ticket</b>.
+        </p>
+      </div>
+
+      <article class="card d-card">
+        <header class="d-slip-head">
+          <span class="d-slip-id">TICKET #001 · STEP 1</span>
+          <span class="d-slip-stamp"><span class="dot"></span>READY</span>
+        </header>
+        <div class="d-slip-title">BOT BASICS</div>
+        <div class="d-slip-sub">2026-05-13 · trinm@coin98</div>
+        <div class="d-rows">
+          <div class="d-row">
+            <span class="key">Pair</span>
+            <span class="dots"></span>
+            <span class="val big brand">BTC-USDC</span>
+          </div>
+          <div class="d-row">
+            <span class="key">TF</span>
+            <span class="dots"></span>
+            <span class="val">1h</span>
+          </div>
+          <div class="d-row">
+            <span class="key">Lev</span>
+            <span class="dots"></span>
+            <span class="val">1×</span>
+          </div>
+          <div class="d-row">
+            <span class="key">Mode</span>
+            <span class="dots"></span>
+            <span class="val bull">DRY-RUN</span>
+          </div>
+          <div class="d-row">
+            <span class="key">Stake</span>
+            <span class="dots"></span>
+            <span class="val big">$100.00 USDT</span>
+          </div>
+        </div>
+        <footer class="d-slip-foot">
+          <span class="check">✓</span>STEP 1 OF 4 — CONFIRMED
+        </footer>
+      </article>
+
+      <div class="connector"></div>
+
+      <article class="card d-card">
+        <header class="d-slip-head">
+          <span class="d-slip-id">TICKET #001 · PHASE 2</span>
+          <span class="d-slip-stamp"><span class="dot"></span>READY</span>
+        </header>
+        <div class="d-slip-title">STRATEGY</div>
+        <div class="d-slip-sub">RSI MEAN-REVERT · LONG-ONLY</div>
+
+        <div class="d-section">Signal</div>
+        <div class="d-rows" style="padding-top: 4px; padding-bottom: 8px;">
+          <div class="d-row">
+            <span class="key">Source</span>
+            <span class="dots"></span>
+            <span class="val">Close</span>
+          </div>
+          <div class="d-row">
+            <span class="key">Ind</span>
+            <span class="dots"></span>
+            <span class="val brand">RSI-14</span>
+          </div>
+          <div class="d-row">
+            <span class="key">Rule</span>
+            <span class="dots"></span>
+            <span class="val">RSI-14 &lt; 40</span>
+          </div>
+        </div>
+
+        <div class="d-section">Entry</div>
+        <div class="d-rows" style="padding-top: 4px; padding-bottom: 8px;">
+          <div class="d-row">
+            <span class="key">Side</span>
+            <span class="dots"></span>
+            <span class="val bull">LONG ↗</span>
+          </div>
+          <div class="d-row">
+            <span class="key">Order</span>
+            <span class="dots"></span>
+            <span class="val">MARKET</span>
+          </div>
+        </div>
+
+        <div class="d-section">Exit</div>
+        <div class="d-rows" style="padding-top: 4px; padding-bottom: 4px;">
+          <div class="d-row">
+            <span class="key">TP-1</span>
+            <span class="dots"></span>
+            <span class="val bull">+1.50% × 100%</span>
+          </div>
+          <div class="d-row">
+            <span class="key">SL</span>
+            <span class="dots"></span>
+            <span class="val bear">−10.00%</span>
+          </div>
+        </div>
+
+        <footer class="d-slip-foot">
+          <span class="check">✓</span>STEP 2 OF 4 — CONFIRMED
+        </footer>
+      </article>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════════════════
+         COLUMN E — Chart Card
+    ════════════════════════════════════════════════════════════════════ -->
+    <section>
+      <div class="col-head">
+        <span class="col-tag"><span class="dot"></span>Variation E</span>
+        <h2 class="col-title">Chart Card</h2>
+        <p class="col-desc">
+          Visual / diagram — sparkline candle · RSI gauge có threshold marker · TP/SL ladder. <b style="color:var(--text-secondary)">Win khi cần "ấn tượng nhìn 1 cái hiểu ngay" — ít chữ, nhiều hình</b>.
+        </p>
+      </div>
+
+      <article class="card e-card">
+        <header class="card-head">
+          <div class="card-head-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></svg>
+          </div>
+          <div class="card-head-meta">
+            <div class="card-eyebrow">Step 1</div>
+            <div class="card-name">Bot Basics</div>
+          </div>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand)"><polyline points="20 6 9 17 4 12"/></svg>
+        </header>
+        <div class="card-body">
+          <div class="e-hero">
+            <div class="e-hero-left">
+              <span class="coin" style="width:36px;height:36px;font-size:16px;">₿</span>
+              <div>
+                <div class="e-hero-name">BTC<span class="quote">/USDC</span></div>
+                <span class="e-hero-pct">+2.4% · last 6 bars</span>
+              </div>
+            </div>
+            <!-- Mini candlestick sparkline -->
+            <svg class="e-spark" width="140" height="50" viewBox="0 0 140 50" aria-hidden="true">
+              <g stroke-width="1.4" stroke-linecap="round">
+                <line x1="12"  y1="22" x2="12"  y2="42" stroke="#0ecb81"/>
+                <rect x="8"   y="28" width="8" height="10" fill="#0ecb81"/>
+                <line x1="30"  y1="26" x2="30"  y2="40" stroke="#f6465d"/>
+                <rect x="26"  y="30" width="8" height="6"  fill="#f6465d"/>
+                <line x1="48"  y1="14" x2="48"  y2="36" stroke="#0ecb81"/>
+                <rect x="44"  y="20" width="8" height="12" fill="#0ecb81"/>
+                <line x1="66"  y1="12" x2="66"  y2="32" stroke="#0ecb81"/>
+                <rect x="62"  y="16" width="8" height="12" fill="#0ecb81"/>
+                <line x1="84"  y1="14" x2="84"  y2="28" stroke="#f6465d"/>
+                <rect x="80"  y="18" width="8" height="6"  fill="#f6465d"/>
+                <line x1="102" y1="8"  x2="102" y2="26" stroke="#0ecb81"/>
+                <rect x="98"  y="12" width="8" height="12" fill="#0ecb81"/>
+                <line x1="120" y1="4"  x2="120" y2="22" stroke="#0ecb81"/>
+                <rect x="116" y="6"  width="8" height="14" fill="#0ecb81"/>
+              </g>
+            </svg>
+          </div>
+          <div class="e-stat-row">
+            <div class="e-stat">
+              <span class="e-stat-label">Timeframe</span>
+              <span class="e-stat-value">1h</span>
+            </div>
+            <div class="e-stat">
+              <span class="e-stat-label">Leverage</span>
+              <span class="e-stat-value">1×</span>
+            </div>
+            <div class="e-stat">
+              <span class="e-stat-label">Stake</span>
+              <span class="e-stat-value">$100</span>
+            </div>
+            <div class="e-stat">
+              <span class="e-stat-label">Mode</span>
+              <span class="e-stat-value bull">Dry-run</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <div class="connector"></div>
+
+      <article class="card e-card">
+        <header class="card-head">
+          <div class="card-head-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
+          <div class="card-head-meta">
+            <div class="card-eyebrow">Phase 2</div>
+            <div class="card-name">Strategy</div>
+          </div>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand)"><polyline points="20 6 9 17 4 12"/></svg>
+        </header>
+        <div class="card-body">
+          <!-- RSI gauge -->
+          <div class="e-trigger">
+            <div class="e-trigger-head">
+              <span class="title">Trigger</span>
+              <span class="expr">
+                <span class="ind">RSI-14</span>
+                <span class="op">&lt;</span>
+                <span class="val">40</span>
+              </span>
+            </div>
+            <div class="e-gauge">
+              <span class="e-gauge-threshold"></span>
+              <span class="e-gauge-threshold-label">40</span>
+              <span class="e-gauge-marker"></span>
+              <span class="e-gauge-marker-label">now · 32</span>
+            </div>
+            <div class="e-gauge-scale">
+              <span>0</span><span>30</span><span>50</span><span>70</span><span>100</span>
+            </div>
+          </div>
+
+          <!-- Direction strip -->
+          <div class="e-direction">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ecb81" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 17 17 7"/><polyline points="7 7 17 7 17 17"/></svg>
+            <span class="bull">LONG</span>
+            <span class="mute">@</span>
+            <span>MARKET</span>
+          </div>
+
+          <!-- TP / SL ladder -->
+          <div class="e-ladder">
+            <div class="e-ladder-rail">
+              <span class="e-ladder-dot tp"></span>
+              <span class="e-ladder-dot entry"></span>
+              <span class="e-ladder-dot sl"></span>
+            </div>
+            <div>
+              <div class="e-ladder-row tp">
+                <span class="label">Take profit</span>
+                <span class="value">+1.5%</span>
+                <span class="meta">100% size</span>
+              </div>
+              <div class="e-ladder-row entry">
+                <span class="label">Entry</span>
+                <span class="value">Market</span>
+                <span class="meta">— reference</span>
+              </div>
+              <div class="e-ladder-row sl">
+                <span class="label">Stop loss</span>
+                <span class="value">−10%</span>
+                <span class="meta">hard stop</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════════════════════
+         COLUMN F — JSON Config
+    ════════════════════════════════════════════════════════════════════ -->
+    <section>
+      <div class="col-head">
+        <span class="col-tag"><span class="dot"></span>Variation F</span>
+        <h2 class="col-title">JSON Config</h2>
+        <p class="col-desc">
+          Hiển thị đúng payload sẽ submit · syntax highlight code-editor · honest &amp; copy-friendly. <b style="color:var(--text-secondary)">Win với dev / power user — debug nhanh, không "magic UI"</b>.
+        </p>
+      </div>
+
+      <article class="card f-card">
+        <header class="card-head">
+          <div class="card-head-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></svg>
+          </div>
+          <div class="card-head-meta">
+            <div class="card-eyebrow">Step 1</div>
+            <div class="card-name">Bot Basics</div>
+          </div>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand)"><polyline points="20 6 9 17 4 12"/></svg>
+        </header>
+        <div class="card-body">
+          <div class="f-tab">
+            <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span class="filename">botConfig<span class="dim">.json</span></span>
+            <span class="badge">VALID ✓</span>
+          </div>
+          <div class="f-code">
+            <div class="f-gutter"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div>
+            <div class="f-lines"><div><span class="f-brace">{</span></div><div>  <span class="f-key">"pair"</span><span class="f-punct">:</span>          <span class="f-str">"BTC-USDC"</span><span class="f-punct">,</span></div><div>  <span class="f-key">"timeframe"</span><span class="f-punct">:</span>     <span class="f-str">"1h"</span><span class="f-punct">,</span></div><div>  <span class="f-key">"leverage"</span><span class="f-punct">:</span>      <span class="f-num">1</span><span class="f-punct">,</span></div><div>  <span class="f-key">"tradingMode"</span><span class="f-punct">:</span>   <span class="f-str">"dry-run"</span><span class="f-punct">,</span>  <span class="f-comm">// no real money</span></div><div>  <span class="f-key">"stake"</span><span class="f-punct">:</span> <span class="f-brace">{</span></div><div>    <span class="f-key">"amount"</span><span class="f-punct">:</span>     <span class="f-num">100</span><span class="f-punct">,</span></div><div>    <span class="f-key">"currency"</span><span class="f-punct">:</span>   <span class="f-str">"USDT"</span></div><div>  <span class="f-brace">}</span></div><div><span class="f-brace">}</span></div></div>
+          </div>
+        </div>
+      </article>
+
+      <div class="connector"></div>
+
+      <article class="card f-card">
+        <header class="card-head">
+          <div class="card-head-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
+          <div class="card-head-meta">
+            <div class="card-eyebrow">Phase 2</div>
+            <div class="card-name">Strategy</div>
+          </div>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand)"><polyline points="20 6 9 17 4 12"/></svg>
+        </header>
+        <div class="card-body">
+          <div class="f-tab">
+            <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span class="filename">strategy<span class="dim">.json</span></span>
+            <span class="badge">VALID ✓</span>
+          </div>
+          <div class="f-code">
+            <div class="f-gutter"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span></div>
+            <div class="f-lines"><div><span class="f-brace">{</span></div><div>  <span class="f-key">"signal"</span><span class="f-punct">:</span> <span class="f-brace">{</span></div><div>    <span class="f-key">"source"</span><span class="f-punct">:</span>     <span class="f-str">"close"</span><span class="f-punct">,</span></div><div>    <span class="f-key">"indicators"</span><span class="f-punct">:</span> <span class="f-punct">[</span><span class="f-str">"RSI-14"</span><span class="f-punct">]</span></div><div>  <span class="f-brace">}</span><span class="f-punct">,</span></div><div>  <span class="f-key">"entry"</span><span class="f-punct">:</span> <span class="f-brace">{</span></div><div>    <span class="f-key">"conditions"</span><span class="f-punct">:</span> <span class="f-punct">[</span></div><div>      <span class="f-brace">{</span> <span class="f-key">"left"</span><span class="f-punct">:</span> <span class="f-str">"RSI-14"</span><span class="f-punct">,</span> <span class="f-key">"op"</span><span class="f-punct">:</span> <span class="f-str">"&lt;"</span><span class="f-punct">,</span> <span class="f-key">"right"</span><span class="f-punct">:</span> <span class="f-num">40</span> <span class="f-brace">}</span></div><div>    <span class="f-punct">]</span><span class="f-punct">,</span></div><div>    <span class="f-key">"direction"</span><span class="f-punct">:</span> <span class="f-str">"long"</span><span class="f-punct">,</span></div><div>    <span class="f-key">"order"</span><span class="f-punct">:</span>     <span class="f-str">"market"</span></div><div>  <span class="f-brace">}</span><span class="f-punct">,</span></div><div>  <span class="f-key">"exit"</span><span class="f-punct">:</span> <span class="f-brace">{</span></div><div>    <span class="f-key">"takeProfit"</span><span class="f-punct">:</span> <span class="f-punct">[</span></div><div>      <span class="f-brace">{</span> <span class="f-key">"delta"</span><span class="f-punct">:</span> <span class="f-num">1.5</span><span class="f-punct">,</span> <span class="f-key">"sizePct"</span><span class="f-punct">:</span> <span class="f-num">100</span> <span class="f-brace">}</span></div><div>    <span class="f-punct">]</span><span class="f-punct">,</span></div><div>    <span class="f-key">"stopLoss"</span><span class="f-punct">:</span>   <span class="f-num">-10</span></div><div>  <span class="f-brace">}</span></div><div><span class="f-brace">}</span></div></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+  </div>
+
+  <!-- Note -->
+  <p class="footer-note">
+    <b>Cách duyệt:</b> scan thử như user thật — đo bằng câu hỏi "leverage là bao nhiêu?", "exit ở mức nào?". Cột nào bạn trả lời nhanh nhất = thắng cho audience đó. <br />
+    <b>Mỗi variation hợp với 1 nhóm user khác nhau:</b>
+    <kbd>A · Spec Sheet</kbd> dev/PM scan field — &nbsp;
+    <kbd>B · Hero Stack</kbd> demo / screenshot bot — &nbsp;
+    <kbd>C · Narrative</kbd> user mới không quen kỹ thuật — &nbsp;
+    <kbd>D · Trading Slip</kbd> trader thực thụ — &nbsp;
+    <kbd>E · Chart Card</kbd> visual / 1-glance — &nbsp;
+    <kbd>F · JSON Config</kbd> power user / debug. <br />
+    <b>Có thể mix:</b> ví dụ canvas dùng E (chart card), summary panel dùng A (spec sheet), export dialog dùng F (JSON). Hoặc cho tôi feedback specific (vd "D quá compact", "E gauge nên to hơn", "F bỏ comment đi") để iter v3.
+  </p>
+
+</div>
+
+</body>
+</html>

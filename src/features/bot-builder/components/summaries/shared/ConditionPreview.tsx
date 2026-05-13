@@ -1,6 +1,6 @@
 import type { ConditionOp, ConditionRow } from '@/types/builder.types';
 
-const OP_LABEL: Record<ConditionOp, string> = {
+export const OP_LABEL: Record<ConditionOp, string> = {
   '>': '>',
   '<': '<',
   '>=': '≥',
@@ -18,7 +18,7 @@ const OP_LABEL: Record<ConditionOp, string> = {
  *   "candle.close > MA-50"
  *   "MA-50 is going up"
  */
-function conditionToString(row: ConditionRow): string {
+export function conditionToString(row: ConditionRow): string {
   const left = row.left || '?';
   const op = OP_LABEL[row.op] ?? row.op;
   if (row.right_type === 'none') {
