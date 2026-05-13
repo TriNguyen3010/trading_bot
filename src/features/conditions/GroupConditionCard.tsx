@@ -110,7 +110,10 @@ export function GroupConditionCard({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
+      {/* Rules section: group width unchanged, but each rule card +
+       * connector sits inset on the left to read as nested under the
+       * group header. */}
+      <div className="flex flex-col gap-2 pl-8">
         {group.rules.map((rule, ri) => (
           <Fragment key={rule.id}>
             {ri > 0 && (
@@ -133,7 +136,7 @@ export function GroupConditionCard({
         ))}
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3 pl-8">
         <Button variant="ghost" size="sm" onClick={addRule}>
           <Plus className="h-3.5 w-3.5" />
           Add condition

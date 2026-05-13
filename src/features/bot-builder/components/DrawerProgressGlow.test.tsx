@@ -53,7 +53,7 @@ describe('DrawerProgressGlow', () => {
     ).toBe('true');
   });
 
-  it('keeps the line visible but hides the glow when content does not overflow', () => {
+  it('parks the glow at the top inset when content does not overflow', () => {
     const { getByTestId, container } = render(
       <PanelHarness />,
     );
@@ -65,14 +65,15 @@ describe('DrawerProgressGlow', () => {
       scroll.dispatchEvent(new Event('scroll'));
     });
 
-    // Line is a status indicator — visible regardless of scroll state.
+    // Both line and glow remain visible — the glow doubles as a status
+    // pointer that sits at the top when there's nothing to scroll.
     expect(
       container.querySelector('.drawer-progress-line')?.getAttribute('data-visible'),
     ).toBe('true');
-    // Glow is a scroll pointer — hidden when there's nothing to scroll.
-    expect(
-      container.querySelector('.drawer-progress-glow')?.getAttribute('data-visible'),
-    ).toBe('false');
+    const glow = container.querySelector<HTMLElement>('.drawer-progress-glow');
+    expect(glow?.getAttribute('data-visible')).toBe('true');
+    // Parked at the panel's top inset (24px = the rounded-l-3xl corner).
+    expect(glow?.style.top).toBe('24px');
   });
 
   it('sets data-visible="true" when content overflows', () => {

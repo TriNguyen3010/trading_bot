@@ -51,19 +51,23 @@ export function DrawerProgressGlow({ scrollRef }: DrawerProgressGlowProps) {
       const max = scrollEl.scrollHeight - scrollEl.clientHeight;
       const hasOverflow = max > 0;
 
-      // Line is a status indicator (yellow by default) — always visible
-      // regardless of scroll. Glow is a scroll pointer — only meaningful
-      // when there's something to scroll.
+      // Both line and glow are always visible. When the panel doesn't
+      // overflow, the glow parks at the top inset so the user still sees
+      // it as a status pointer (rather than disappearing).
       lineEl.dataset.visible = 'true';
-      glowEl.dataset.visible = hasOverflow ? 'true' : 'false';
+      glowEl.dataset.visible = 'true';
 
-      if (!hasOverflow || !panelEl) return;
-      const ratio = scrollEl.scrollTop / max;
+      if (!panelEl) return;
       const panelH = panelEl.clientHeight;
       const glowH = glowEl.clientHeight;
       // Keep the glow inside the panel's rounded-l-3xl (24px) corners so it
       // never travels past where the left edge starts curving.
       const inset = 24;
+      if (!hasOverflow) {
+        glowEl.style.top = `${inset}px`;
+        return;
+      }
+      const ratio = scrollEl.scrollTop / max;
       const travel = Math.max(0, panelH - 2 * inset - glowH);
       glowEl.style.top = `${inset + ratio * travel}px`;
     };
