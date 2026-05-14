@@ -121,12 +121,15 @@ src/main.tsx                 — SỬA: hydrate wallet store + bootstrap loadUse
 5. walletStore.setCredentials({ address, nonce, signature })
    └─ Ghi sessionStorage["trading_bot_wallet_auth"] = JSON.stringify(creds)
 
-6. walletApi.getStatus()  → verify cred + lấy user
+6. walletApi.getStatus()  → verify cred + lấy user (call TRỰC TIẾP trong connect, KHÔNG qua loadUser)
    └─ GET /user/status với X-Wallet-* headers
       ├─ 401 → http.ts auto-clear sessionStorage + redirect /connect (loop break)
-      ├─ 403 → toast "Signature không khớp", clear store, KHÔNG redirect — state: error
+      ├─ 403 → http.ts toast (no clear, no redirect); connect() outer catch nhận error → clear sessionStorage + state: error
+      ├─ Network/5xx → connect() outer catch nhận error → clear sessionStorage + state: error
       └─ 200 { id, email: null, wallet_address, is_active, is_admin }
          └─ setUser(...) → state: ready → navigate('/builder', { replace: true })
+
+**Important**: `connect()` MUST call `walletApi.getStatus()` directly and throw on failure — NOT via the `loadUser()` action which swallows errors. Otherwise a 403/network fail would still set `status='ready'` and let user into builder with bad credentials.
 ```
 
 ### 3.3. Coin98 detection
@@ -455,6 +458,43 @@ Tất cả từ file `Q1-Q6.md` của Tuấn:
 - Chain locking (force user kết nối đúng chain Hyperliquid)
 - Wallet display name / ENS lookup
 - "Remember me" cho cross-tab UX (nâng cấp lên localStorage có encryption)
+
+## 14. Known limitations (accepted v1 risks)
+
+### 14.1. XSS-driven signature replay
+
+**Risk:** Credentials `{address, nonce, signature}` lưu trong `sessionStorage` reusable suốt nonce TTL (24h theo BE Q3). Nếu attacker chèn được XSS, có thể đọc sessionStorage và gọi protected APIs trong 24h đó.
+
+**Mitigation hiện tại:**
+- `sessionStorage` thay vì `localStorage` → cred tự xóa khi đóng tab (giới hạn cửa sổ tấn công còn lifetime tab).
+- Dependencies từ npm trusted publishers: Radix, framer-motion, Sonner, prism-react-renderer — không có third-party script ngoài npm.
+- BE side: nonce verify by `ecrecover` mỗi request, không có session token có thể lift.
+
+**Accepted vì:**
+- Stateless wallet auth chính là design choice (BE Q3 explicit "reusable trong TTL").
+- One-time nonce rotation sẽ phá pattern stateless, đòi hỏi FE re-sign mỗi request → UX không thể chấp nhận.
+- Strict CSP đáng làm nhưng cross-cutting với toàn app, nằm ngoài scope auth.
+
+**Mitigation tương lai (không thuộc phase này):**
+- Shorter nonce TTL (BE config) khi production go-live.
+- Strict CSP header (Vercel/server config).
+- Backend session token sau initial signature verify (mất lợi thế stateless nhưng giảm replay window).
+
+### 14.2. Wallet provider injection race
+
+**Risk:** Coin98 extension inject `window.coin98.provider` async sau khi React mount → `detectCoin98()` lần đầu trả `null` → fallback UI "Chưa cài Coin98" hiện flash mặc dù user thực có cài.
+
+**Mitigation:**
+- `ConnectWalletPage` poll detect 5×500ms (tổng 2.5s) trước khi set `status='no-c98'`.
+- `useWalletEvents` re-attach khi store status đổi sang `ready` (provider chắc chắn tồn tại lúc đó).
+
+### 14.3. Multi-tab session inconsistency
+
+**Risk:** User mở 2 tab, sign ở tab 1 → tab 2 không tự cập nhật vì `sessionStorage` không shared cross-tab và không có event broadcast.
+
+**Accepted vì:**
+- `sessionStorage` chính là barrier — đây là intentional design (mỗi tab session riêng).
+- User mở tab mới sẽ thấy `/connect` page và ký lại — UX acceptable cho MVP.
 
 ---
 
