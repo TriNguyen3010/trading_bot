@@ -218,6 +218,12 @@ describe('wallet.provider', () => {
       await expect(requestAccounts(p)).rejects.toBeInstanceOf(UserRejectedError);
     });
 
+    it('throws UserRejectedError when wallet returns empty accounts (locked / cancelled password)', async () => {
+      const p = fakeProvider();
+      vi.mocked(p.request).mockResolvedValueOnce([]);
+      await expect(requestAccounts(p)).rejects.toBeInstanceOf(UserRejectedError);
+    });
+
     it('throws generic Error on other failures', async () => {
       const p = fakeProvider();
       vi.mocked(p.request).mockRejectedValueOnce(new Error('boom'));
@@ -300,8 +306,11 @@ export async function requestAccounts(provider: EthereumProvider): Promise<strin
   if (!provider) throw new NoProviderError();
   try {
     const result = (await provider.request({ method: 'eth_requestAccounts' })) as string[];
+    // Empty array = wallet locked + user cancelled password prompt. Treat as reject.
+    if (!result || result.length === 0) throw new UserRejectedError();
     return result.map((a) => a.toLowerCase());
   } catch (err) {
+    if (err instanceof UserRejectedError) throw err;
     if (isUserReject(err)) throw new UserRejectedError();
     throw err;
   }
@@ -1066,7 +1075,7 @@ describe('wallet.store', () => {
   });
 
   describe('connect', () => {
-    it('happy path: detects → requests accounts → fetches nonce → signs → saves creds → loads user', async () => {
+    it('happy path: detects → requests accounts → fetches nonce → signs → saves creds → verifies via /user/status', async () => {
       vi.mocked(detectCoin98).mockReturnValue(fakeProvider);
       vi.mocked(requestAccounts).mockResolvedValueOnce(['0xabc']);
       vi.mocked(walletApi.getNonce).mockResolvedValueOnce({
@@ -1095,6 +1104,60 @@ describe('wallet.store', () => {
         sessionStorage.getItem('trading_bot_wallet_auth')!,
       );
       expect(stored).toEqual({ address: '0xabc', nonce: 'n1', signature: '0xsig' });
+    });
+
+    it('clears storage + error state when /user/status returns 403 (bad sig)', async () => {
+      vi.mocked(detectCoin98).mockReturnValue(fakeProvider);
+      vi.mocked(requestAccounts).mockResolvedValueOnce(['0xabc']);
+      vi.mocked(walletApi.getNonce).mockResolvedValueOnce({
+        nonce: 'n1',
+        message: 'm',
+      });
+      vi.mocked(personalSign).mockResolvedValueOnce('0xsig');
+      vi.mocked(walletApi.getStatus).mockRejectedValueOnce(
+        Object.assign(new Error('Forbidden'), { name: 'HttpError', status: 403 }),
+      );
+
+      await useWalletStore.getState().connect();
+
+      const s = useWalletStore.getState();
+      expect(s.status).toBe('error');
+      expect(s.address).toBeNull();
+      expect(sessionStorage.getItem('trading_bot_wallet_auth')).toBeNull();
+    });
+
+    it('clears storage + error state when /user/status returns 401', async () => {
+      vi.mocked(detectCoin98).mockReturnValue(fakeProvider);
+      vi.mocked(requestAccounts).mockResolvedValueOnce(['0xabc']);
+      vi.mocked(walletApi.getNonce).mockResolvedValueOnce({
+        nonce: 'n1',
+        message: 'm',
+      });
+      vi.mocked(personalSign).mockResolvedValueOnce('0xsig');
+      vi.mocked(walletApi.getStatus).mockRejectedValueOnce(
+        Object.assign(new Error('Unauthorized'), { name: 'HttpError', status: 401 }),
+      );
+
+      await useWalletStore.getState().connect();
+
+      const s = useWalletStore.getState();
+      expect(s.status).toBe('error');
+      expect(sessionStorage.getItem('trading_bot_wallet_auth')).toBeNull();
+    });
+
+    it('clears storage + error state on network error during /user/status', async () => {
+      vi.mocked(detectCoin98).mockReturnValue(fakeProvider);
+      vi.mocked(requestAccounts).mockResolvedValueOnce(['0xabc']);
+      vi.mocked(walletApi.getNonce).mockResolvedValueOnce({
+        nonce: 'n1',
+        message: 'm',
+      });
+      vi.mocked(personalSign).mockResolvedValueOnce('0xsig');
+      vi.mocked(walletApi.getStatus).mockRejectedValueOnce(new Error('Network error'));
+
+      await useWalletStore.getState().connect();
+      expect(useWalletStore.getState().status).toBe('error');
+      expect(sessionStorage.getItem('trading_bot_wallet_auth')).toBeNull();
     });
 
     it('sets status="no-c98" when provider not detected', async () => {
@@ -1346,8 +1409,11 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
       writeStorage({ address, nonce, signature });
       set({ address, nonce, signature });
 
-      await get().loadUser();
-      set({ status: 'ready' });
+      // Verify credentials by calling /user/status DIRECTLY.
+      // Do NOT call loadUser() — it swallows errors, which would let 403/401/network
+      // failures slip through and set status='ready' with bad credentials.
+      const user = await walletApi.getStatus();
+      set({ user, status: 'ready' });
     } catch (err) {
       clearStorage();
       set({
@@ -1404,18 +1470,30 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
 
 export const useIsAuthenticated = () =>
   useWalletStore((s) => !!s.address && !!s.signature);
+
+// Run hydrate synchronously at module load — BEFORE any React render.
+// Required so ProtectedRoute sees the right state on the first render after
+// a page reload, instead of redirecting to /connect because the store hasn't
+// caught up with sessionStorage yet. See "High #2 fix" in risk report.
+if (typeof window !== 'undefined') {
+  useWalletStore.getState().hydrate();
+}
 ```
+
+> **Why module-level hydrate?** `ProtectedRoute` reads store state during render. `useEffect` runs AFTER render. If hydrate lived in a `useEffect`, the first render after a reload would see an empty store → redirect to `/connect` even when sessionStorage has valid credentials. Module-level hydrate runs once at import time, before any component mounts.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `pnpm vitest run src/features/wallet-auth/wallet.store.test.ts`
 Expected: PASS — all tests green.
 
+> The module-level hydrate runs once when `wallet.store.ts` is imported. In tests, `beforeEach` already resets state via `resetStore()`, so leftover hydration from a prior test doesn't bleed in.
+
 - [ ] **Step 5: Commit**
 
 ```bash
 git add src/features/wallet-auth/wallet.store.ts src/features/wallet-auth/wallet.store.test.ts
-git commit -m "feat(wallet-auth): add zustand store with hydrate/connect/disconnect/loadUser actions"
+git commit -m "feat(wallet-auth): add zustand store with module-level hydrate; connect verifies via /user/status"
 ```
 
 ---
@@ -1583,20 +1661,28 @@ export function ConnectWalletPage() {
     }
   }, [status, address, navigate]);
 
-  // On mount, run a fast detection check so we can show install prompt if needed.
+  // On mount, run a detection check so we can show install prompt if needed.
+  // Coin98 extension content scripts can inject `window.coin98.provider`
+  // asynchronously — a single 300ms wait sometimes fires before injection
+  // completes (esp. on first-load after enabling the extension). Poll
+  // 5 × 500ms (~2.5s total) before giving up.
   useEffect(() => {
-    if (status === 'idle' && !BYPASS_AUTH) {
-      const provider = detectCoin98();
-      if (!provider) {
-        // Wait one tick for late injection, then re-check.
-        const t = setTimeout(() => {
-          if (!detectCoin98()) {
-            useWalletStore.setState({ status: 'no-c98' });
-          }
-        }, 300);
-        return () => clearTimeout(t);
+    if (status !== 'idle' || BYPASS_AUTH) return;
+    if (detectCoin98()) return;
+
+    let attempts = 0;
+    const interval = window.setInterval(() => {
+      attempts++;
+      if (detectCoin98()) {
+        window.clearInterval(interval);
+        // Provider arrived — stay idle, user clicks Connect.
+      } else if (attempts >= 5) {
+        window.clearInterval(interval);
+        useWalletStore.setState({ status: 'no-c98' });
       }
-    }
+    }, 500);
+
+    return () => window.clearInterval(interval);
   }, [status]);
 
   return (
@@ -1803,6 +1889,24 @@ describe('useWalletEvents', () => {
     vi.mocked(detectCoin98).mockReturnValue(null);
     expect(() => renderHook(() => useWalletEvents())).not.toThrow();
   });
+
+  it('polls for late-injected provider and attaches once found', async () => {
+    vi.useFakeTimers();
+    vi.mocked(detectCoin98).mockReturnValueOnce(null); // first call: not yet
+    vi.mocked(detectCoin98).mockReturnValue(provider); // subsequent polls: found
+
+    try {
+      renderHook(() => useWalletEvents());
+      // Initial call → null. Hook should set up a poll.
+      expect(provider.on).not.toHaveBeenCalled();
+
+      // Advance one poll cycle (500ms).
+      await vi.advanceTimersByTimeAsync(500);
+      expect(provider.on).toHaveBeenCalledWith('accountsChanged', expect.any(Function));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 ```
 
@@ -1819,38 +1923,70 @@ Create `src/features/wallet-auth/useWalletEvents.ts`:
 import { useEffect } from 'react';
 import { detectCoin98 } from './wallet.provider';
 import { useWalletStore } from './wallet.store';
+import type { EthereumProvider } from './wallet.types';
 
 const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true';
 
 export function useWalletEvents() {
+  // Re-run when status changes so we get a second chance to attach
+  // after a successful connect — provider is guaranteed to exist then,
+  // even if it was injected late.
+  const status = useWalletStore((s) => s.status);
+
   useEffect(() => {
     if (BYPASS_AUTH) return;
-    const provider = detectCoin98();
-    if (!provider) return;
 
-    const onAccountsChanged = (...args: unknown[]) => {
-      const accounts = (args[0] as string[]) ?? [];
-      const current = useWalletStore.getState().address;
-      const next = accounts[0]?.toLowerCase() ?? null;
-      if (!next || next !== current?.toLowerCase()) {
+    let cleanup: (() => void) | undefined;
+    let pollInterval: number | undefined;
+    let attempts = 0;
+
+    const attach = (provider: EthereumProvider) => {
+      const onAccountsChanged = (...args: unknown[]) => {
+        const accounts = (args[0] as string[]) ?? [];
+        const current = useWalletStore.getState().address;
+        const next = accounts[0]?.toLowerCase() ?? null;
+        if (!next || next !== current?.toLowerCase()) {
+          void useWalletStore.getState().disconnect();
+          window.location.href = '/connect';
+        }
+      };
+
+      const onDisconnect = () => {
         void useWalletStore.getState().disconnect();
         window.location.href = '/connect';
-      }
+      };
+
+      provider.on('accountsChanged', onAccountsChanged);
+      provider.on('disconnect', onDisconnect);
+
+      cleanup = () => {
+        provider.removeListener('accountsChanged', onAccountsChanged);
+        provider.removeListener('disconnect', onDisconnect);
+      };
     };
 
-    const onDisconnect = () => {
-      void useWalletStore.getState().disconnect();
-      window.location.href = '/connect';
+    const tryAttach = (): boolean => {
+      const provider = detectCoin98();
+      if (!provider) return false;
+      attach(provider);
+      return true;
     };
 
-    provider.on('accountsChanged', onAccountsChanged);
-    provider.on('disconnect', onDisconnect);
+    if (!tryAttach()) {
+      // Late injection — poll 10 × 500ms = 5s, then give up.
+      pollInterval = window.setInterval(() => {
+        attempts++;
+        if (tryAttach() || attempts >= 10) {
+          if (pollInterval) window.clearInterval(pollInterval);
+        }
+      }, 500);
+    }
 
     return () => {
-      provider.removeListener('accountsChanged', onAccountsChanged);
-      provider.removeListener('disconnect', onDisconnect);
+      if (pollInterval) window.clearInterval(pollInterval);
+      cleanup?.();
     };
-  }, []);
+  }, [status]);
 }
 ```
 
@@ -1917,7 +2053,10 @@ export const router = createBrowserRouter([
 ]);
 ```
 
-- [ ] **Step 2: Update `src/main.tsx` to hydrate store + mount wallet events on bootstrap**
+- [ ] **Step 2: Update `src/main.tsx` to refresh user + mount wallet events on bootstrap**
+
+Note: hydration happens at module load inside `wallet.store.ts` (see Task 6).
+Bootstrap only needs to refresh user data and mount the events hook.
 
 Replace `src/main.tsx` entirely with:
 
@@ -1931,10 +2070,14 @@ import { useWalletStore } from './features/wallet-auth/wallet.store';
 import { useWalletEvents } from './features/wallet-auth/useWalletEvents';
 import './index.css';
 
+const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true';
+
 function AppBootstrap() {
   useEffect(() => {
+    // Bypass mode skips all auth side-effects — see spec §7.1.
+    if (BYPASS_AUTH) return;
     const store = useWalletStore.getState();
-    store.hydrate();
+    // Hydration already ran at module load; just verify creds are still valid.
     if (store.address) {
       void store.loadUser();
     }
@@ -1979,6 +2122,139 @@ git commit -m "feat(wallet-auth): wire routes (/connect) + app bootstrap (hydrat
 
 ---
 
+## Task 10.5: Migrate `HeaderToolbar` from email auth to wallet auth
+
+**Files:**
+- Modify: `src/features/bot-builder/components/HeaderToolbar.tsx`
+- Modify: `src/features/bot-builder/components/HeaderToolbar.test.tsx`
+
+**Why this task exists:** `HeaderToolbar` is the only component outside `features/auth/` that depends on `useAuthStore`. It displays `user.email`, calls `logout()`, and navigates to `/login`. Task 11 deletes `features/auth/` — if we do that before migrating `HeaderToolbar`, typecheck and build fail.
+
+- [ ] **Step 1: Locate every email-auth coupling in `HeaderToolbar.tsx`**
+
+Run:
+```bash
+grep -n "useAuthStore\|authUser\|logout\|'/login'" src/features/bot-builder/components/HeaderToolbar.tsx
+```
+Expected to find (line numbers may vary):
+- `import { useAuthStore }` (top of file)
+- `const authUser = useAuthStore((s) => s.user);`
+- `const logout = useAuthStore((s) => s.logout);`
+- `{authUser?.email ?? 'User'}` — appears in two places (collapsed + expanded states)
+- `{authUser?.is_admin ? 'Admin' : 'Member'}`
+- `logout(); navigate('/login', { replace: true });`
+
+- [ ] **Step 2: Apply migration edits**
+
+In `src/features/bot-builder/components/HeaderToolbar.tsx`:
+
+**2a.** Replace the import:
+```diff
+- import { useAuthStore } from '@/features/auth/auth.store';
++ import { useWalletStore } from '@/features/wallet-auth/wallet.store';
+```
+
+**2b.** Replace the store hook reads:
+```diff
+- const authUser = useAuthStore((s) => s.user);
+- const logout = useAuthStore((s) => s.logout);
++ const user = useWalletStore((s) => s.user);
++ const disconnect = useWalletStore((s) => s.disconnect);
+```
+
+**2c.** Add a `shortenAddress` helper above the component:
+```ts
+function shortenAddress(addr: string | null | undefined): string {
+  if (!addr) return 'Wallet';
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
+```
+
+**2d.** Replace display strings (both occurrences of `authUser?.email ?? 'User'`):
+```diff
+- {authUser?.email ?? 'User'}
++ {shortenAddress(user?.wallet_address)}
+```
+
+**2e.** Replace the admin badge:
+```diff
+- {authUser?.is_admin ? 'Admin' : 'Member'}
++ {user?.is_admin ? 'Admin' : 'Member'}
+```
+
+**2f.** Replace the logout handler. Find the existing `onClick` that calls `logout()`:
+```diff
+- logout();
+- navigate('/login', { replace: true });
++ await disconnect();
++ navigate('/connect', { replace: true });
+```
+
+If the handler isn't already `async`, mark it `async`:
+```diff
+- onClick={() => {
++ onClick={async () => {
+```
+
+- [ ] **Step 3: Update `HeaderToolbar.test.tsx`**
+
+Look at the existing test file:
+```bash
+cat src/features/bot-builder/components/HeaderToolbar.test.tsx | head -40
+```
+
+Replace any `useAuthStore` mock with `useWalletStore` mock. Pattern:
+
+```ts
+vi.mock('@/features/wallet-auth/wallet.store', () => ({
+  useWalletStore: Object.assign(
+    vi.fn((selector: (s: unknown) => unknown) =>
+      selector({
+        user: {
+          id: 1,
+          email: null,
+          wallet_address: '0xabcdef0000000000000000000000000000000001',
+          is_active: true,
+          is_admin: false,
+        },
+        disconnect: vi.fn(),
+      }),
+    ),
+    {
+      getState: () => ({
+        user: null,
+        disconnect: vi.fn(),
+      }),
+    },
+  ),
+}));
+```
+
+Update any assertion that previously checked for `'test@example.com'` etc. to check for the shortened address pattern: `screen.getByText(/0xabcd…0001/i)`.
+
+- [ ] **Step 4: Run typecheck + HeaderToolbar tests**
+
+Run:
+```bash
+pnpm typecheck
+pnpm vitest run src/features/bot-builder/components/HeaderToolbar.test.tsx
+```
+Expected: PASS.
+
+- [ ] **Step 5: Smoke check — render the full builder page**
+
+Run: `pnpm vitest run src/features/bot-builder`
+Expected: PASS — no other tests in bot-builder pull in HeaderToolbar with the old shape.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/features/bot-builder/components/HeaderToolbar.tsx src/features/bot-builder/components/HeaderToolbar.test.tsx
+git commit -m "refactor(header-toolbar): migrate from email auth to wallet auth (display address, disconnect)"
+```
+
+---
+
 ## Task 11: Delete old `features/auth/` folder
 
 **Files:**
@@ -1991,13 +2267,12 @@ git commit -m "feat(wallet-auth): wire routes (/connect) + app bootstrap (hydrat
 
 - [ ] **Step 1: Confirm no imports remain to `src/features/auth/`**
 
-Run:
+Run (broad pattern catches any quote style + alias + relative path + dynamic imports):
 ```bash
-grep -r "from '@/features/auth" src/ || echo "No imports — safe to delete"
-grep -r "from '../auth" src/features/ || echo "No relative imports — safe to delete"
+grep -rEn "['\"][^'\"]*features/auth[/'\"]" src/ || echo "No imports — safe to delete"
 ```
-Expected: both report "No imports — safe to delete".
-If any imports remain → STOP, fix them first.
+Expected: "No imports — safe to delete" — or only matches inside `src/features/auth/` files themselves (which are being deleted).
+If any other match → STOP, migrate that consumer first (Task 10.5 should have already handled `HeaderToolbar.tsx`).
 
 - [ ] **Step 2: Delete the folder**
 
@@ -2055,6 +2330,16 @@ Then in browser open `http://127.0.0.1:5173/`:
 6. Close tab + reopen → unauthenticated (sessionStorage gone) → `/connect`.
 7. Network tab: verify every API call has `X-Wallet-Address`, `X-Wallet-Nonce`, `X-Wallet-Signature` headers.
 8. Create a bot via wizard → submit → BE returns `{ bot: { id, ... }, strategy: { ... } }` → redirect to `/bots/{id}`.
+9. **Auto-create user (BE Q5 verification)**:
+   - Switch Coin98 to an address that has NEVER connected to this BE before.
+   - Click "Kết nối Coin98 Wallet" and approve/sign.
+   - Expect: `/user/status` returns `{ id: <fresh number>, email: null, wallet_address: <new addr>, is_active: true, is_admin: false }`.
+   - Cross-check BE logs (if accessible) — should show "user created" or equivalent entry.
+   - Result: app behaves identically to a returning user (no extra register step).
+10. **Wallet-locked recovery**:
+    - Lock Coin98 (extension settings → Lock wallet).
+    - Click "Kết nối Coin98 Wallet" → wallet prompts for password → cancel.
+    - Expect: ConnectWalletPage shows error state ("Bạn đã từ chối yêu cầu từ ví Coin98") and a "Thử lại" button.
 
 If any step fails: stop, fix, re-run. Do not proceed to PR.
 
