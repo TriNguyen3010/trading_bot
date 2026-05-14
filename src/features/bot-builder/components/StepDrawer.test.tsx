@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { StepDrawer, type StepContentMap } from './StepDrawer';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import type { StepId } from '@/types/builder.types';
@@ -106,5 +106,23 @@ describe('StepDrawer integration', () => {
     // Legacy wizard footer (Continue / Skip & Save) gone.
     expect(screen.queryByRole('button', { name: /continue/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /skip & save/i })).toBeNull();
+  });
+
+  it('closes when clicking outside the side panel', async () => {
+    useBuilderStore.getState().setOpenStep('bot-config');
+    render(
+      <StepDrawer
+        {...baseProps}
+        onManualClose={() => useBuilderStore.getState().setOpenStep(null)}
+      />,
+    );
+
+    expect(await screen.findByText('Cancel')).toBeInTheDocument();
+
+    fireEvent.mouseDown(document.body);
+
+    await waitFor(() => {
+      expect(useBuilderStore.getState().openStep).toBeNull();
+    });
   });
 });

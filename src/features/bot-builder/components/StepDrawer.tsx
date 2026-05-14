@@ -100,6 +100,7 @@ export function StepDrawer({
 
   const activeStepId: StepId | null = openStep;
   const isOpen = activeStepId !== null;
+  const drawerContentRef = useRef<HTMLDivElement>(null);
 
   // Composite Strategy mode: when the active step belongs to the Strategy
   // phase (entry / direction / close-method) AND the parent has provided a
@@ -164,6 +165,24 @@ export function StepDrawer({
     onManualClose();
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleOutsidePress = (event: PointerEvent | MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (drawerContentRef.current?.contains(target)) return;
+      onManualClose();
+    };
+
+    document.addEventListener('pointerdown', handleOutsidePress, true);
+    document.addEventListener('mousedown', handleOutsidePress, true);
+    return () => {
+      document.removeEventListener('pointerdown', handleOutsidePress, true);
+      document.removeEventListener('mousedown', handleOutsidePress, true);
+    };
+  }, [isOpen, onManualClose]);
+
   const handleTabChange = (next: string) => {
     if (next === 'configure' && !setupComplete) {
       toast.error(strings.drawer.toasts.configureLocked);
@@ -175,10 +194,10 @@ export function StepDrawer({
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange} modal={false}>
       <SheetContent
+        ref={drawerContentRef}
         hideOverlay
         hideCloseButton
         width={drawerWidth}
-        onInteractOutside={(e) => e.preventDefault()}
         overlayClassName="left-[var(--layout-left-panel)]"
       >
         {/* DrawerResizeHandle removed 2026-04-30 — drawer is now locked
