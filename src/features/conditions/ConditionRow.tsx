@@ -11,7 +11,6 @@ import type {
 
 export interface ConditionRowProps {
   row: ConditionRowType;
-  isFirst: boolean;
   indicators: IndicatorItem[];
   candlestickChannels: ('open' | 'close' | 'high' | 'low' | 'volume')[];
   onChange: (patch: Partial<ConditionRowType>) => void;
@@ -32,7 +31,6 @@ const ALL_OPS: { value: ConditionOp; label: string; rightType: 'value' | 'none' 
 
 export function ConditionRow({
   row,
-  isFirst,
   indicators,
   candlestickChannels,
   onChange,
@@ -67,23 +65,23 @@ export function ConditionRow({
   return (
     <div
       className={cn(
-        'rounded-lg border bg-surface p-3',
+        'relative rounded-lg border bg-surface p-3',
         isInvalid ? 'border-danger/60' : 'border-border',
       )}
     >
-      {/* Row 1: glue (AND/OR or IF) · left side · operator
-       *
-       * The drawer is fixed at 480px so trying to fit all 6 controls in
-       * a single line overflowed (the `sm:flex-row` from the previous
-       * design assumed a wider container). 2-row layout fits cleanly
-       * and stays readable even with longer operator labels like
-       * "crosses above". */}
-      <div className="flex items-center gap-2">
-        {isFirst ? (
-          <span className="w-12 shrink-0 text-center text-xs font-semibold uppercase tracking-wide text-fg-muted">
-            IF
-          </span>
-        ) : null}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label="Remove condition"
+        className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-md text-fg-muted/40 transition-colors hover:bg-bearish/10 hover:text-bearish focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+      {/* Row 1: left side · operator. Grid (not flex) so each cell is
+       * forced to 50% of the row regardless of the child's intrinsic
+       * width — without this, `<select>` and `<input>` size to their
+       * longest option / size attribute and the two rows misalign. */}
+      <div className="grid grid-cols-2 gap-2 pr-7">
         <Select
           aria-label="Left side"
           value={row.left}
@@ -113,7 +111,7 @@ export function ConditionRow({
               onChange({ op: newOp });
             }
           }}
-          className="w-36 shrink-0"
+          className="min-w-0 flex-1"
         >
           {ALL_OPS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -123,11 +121,9 @@ export function ConditionRow({
         </Select>
       </div>
 
-      {/* Row 2: right type · right value · remove
-       *
-       * Indented to visually align under the left dropdown above (skip
-       * the AND/OR/IF glue width). Helps the eye read "X op Y". */}
-      <div className={cn('mt-2 flex items-center gap-2', isFirst && 'pl-12')}>
+      {/* Row 2: right type · right value — same grid as row 1 for
+       * column alignment. */}
+      <div className="mt-2 grid grid-cols-2 gap-2 pr-7">
         {needsRightValue ? (
           <>
             <Select
@@ -144,7 +140,7 @@ export function ConditionRow({
                       : null,
                 });
               }}
-              className="w-28 shrink-0"
+              className="min-w-0 flex-1"
             >
               <option value="number">Number</option>
               <option value="indicator" disabled={indicatorChoices.length === 0}>
@@ -180,18 +176,10 @@ export function ConditionRow({
             )}
           </>
         ) : (
-          <span className="flex-1 text-xs italic text-fg-muted">
+          <span className="col-span-2 text-xs italic text-fg-muted">
             (no right value)
           </span>
         )}
-        <button
-          type="button"
-          onClick={onRemove}
-          aria-label="Remove condition"
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bearish/10 hover:text-bearish focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-        >
-          <X className="h-4 w-4" />
-        </button>
       </div>
     </div>
   );

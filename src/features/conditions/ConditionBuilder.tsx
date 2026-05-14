@@ -144,7 +144,6 @@ export function ConditionBuilder({
                       )}
                       <ConditionRow
                         row={r}
-                        isFirst={isAbsoluteFirstGroup && ri === 0}
                         indicators={indicators}
                         candlestickChannels={candlestickChannels}
                         onChange={(patch) => updateRow(r.id, patch)}

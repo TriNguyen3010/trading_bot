@@ -113,30 +113,50 @@ export function GroupConditionCard({
       {/* Rules section: group width unchanged, but each rule card +
        * connector sits inset on the left to read as nested under the
        * group header. */}
-      <div className="flex flex-col gap-2 pl-8">
+      {/* Rules: 2-col flex per row.
+       *   Col 1 (w-10): keyword label — `IF` on rule 1, empty placeholder
+       *                 on subsequent rules so every card aligns to the
+       *                 same x-position.
+       *   Col 2 (flex-1): the rule card itself.
+       * Rule 2+ + AND/OR connector add `ml-6` on the card column for the
+       * nested-block feel ("body of the IF block" sits one level in). */}
+      <div className="flex flex-col gap-2">
         {group.rules.map((rule, ri) => (
           <Fragment key={rule.id}>
             {ri > 0 && (
-              <div className="flex justify-start">
-                <ConditionConnector
-                  operator={group.intraConnector}
-                  onChange={updateIntra}
-                />
+              <div className="flex items-start gap-2">
+                <div className="w-10 shrink-0" aria-hidden />
+                <div className="ml-6">
+                  <ConditionConnector
+                    operator={group.intraConnector}
+                    onChange={updateIntra}
+                  />
+                </div>
               </div>
             )}
-            <ConditionRow
-              row={rule as ConditionRowType}
-              isFirst={ri === 0}
-              indicators={indicators}
-              candlestickChannels={candlestickChannels}
-              onChange={(patch) => updateRule(rule.id, patch)}
-              onRemove={() => removeRule(rule.id)}
-            />
+            <div className="flex items-start gap-2">
+              <div className="flex w-10 shrink-0 justify-center pt-4">
+                {ri === 0 ? (
+                  <span className="text-xs font-semibold uppercase tracking-wide text-fg-muted">
+                    IF
+                  </span>
+                ) : null}
+              </div>
+              <div className={cn('min-w-0 flex-1', ri > 0 && 'ml-6')}>
+                <ConditionRow
+                  row={rule as ConditionRowType}
+                  indicators={indicators}
+                  candlestickChannels={candlestickChannels}
+                  onChange={(patch) => updateRule(rule.id, patch)}
+                  onRemove={() => removeRule(rule.id)}
+                />
+              </div>
+            </div>
           </Fragment>
         ))}
       </div>
 
-      <div className="mt-3 pl-8">
+      <div className="mt-3 pl-[4.5rem]">
         <Button variant="ghost" size="sm" onClick={addRule}>
           <Plus className="h-3.5 w-3.5" />
           Add condition
