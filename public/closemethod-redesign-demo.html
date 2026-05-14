@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Close method redesign — Advanced toggle + Indicator preset</title>
+  <style>
+    :root {
+      --canvas:#0a0a0a;
+      --surface:#161616;
+      --surface-2:#1f1f1f;
+      --border:rgba(255,255,255,0.10);
+      --border-subtle:rgba(255,255,255,0.06);
+      --border-strong:rgba(255,255,255,0.20);
+      --fg:#ffffff;
+      --fg-inverse:#0a0a0a;
+      --fg-muted:rgba(255,255,255,0.45);
+      --fg-secondary:rgba(255,255,255,0.72);
+      --brand:#F0B90B;
+      --brand-subtle:rgba(240,185,11,0.12);
+      --brand-glow:rgba(240,185,11,0.55);
+      --bullish:#22c55e;
+      --bearish:#ef4444;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      background:var(--canvas);
+      color:var(--fg);
+      font-family:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;
+      padding:32px 24px 56px;
+    }
+    h1{font-size:22px;font-weight:600;margin:0 0 6px;text-align:center;}
+    .page-sub{text-align:center;color:var(--fg-muted);font-size:13px;margin-bottom:36px;max-width:760px;margin-left:auto;margin-right:auto;line-height:1.5;}
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0, 1fr));
+      gap:24px;
+      max-width:1500px;
+      margin:0 auto;
+    }
+    .col{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .col-label{
+      font-size:11px;
+      font-weight:600;
+      text-transform:uppercase;
+      letter-spacing:0.08em;
+      color:var(--fg-muted);
+      padding:0 4px;
+    }
+    .col-label .step{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      background:var(--brand);
+      color:var(--fg-inverse);
+      font-size:10px;
+      font-weight:700;
+      margin-right:6px;
+    }
+
+    .drawer{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:24px;
+      padding:20px 18px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      min-height:520px;
+    }
+
+    .field-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .field-row .label-group{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .label{
+      font-size:13px;
+      font-weight:500;
+      color:var(--fg-secondary);
+    }
+    .label .req{color:var(--bearish);margin-left:2px;}
+    .help-icon{
+      width:14px;height:14px;
+      display:inline-flex;align-items:center;justify-content:center;
+      color:var(--fg-muted);
+      cursor:help;
+    }
+    .help-icon svg{width:14px;height:14px;}
+
+    /* Advanced toggle — a Radix-style switch */
+    .switch{
+      position:relative;
+      width:36px;height:20px;
+      background:var(--surface-2);
+      border:1px solid var(--border);
+      border-radius:9999px;
+      cursor:pointer;
+      transition:all 160ms;
+    }
+    .switch[data-on="true"]{
+      background:var(--brand);
+      border-color:var(--brand);
+    }
+    .switch .thumb{
+      position:absolute;
+      top:1px;left:1px;
+      width:16px;height:16px;
+      background:var(--fg);
+      border-radius:50%;
+      transition:transform 160ms;
+    }
+    .switch[data-on="true"] .thumb{
+      transform:translateX(16px);
+      background:var(--fg-inverse);
+    }
+    .switch-row{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:8px 12px;
+      background:var(--surface-2);
+      border-radius:12px;
+    }
+    .switch-row .text{
+      display:flex;flex-direction:column;gap:2px;
+    }
+    .switch-row .text .ttl{font-size:12px;font-weight:600;}
+    .switch-row .text .sub{font-size:11px;color:var(--fg-muted);}
+
+    /* Inline toggle that sits on the same row as the Close-method label.
+       Smaller switch + a short text label so it occupies minimal width. */
+    .inline-toggle{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .inline-toggle-label{
+      font-size:11px;
+      font-weight:500;
+      text-transform:uppercase;
+      letter-spacing:0.06em;
+      color:var(--fg-muted);
+    }
+    .switch-sm{
+      width:28px;
+      height:16px;
+    }
+    .switch-sm .thumb{
+      width:12px;
+      height:12px;
+    }
+    .switch-sm[data-on="true"] .thumb{
+      transform:translateX(12px);
+    }
+
+    /* Tabs */
+    .tabs-list{
+      display:grid;
+      gap:0;
+      border-bottom:1px solid var(--border-subtle);
+    }
+    .tabs-list[data-cols="3"]{grid-template-columns:repeat(3,1fr);}
+    .tabs-list[data-cols="4"]{grid-template-columns:repeat(4,1fr);}
+    .tab{
+      padding:10px 8px;
+      text-align:center;
+      font-size:13px;
+      font-weight:500;
+      color:var(--fg-muted);
+      border-bottom:2px solid transparent;
+      cursor:pointer;
+      transition:all 160ms;
+      position:relative;
+    }
+    .tab:hover{color:var(--fg-secondary);}
+    .tab[data-active="true"]{
+      color:var(--brand);
+      border-bottom-color:var(--brand);
+    }
+    .tab[data-new="true"]::after{
+      content:'NEW';
+      position:absolute;
+      top:2px;right:2px;
+      font-size:8px;
+      font-weight:700;
+      letter-spacing:0.05em;
+      padding:1px 4px;
+      border-radius:3px;
+      background:var(--brand);
+      color:var(--fg-inverse);
+    }
+
+    .tab-content{
+      padding:14px 4px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      flex:1;
+    }
+
+    /* Indicator tab specific */
+    .preset-card{
+      padding:10px 12px;
+      border-radius:12px;
+      background:linear-gradient(135deg, var(--brand-subtle), rgba(240,185,11,0.04));
+      border:1px solid rgba(240,185,11,0.3);
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .preset-icon{
+      width:28px;height:28px;
+      border-radius:7px;
+      background:var(--brand-subtle);
+      display:flex;align-items:center;justify-content:center;
+      color:var(--brand);
+      flex-shrink:0;
+    }
+    .preset-body{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;}
+    .preset-head{
+      display:flex;align-items:center;justify-content:space-between;gap:8px;
+    }
+    .preset-ttl{font-size:12.5px;font-weight:600;color:var(--fg);display:flex;align-items:center;gap:6px;}
+    .preset-ttl .help-icon{color:var(--fg-muted);}
+    .preset-sub{font-size:11px;color:var(--fg-muted);line-height:1.4;}
+    .preset-btn{
+      flex-shrink:0;
+      padding:4px 10px;
+      font-size:11px;
+      font-weight:600;
+      background:var(--brand);
+      color:var(--fg-inverse);
+      border:none;
+      border-radius:9999px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      white-space:nowrap;
+    }
+
+    .divider{
+      display:flex;align-items:center;gap:12px;
+      color:var(--fg-muted);
+      font-size:10px;
+      font-weight:600;
+      letter-spacing:0.08em;
+      text-transform:uppercase;
+      padding:4px 0;
+    }
+    .divider::before, .divider::after{
+      content:'';
+      flex:1;
+      height:1px;
+      background:var(--border-subtle);
+    }
+
+    .info-banner{
+      display:flex;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:10px;
+      background:rgba(59,130,246,0.08);
+      border:1px solid rgba(59,130,246,0.25);
+      font-size:11px;
+      line-height:1.45;
+      color:var(--fg-secondary);
+    }
+    .info-banner svg{flex-shrink:0;color:rgb(96,165,250);}
+
+    /* One-line strip used after applying a preset (compact replacement
+       for the green info-banner). */
+    .applied-strip{
+      display:flex;align-items:center;gap:8px;
+      padding:6px 10px;
+      border-radius:8px;
+      background:rgba(34,197,94,0.08);
+      border:1px solid rgba(34,197,94,0.25);
+      font-size:11px;
+      color:var(--fg-secondary);
+      line-height:1.4;
+    }
+    .applied-strip > span{flex:1;min-width:0;}
+    .strip-action{
+      flex-shrink:0;
+      padding:3px 8px;
+      font-size:10px;
+      font-weight:500;
+      color:var(--fg-muted);
+      background:transparent;
+      border:1px solid var(--border);
+      border-radius:9999px;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .strip-action:hover{color:var(--fg);border-color:var(--border-strong);}
+
+    /* Condition row placeholder (representing the existing ConditionTreeBuilder) */
+    .cond-group{
+      background:rgba(0,0,0,0.3);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px;
+      display:flex;flex-direction:column;gap:8px;
+    }
+    .cond-group .ghead{
+      display:flex;align-items:center;justify-content:space-between;
+      font-size:11px;color:var(--fg-muted);
+      text-transform:uppercase;letter-spacing:0.06em;
+    }
+    .pill{
+      padding:8px 12px;
+      background:var(--surface-2);
+      border:1px solid var(--border);
+      border-radius:9999px;
+      font-size:12px;
+      color:var(--fg-secondary);
+      display:inline-flex;align-items:center;gap:6px;
+    }
+    .pill.brand{background:var(--brand-subtle);border-color:rgba(240,185,11,0.35);color:var(--brand);}
+    .pill-row{display:flex;gap:6px;flex-wrap:wrap;}
+
+    /* TP/SL placeholder */
+    .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .input-mock{
+      padding:10px 12px;
+      background:var(--surface-2);
+      border:1px solid var(--border);
+      border-radius:10px;
+      font-size:13px;
+      color:var(--fg);
+      display:flex;justify-content:space-between;align-items:center;
+    }
+    .input-mock .suffix{color:var(--fg-muted);font-size:11px;}
+
+    /* Manual placeholder */
+    .empty-state{
+      padding:24px;
+      text-align:center;
+      color:var(--fg-muted);
+      font-size:12px;
+      border:1px dashed var(--border);
+      border-radius:12px;
+      line-height:1.5;
+    }
+
+    .footnote{
+      text-align:center;
+      margin-top:36px;
+      color:var(--fg-muted);
+      font-size:11px;
+      max-width:760px;
+      margin-left:auto;margin-right:auto;
+      line-height:1.6;
+    }
+
+    .arrow-hint{
+      position:absolute;
+      right:-12px;top:50%;transform:translateY(-50%);
+      width:24px;height:24px;
+      border-radius:50%;
+      background:var(--brand);
+      color:var(--fg-inverse);
+      display:flex;align-items:center;justify-content:center;
+      font-weight:700;
+      box-shadow:0 0 16px rgba(240,185,11,0.5);
+      z-index:2;
+    }
+    .col{position:relative;}
+  </style>
+</head>
+<body>
+  <h1>Close method — Advanced toggle</h1>
+  <p class="page-sub">
+    Giữ Indicator exit nhưng giấu sau "Advanced" toggle để giảm friction cho novice.
+    Power user toggle ON → tab Indicator xuất hiện ở cuối list, user tự build exit condition.
+    <br/>(Bỏ preset "Exit on opposite of entry" vì không cover được multi-rule / asymmetric threshold / breakout strategies — gây false confidence nguy hiểm.)
+  </p>
+
+  <div class="grid">
+    <!-- ─────── State 1: Default (Advanced OFF) ─────── -->
+    <div class="col">
+      <div class="col-label"><span class="step">1</span>Default view (Advanced OFF)</div>
+      <div class="drawer">
+        <div class="field-row">
+          <div class="label-group">
+            <span class="label">Close method <span class="req">*</span></span>
+            <span class="help-icon" title="How the bot exits a position">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17.01"/></svg>
+            </span>
+          </div>
+          <div class="inline-toggle">
+            <span class="inline-toggle-label">Advanced</span>
+            <div class="switch switch-sm" data-on="false">
+              <div class="thumb"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabs-list" data-cols="3">
+          <div class="tab">Manual</div>
+          <div class="tab" data-active="true">TP / SL</div>
+          <div class="tab">ROI table</div>
+        </div>
+
+        <div class="tab-content">
+          <div class="field-row">
+            <div class="label-group"><span class="label">Take-profit ladder</span></div>
+          </div>
+          <div class="cond-group">
+            <div class="ghead"><span>TP 1</span><span>50%</span></div>
+            <div class="row-2">
+              <div class="input-mock">2.5 <span class="suffix">%</span></div>
+              <div class="input-mock">50 <span class="suffix">% close</span></div>
+            </div>
+          </div>
+          <div class="cond-group">
+            <div class="ghead"><span>TP 2</span><span>100%</span></div>
+            <div class="row-2">
+              <div class="input-mock">5.0 <span class="suffix">%</span></div>
+              <div class="input-mock">100 <span class="suffix">% close</span></div>
+            </div>
+          </div>
+          <div class="field-row" style="margin-top:6px;">
+            <div class="label-group"><span class="label">Stop loss</span></div>
+            <div class="input-mock" style="width:120px;">-2.0 <span class="suffix">%</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--fg-muted);padding:0 4px;line-height:1.5;">
+        Novice user (~70% case) chỉ thấy 3 lựa chọn đủ dùng: tự đóng, TP/SL cố định, ROI theo thời gian.
+        Không bị overwhelm bởi "indicator" — đỡ hỏi "tôi đã có entry indicator rồi mà?".
+      </div>
+    </div>
+
+    <!-- ─────── State 2: Advanced ON ─────── -->
+    <div class="col">
+      <div class="col-label"><span class="step">2</span>Advanced ON — Indicator tab appears at end</div>
+      <div class="drawer">
+        <div class="field-row">
+          <div class="label-group">
+            <span class="label">Close method <span class="req">*</span></span>
+            <span class="help-icon" title="How the bot exits a position">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17.01"/></svg>
+            </span>
+          </div>
+          <div class="inline-toggle">
+            <span class="inline-toggle-label">Advanced</span>
+            <div class="switch switch-sm" data-on="true">
+              <div class="thumb"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabs-list" data-cols="4">
+          <div class="tab">Manual</div>
+          <div class="tab">TP / SL</div>
+          <div class="tab">ROI table</div>
+          <div class="tab" data-active="true" data-new="true">Indicator</div>
+        </div>
+
+        <div class="tab-content">
+          <div class="cond-group">
+            <div class="ghead">
+              <span>Group condition 1</span>
+              <span style="font-size:10px;color:var(--fg-muted);">1 RULE</span>
+            </div>
+            <div class="pill-row">
+              <div class="pill">candle.close</div>
+              <div class="pill">&gt;</div>
+            </div>
+            <div class="pill-row">
+              <div class="pill">Number</div>
+              <div class="pill" style="flex:1;justify-content:flex-start;">0</div>
+            </div>
+            <div class="pill" style="align-self:flex-start;font-size:11px;cursor:pointer;border-style:dashed;margin-top:4px;">
+              + Add condition
+            </div>
+          </div>
+
+          <div class="pill" style="align-self:flex-start;font-size:11px;cursor:pointer;border-style:dashed;">
+            + Add group condition
+          </div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--fg-muted);padding:0 4px;line-height:1.5;">
+        Power user toggle Advanced → tab Indicator xuất hiện ở cuối với NEW badge,
+        đã có sẵn <b>1 group + 1 rule mặc định</b> (<code>candle.close &gt; 0</code> — giống Entry strategy mặc định),
+        user edit thẳng → 0 click thừa.
+      </div>
+    </div>
+
+    <!-- ─────── State 3: Power user filled conditions ─────── -->
+    <div class="col">
+      <div class="col-label"><span class="step">3</span>Power user — đã build exit conditions</div>
+      <div class="drawer">
+        <div class="field-row">
+          <div class="label-group">
+            <span class="label">Close method <span class="req">*</span></span>
+            <span class="help-icon" title="How the bot exits a position">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12" y2="17.01"/></svg>
+            </span>
+          </div>
+          <div class="inline-toggle">
+            <span class="inline-toggle-label">Advanced</span>
+            <div class="switch switch-sm" data-on="true">
+              <div class="thumb"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabs-list" data-cols="4">
+          <div class="tab">Manual</div>
+          <div class="tab">TP / SL</div>
+          <div class="tab">ROI table</div>
+          <div class="tab" data-active="true">Indicator</div>
+        </div>
+
+        <div class="tab-content">
+          <div class="cond-group">
+            <div class="ghead">
+              <span>Group condition 1</span>
+              <span class="pill brand" style="font-size:10px;padding:2px 8px;">AND</span>
+            </div>
+            <div class="pill-row">
+              <div class="pill">RSI(14)</div>
+              <div class="pill">&gt;</div>
+              <div class="pill">70</div>
+            </div>
+            <div class="pill-row">
+              <div class="pill">candle.close</div>
+              <div class="pill">&lt;</div>
+              <div class="pill">EMA50</div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:center;">
+            <span class="pill brand" style="font-size:10px;padding:2px 10px;">OR</span>
+          </div>
+
+          <div class="cond-group">
+            <div class="ghead">
+              <span>Group condition 2</span>
+              <span class="pill brand" style="font-size:10px;padding:2px 8px;">AND</span>
+            </div>
+            <div class="pill-row">
+              <div class="pill">MACD</div>
+              <div class="pill">crosses below</div>
+              <div class="pill">signal</div>
+            </div>
+          </div>
+
+          <div class="pill" style="align-self:flex-start;font-size:11px;cursor:pointer;border-style:dashed;">
+            + Add condition group
+          </div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--fg-muted);padding:0 4px;line-height:1.5;">
+        User tự build exit conditions với cùng ConditionTreeBuilder dùng cho entry → consistent UX.
+        AND/OR semantics hiển thị rõ qua connector pill.
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <b>So sánh với hiện tại:</b>
+    Tab Indicator luôn hiện song song Manual/TP-SL/ROI → 4 tab cùng lúc gây overwhelm cho novice.
+    Bản này: 3 tab default (Manual / TP-SL / ROI — cover ~70% case), Advanced toggle <i>inline gọn với title Close method</i> để bật tab Indicator <i>ở cuối list</i> (cho power user).
+    Mở tab Indicator → đã có sẵn 1 default group + 1 rule (<code>candle.close &gt; 0</code>) — user edit thẳng, <b>không phải click thêm</b>.
+    Backend & code Indicator exit giữ nguyên — chỉ thêm 1 layout-pref flag (<code>showAdvancedClose</code>) ở store để remember toggle state, và pass <code>defaultGroupOnMount</code> cho <code>ConditionTreeBuilder</code> (giống Entry).
+  </div>
+</body>
+</html>
