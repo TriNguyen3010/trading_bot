@@ -50,14 +50,16 @@ export function ToggleGroup<T extends string>({
             type="button"
             role="radio"
             aria-checked={isActive}
-            onClick={() => onChange(opt.value)}
+            onClick={() => {
+              if (!isActive) onChange(opt.value);
+            }}
             className={cn(
-              'flex-1 rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-fast',
+              'flex-1 rounded-xl px-4 py-2 text-sm font-medium transition-[color,border-color] duration-fast',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
               !isActive && 'text-fg-secondary hover:text-fg hover:bg-white/5',
               isActive &&
                 tone === 'brand' &&
-                'bg-brand text-black font-semibold shadow-[0_0_14px_rgba(240,185,11,0.35)]',
+                'bg-[rgba(240,185,11,0.75)] text-black font-semibold shadow-[0_0_10px_rgba(240,185,11,0.22)]',
               isActive &&
                 tone === 'bullish' &&
                 'bg-bullish text-black font-semibold shadow-[0_0_14px_rgba(14,203,129,0.4)]',
