@@ -45,7 +45,10 @@ export interface StepCardProps {
   stepId: StepId;
   index: number;
   icon: LucideIcon;
-  title: string;
+  /** Plain string or a React node — the Phase 1 card passes the inline
+   * bot-name editor so the card itself doubles as the bot's identity
+   * surface. */
+  title: React.ReactNode;
 }
 
 export function StepCard({
@@ -64,7 +67,7 @@ export function StepCard({
   // Step 1 anchor only kicks in for a brand-new session (phase still
   // 'idle') AND while bot-config has not been touched yet. Once the user
   // (or Cypheus) has configured/edited it, defer to the normal status-icon
-  // rendering so the green check, summary, and editing pulse all show.
+  // rendering so configured status, summary, and editing pulse all show.
   const isStep1Idle =
     stepId === 'bot-config' && phase === 'idle' && status === 'pending';
 
@@ -94,14 +97,17 @@ export function StepCard({
       onClick={handleClick}
       aria-pressed={isOpen}
       className={cn(
-        'group relative flex w-full flex-col items-stretch overflow-hidden rounded-3xl glass-card text-left',
+        'group relative flex w-full flex-col items-stretch rounded-3xl glass-card text-left',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-black',
-        // 2-state frame ring:
+        // 3-state frame ring:
         //   normal   — ring-1 white/15  (default)
-        //   selected — ring-2 brand     (yellow, drawer is open)
+        //   anchor   — CSS module outer onboarding glow (fresh Phase 1 prompt)
+        //   selected — ring-2 brand      (drawer is open)
         isOpen
-          ? 'ring-2 ring-brand shadow-[0_0_24px_rgba(240,185,11,0.3)]'
-          : 'ring-1 ring-white/15',
+          ? 'overflow-hidden ring-2 ring-brand shadow-[0_0_32px_rgba(240,185,11,0.48)]'
+          : isStep1Idle
+            ? 'overflow-hidden'
+            : 'overflow-hidden ring-1 ring-white/15',
         isStep1Idle && styles.highlighted,
         // Configured tint stays as a soft inset background; the frame
         // colour is now reserved for selected/hover/normal only.
@@ -111,15 +117,15 @@ export function StepCard({
       <header className="flex w-full items-center gap-4 px-5 py-3">
         <div
           className={cn(
-            'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full',
+            'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border',
             visualStatus === 'pending' &&
-              'bg-black text-fg-secondary',
+              'border-brand/15 bg-canvas text-fg-secondary',
             visualStatus === 'editing' &&
-              'bg-brand-subtle text-brand',
+              'border-brand/40 bg-brand-subtle text-brand',
             visualStatus === 'configured' &&
-              'bg-brand text-black shadow-[0_0_10px_rgba(240,185,11,0.4)]',
+              'border-brand/60 bg-brand-subtle text-brand',
             visualStatus === 'error' &&
-              'bg-brand-subtle text-brand',
+              'border-brand bg-brand-subtle text-brand',
           )}
         >
           <Icon className="h-4 w-4" />
@@ -128,41 +134,32 @@ export function StepCard({
           <div className="flex items-center gap-2 text-2xs uppercase tracking-wide text-fg-muted">
             <span>Phase {index}</span>
           </div>
-          <h3 className="truncate text-md font-semibold text-fg">
+          <div className="min-w-0 text-md font-semibold text-fg">
             {title}
-          </h3>
+          </div>
         </div>
         <AnimatePresence mode="wait" initial={false}>
-          {isStep1Idle ? (
-            <motion.div
-              key="anchor"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-              className="flex items-center gap-3"
-            >
+          <motion.div
+            key="status"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="flex items-center gap-3"
+          >
+            {visualStatus === 'pending' && (
               <span className="flex items-center gap-1 text-xs text-fg-muted">
                 Tap to configure
                 <ArrowRight className="h-3 w-3" />
               </span>
-              <CypheusAvatar size="xl" variant="hello" />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="status"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-              className="flex items-center gap-3"
-            >
-              {status === 'pending' && (
-                <span className="flex items-center gap-1 text-xs text-fg-muted">
-                  Tap to configure
-                  <ArrowRight className="h-3 w-3" />
-                </span>
-              )}
+            )}
+            {isStep1Idle ? (
+              <CypheusAvatar
+                size="md"
+                variant="hello"
+                className="drop-shadow-[0_0_10px_rgba(240,185,11,0.24)]"
+              />
+            ) : (
               <div
                 className={cn(
                   'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full',
@@ -172,13 +169,13 @@ export function StepCard({
               >
                 <StatusIcon className="h-4 w-4" />
               </div>
-            </motion.div>
-          )}
+            )}
+          </motion.div>
         </AnimatePresence>
       </header>
 
       {(visualStatus === 'configured' || visualStatus === 'error') && (
-        <div className="w-full px-5 pb-4 pt-1 cursor-default" onClick={(e) => e.stopPropagation()}>
+        <div className="w-full px-5 pb-4 pt-1">
           <StepCardSummary stepId={stepId} />
         </div>
       )}

@@ -64,7 +64,7 @@ const defaultCloseMethod: CloseMethodForm = {
 };
 
 const buildInitialState = (): BuilderState => ({
-  botName: 'Untitled bot',
+  botName: 'Bot Basic',
   botConfig: { ...defaultBotConfig },
   strategy: { ...defaultStrategy, candlestick: [], indicators: [] },
   directionForm: { ...defaultDirection },

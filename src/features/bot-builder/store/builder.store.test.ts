@@ -34,7 +34,7 @@ describe('builder store', () => {
     useBuilderStore.getState().setStepStatus('bot-config', 'configured');
     useBuilderStore.getState().resetAll();
     const state = useBuilderStore.getState();
-    expect(state.botName).toBe('Untitled bot');
+    expect(state.botName).toBe('Bot Basic');
     expect(state.stepStatus['bot-config']).toBe('pending');
     expect(state.isDirty).toBe(false);
   });

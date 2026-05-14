@@ -3,7 +3,10 @@ import { useBuilderStore } from '../store/builder.store';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { NumberInput } from '@/components/ui/number-input';
 import { FormField } from '@/components/ui/form-field';
+import { strings } from '@/i18n/en';
 import type { Direction, OrderType } from '@/types/builder.types';
+
+const HELP = strings.helpText.strategy;
 
 export function DirectionSetup() {
   const form = useBuilderStore((s) => s.directionForm);
@@ -14,6 +17,7 @@ export function DirectionSetup() {
       <FormField
         label="Direction"
         required
+        help={HELP.direction}
       >
         <ToggleGroup<Direction>
           value={form.direction}
@@ -48,6 +52,7 @@ export function DirectionSetup() {
       <FormField
         label="Order type"
         required
+        help={HELP.orderType}
       >
         <ToggleGroup<OrderType>
           value={form.orderType}
@@ -64,6 +69,7 @@ export function DirectionSetup() {
       {form.orderType === 'limit' && (
         <FormField
           label="Limit offset"
+          help={HELP.limitOffset}
         >
           <NumberInput
             value={form.limitOffsetPct}

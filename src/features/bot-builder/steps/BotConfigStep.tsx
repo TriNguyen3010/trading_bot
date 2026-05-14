@@ -23,7 +23,10 @@ import {
   STAKE_CURRENCIES,
   PAIR_SUGGESTIONS,
 } from '@/lib/constants';
+import { strings } from '@/i18n/en';
 import type { TradingMode, MarginMode } from '@/types/builder.types';
+
+const HELP = strings.helpText.botConfig;
 
 function clampLeverage(value: number | null) {
   const next = value ?? LEVERAGE_MIN;
@@ -53,6 +56,7 @@ export function BotConfigSetup() {
       <FormField
         label="Bot name"
         required
+        help={HELP.botName}
       >
         <Input
           value={botName}
@@ -67,6 +71,7 @@ export function BotConfigSetup() {
           <FormField
             label="Pair"
             required
+            help={HELP.pair}
           >
             <Input
               list="pair-suggestions"
@@ -83,7 +88,7 @@ export function BotConfigSetup() {
           </FormField>
         </div>
 
-        <FormField label="Timeframe" required>
+        <FormField label="Timeframe" required help={HELP.timeframe}>
           <Select
             value={config.timeframe}
             onChange={(e) => patch({ timeframe: e.target.value })}
@@ -97,7 +102,7 @@ export function BotConfigSetup() {
         </FormField>
       </div>
 
-      <FormField label="Trading mode" required>
+      <FormField label="Trading mode" required help={HELP.tradingMode}>
         <ToggleGroup<TradingMode>
           value={config.tradingMode}
           onChange={handleTradingMode}
@@ -113,6 +118,7 @@ export function BotConfigSetup() {
       <div data-cy-anchor="bot-config:leverage">
         <FormField
           label="Leverage"
+          help={HELP.leverage}
         >
           <div className="flex items-center gap-3">
             <Slider
@@ -208,16 +214,16 @@ export function BotConfigConfigure() {
        *  chips on a 2-column row. */}
       <div className="grid grid-cols-2 gap-4">
         <div data-cy-anchor="bot-config:exchange">
-          <FormField label="Exchange" required>
+          <FormField label="Exchange" required help={HELP.exchange}>
             <LockedChip value="Hyperliquid" />
           </FormField>
         </div>
-        <FormField label="Market type" required>
+        <FormField label="Market type" required help={HELP.marketType}>
           <LockedChip value="Futures" />
         </FormField>
       </div>
 
-      <FormField label="Margin mode" required>
+      <FormField label="Margin mode" required help={HELP.marginMode}>
         <ToggleGroup<MarginMode>
           value={config.marginMode}
           onChange={(v) => patch({ marginMode: v })}
@@ -231,7 +237,7 @@ export function BotConfigConfigure() {
 
       {/* Max open + Stake currency + Stake amount on one 3-col row. */}
       <div className="grid grid-cols-3 gap-4">
-        <FormField label="Max open trades">
+        <FormField label="Max open trades" help={HELP.maxOpenTrades}>
           <NumberInput
             value={config.maxOpenTrades}
             onValueChange={(v) => patch({ maxOpenTrades: v ?? -1 })}
@@ -239,7 +245,7 @@ export function BotConfigConfigure() {
             step={1}
           />
         </FormField>
-        <FormField label="Stake currency">
+        <FormField label="Stake currency" help={HELP.stakeCurrency}>
           <Select
             value={config.stakeCurrency}
             onChange={(e) => patch({ stakeCurrency: e.target.value })}
@@ -251,7 +257,7 @@ export function BotConfigConfigure() {
             ))}
           </Select>
         </FormField>
-        <FormField label="Stake amount">
+        <FormField label="Stake amount" help={HELP.stakeAmount}>
           <NumberInput
             value={config.stakeAmount}
             onValueChange={(v) =>
@@ -267,7 +273,7 @@ export function BotConfigConfigure() {
       {/* Dry-run wallet appears on its own row only while in dry-run
        *  mode. Hidden in Live mode. */}
       {config.tradingMode === 'dry-run' ? (
-        <FormField label="Dry-run wallet">
+        <FormField label="Dry-run wallet" help={HELP.dryRunWallet}>
           <NumberInput
             value={config.dryRunWallet}
             onValueChange={(v) =>

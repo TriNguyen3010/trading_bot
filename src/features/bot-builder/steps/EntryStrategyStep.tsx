@@ -4,6 +4,9 @@ import { FormField } from '@/components/ui/form-field';
 import { IndicatorChip } from '@/features/indicators/IndicatorChip';
 import { ConditionTreeBuilder } from '@/features/conditions/ConditionTreeBuilder';
 import { useConditionMetrics } from '@/features/conditions/useConditionMetrics';
+import { strings } from '@/i18n/en';
+
+const HELP = strings.helpText.strategy;
 
 export function EntryStrategySetup() {
   const strategy = useBuilderStore((s) => s.strategy);
@@ -14,6 +17,7 @@ export function EntryStrategySetup() {
     <>
       <FormField
         label="Strategy name"
+        help={HELP.strategyName}
       >
         <Input
           value={strategy.name}
@@ -25,6 +29,7 @@ export function EntryStrategySetup() {
       {strategy.indicators.length > 0 ? (
         <FormField
           label="Indicators"
+          help={HELP.indicators}
         >
           <div className="flex flex-wrap items-center gap-2">
             {strategy.indicators.map((ind) => (

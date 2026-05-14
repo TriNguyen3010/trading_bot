@@ -1,6 +1,8 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Sliders } from 'lucide-react';
+import { BotNameEditor } from './components/BotNameEditor';
 import { StepCard } from './components/StepCard';
+import { SummaryModeToggle } from './components/SummaryModeToggle';
 import { StepConnector } from './components/StepConnector';
 import { StepDrawer, type StepContentMap } from './components/StepDrawer';
 import { StrategyCard } from './components/StrategyCard';
@@ -181,13 +183,15 @@ export function BotBuilderCanvas() {
   // they toggle either condition — pristine state OR a dismissed
   // summary collapses to single-column.
   const summaryHidden = useLayoutPrefsStore((s) => s.botSummaryHidden);
+  const configuredPhases = configuredPhaseCount(builderState);
   const showSummaryBeside =
-    configuredPhaseCount(builderState) > 0 && !summaryHidden;
+    configuredPhases > 0 && !summaryHidden;
+  const showSummaryModeToggle = configuredPhases > 0;
 
   // Phase cards block — extracted so we can render it inside either
   // the single-column or 2-column wrapper without duplicating JSX.
   const phaseCardsBlock = (
-    <ol className="space-y-0">
+    <ol className="space-y-0" data-flower-exclude>
       {/* Phase 1 — Bot Basics */}
       <li
         ref={(el) => {
@@ -199,12 +203,20 @@ export function BotBuilderCanvas() {
           scrollMarginBottom: 'calc(var(--dock-height, 0px) + 0.5rem)',
         }}
       >
-        <StepCard
-          stepId="bot-config"
-          index={1}
-          icon={Sliders}
-          title={strings.phase.botBasics.title}
-        />
+        <div className="relative">
+          <StepCard
+            stepId="bot-config"
+            index={1}
+            icon={Sliders}
+            title={<BotNameEditor />}
+          />
+          {showSummaryModeToggle ? (
+            <SummaryModeToggle
+              className="absolute -right-11 top-5 z-20 mt-0"
+              buttonClassName="h-8 w-8 border border-brand/35 bg-canvas/95 text-brand shadow-[0_0_14px_rgba(240,185,11,0.22)] hover:bg-brand-subtle hover:text-brand"
+            />
+          ) : null}
+        </div>
         {/* Connector between Phase 1 and Phase 2 */}
         <StepConnector fromStep="bot-config" toStep="entry-strategy" />
       </li>
@@ -244,6 +256,7 @@ export function BotBuilderCanvas() {
       {showSummaryBeside && (
         <aside
           aria-label="Bot summary sidebar"
+          data-flower-exclude
           // Sticky so the summary stays visible while the user scrolls
           // through the (potentially tall) phase column on the right.
           // Only sticks at lg+ since below that we stack vertically.
