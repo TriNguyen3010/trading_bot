@@ -15,6 +15,7 @@ export function CypheusDock() {
   const phase = useCypheusStore((s) => s.phase);
   const setPhase = useCypheusStore((s) => s.setPhase);
   const openStep = useBuilderStore((s) => s.openStep);
+  const setOpenStep = useBuilderStore((s) => s.setOpenStep);
   const builderState = useBuilderStore();
   const totalPhases = PHASE_IDS.length; // 2
 
@@ -114,7 +115,43 @@ export function CypheusDock() {
             })}
           </div>
 
-          <div className={styles.dock}>
+          {/* Click-to-dismiss: only when nothing's configured yet. Going
+           * back to `idle` re-pins Cypheus to the Phase 1 card and hides
+           * the dock so the user gets the original empty-state hero
+           * again. Once they've configured at least one phase, the dock
+           * stays put as a progress indicator. */}
+          <div
+            className={cn(
+              styles.dock,
+              completedPhases === 0 && 'cursor-pointer',
+            )}
+            role={completedPhases === 0 ? 'button' : undefined}
+            tabIndex={completedPhases === 0 ? 0 : undefined}
+            aria-label={
+              completedPhases === 0
+                ? 'Dismiss dock — return Cypheus to Phase 1'
+                : undefined
+            }
+            onClick={
+              completedPhases === 0
+                ? () => {
+                    setOpenStep(null);
+                    setPhase('idle');
+                  }
+                : undefined
+            }
+            onKeyDown={
+              completedPhases === 0
+                ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setOpenStep(null);
+                      setPhase('idle');
+                    }
+                  }
+                : undefined
+            }
+          >
             <span className="text-sm font-medium text-fg-secondary whitespace-nowrap">
               {statusText}
             </span>
