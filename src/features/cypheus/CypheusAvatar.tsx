@@ -9,7 +9,7 @@ export interface CypheusAvatarProps {
   /**
    * Which Cypheus pose to render.
    *   'static' (default) — the PNG avatar.
-   *   'hello'  — looping `hello.webm` for the Phase 1 idle hero.
+   *   'hello'  — looping alpha `hello-alpha.webm` for the Phase 1 idle hero.
    */
   variant?: 'static' | 'hello';
 }
@@ -50,7 +50,7 @@ export function CypheusAvatar({
     <Wrapper className={wrapperClass} aria-hidden {...wrapperProps}>
       {variant === 'hello' ? (
         <video
-          src="/cypheus/hello.webm"
+          src="/cypheus/hello-alpha.webm"
           autoPlay
           loop
           muted

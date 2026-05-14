@@ -3,14 +3,21 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { CypheusPanel } from './CypheusPanel';
 import { useCypheusStore } from './store/cypheus.store';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 
 describe('CypheusPanel', () => {
   beforeEach(() => {
     useCypheusStore.getState().resetAll();
     useBuilderStore.getState().resetAll();
+    useLayoutPrefsStore.setState({
+      leftPanelCollapsed: true,
+      botSummaryHidden: false,
+      summaryMode: 'visual',
+    });
   });
 
   it('renders the greeting bubbles and no input control', async () => {
+    useLayoutPrefsStore.getState().setLeftPanelCollapsed(false);
     render(<CypheusPanel />);
 
     await waitFor(
@@ -36,9 +43,25 @@ describe('CypheusPanel', () => {
   });
 
   it('renders a "Coming Soon" pill next to the panel title when expanded', () => {
+    useLayoutPrefsStore.getState().setLeftPanelCollapsed(false);
     render(<CypheusPanel />);
 
     const pill = screen.getByText(/Coming Soon/i, { selector: '[data-pill="coming-soon"]' });
     expect(pill).toBeInTheDocument();
+  });
+
+  it('starts collapsed and shows a red notification when unread messages exist', () => {
+    useCypheusStore
+      .getState()
+      .pushMessage({ role: 'cypheus', text: 'Read me', typing: false });
+
+    render(<CypheusPanel />);
+
+    expect(
+      screen.getByRole('button', { name: /Show Cypheus panel \(1 unread\)/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Coming Soon/i, { selector: '[data-pill="coming-soon"]' }),
+    ).toBeNull();
   });
 });

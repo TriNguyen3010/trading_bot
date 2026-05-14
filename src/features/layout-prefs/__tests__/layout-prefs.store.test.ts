@@ -4,10 +4,14 @@ import { useLayoutPrefsStore } from '../layout-prefs.store';
 describe('layout-prefs.store · summaryMode', () => {
   beforeEach(() => {
     useLayoutPrefsStore.setState({
-      leftPanelCollapsed: false,
+      leftPanelCollapsed: true,
       botSummaryHidden: false,
       summaryMode: 'visual',
     });
+  });
+
+  it('defaults the Cypheus panel to collapsed', () => {
+    expect(useLayoutPrefsStore.getInitialState().leftPanelCollapsed).toBe(true);
   });
 
   it('defaults summaryMode to "visual"', () => {

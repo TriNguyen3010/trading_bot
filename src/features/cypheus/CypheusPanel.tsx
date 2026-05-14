@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import {
   Tooltip,
@@ -27,6 +27,10 @@ export function CypheusPanel() {
   const toggleCollapse = useLayoutPrefsStore((s) => s.toggleLeftPanel);
 
   const messages = useCypheusStore((s) => s.messages);
+  const [seenMessageCount, setSeenMessageCount] = useState(0);
+  const unreadCount = collapsed
+    ? Math.max(0, messages.length - seenMessageCount)
+    : 0;
 
   // Auto-run greeting on first render with empty chat.
   useEffect(() => {
@@ -35,6 +39,12 @@ export function CypheusPanel() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!collapsed) {
+      setSeenMessageCount(messages.length);
+    }
+  }, [collapsed, messages.length]);
 
   return (
     <TooltipProvider delayDuration={collapsed ? 100 : 250}>
@@ -74,12 +84,14 @@ export function CypheusPanel() {
                 onClick={toggleCollapse}
                 aria-label={
                   collapsed
-                    ? strings.layoutToggles.cypheusShowAria
+                    ? unreadCount > 0
+                      ? `${strings.layoutToggles.cypheusShowAria} (${unreadCount} unread)`
+                      : strings.layoutToggles.cypheusShowAria
                     : strings.layoutToggles.cypheusHideAria
                 }
                 aria-expanded={!collapsed}
                 className={cn(
-                  'inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-fg-muted',
+                  'relative inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-fg-muted',
                   'transition-colors duration-fast hover:bg-[#1a1a1f] hover:text-fg',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
                 )}
@@ -89,6 +101,12 @@ export function CypheusPanel() {
                 ) : (
                   <PanelLeftClose className="h-4 w-4" aria-hidden="true" />
                 )}
+                {unreadCount > 0 ? (
+                  <span
+                    aria-hidden="true"
+                    className="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full border border-black bg-bearish shadow-[0_0_0_2px_rgba(246,70,93,0.18)]"
+                  />
+                ) : null}
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">
