@@ -8,7 +8,7 @@ export const strings = {
     subtitle: 'Design, configure and export your trading bot strategy.',
   },
   header: {
-    botNamePlaceholder: 'Untitled bot',
+    botNamePlaceholder: 'Bot Basic',
     backtest: 'Backtest',
     export: 'Export',
     saved: 'Saved',
@@ -244,6 +244,57 @@ export const strings = {
     toasts: {
       configureLocked: 'Complete Setup first to unlock Configure',
     },
+  },
+  /** Per-field help-text shown by FormField when the `help` prop is set.
+   * Keep each string ≲ 25 words so it fits a single tooltip without
+   * overflowing the max-w-xs container. */
+  helpText: {
+    botConfig: {
+      botName:
+        'Display name for your bot. Also used as the generated Python bot file name on the backend.',
+      pair:
+        'Trading pair the bot will trade, e.g. BTC-USDC. Must exist on Hyperliquid.',
+      timeframe:
+        'Candle interval the bot analyses and trades on. Shorter timeframes produce more signals but more noise.',
+      tradingMode:
+        'Dry-run simulates trades with a virtual wallet — no real funds at risk. Live places real orders.',
+      leverage:
+        'Futures leverage from 1× to 50×. Higher leverage amplifies both gains and liquidation risk.',
+      exchange:
+        'Locked to Hyperliquid in this phase. Binance / Bybit will land later.',
+      marketType:
+        'Locked to Futures in this phase. Spot markets are not yet wired up end-to-end.',
+      marginMode:
+        'Cross shares margin across all positions in the account. Isolated walls each position off — one liquidation can’t touch the others.',
+      maxOpenTrades:
+        'Max number of positions the bot may hold at once. Set to -1 for unlimited.',
+      stakeCurrency:
+        'The quote currency used when staking a position (USDT / USDC / BUSD).',
+      stakeAmount:
+        'Amount of stake-currency committed per entry. Used as the position size when opening a trade.',
+      dryRunWallet:
+        'Virtual wallet balance used while in Dry-run mode. Has no effect once you switch to Live.',
+    },
+    strategy: {
+      strategyName:
+        'Display label for the entry strategy. Cosmetic — does not affect any backend logic.',
+      indicators:
+        'Indicators referenced in your entry conditions. They’re auto-added when you pick them in a rule; removing one will break any condition that uses it.',
+      direction:
+        'Long opens a buy expecting price up. Short opens a sell expecting price down.',
+      orderType:
+        'Market fills immediately at the best price. Limit waits for the price you set (with an offset).',
+      limitOffset:
+        'Percent offset from the current close. Positive moves the limit price away from current (further from fill); negative moves it closer.',
+      closeMethod:
+        'How the bot exits a position. Manual = you close it; TP / SL = take-profit & stop-loss; ROI = time-based ROI table. Toggle Advanced to enable Indicator-based exits.',
+    },
+  },
+  closeMethod: {
+    advancedLabel: 'Advanced',
+    advancedTooltip:
+      'Reveal the Indicator tab — exit when a custom indicator condition fires (trend-follow, mean-reversion). Hidden by default to keep the picker compact.',
+    newBadge: 'NEW',
   },
 } as const;
 
