@@ -1,41 +1,53 @@
-@property --border-angle {
+@property --outer-glow-angle {
   syntax: '<angle>';
   initial-value: 0deg;
   inherits: false;
 }
 
 .highlighted {
+  --outer-glow-line: 2px;
   position: relative;
-  box-shadow: 0 0 20px rgba(250, 204, 21, 0.3);
+  isolation: isolate;
   border-color: transparent !important;
+  box-shadow:
+    0 0 24px rgba(240, 185, 11, 0.24),
+    0 0 58px rgba(240, 185, 11, 0.14);
 }
 
 .highlighted::before {
   content: '';
   position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  background: conic-gradient(
-    from var(--border-angle),
-    transparent 0deg,
-    var(--brand-primary) 90deg,
-    transparent 180deg
-  );
-  animation: rotate-border-step 3s linear infinite;
-  z-index: -1;
-}
-
-.highlighted::after {
-  content: '';
-  position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--color-bg-surface);
-  z-index: -1;
+  padding: var(--outer-glow-line);
+  pointer-events: none;
+  /* Mirror the dock's sweep gradient: a single brand-coloured arc with a
+   * symmetric fade-in / fade-out and the rest of the ring transparent.
+   * The card uses the mask-composite ring technique so we never create
+   * a second outline outside the card's own border-radius. */
+  background:
+    conic-gradient(
+      from var(--outer-glow-angle),
+      transparent 0deg,
+      var(--brand-primary) 60deg,
+      var(--brand-primary) 168deg,
+      transparent 600deg
+    );
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  animation: phase-one-outer-glow 3s linear infinite;
 }
 
-@keyframes rotate-border-step {
-  to { --border-angle: 360deg; }
+@keyframes phase-one-outer-glow {
+  to {
+    --outer-glow-angle: 360deg;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -46,6 +58,7 @@
   }
 
   .highlighted {
-    box-shadow: none;
+    box-shadow:
+      0 0 24px rgba(240, 185, 11, 0.28);
   }
 }
