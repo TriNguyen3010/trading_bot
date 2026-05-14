@@ -47,6 +47,7 @@ const COLOR = [255, 210, 80] as const;
 const BRIGHT_COLOR = [255, 217, 96] as const;
 const BASE_ALPHA = 0.12;
 const PEAK_ALPHA = 0.98;
+const DIMMED_ALPHA_MULTIPLIER = 0.5;
 // Cursor hover dims to 50% so the spotlight is gentler than the
 // flower / halo corona (which keep the full PEAK_ALPHA).
 const CURSOR_PEAK_ALPHA = 0.49;
@@ -144,8 +145,60 @@ const IDLE_GAP_MAX_MS = 4000;
 // Random session position tuning.
 const BEAM_EDGE_MARGIN = 70;
 const BEAM_MIN_DIST_FRAC = 0.4;
+// Absolute floor for the A–B distance. The fractional version
+// `BEAM_MIN_DIST_FRAC × min(w,h)` shrinks with the canvas (e.g. when the
+// drawer opens and the spotlight area narrows to 480px wide), so without
+// a floor two beacons can spawn uncomfortably close together. The
+// generator uses `max(absolute, fractional)`.
+const BEAM_MIN_DIST_PX = 320;
+// Padding inflated around every `[data-flower-exclude]` element before
+// the spawn loop rejects a candidate point. Keeps beacons from sitting
+// right up against the card border.
+const BEAM_EXCLUSION_BUFFER_PX = 60;
 const BEAM_MID_FRAC_MIN = 0.35;
 const BEAM_MID_FRAC_MAX = 0.65;
+
+interface ExclusionRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Read every `[data-flower-exclude]` element's bounding box, translate
+ *  it into the canvas's local coordinate system, and inflate it by
+ *  `BEAM_EXCLUSION_BUFFER_PX`. Called once per session generation — the
+ *  cards rarely move during a single 5–10s beam cycle, and re-querying
+ *  on every frame would be wasteful. */
+function getExclusionRects(canvas: HTMLCanvasElement): ExclusionRect[] {
+  const canvasRect = canvas.getBoundingClientRect();
+  const els = document.querySelectorAll<HTMLElement>('[data-flower-exclude]');
+  const out: ExclusionRect[] = [];
+  els.forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return;
+    out.push({
+      x: r.left - canvasRect.left - BEAM_EXCLUSION_BUFFER_PX,
+      y: r.top - canvasRect.top - BEAM_EXCLUSION_BUFFER_PX,
+      width: r.width + BEAM_EXCLUSION_BUFFER_PX * 2,
+      height: r.height + BEAM_EXCLUSION_BUFFER_PX * 2,
+    });
+  });
+  return out;
+}
+
+function pointInAnyRect(
+  x: number,
+  y: number,
+  rects: readonly ExclusionRect[],
+): boolean {
+  for (const r of rects) {
+    if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height) {
+      return true;
+    }
+  }
+  return false;
+}
 
 type PlusSlot = 'center' | 'top' | 'right' | 'bottom' | 'left';
 type MemberMap<T> = Record<PlusSlot, T>;
@@ -432,7 +485,13 @@ function pathSubsection(
 }
 
 /** Pick a fresh session: two snapped grid points far apart + random
- * 3-segment perpendicular path + a full lifecycle timeline. */
+ * 3-segment perpendicular path + a full lifecycle timeline.
+ *
+ * `excludeRects` is the set of card bounding boxes (in canvas-local
+ * coords, already inflated by buffer) that beacons must avoid landing
+ * inside. Callers pass `getExclusionRects(canvas)` so the beacons
+ * cluster in the empty space *around* the cards instead of being
+ * blanketed by them. */
 function generateBeamSession(
   now: number,
   w: number,
@@ -441,23 +500,35 @@ function generateBeamSession(
   gridOffsetY: number,
   cols: number,
   rows: number,
+  excludeRects: readonly ExclusionRect[] = [],
 ): BeamSession {
   const margin = BEAM_EDGE_MARGIN;
-  const minDist = Math.min(w, h) * BEAM_MIN_DIST_FRAC;
+  // Combine the absolute floor with the fractional one so the spacing
+  // stays sensible whether the canvas is wide-open or shrunken by the
+  // drawer.
+  const minDist = Math.max(
+    BEAM_MIN_DIST_PX,
+    Math.min(w, h) * BEAM_MIN_DIST_FRAC,
+  );
   let a: PathPoint = { x: margin, y: h / 2 };
   let b: PathPoint = { x: w - margin, y: h / 2 };
   const safeW = Math.max(1, w - margin * 2);
   const safeH = Math.max(1, h - margin * 2);
-  for (let attempt = 0; attempt < 24; attempt++) {
+  // Boosted attempt cap because we now layer 3 rejections (distance +
+  // exclude A + exclude B) instead of 1. Still bounded so a degenerate
+  // viewport (no room outside cards) falls through to the seeded a/b
+  // rather than spinning.
+  for (let attempt = 0; attempt < 48; attempt++) {
     const ax = margin + Math.random() * safeW;
     const ay = margin + Math.random() * safeH;
     const bx = margin + Math.random() * safeW;
     const by = margin + Math.random() * safeH;
-    if (Math.hypot(bx - ax, by - ay) >= minDist) {
-      a = snapToGrid(ax, ay, gridOffsetX, gridOffsetY, cols, rows);
-      b = snapToGrid(bx, by, gridOffsetX, gridOffsetY, cols, rows);
-      break;
-    }
+    if (Math.hypot(bx - ax, by - ay) < minDist) continue;
+    if (pointInAnyRect(ax, ay, excludeRects)) continue;
+    if (pointInAnyRect(bx, by, excludeRects)) continue;
+    a = snapToGrid(ax, ay, gridOffsetX, gridOffsetY, cols, rows);
+    b = snapToGrid(bx, by, gridOffsetX, gridOffsetY, cols, rows);
+    break;
   }
   const type: 'H-V-H' | 'V-H-V' = Math.random() < 0.5 ? 'H-V-H' : 'V-H-V';
   const midFrac =
@@ -615,11 +686,13 @@ export function DotGridSpotlight({
   dimmed?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // Asymmetric dim transition: snap dark on drawer-open, on drawer-close
-  // the brightness radiates from canvas center outward as a wave. The
-  // refs persist across effect re-runs so toggling `dimmed` doesn't
-  // reset the in-flight reveal.
-  const dimDisplayRef = useRef(dimmed ? 0.3 : 1);
+  // Asymmetric dim transition:
+  // - drawer-open: darkness gathers from the outside edges toward center.
+  // - drawer-close: brightness radiates from center outward as a reveal.
+  // Refs persist across effect re-runs so toggling `dimmed` doesn't reset
+  // an in-flight wave.
+  const dimDisplayRef = useRef(dimmed ? DIMMED_ALPHA_MULTIPLIER : 1);
+  const dimStartRef = useRef<number | null>(null);
   const revealStartRef = useRef<number | null>(null);
   const prevDimmedRef = useRef<boolean>(!!dimmed);
 
@@ -697,11 +770,11 @@ export function DotGridSpotlight({
     };
 
     let lastFrame = performance.now();
-    // Wave reveal speed (px/s) — picked so the wave reaches a typical
-    // viewport corner in roughly the same time the global tween used to
-    // take (~0.9s for a 1440px diagonal).
-    const REVEAL_SPEED_PX_PER_S = 1600;
-    const REVEAL_EDGE_FADE_PX = 220;
+    // Wave speed (px/s) — picked so the wave reaches a typical viewport
+    // corner in roughly the same time the global tween used to take
+    // (~0.9s for a 1440px diagonal).
+    const WAVE_SPEED_PX_PER_S = 1600;
+    const WAVE_EDGE_FADE_PX = 220;
 
     const draw = () => {
       const w = cachedRect.width;
@@ -710,13 +783,15 @@ export function DotGridSpotlight({
 
       const now = performance.now();
 
-      // Detect drawer transition. On close (true → false) start a fresh
-      // reveal wave from canvas centre. On open (false → true) cancel
-      // any in-flight wave so the next close starts clean.
+      // Detect drawer transition. Open starts a dark wave from the outside
+      // in; close starts the existing bright reveal from center outward.
       if (prevDimmedRef.current && !dimmed) {
+        dimStartRef.current = null;
         revealStartRef.current = now;
-        dimDisplayRef.current = 0.3; // keep ambient fallback dark while wave runs
+        // Keep ambient fallback dim while the reveal wave runs.
+        dimDisplayRef.current = DIMMED_ALPHA_MULTIPLIER;
       } else if (!prevDimmedRef.current && dimmed) {
+        dimStartRef.current = now;
         revealStartRef.current = null;
       }
       prevDimmedRef.current = !!dimmed;
@@ -725,7 +800,7 @@ export function DotGridSpotlight({
       // animations where a per-dot radial mask would be wrong). The grid
       // dot loop further down ignores this and computes its own per-dot
       // value off the wave.
-      const target = dimmed ? 0.3 : 1;
+      const target = dimmed ? DIMMED_ALPHA_MULTIPLIER : 1;
       const cur = dimDisplayRef.current;
       if (target <= cur) {
         dimDisplayRef.current = target;
@@ -738,24 +813,33 @@ export function DotGridSpotlight({
       lastFrame = now;
       const dimMul = dimDisplayRef.current;
 
-      // Wave reveal state for per-dot computation in the grid loop.
+      // Wave state for per-dot computation in the grid loop.
       const revealStart = revealStartRef.current;
+      const dimStart = dimStartRef.current;
       const cxReveal = w / 2;
       const cyReveal = h / 2;
-      const waveActive = !dimmed && revealStart !== null;
-      const waveRadius = waveActive
-        ? ((now - revealStart) * REVEAL_SPEED_PX_PER_S) / 1000
+      const maxDx = Math.max(cxReveal, w - cxReveal);
+      const maxDy = Math.max(cyReveal, h - cyReveal);
+      const maxDist = Math.sqrt(maxDx * maxDx + maxDy * maxDy);
+      const revealWaveActive = !dimmed && revealStart !== null;
+      const dimWaveActive = !!dimmed && dimStart !== null;
+      const revealRadius = revealWaveActive
+        ? ((now - revealStart) * WAVE_SPEED_PX_PER_S) / 1000
+        : 0;
+      const dimRadius = dimWaveActive
+        ? ((now - dimStart) * WAVE_SPEED_PX_PER_S) / 1000
         : 0;
       // Once the wave has cleared every corner, retire the reveal — falls
       // back to uniform `dimMul = 1` from then on.
-      if (waveActive) {
-        const maxDx = Math.max(cxReveal, w - cxReveal);
-        const maxDy = Math.max(cyReveal, h - cyReveal);
-        const maxDist = Math.sqrt(maxDx * maxDx + maxDy * maxDy);
-        if (waveRadius > maxDist + REVEAL_EDGE_FADE_PX) {
+      if (revealWaveActive) {
+        if (revealRadius > maxDist + WAVE_EDGE_FADE_PX) {
           revealStartRef.current = null;
           dimDisplayRef.current = 1;
         }
+      }
+      if (dimWaveActive && dimRadius > maxDist + WAVE_EDGE_FADE_PX) {
+        dimStartRef.current = null;
+        dimDisplayRef.current = DIMMED_ALPHA_MULTIPLIER;
       }
 
       // Spawn / refresh the beam session when the previous one finishes
@@ -770,6 +854,7 @@ export function DotGridSpotlight({
           gridOffsetY,
           gridCols,
           gridRows,
+          getExclusionRects(canvas),
         );
       }
 
@@ -995,22 +1080,37 @@ export function DotGridSpotlight({
           if (haloAlpha > alpha) alpha = haloAlpha;
         }
 
-        // Per-dot dim: when a reveal wave is active, brightness expands
-        // from canvas centre outward. Outside the wave → still dark;
-        // inside → bright; in the trailing fade band → smooth ramp.
-        // When idle (no wave) fall back to the global ambient `dimMul`.
+        // Per-dot dim:
+        // - reveal wave: brightness expands from center outward.
+        // - dim wave: darkness gathers from outside edges toward center.
+        // - idle: use the global ambient multiplier.
         let localDim: number;
-        if (waveActive) {
+        if (revealWaveActive) {
           const ddx = dot.x - cxReveal;
           const ddy = dot.y - cyReveal;
           const dist = Math.sqrt(ddx * ddx + ddy * ddy);
-          if (dist <= waveRadius) {
+          if (dist <= revealRadius) {
             localDim = 1;
-          } else if (dist <= waveRadius + REVEAL_EDGE_FADE_PX) {
-            const t = (waveRadius + REVEAL_EDGE_FADE_PX - dist) / REVEAL_EDGE_FADE_PX;
-            localDim = 0.3 + 0.7 * t;
+          } else if (dist <= revealRadius + WAVE_EDGE_FADE_PX) {
+            const t =
+              (revealRadius + WAVE_EDGE_FADE_PX - dist) / WAVE_EDGE_FADE_PX;
+            localDim =
+              DIMMED_ALPHA_MULTIPLIER + (1 - DIMMED_ALPHA_MULTIPLIER) * t;
           } else {
-            localDim = 0.3;
+            localDim = DIMMED_ALPHA_MULTIPLIER;
+          }
+        } else if (dimWaveActive) {
+          const ddx = dot.x - cxReveal;
+          const ddy = dot.y - cyReveal;
+          const dist = Math.sqrt(ddx * ddx + ddy * ddy);
+          const front = maxDist - dimRadius;
+          if (dist >= front) {
+            localDim = DIMMED_ALPHA_MULTIPLIER;
+          } else if (dist >= front - WAVE_EDGE_FADE_PX) {
+            const t = (dist - (front - WAVE_EDGE_FADE_PX)) / WAVE_EDGE_FADE_PX;
+            localDim = 1 - (1 - DIMMED_ALPHA_MULTIPLIER) * t;
+          } else {
+            localDim = 1;
           }
         } else {
           localDim = dimMul;
@@ -1129,7 +1229,7 @@ function renderStaticGrid(canvas: HTMLCanvasElement, dimmed?: boolean) {
   for (let y = SPACING / 2; y < rect.height; y += SPACING) {
     for (let x = SPACING / 2; x < rect.width; x += SPACING) {
       let alpha = BASE_ALPHA;
-      if (dimmed) alpha *= 0.3;
+      if (dimmed) alpha *= DIMMED_ALPHA_MULTIPLIER;
       ctx.fillStyle = `rgba(${COLOR[0]}, ${COLOR[1]}, ${COLOR[2]}, ${alpha})`;
       ctx.beginPath();
       ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
