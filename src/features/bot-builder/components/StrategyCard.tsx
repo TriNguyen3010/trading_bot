@@ -192,8 +192,7 @@ export function StrategyCard() {
           subscribes to its own slice so this isn't expensive. */}
       {(visualStatus === 'configured' || visualStatus === 'error') && (
         <div
-          className="w-full space-y-3 border-t border-border-subtle px-5 py-3 cursor-default"
-          onClick={(e) => e.stopPropagation()}
+          className="w-full space-y-3 border-t border-border-subtle px-5 py-3"
         >
           {summaryMode === 'narrative' ? (
             <StrategyNarrativeSummary />
