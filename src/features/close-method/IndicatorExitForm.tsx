@@ -15,6 +15,7 @@ export function IndicatorExitForm() {
       onChange={wrapOnChange((tree) => patch({ exitConditions: tree }))}
       label="Exit conditions"
       emptyHint="Add a group (e.g. RSI > 70) to exit when indicators signal."
+      defaultGroupOnMount
     />
   );
 }
