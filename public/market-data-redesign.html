@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Order book + Live chart — redesign directions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              canvas: '#0a0a0b',
+              base: '#0b0e11',
+              surface: '#14181f',
+              'surface-hover': '#1f1f23',
+              'surface-active': '#2b3139',
+              elevated: '#1e2329',
+              input: '#181c22',
+              'border-subtle': '#1e2329',
+              border: '#2b3139',
+              'border-strong': '#474d57',
+              fg: '#eaecef',
+              'fg-secondary': '#b7bdc6',
+              'fg-muted': '#848e9c',
+              'fg-disabled': '#5e6673',
+              brand: '#F0B90B',
+              'brand-subtle': 'rgba(240,185,11,0.12)',
+              bullish: '#0ECB81',
+              'bullish-subtle': 'rgba(14,203,129,0.12)',
+              bearish: '#F6465D',
+              'bearish-subtle': 'rgba(246,70,93,0.12)',
+            },
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+              pixel: ['"Press Start 2P"', 'monospace'],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      html,
+      body {
+        background: #0a0a0b;
+        color: #eaecef;
+        font-family: Inter, system-ui, sans-serif;
+      }
+      .card-coin98 {
+        background: linear-gradient(180deg, #16161a 0%, #0c0c0e 100%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      .canvas-bg {
+        background-image: radial-gradient(
+          rgba(255, 255, 255, 0.025) 1px,
+          transparent 1px
+        );
+        background-size: 18px 18px;
+      }
+      /* Dot-grid bg observed in the screenshot — used to evoke the monitoring page canvas */
+      .dot-canvas {
+        background:
+          radial-gradient(circle, rgba(240, 185, 11, 0.07) 1px, transparent 1.2px)
+            0 0 / 14px 14px,
+          #050505;
+      }
+      .tabular {
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
+      }
+      .mono {
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+      }
+      .live-pulse::before {
+        content: '';
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: currentColor;
+        margin-right: 6px;
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.4; transform: scale(0.85); }
+        50% { opacity: 1; transform: scale(1.05); }
+      }
+      /* Bar that grows from the spread strip outward — matches existing OB visualization */
+      .ob-bar-ask {
+        background: linear-gradient(
+          270deg,
+          rgba(246, 70, 93, 0.04) 0%,
+          rgba(246, 70, 93, 0.32) 100%
+        );
+      }
+      .ob-bar-bid {
+        background: linear-gradient(
+          90deg,
+          rgba(14, 203, 129, 0.04) 0%,
+          rgba(14, 203, 129, 0.32) 100%
+        );
+      }
+      /* Vertical depth gauge for V2: stacked gradient */
+      .depth-gauge-ask {
+        background: linear-gradient(
+          90deg,
+          rgba(246, 70, 93, 0.45) 0%,
+          rgba(246, 70, 93, 0.05) 100%
+        );
+      }
+      .depth-gauge-bid {
+        background: linear-gradient(
+          90deg,
+          rgba(14, 203, 129, 0.45) 0%,
+          rgba(14, 203, 129, 0.05) 100%
+        );
+      }
+      /* RSI strip background grid */
+      .rsi-grid {
+        background-image:
+          linear-gradient(to top, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+        background-size: 100% 25%;
+      }
+    </style>
+  </head>
+
+  <body class="min-h-screen">
+    <!-- ─────────────────────── HEADER ─────────────────────── -->
+    <header class="mx-auto max-w-[1640px] px-10 pt-10">
+      <div class="flex items-baseline gap-4">
+        <span class="text-brand font-pixel text-[10px] tracking-widest"
+          >BOT MONITORING</span
+        >
+        <span class="text-fg-muted text-xs"
+          >Design exploration · Order book + live chart panels</span
+        >
+      </div>
+      <h1 class="mt-3 text-3xl font-semibold tracking-tight">
+        Three ways to redesign the
+        <span class="text-fg-muted">"what the bot is watching"</span> zone
+      </h1>
+      <p
+        class="mt-3 max-w-3xl text-sm text-fg-secondary leading-relaxed"
+      >
+        Today the chart shows price only, yet the footer says "Watching for
+        <span class="text-fg">Bollinger upper band cross + RSI &lt; 70</span>"
+        — the bot's trigger conditions are invisible. The order book sits
+        beside it, but its connection to the trigger isn't shown either.
+        Three directions explore: <span class="text-fg">overlay the rules</span>,
+        <span class="text-fg">merge into one HUD</span>, or
+        <span class="text-fg">put the trigger state first</span>. All use the
+        existing token palette and real numbers from the screenshot.
+      </p>
+
+      <!-- Junior-pass assumptions -->
+      <details class="mt-4 max-w-3xl">
+        <summary class="cursor-pointer text-xs text-fg-muted hover:text-fg">
+          Assumptions used (click to expand)
+        </summary>
+        <ul class="mt-2 text-xs text-fg-secondary list-disc list-inside leading-relaxed">
+          <li>Pair = ETH-USDC. Mid ≈ $2,299.45. Spread $3.90 / 0.170%.</li>
+          <li>Trigger rule = Bollinger upper band cross + RSI &lt; 70 (from current footer).</li>
+          <li>BB period 20 std-dev 2 (default in registry); RSI period 14.</li>
+          <li>Panels are full-width in the monitoring page (~1280px content).</li>
+          <li>Order book Hyperliquid L2, top 6 levels each side, refresh ~1s.</li>
+        </ul>
+      </details>
+    </header>
+
+    <!-- ─────────────────────── V1 ─────────────────────── -->
+    <section class="mx-auto max-w-[1640px] px-10 pt-12">
+      <div class="mb-4 flex items-center gap-3">
+        <span
+          class="rounded-md bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-black"
+          >V1</span
+        >
+        <h2 class="text-lg font-semibold">
+          Lightweight: overlay the watched indicators directly on the chart
+        </h2>
+      </div>
+      <p
+        class="mb-5 max-w-3xl text-sm text-fg-muted leading-relaxed"
+      >
+        Smallest delta. Keep both cards but make the rule visible: Bollinger
+        envelope on the chart, slim RSI strip beneath, "Trigger watcher"
+        chip in the corner that turns yellow when conditions converge.
+        Order book gets a horizontal spread strip (no more middle column).
+      </p>
+
+      <div class="dot-canvas rounded-2xl border border-border-subtle p-6">
+        <!-- Order book — single column with horizontal spread strip -->
+        <div class="rounded-2xl border border-border-subtle card-coin98">
+          <header class="flex items-center justify-between border-b border-border-subtle px-4 py-3">
+            <div class="flex items-center gap-2">
+              <span class="text-bullish live-pulse inline-flex items-center rounded border border-bullish/30 bg-bullish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider">L2</span>
+              <span class="text-xs uppercase tracking-wider text-fg-muted">ORDER BOOK · ETH</span>
+            </div>
+            <span class="text-[10px] text-fg-muted">Updates 1s</span>
+          </header>
+
+          <!-- Horizontal spread strip on top -->
+          <div class="grid grid-cols-3 border-b border-border-subtle text-center py-2.5">
+            <div>
+              <div class="text-[9px] uppercase tracking-wider text-fg-disabled">Best Bid</div>
+              <div class="mono tabular text-bullish text-base font-semibold">2,300.90</div>
+            </div>
+            <div class="border-x border-border-subtle">
+              <div class="text-[9px] uppercase tracking-wider text-fg-disabled">Spread · Mid</div>
+              <div class="mono tabular text-fg text-base font-semibold">
+                <span class="text-brand">$3.90</span>
+                <span class="mx-1 text-fg-muted">·</span>
+                <span>2,299.45</span>
+                <span class="text-fg-muted text-xs ml-1">(0.17%)</span>
+              </div>
+            </div>
+            <div>
+              <div class="text-[9px] uppercase tracking-wider text-fg-disabled">Best Ask</div>
+              <div class="mono tabular text-bearish text-base font-semibold">2,297.50</div>
+            </div>
+          </div>
+
+          <!-- Asks + Bids side by side, no middle column -->
+          <div class="grid grid-cols-2 divide-x divide-border-subtle">
+            <div class="px-4 py-3">
+              <div class="mb-1 text-[9px] uppercase tracking-wider text-fg-muted">Asks · sells</div>
+              <!-- 6 rows -->
+              <div class="space-y-0.5">
+                <!-- depth bars in same direction, max bar = 100% width -->
+                <div class="grid grid-cols-[80px_1fr_64px] items-center gap-2 text-[12px] mono tabular">
+                  <span class="text-bearish">2,298.00</span>
+                  <div class="relative h-4 rounded ob-bar-ask" style="width: 9%"></div>
+                  <span class="text-right text-fg-muted">91.71</span>
+                </div>
+                <div class="grid grid-cols-[80px_1fr_64px] items-center gap-2 text-[12px] mono tabular">
+                  <span class="text-bearish">2,297.90</span>
+                  <div class="h-4 rounded ob-bar-ask" style="width: 4%"></div>
+                  <span class="text-right text-fg-muted">38.01</span>
+                </div>
+                <div class="grid grid-cols-[80px_1fr_64px] items-center gap-2 text-[12px] mono tabular">
+                  <span class="text-bearish">2,297.80</span>
+                  <div class="h-4 rounded ob-bar-ask" style="width: 24%"></div>
+                  <span class="text-right text-fg-muted">230.27</span>
+                </div>
+                <div class="grid grid-cols-[80px_1fr_64px] items-center gap-2 text-[12px] mono tabular">
+                  <span class="text-bearish">2,297.70</span>
+                  <div class="h-4 rounded ob-bar-ask" style="width: 72%"></div>
+                  <span class="text-right text-fg-muted">683.13</span>
+                </div>
+                <div class="grid grid-cols-[80px_1fr_64px] items-center gap-2 text-[12px] mono tabular">
+                  <span class="text-bearish">2,297.60</span>
+                  <div class="h-4 rounded ob-bar-ask" style="width: 9%"></div>
+                  <span class="text-right text-fg-muted">85.16</span>
+                </div>
+                <div class="grid grid-cols-[80px_1fr_64px] items-center gap-2 text-[12px] mono tabular">
+                  <span class="text-bearish">2,297.50</span>
+                  <div class="h-4 rounded ob-bar-ask" style="width: 100%"></div>
+                  <span class="text-right text-fg-muted">956.02</span>
+                </div>
+              </div>
+            </div>
+            <div class="px-4 py-3">
+              <div class="mb-1 text-[9px] uppercase tracking-wider text-fg-muted">Bids · buys</div>
+              <div class="space-y-0.5">
+                <div class="grid grid-cols-[64px_1fr_80px] items-center gap-2 text-[12px] mono tabular">
+                  <span class="text-fg-muted">216.59</span>
+                  <div class="h-4 rounded ob-bar-bid" style="width: 28%"></div>
+                  <span class="text-right text-bullish">2,301.40</span>
+                </div>
+                <div class="grid grid-cols-[64px_1fr_80px] items-center gap-2 text-[12px] mono tabular">
+                  <span class="text-fg-muted">211.18</span>
+                  <div class="h-4 rounded ob-bar-bid" style="width: 27%"></div>
+                  <span class="text-right text-bullish">2,301.30</span>
+                </div>
+                <div class="grid grid-cols-[64px_1fr_80px] items-center gap-2 text-[12px] mono tabular">
+                  <span class="text-fg-muted">530.19</span>
+                  <div class="h-4 rounded ob-bar-bid" style="width: 69%"></div>
+                  <span class="text-right text-bullish">2,301.20</span>
+                </div>
+                <div class="grid grid-cols-[64px_1fr_80px] items-center gap-2 text-[12px] mono tabular">
+                  <span class="text-fg-muted">85.14</span>
+                  <div class="h-4 rounded ob-bar-bid" style="width: 11%"></div>
+                  <span class="text-right text-bullish">2,301.10</span>
+                </div>
+                <div class="grid grid-cols-[64px_1fr_80px] items-center gap-2 text-[12px] mono tabular">
+                  <span class="text-fg-muted">79.11</span>
+                  <div class="h-4 rounded ob-bar-bid" style="width: 10%"></div>
+                  <span class="text-right text-bullish">2,301.00</span>
+                </div>
+                <div class="grid grid-cols-[64px_1fr_80px] items-center gap-2 text-[12px] mono tabular">
+                  <span class="text-fg-muted">772.45</span>
+                  <div class="h-4 rounded ob-bar-bid" style="width: 100%"></div>
+                  <span class="text-right text-bullish">2,300.90</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spacing -->
+        <div class="h-4"></div>
+
+        <!-- LIVE chart with Bollinger overlay + RSI strip -->
+        <div class="rounded-2xl border border-border-subtle card-coin98">
+          <header class="flex items-center justify-between border-b border-border-subtle px-4 py-3">
+            <div class="flex items-center gap-2">
+              <span class="text-bearish live-pulse inline-flex items-center rounded border border-bearish/30 bg-bearish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider">LIVE</span>
+              <span class="text-xs uppercase tracking-wider text-fg-muted">ETH · 5M · MARKET DATA</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <!-- Trigger watcher chip — turns brand-yellow when conditions converge -->
+              <div class="inline-flex items-center gap-2 rounded-full border border-border bg-input px-2.5 py-1">
+                <span class="h-1.5 w-1.5 rounded-full bg-fg-muted"></span>
+                <span class="text-[11px] text-fg-muted">Trigger</span>
+                <span class="text-[11px] text-fg mono tabular">2 / 2 conditions</span>
+              </div>
+              <span class="mono tabular text-base font-semibold text-fg">
+                $2,299.70
+                <span class="text-bearish text-xs font-medium">-0.33%</span>
+              </span>
+            </div>
+          </header>
+
+          <!-- Chart area with Bollinger overlay + endpoint + H/L markers -->
+          <div class="relative h-[220px] px-4 pt-4">
+            <!-- Y-axis labels (right) -->
+            <div class="absolute right-2 top-4 bottom-8 flex flex-col justify-between text-[10px] text-fg-muted mono tabular text-right">
+              <span>2,315</span>
+              <span class="text-brand opacity-80">2,308 · BB↑</span>
+              <span>2,300 · mid</span>
+              <span class="text-brand opacity-80">2,292 · BB↓</span>
+              <span>2,285</span>
+            </div>
+            <svg viewBox="0 0 1000 200" class="h-full w-[calc(100%-72px)]" preserveAspectRatio="none">
+              <!-- Bollinger envelope (filled band) -->
+              <path
+                d="M 0,40 C 100,40 200,55 320,75 C 440,95 560,105 700,90 C 820,75 920,55 1000,38
+                   L 1000,170 C 920,180 820,170 700,165 C 560,165 440,155 320,150 C 200,150 100,170 0,170 Z"
+                fill="rgba(240,185,11,0.05)"
+                stroke="rgba(240,185,11,0.35)"
+                stroke-width="1"
+                stroke-dasharray="3 3"
+              />
+              <!-- BB middle (SMA20) -->
+              <path
+                d="M 0,105 C 100,108 200,115 320,118 C 440,120 560,122 700,118 C 820,115 920,108 1000,105"
+                fill="none"
+                stroke="rgba(240,185,11,0.4)"
+                stroke-width="1"
+              />
+              <!-- Price line (red because down) -->
+              <path
+                d="M 0,50 C 60,55 100,75 150,85 C 200,95 240,70 280,85 C 320,110 360,140 410,155 C 450,170 490,160 510,140 C 540,115 580,100 620,110 C 680,130 720,160 760,150 C 800,140 840,120 880,105 C 920,90 960,80 1000,70"
+                fill="none"
+                stroke="#F6465D"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <!-- Endpoint -->
+              <circle cx="1000" cy="70" r="6" fill="#F6465D" />
+              <circle cx="1000" cy="70" r="10" fill="none" stroke="#F6465D" stroke-opacity="0.3" stroke-width="2" />
+              <!-- High marker -->
+              <circle cx="60" cy="55" r="3" fill="#fff" />
+              <text x="60" y="40" fill="#eaecef" font-size="10" font-family="JetBrains Mono" text-anchor="middle">H 2311.20</text>
+              <!-- Low marker -->
+              <circle cx="410" cy="155" r="3" fill="#fff" />
+              <text x="410" y="180" fill="#eaecef" font-size="10" font-family="JetBrains Mono" text-anchor="middle">L 2287.30</text>
+            </svg>
+            <!-- Time axis -->
+            <div class="absolute left-4 right-20 bottom-2 flex justify-between text-[10px] text-fg-muted mono tabular">
+              <span>01:45</span><span>02:45</span><span>03:45</span><span>04:45</span><span>05:45</span>
+            </div>
+          </div>
+
+          <!-- RSI strip -->
+          <div class="border-t border-border-subtle px-4 py-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] uppercase tracking-wider text-fg-muted">RSI (14)</span>
+              <span class="text-[11px] mono tabular">
+                <span class="text-bullish font-semibold">64.2</span>
+                <span class="text-fg-muted ml-1">of 70 trigger</span>
+              </span>
+            </div>
+            <div class="relative h-12 rsi-grid rounded border border-border-subtle">
+              <!-- Overbought line at 70 -->
+              <div class="absolute left-0 right-0 border-t border-dashed border-brand/60" style="top: 30%"></div>
+              <span class="absolute right-1 text-[9px] text-brand/80" style="top: 18%">70 OB</span>
+              <!-- Oversold at 30 -->
+              <div class="absolute left-0 right-0 border-t border-dashed border-bullish/30" style="top: 70%"></div>
+              <span class="absolute right-1 text-[9px] text-bullish/60" style="top: 58%">30 OS</span>
+              <!-- RSI line -->
+              <svg viewBox="0 0 1000 100" class="h-full w-full" preserveAspectRatio="none">
+                <path d="M 0,55 C 60,40 120,30 200,28 C 260,28 320,40 400,55 C 480,68 540,75 620,60 C 700,45 780,50 860,45 C 920,40 980,38 1000,36"
+                  fill="none" stroke="#F0B90B" stroke-width="1.5" />
+                <circle cx="1000" cy="36" r="3" fill="#F0B90B" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Watching footer — promoted to a real status row -->
+          <div class="border-t border-border-subtle px-4 py-2.5 grid grid-cols-[1fr_auto] gap-4 items-center">
+            <div>
+              <div class="text-[10px] uppercase tracking-wider text-fg-muted">Trigger watcher</div>
+              <div class="mt-0.5 text-[12px] text-fg-secondary">
+                Need
+                <span class="text-fg font-semibold">close ⟶ crosses above BB↑ (2,308)</span>
+                <span class="text-fg-muted mx-1">·</span>
+                <span class="text-fg font-semibold">RSI &lt; 70</span>
+                <span class="text-fg-muted">— currently $4.30 below band, RSI 64.2.</span>
+              </div>
+            </div>
+            <div class="text-[11px] text-fg-muted mono tabular">
+              <span class="text-bullish">●</span> Next check in 12s
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <dl class="mt-4 grid grid-cols-2 gap-3 text-xs max-w-3xl">
+        <div class="rounded-md border border-border-subtle bg-surface/70 p-3">
+          <dt class="text-bullish font-semibold">Pros</dt>
+          <dd class="mt-1 text-fg-secondary leading-relaxed">Reuses both cards. Lowest dev cost. Resolves the biggest gap: bot intent becomes visible. RSI strip is reusable in other contexts.</dd>
+        </div>
+        <div class="rounded-md border border-border-subtle bg-surface/70 p-3">
+          <dt class="text-bearish font-semibold">Cons</dt>
+          <dd class="mt-1 text-fg-secondary leading-relaxed">More density on the chart. RSI strip adds vertical height. If trigger rule has &gt;2 conditions, the footer wraps.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- ─────────────────────── V2 ─────────────────────── -->
+    <section class="mx-auto max-w-[1640px] px-10 pt-16">
+      <div class="mb-4 flex items-center gap-3">
+        <span
+          class="rounded-md bg-fg-secondary/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fg"
+          >V2</span
+        >
+        <h2 class="text-lg font-semibold">
+          Merged HUD: depth becomes a vertical gauge attached to the chart
+        </h2>
+      </div>
+      <p
+        class="mb-5 max-w-3xl text-sm text-fg-muted leading-relaxed"
+      >
+        Two cards collapse into one tall "market HUD." Chart is hero, with
+        Bollinger envelope and trigger thresholds drawn as horizontal
+        annotated lines. The order book transforms into a vertical depth
+        ladder pinned to the right of the chart — each price level becomes a
+        bar; you read liquidity walls visually instead of as a number column.
+        Spread + mid float as a small HUD chip in the top-right.
+      </p>
+
+      <div class="dot-canvas rounded-2xl border border-border-subtle p-6">
+        <div class="rounded-2xl border border-border-subtle card-coin98">
+          <header class="flex items-center justify-between border-b border-border-subtle px-4 py-3">
+            <div class="flex items-center gap-2">
+              <span class="text-bearish live-pulse inline-flex items-center rounded border border-bearish/30 bg-bearish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider">LIVE</span>
+              <span class="text-xs uppercase tracking-wider text-fg-muted">ETH-USDC · 5M · MARKET HUD</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="inline-flex items-center gap-1.5 rounded border border-border bg-input px-2 py-1 text-[11px] mono tabular">
+                <span class="text-fg-muted">Spread</span>
+                <span class="text-brand">$3.90</span>
+                <span class="text-fg-muted">·</span>
+                <span class="text-fg">0.17%</span>
+              </span>
+              <span class="mono tabular text-base font-semibold text-fg">
+                $2,299.70
+                <span class="text-bearish text-xs font-medium">-0.33%</span>
+              </span>
+            </div>
+          </header>
+
+          <!-- Chart + vertical depth ladder -->
+          <div class="grid grid-cols-[1fr_220px]">
+            <!-- Chart -->
+            <div class="relative h-[300px] border-r border-border-subtle px-4 pt-4">
+              <svg viewBox="0 0 1000 270" class="h-[calc(100%-24px)] w-full" preserveAspectRatio="none">
+                <!-- BB envelope -->
+                <path
+                  d="M 0,50 C 100,50 200,65 320,85 C 440,105 560,115 700,100 C 820,85 920,65 1000,48
+                     L 1000,225 C 920,235 820,225 700,220 C 560,220 440,210 320,205 C 200,205 100,225 0,225 Z"
+                  fill="rgba(240,185,11,0.05)"
+                  stroke="rgba(240,185,11,0.35)"
+                  stroke-width="1"
+                  stroke-dasharray="3 3"
+                />
+                <!-- BB middle -->
+                <path
+                  d="M 0,140 C 100,145 200,155 320,158 C 440,162 560,164 700,158 C 820,152 920,145 1000,140"
+                  fill="none" stroke="rgba(240,185,11,0.5)" stroke-width="1"
+                />
+                <!-- Trigger threshold line (BB upper, brand color, thicker) -->
+                <line x1="0" y1="48" x2="1000" y2="48" stroke="#F0B90B" stroke-width="0.5" stroke-dasharray="6 4" opacity="0.6"/>
+                <text x="6" y="42" fill="#F0B90B" font-size="9" font-family="JetBrains Mono">BB↑ 2,308 · target</text>
+                <!-- Price line -->
+                <path
+                  d="M 0,65 C 60,72 100,95 150,110 C 200,120 240,90 280,110 C 320,140 360,180 410,200 C 450,215 490,205 510,180 C 540,150 580,135 620,150 C 680,170 720,205 760,190 C 800,180 840,160 880,140 C 920,125 960,110 1000,90"
+                  fill="none" stroke="#F6465D" stroke-width="2" stroke-linecap="round"
+                />
+                <!-- Spread band -->
+                <rect x="0" y="138" width="1000" height="6" fill="rgba(240,185,11,0.08)" />
+                <!-- Endpoint with pulse -->
+                <circle cx="1000" cy="90" r="6" fill="#F6465D" />
+                <circle cx="1000" cy="90" r="11" fill="none" stroke="#F6465D" stroke-opacity="0.3" stroke-width="2" />
+                <!-- H/L -->
+                <circle cx="60" cy="72" r="3" fill="#fff" />
+                <text x="64" y="65" fill="#eaecef" font-size="10" font-family="JetBrains Mono">H 2311.20</text>
+                <circle cx="410" cy="200" r="3" fill="#fff" />
+                <text x="414" y="218" fill="#eaecef" font-size="10" font-family="JetBrains Mono">L 2287.30</text>
+              </svg>
+              <div class="absolute left-4 right-4 bottom-2 flex justify-between text-[10px] text-fg-muted mono tabular">
+                <span>01:45</span><span>02:45</span><span>03:45</span><span>04:45</span><span>05:45</span>
+              </div>
+            </div>
+
+            <!-- Vertical depth ladder — y-aligned with chart -->
+            <div class="relative h-[300px]">
+              <div class="absolute top-4 left-3 text-[9px] uppercase tracking-wider text-fg-muted">
+                Depth · L2
+              </div>
+              <div class="absolute top-4 right-3 text-[9px] uppercase tracking-wider text-fg-muted">
+                Size
+              </div>
+
+              <!-- Ladder rows (6 asks above mid, 6 bids below) -->
+              <div class="absolute inset-0 pt-7 pb-6 px-2 flex flex-col justify-between text-[11px] mono tabular">
+                <!-- ASK 6 -->
+                <div class="flex items-center gap-1.5">
+                  <span class="w-14 text-bearish text-right">2,298.00</span>
+                  <div class="flex-1 h-3 depth-gauge-ask rounded" style="width: 9%"></div>
+                  <span class="text-fg-muted">91</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-14 text-bearish text-right">2,297.90</span>
+                  <div class="flex-1 h-3 depth-gauge-ask rounded" style="width: 4%"></div>
+                  <span class="text-fg-muted">38</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-14 text-bearish text-right">2,297.80</span>
+                  <div class="flex-1 h-3 depth-gauge-ask rounded" style="width: 24%"></div>
+                  <span class="text-fg-muted">230</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-14 text-bearish text-right">2,297.70</span>
+                  <div class="flex-1 h-3 depth-gauge-ask rounded" style="width: 72%"></div>
+                  <span class="text-fg-muted">683</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-14 text-bearish text-right">2,297.60</span>
+                  <div class="flex-1 h-3 depth-gauge-ask rounded" style="width: 9%"></div>
+                  <span class="text-fg-muted">85</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-14 text-bearish text-right">2,297.50</span>
+                  <div class="flex-1 h-3 depth-gauge-ask rounded" style="width: 100%"></div>
+                  <span class="text-fg-muted">956</span>
+                </div>
+                <!-- Mid divider -->
+                <div class="relative -mx-2 my-1 border-t border-dashed border-brand/60">
+                  <span class="absolute -top-2 left-3 bg-base px-1 text-[9px] text-brand mono tabular">MID 2,299.45</span>
+                </div>
+                <!-- BIDS -->
+                <div class="flex items-center gap-1.5">
+                  <span class="w-14 text-bullish text-right">2,300.90</span>
+                  <div class="flex-1 h-3 depth-gauge-bid rounded" style="width: 100%"></div>
+                  <span class="text-fg-muted">772</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-14 text-bullish text-right">2,301.00</span>
+                  <div class="flex-1 h-3 depth-gauge-bid rounded" style="width: 10%"></div>
+                  <span class="text-fg-muted">79</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-14 text-bullish text-right">2,301.10</span>
+                  <div class="flex-1 h-3 depth-gauge-bid rounded" style="width: 11%"></div>
+                  <span class="text-fg-muted">85</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-14 text-bullish text-right">2,301.20</span>
+                  <div class="flex-1 h-3 depth-gauge-bid rounded" style="width: 69%"></div>
+                  <span class="text-fg-muted">530</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-14 text-bullish text-right">2,301.30</span>
+                  <div class="flex-1 h-3 depth-gauge-bid rounded" style="width: 27%"></div>
+                  <span class="text-fg-muted">211</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-14 text-bullish text-right">2,301.40</span>
+                  <div class="flex-1 h-3 depth-gauge-bid rounded" style="width: 28%"></div>
+                  <span class="text-fg-muted">216</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom watcher rail -->
+          <div class="border-t border-border-subtle px-4 py-3 grid grid-cols-[auto_1fr_auto] gap-4 items-center">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] uppercase tracking-wider text-fg-muted">Trigger</span>
+              <span class="rounded bg-bullish-subtle text-bullish px-1.5 py-0.5 text-[10px] font-bold">RSI &lt; 70 ✓</span>
+              <span class="rounded bg-bearish-subtle text-bearish/90 px-1.5 py-0.5 text-[10px] font-bold">BB↑ cross ✗</span>
+            </div>
+            <div class="text-[11px] text-fg-secondary mono tabular text-center">
+              RSI <span class="text-fg font-semibold">64.2</span>
+              <span class="mx-2 text-fg-muted">|</span>
+              Distance to BB↑ <span class="text-fg font-semibold">$8.30 · 0.36%</span>
+            </div>
+            <div class="text-[11px] text-fg-muted mono tabular flex items-center gap-1.5">
+              <span class="text-bullish">●</span> Next check 12s
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <dl class="mt-4 grid grid-cols-2 gap-3 text-xs max-w-3xl">
+        <div class="rounded-md border border-border-subtle bg-surface/70 p-3">
+          <dt class="text-bullish font-semibold">Pros</dt>
+          <dd class="mt-1 text-fg-secondary leading-relaxed">One card, less vertical space. Depth + price share a y-axis — visually obvious where the wall sits relative to current price. Reads like a pro trading terminal.</dd>
+        </div>
+        <div class="rounded-md border border-border-subtle bg-surface/70 p-3">
+          <dt class="text-bearish font-semibold">Cons</dt>
+          <dd class="mt-1 text-fg-secondary leading-relaxed">Biggest rebuild. Need to coordinate y-scale between chart price range and order book levels (they don't share scale today). Loses the side-by-side ask/bid scan pattern.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- ─────────────────────── V3 ─────────────────────── -->
+    <section class="mx-auto max-w-[1640px] px-10 pt-16 pb-20">
+      <div class="mb-4 flex items-center gap-3">
+        <span
+          class="rounded-md bg-bullish-subtle px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-bullish"
+          >V3</span
+        >
+        <h2 class="text-lg font-semibold">
+          Action-first: trigger watcher is hero, market data is secondary
+        </h2>
+      </div>
+      <p
+        class="mb-5 max-w-3xl text-sm text-fg-muted leading-relaxed"
+      >
+        Flip the hierarchy. The user's mental model on this page is
+        <span class="text-fg">"is my bot about to fire?"</span> — answer that
+        first. Big "Watching" hero card breaks the rule into per-condition
+        progress bars + "how close" thermometer. Chart + order book
+        compress to a row below as supporting evidence. Cypheus-style
+        narrative line under the hero ties it together.
+      </p>
+
+      <div class="dot-canvas rounded-2xl border border-border-subtle p-6 space-y-4">
+        <!-- HERO: Trigger watcher -->
+        <div class="rounded-2xl border border-brand/30 card-coin98 overflow-hidden">
+          <div class="grid grid-cols-[1.4fr_1fr]">
+            <!-- Left: rule decomposition -->
+            <div class="p-5 border-r border-border-subtle">
+              <div class="flex items-center gap-2">
+                <span class="text-brand live-pulse inline-flex items-center rounded border border-brand/30 bg-brand-subtle px-1.5 py-0.5 text-[10px] font-bold tracking-wider">WATCHING</span>
+                <span class="text-xs uppercase tracking-wider text-fg-muted">Entry trigger · Long</span>
+              </div>
+              <h3 class="mt-3 text-xl font-semibold text-fg">
+                <span class="text-fg-muted">When</span> close crosses above BB↑
+                <span class="text-fg-muted">and</span> RSI &lt; 70
+              </h3>
+
+              <!-- Per-condition progress -->
+              <div class="mt-5 space-y-3">
+                <div>
+                  <div class="flex items-baseline justify-between">
+                    <span class="text-sm text-fg-secondary">close → BB upper band (2,308)</span>
+                    <span class="text-xs mono tabular text-bearish">$8.30 away · 0.36%</span>
+                  </div>
+                  <div class="mt-1 h-2 rounded-full bg-input overflow-hidden relative">
+                    <div class="absolute inset-y-0 left-0 bg-bearish/60" style="width: 64%"></div>
+                    <div class="absolute inset-y-0 left-0 right-0 border-r-2 border-brand" style="width: 64%"></div>
+                  </div>
+                  <div class="mt-0.5 text-[10px] text-fg-muted">
+                    closer = more bearish (price below band); cross = trigger
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex items-baseline justify-between">
+                    <span class="text-sm text-fg-secondary">RSI (14) under 70</span>
+                    <span class="text-xs mono tabular text-bullish">64.2 · ✓ already met</span>
+                  </div>
+                  <div class="mt-1 h-2 rounded-full bg-input overflow-hidden relative">
+                    <div class="absolute inset-y-0 left-0 bg-bullish/70" style="width: 92%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cypheus-style narrative -->
+              <div class="mt-5 rounded-lg border border-border-subtle bg-input/50 p-3 flex items-start gap-3">
+                <div class="h-7 w-7 shrink-0 rounded-full bg-brand/20 flex items-center justify-center">
+                  <span class="text-brand text-xs">⌬</span>
+                </div>
+                <p class="text-[12px] text-fg-secondary leading-relaxed">
+                  Price has retreated to the lower half of the Bollinger band — a cross above the upper band typically takes 3-6 candles of momentum from here. RSI sits well under 70, so once price rallies the second condition stays valid.
+                </p>
+              </div>
+            </div>
+
+            <!-- Right: trigger thermometer -->
+            <div class="p-5 flex flex-col items-center justify-center text-center bg-base/40">
+              <div class="text-[10px] uppercase tracking-wider text-fg-muted">Conditions met</div>
+              <div class="mt-3 relative h-32 w-32">
+                <svg viewBox="0 0 100 100" class="h-full w-full -rotate-90">
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="#1e2329" stroke-width="10" />
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="#F0B90B" stroke-width="10"
+                    stroke-dasharray="263.9" stroke-dashoffset="131.9" stroke-linecap="round" />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <span class="mono tabular text-3xl font-bold text-fg">1<span class="text-fg-muted text-lg">/2</span></span>
+                </div>
+              </div>
+              <div class="mt-3 text-[11px] text-fg-muted mono tabular">
+                <span class="text-bullish">●</span> Next check in 12s
+              </div>
+              <div class="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border-subtle bg-input px-3 py-1 text-[11px]">
+                <span class="text-fg-muted">ETA to fire ·</span>
+                <span class="text-fg mono tabular">~6 candles</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Supporting market data row -->
+        <div class="grid grid-cols-[1.6fr_1fr] gap-4">
+          <!-- Compact chart -->
+          <div class="rounded-2xl border border-border-subtle card-coin98">
+            <header class="flex items-center justify-between border-b border-border-subtle px-4 py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-bearish live-pulse inline-flex items-center rounded border border-bearish/30 bg-bearish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider">LIVE</span>
+                <span class="text-xs uppercase tracking-wider text-fg-muted">ETH · 5M</span>
+              </div>
+              <span class="mono tabular text-sm font-semibold text-fg">
+                $2,299.70
+                <span class="text-bearish text-xs font-medium">-0.33%</span>
+              </span>
+            </header>
+            <div class="relative h-[180px] px-4 pt-3">
+              <svg viewBox="0 0 1000 160" class="h-[calc(100%-20px)] w-full" preserveAspectRatio="none">
+                <path d="M 0,30 C 100,30 200,45 320,65 C 440,85 560,95 700,80 C 820,65 920,45 1000,28
+                  L 1000,135 C 920,145 820,135 700,130 C 560,130 440,120 320,115 C 200,115 100,135 0,135 Z"
+                  fill="rgba(240,185,11,0.05)" stroke="rgba(240,185,11,0.3)" stroke-width="1" stroke-dasharray="3 3" />
+                <line x1="0" y1="28" x2="1000" y2="28" stroke="#F0B90B" stroke-width="0.5" stroke-dasharray="6 4" opacity="0.6"/>
+                <path d="M 0,45 C 60,52 100,75 150,90 C 200,100 240,70 280,90 C 320,120 360,160 410,180 C 450,195 490,185 510,160 C 540,130 580,115 620,130 C 680,150 720,185 760,170 C 800,160 840,140 880,120 C 920,105 960,90 1000,70"
+                  fill="none" stroke="#F6465D" stroke-width="2" stroke-linecap="round" />
+                <circle cx="1000" cy="70" r="5" fill="#F6465D" />
+              </svg>
+              <div class="absolute left-4 right-4 bottom-1 flex justify-between text-[10px] text-fg-muted mono tabular">
+                <span>01:45</span><span>03:45</span><span>05:45</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Compact order book — just top 3 each side + mid -->
+          <div class="rounded-2xl border border-border-subtle card-coin98">
+            <header class="flex items-center justify-between border-b border-border-subtle px-4 py-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-bullish live-pulse inline-flex items-center rounded border border-bullish/30 bg-bullish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider">L2</span>
+                <span class="text-xs uppercase tracking-wider text-fg-muted">DEPTH</span>
+              </div>
+              <span class="text-[10px] mono tabular text-fg-muted">
+                <span class="text-brand">$3.90</span> spread
+              </span>
+            </header>
+            <div class="px-4 py-3 text-[11px] mono tabular">
+              <div class="space-y-0.5">
+                <div class="grid grid-cols-[1fr_auto_1fr] gap-2">
+                  <span class="text-bearish text-right">2,297.80</span>
+                  <div class="w-16 h-3 rounded ob-bar-ask" style="opacity: 0.45"></div>
+                  <span class="text-fg-muted">230</span>
+                </div>
+                <div class="grid grid-cols-[1fr_auto_1fr] gap-2">
+                  <span class="text-bearish text-right">2,297.70</span>
+                  <div class="w-16 h-3 rounded ob-bar-ask" style="opacity: 0.75"></div>
+                  <span class="text-fg-muted">683</span>
+                </div>
+                <div class="grid grid-cols-[1fr_auto_1fr] gap-2">
+                  <span class="text-bearish text-right">2,297.50</span>
+                  <div class="w-16 h-3 rounded ob-bar-ask" style="opacity: 1"></div>
+                  <span class="text-fg-muted">956</span>
+                </div>
+              </div>
+              <div class="my-2 text-center text-brand mono tabular text-xs font-semibold">
+                2,299.45 · mid
+              </div>
+              <div class="space-y-0.5">
+                <div class="grid grid-cols-[1fr_auto_1fr] gap-2">
+                  <span class="text-bullish text-right">2,300.90</span>
+                  <div class="w-16 h-3 rounded ob-bar-bid" style="opacity: 1"></div>
+                  <span class="text-fg-muted">772</span>
+                </div>
+                <div class="grid grid-cols-[1fr_auto_1fr] gap-2">
+                  <span class="text-bullish text-right">2,301.20</span>
+                  <div class="w-16 h-3 rounded ob-bar-bid" style="opacity: 0.7"></div>
+                  <span class="text-fg-muted">530</span>
+                </div>
+                <div class="grid grid-cols-[1fr_auto_1fr] gap-2">
+                  <span class="text-bullish text-right">2,301.40</span>
+                  <div class="w-16 h-3 rounded ob-bar-bid" style="opacity: 0.3"></div>
+                  <span class="text-fg-muted">216</span>
+                </div>
+              </div>
+              <a href="#" class="mt-3 block text-center text-[10px] text-fg-muted hover:text-brand">
+                Show full ladder →
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <dl class="mt-4 grid grid-cols-2 gap-3 text-xs max-w-3xl">
+        <div class="rounded-md border border-border-subtle bg-surface/70 p-3">
+          <dt class="text-bullish font-semibold">Pros</dt>
+          <dd class="mt-1 text-fg-secondary leading-relaxed">Matches the user's question on this page. Hero card makes "am I close to firing?" answerable in one glance. Cypheus narrative ties data to story.</dd>
+        </div>
+        <div class="rounded-md border border-border-subtle bg-surface/70 p-3">
+          <dt class="text-bearish font-semibold">Cons</dt>
+          <dd class="mt-1 text-fg-secondary leading-relaxed">Most opinionated rewrite. Needs a trigger-condition parser (rule AST → progress bars) — works for simple rules, harder for nested AND/OR with 4+ conditions. "ETA" is a heuristic.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- ─────────────────────── FOOTER ─────────────────────── -->
+    <footer class="mx-auto max-w-[1640px] border-t border-border-subtle px-10 py-10 text-xs text-fg-muted">
+      <h3 class="text-fg font-semibold text-sm">Trade-off matrix</h3>
+      <table class="mt-3 w-full text-left text-fg-secondary">
+        <thead class="text-fg">
+          <tr>
+            <th class="py-2 pr-4 font-medium">Concern</th>
+            <th class="py-2 pr-4 font-medium">V1 Overlay</th>
+            <th class="py-2 pr-4 font-medium">V2 Merged HUD</th>
+            <th class="py-2 pr-4 font-medium">V3 Action-first</th>
+          </tr>
+        </thead>
+        <tbody class="[&>tr]:border-t [&>tr]:border-border-subtle">
+          <tr><td class="py-2 pr-4">Closes the "invisible rule" gap</td><td>✓ on chart</td><td>✓ threshold line</td><td>✓ hero progress bars</td></tr>
+          <tr><td class="py-2 pr-4">Dev effort</td><td>Low — additive</td><td>High — y-scale coordination</td><td>Medium — new card + rule parser</td></tr>
+          <tr><td class="py-2 pr-4">Visual density</td><td>Moderate ↑</td><td>High</td><td>Low at hero, normal below</td></tr>
+          <tr><td class="py-2 pr-4">Order-book scan pattern preserved</td><td>✓</td><td>✗ rebuilt as ladder</td><td>Partial (top-3 only by default)</td></tr>
+          <tr><td class="py-2 pr-4">Scales to complex rule (4+ conditions)</td><td>Footer wraps</td><td>Bottom rail chips</td><td>Vertical list of progress bars</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="text-fg font-semibold text-sm mt-6">Recommendation</h3>
+      <ul class="mt-2 space-y-1 list-disc list-inside leading-relaxed">
+        <li>
+          Ship <span class="text-fg">V1 first</span> — same two cards, just
+          add Bollinger overlay + RSI strip + status footer. Closes the
+          biggest perception gap with the least rebuild.
+        </li>
+        <li>
+          Consider <span class="text-fg">V3 as a follow-up</span> once
+          Cypheus narrative is wired in; the hero card naturally hosts the
+          "what's the bot thinking" voice.
+        </li>
+        <li>
+          V2 is the prettiest but the heaviest — defer unless you want this
+          page to feel "pro terminal."
+        </li>
+      </ul>
+    </footer>
+  </body>
+</html>

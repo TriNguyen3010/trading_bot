@@ -1,0 +1,1362 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bot monitoring · 9 page redesigns</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              canvas: '#0a0a0b', base: '#0b0e11', surface: '#14181f',
+              'surface-hover': '#1f1f23', 'surface-active': '#2b3139',
+              elevated: '#1e2329', input: '#181c22',
+              'border-subtle': '#1e2329', border: '#2b3139', 'border-strong': '#474d57',
+              fg: '#eaecef', 'fg-secondary': '#b7bdc6', 'fg-muted': '#848e9c', 'fg-disabled': '#5e6673',
+              brand: '#F0B90B', 'brand-subtle': 'rgba(240,185,11,0.12)', 'brand-soft': 'rgba(240,185,11,0.06)',
+              bullish: '#0ECB81', 'bullish-subtle': 'rgba(14,203,129,0.12)',
+              bearish: '#F6465D', 'bearish-subtle': 'rgba(246,70,93,0.12)',
+              violet: '#7C5CFF', cyan: '#22D3EE', pink: '#FF6FB3',
+            },
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+              pixel: ['"Press Start 2P"', 'monospace'],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      html, body { background: #050505; color: #eaecef; font-family: Inter, system-ui, sans-serif; }
+      .card-coin98 { background: linear-gradient(180deg, #16161a 0%, #0c0c0e 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); }
+      .dot-canvas { background: radial-gradient(circle, rgba(240,185,11,0.07) 1px, transparent 1.2px) 0 0 / 14px 14px, #050505; }
+      .tabular { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+      .live-pulse::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 999px; background: currentColor; margin-right: 6px; animation: pulse 1.4s ease-in-out infinite; }
+      @keyframes pulse { 0%,100% { opacity: 0.4; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.05); } }
+      .ob-bar-ask { background: linear-gradient(270deg, rgba(246,70,93,0.04), rgba(246,70,93,0.32)); }
+      .ob-bar-bid { background: linear-gradient(90deg, rgba(14,203,129,0.04), rgba(14,203,129,0.32)); }
+      .ticker { display: inline-flex; gap: 24px; animation: scroll 40s linear infinite; }
+      @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+      .viewport { outline: 1px dashed rgba(255,255,255,0.06); outline-offset: 8px; border-radius: 16px; }
+      .grid-pill { font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #848e9c; }
+      .timeline-rail::before { content: ''; position: absolute; left: 18px; top: 0; bottom: 0; width: 1px; background: linear-gradient(to bottom, rgba(240,185,11,0), rgba(240,185,11,0.18) 8%, rgba(240,185,11,0.18) 92%, rgba(240,185,11,0)); }
+      .heat-0 { background: #14181f; }
+      .heat-loss-1 { background: rgba(246,70,93,0.20); } .heat-loss-2 { background: rgba(246,70,93,0.45); } .heat-loss-3 { background: rgba(246,70,93,0.70); }
+      .heat-win-1 { background: rgba(14,203,129,0.18); } .heat-win-2 { background: rgba(14,203,129,0.38); } .heat-win-3 { background: rgba(14,203,129,0.62); } .heat-win-4 { background: rgba(14,203,129,0.85); }
+      .heat-cell { width: 100%; aspect-ratio: 1 / 1; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
+      .heat-cell.today { box-shadow: 0 0 0 2px rgba(240,185,11,0.7); }
+      .nb-code { background: #0a0d12; border-left: 2px solid #F0B90B; padding: 10px 14px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #b7bdc6; }
+      .nb-heading::before { content: '## '; color: #848e9c; font-family: 'JetBrains Mono', monospace; }
+      .nb-h1::before { content: '# '; color: #848e9c; font-family: 'JetBrains Mono', monospace; }
+      /* Apple-Fitness-style ring for V9 */
+      .ring-progress { transform: rotate(-90deg); transform-origin: center; }
+    </style>
+  </head>
+  <body class="min-h-screen">
+
+    <!-- ─────────────── PAGE HEADER ─────────────── -->
+    <header class="mx-auto max-w-[1760px] px-10 pt-10">
+      <div class="flex items-baseline gap-4">
+        <span class="text-brand font-pixel text-[10px] tracking-widest">BOT MONITORING</span>
+        <span class="text-fg-muted text-xs">Design exploration · 9 page redesigns · ExecutionPipeline removed</span>
+      </div>
+      <h1 class="mt-3 text-3xl font-semibold tracking-tight">
+        Nine layouts for the
+        <span class="text-fg-muted">"my bot is live"</span> page
+      </h1>
+      <p class="mt-3 max-w-3xl text-sm text-fg-secondary leading-relaxed">
+        Same tokens, same data, different priorities. Trio 1 (V1–V3) explores
+        <span class="text-fg">shape</span> (bento / 3-pane / scroll). Trio 2 (V4–V6) borrows from
+        <span class="text-fg">existing patterns</span> (mission-control / TradingView strategy
+        tester / GitHub heatmap). Trio 3 (V7–V9) tries
+        <span class="text-fg">novel surfaces</span> for trading bots: conversational, research
+        notebook, gamified. Pick one — or steal pieces from several.
+      </p>
+      <nav class="mt-5 flex flex-wrap gap-2 text-[11px]">
+        <a href="#v1" class="rounded-md border border-border-subtle bg-surface px-2.5 py-1 text-fg-secondary hover:text-brand">V1 Cockpit</a>
+        <a href="#v2" class="rounded-md border border-border-subtle bg-surface px-2.5 py-1 text-fg-secondary hover:text-brand">V2 Terminal</a>
+        <a href="#v3" class="rounded-md border border-border-subtle bg-surface px-2.5 py-1 text-fg-secondary hover:text-brand">V3 Editorial</a>
+        <a href="#v4" class="rounded-md border border-border-subtle bg-surface px-2.5 py-1 text-fg-secondary hover:text-brand">V4 Mission Control</a>
+        <a href="#v5" class="rounded-md border border-border-subtle bg-surface px-2.5 py-1 text-fg-secondary hover:text-brand">V5 Strategy Lab</a>
+        <a href="#v6" class="rounded-md border border-border-subtle bg-surface px-2.5 py-1 text-fg-secondary hover:text-brand">V6 Calendar</a>
+        <a href="#v7" class="rounded-md border border-pink/40 bg-pink/10 px-2.5 py-1 text-pink hover:text-pink">V7 Cypheus Chat ✦</a>
+        <a href="#v8" class="rounded-md border border-cyan/40 bg-cyan/10 px-2.5 py-1 text-cyan hover:text-cyan">V8 Notebook ✦</a>
+        <a href="#v9" class="rounded-md border border-bullish/40 bg-bullish/10 px-2.5 py-1 text-bullish hover:text-bullish">V9 Game HUD ✦</a>
+        <a href="#matrix" class="rounded-md border border-brand/40 bg-brand-subtle px-2.5 py-1 text-brand">All 9 matrix ▸</a>
+      </nav>
+    </header>
+
+    <!-- ════════ V1 · COCKPIT ════════ -->
+    <section id="v1" class="mx-auto max-w-[1760px] px-10 pt-14 scroll-mt-6">
+      <div class="mb-3 flex items-center gap-3">
+        <span class="rounded-md bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-black">V1</span>
+        <h2 class="text-lg font-semibold">Cockpit — single viewport, no scrolling</h2>
+      </div>
+      <p class="mb-5 max-w-3xl text-sm text-fg-muted leading-relaxed">Bento grid fits 1600×900. PnL hero + trigger thermometer + market context on top; live chart + depth in middle; equity sparkline + recent fills below. Cypheus → top ticker strip.</p>
+      <div class="viewport overflow-hidden rounded-2xl">
+        <div class="dot-canvas relative" style="height: 920px;">
+          <div class="flex items-center justify-between border-b border-border-subtle bg-black/40 px-6 py-3 backdrop-blur">
+            <div class="flex items-center gap-4">
+              <span class="font-pixel text-[10px] tracking-widest text-brand">COIN98 · BOT</span>
+              <span class="text-xs text-fg-muted">/</span>
+              <span class="text-sm font-semibold">RSI Momentum Long · ETH-USDC</span>
+              <span class="inline-flex items-center gap-1 rounded-full border border-bullish/30 bg-bullish/10 px-2 py-0.5 text-[10px] font-bold text-bullish live-pulse">LIVE</span>
+              <span class="text-xs text-fg-muted">5d 17h uptime</span>
+            </div>
+            <div class="flex gap-2">
+              <button class="rounded-lg border border-border bg-input px-3 py-1.5 text-xs text-fg-secondary">Pause</button>
+              <button class="rounded-lg border border-bearish/40 bg-bearish/10 px-3 py-1.5 text-xs text-bearish">Stop</button>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 overflow-hidden border-b border-border-subtle bg-brand-soft px-6 py-1.5">
+            <span class="shrink-0 inline-flex items-center gap-1.5 rounded bg-brand/20 px-2 py-0.5 text-[10px] font-bold text-brand">⌬ CYPHEUS</span>
+            <div class="ticker text-[12px] text-fg-secondary whitespace-nowrap">
+              <span><span class="text-bullish">+$23.10</span> closed 12m ago — 7th win in a row.</span><span class="text-fg-muted">·</span>
+              <span>Waiting for BB↑ cross. RSI 64.2 safe.</span><span class="text-fg-muted">·</span>
+              <span>Price retreated to lower half of band; cross typically takes 3–6 candles.</span><span class="text-fg-muted">·</span>
+              <span>Hyperliquid spread tight 0.17%.</span><span class="text-fg-muted">·</span>
+              <span><span class="text-bullish">+$23.10</span> closed 12m ago.</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-12 grid-rows-[200px_290px_290px] gap-3 p-3" style="height: calc(100% - 96px);">
+            <div class="col-span-5 rounded-2xl border border-border-subtle card-coin98 p-4 flex flex-col justify-between">
+              <div class="flex items-baseline justify-between">
+                <span class="grid-pill">Bot P&amp;L · 30D</span>
+                <span class="inline-flex items-center gap-1.5 rounded border border-bullish/30 bg-bullish-subtle px-1.5 py-0.5 text-[10px] font-bold text-bullish">PROFITABLE</span>
+              </div>
+              <div>
+                <div class="text-bullish mono tabular text-[44px] font-bold leading-none">+$234.10</div>
+                <div class="mt-1 text-bullish text-sm font-medium">+2.34% · 7-win streak 🔥</div>
+              </div>
+              <div class="flex items-center gap-4 text-[11px] text-fg-muted">
+                <div><div>Trades</div><div class="mono tabular text-fg font-semibold">23</div></div>
+                <div><div>Win rate</div><div class="mono tabular text-fg font-semibold">78%</div></div>
+                <div><div>Avg trade</div><div class="mono tabular text-fg font-semibold">+$10.18</div></div>
+                <div><div>Max DD</div><div class="mono tabular text-bearish font-semibold">-$18.40</div></div>
+              </div>
+            </div>
+            <div class="col-span-4 rounded-2xl border border-brand/30 card-coin98 p-4">
+              <div class="flex items-baseline justify-between">
+                <span class="grid-pill text-brand">Watching for trigger</span>
+                <span class="text-[10px] text-fg-muted mono tabular">Next check 12s</span>
+              </div>
+              <div class="mt-2 text-[13px] text-fg-secondary leading-snug"><span class="text-fg-muted">When</span> <span class="text-fg">close ↑ BB↑</span> <span class="text-fg-muted">and</span> <span class="text-fg">RSI &lt; 70</span></div>
+              <div class="mt-3 space-y-2">
+                <div>
+                  <div class="flex justify-between text-[11px]"><span class="text-fg-secondary">close → BB↑ (2,308)</span><span class="mono tabular text-bearish">$8.30 away</span></div>
+                  <div class="mt-0.5 h-1.5 rounded-full bg-input overflow-hidden"><div class="h-full bg-bearish/60" style="width: 64%"></div></div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-[11px]"><span class="text-fg-secondary">RSI(14) &lt; 70</span><span class="mono tabular text-bullish">64.2 ✓</span></div>
+                  <div class="mt-0.5 h-1.5 rounded-full bg-input overflow-hidden"><div class="h-full bg-bullish/70" style="width: 92%"></div></div>
+                </div>
+              </div>
+              <div class="mt-3 flex items-center justify-between rounded-md bg-input px-2.5 py-1.5">
+                <span class="text-[10px] text-fg-muted">Conditions met</span>
+                <span class="mono tabular text-fg font-bold">1<span class="text-fg-muted text-sm">/2</span></span>
+              </div>
+            </div>
+            <div class="col-span-3 rounded-2xl border border-border-subtle card-coin98 p-4">
+              <span class="grid-pill">Market · 24h movers</span>
+              <div class="mt-2 space-y-1.5 text-[11px] mono tabular">
+                <div class="flex justify-between"><span class="text-fg">SUI</span><span class="text-bullish">+18.4%</span></div>
+                <div class="flex justify-between"><span class="text-fg">AVAX</span><span class="text-bullish">+12.1%</span></div>
+                <div class="flex justify-between"><span class="text-fg">BTC</span><span class="text-bullish">+1.7%</span></div>
+                <div class="flex justify-between border-t border-border-subtle pt-1.5 mt-1.5"><span class="text-fg">ETH</span><span class="text-bearish">-0.33%</span></div>
+                <div class="flex justify-between"><span class="text-fg">SOL</span><span class="text-bearish">-2.4%</span></div>
+                <div class="flex justify-between"><span class="text-fg">DOGE</span><span class="text-bearish">-5.1%</span></div>
+              </div>
+            </div>
+            <div class="col-span-8 rounded-2xl border border-border-subtle card-coin98 overflow-hidden flex flex-col">
+              <header class="flex items-center justify-between border-b border-border-subtle px-4 py-2.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-bearish live-pulse inline-flex items-center rounded border border-bearish/30 bg-bearish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider">LIVE</span>
+                  <span class="text-xs uppercase tracking-wider text-fg-muted">ETH · 5M · MARKET DATA</span>
+                </div>
+                <span class="mono tabular text-base font-semibold">$2,299.70 <span class="text-bearish text-xs">-0.33%</span></span>
+              </header>
+              <div class="relative flex-1 px-4 pt-3 pb-7">
+                <svg viewBox="0 0 1000 200" class="h-full w-full" preserveAspectRatio="none">
+                  <path d="M 0,40 C 100,40 200,55 320,75 C 440,95 560,105 700,90 C 820,75 920,55 1000,38 L 1000,170 C 920,180 820,170 700,165 C 560,165 440,155 320,150 C 200,150 100,170 0,170 Z" fill="rgba(240,185,11,0.05)" stroke="rgba(240,185,11,0.35)" stroke-width="1" stroke-dasharray="3 3"/>
+                  <path d="M 0,105 C 100,108 200,115 320,118 C 440,120 560,122 700,118 C 820,115 920,108 1000,105" fill="none" stroke="rgba(240,185,11,0.4)" stroke-width="1"/>
+                  <path d="M 0,50 C 60,55 100,75 150,85 C 200,95 240,70 280,85 C 320,110 360,140 410,155 C 450,170 490,160 510,140 C 540,115 580,100 620,110 C 680,130 720,160 760,150 C 800,140 840,120 880,105 C 920,90 960,80 1000,70" fill="none" stroke="#F6465D" stroke-width="2" stroke-linecap="round"/>
+                  <circle cx="1000" cy="70" r="6" fill="#F6465D"/>
+                  <circle cx="1000" cy="70" r="10" fill="none" stroke="#F6465D" stroke-opacity="0.3" stroke-width="2"/>
+                </svg>
+                <div class="absolute left-4 right-4 bottom-2 flex justify-between text-[10px] text-fg-muted mono tabular">
+                  <span>01:45</span><span>02:45</span><span>03:45</span><span>04:45</span><span>05:45</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-span-4 rounded-2xl border border-border-subtle card-coin98 overflow-hidden flex flex-col">
+              <header class="flex items-center justify-between border-b border-border-subtle px-4 py-2.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-bullish live-pulse inline-flex items-center rounded border border-bullish/30 bg-bullish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider">L2</span>
+                  <span class="text-xs uppercase tracking-wider text-fg-muted">DEPTH · ETH</span>
+                </div>
+                <span class="text-[10px] mono tabular text-fg-muted"><span class="text-brand">$3.90</span> · 0.17%</span>
+              </header>
+              <div class="flex-1 px-3 py-2 text-[11px] mono tabular space-y-0.5">
+                <div class="grid grid-cols-[60px_1fr_44px] items-center gap-1.5"><span class="text-bearish text-right">2,297.80</span><div class="h-3 rounded ob-bar-ask" style="width: 24%"></div><span class="text-right text-fg-muted">230</span></div>
+                <div class="grid grid-cols-[60px_1fr_44px] items-center gap-1.5"><span class="text-bearish text-right">2,297.70</span><div class="h-3 rounded ob-bar-ask" style="width: 72%"></div><span class="text-right text-fg-muted">683</span></div>
+                <div class="grid grid-cols-[60px_1fr_44px] items-center gap-1.5"><span class="text-bearish text-right">2,297.50</span><div class="h-3 rounded ob-bar-ask" style="width: 100%"></div><span class="text-right text-fg-muted">956</span></div>
+                <div class="text-center text-brand font-semibold py-1 text-[10px]">───── 2,299.45 mid ─────</div>
+                <div class="grid grid-cols-[60px_1fr_44px] items-center gap-1.5"><span class="text-bullish text-right">2,300.90</span><div class="h-3 rounded ob-bar-bid" style="width: 100%"></div><span class="text-right text-fg-muted">772</span></div>
+                <div class="grid grid-cols-[60px_1fr_44px] items-center gap-1.5"><span class="text-bullish text-right">2,301.20</span><div class="h-3 rounded ob-bar-bid" style="width: 69%"></div><span class="text-right text-fg-muted">530</span></div>
+                <div class="grid grid-cols-[60px_1fr_44px] items-center gap-1.5"><span class="text-bullish text-right">2,301.40</span><div class="h-3 rounded ob-bar-bid" style="width: 28%"></div><span class="text-right text-fg-muted">216</span></div>
+              </div>
+            </div>
+            <div class="col-span-6 rounded-2xl border border-border-subtle card-coin98 overflow-hidden flex flex-col">
+              <header class="flex items-center justify-between border-b border-border-subtle px-4 py-2.5">
+                <span class="text-xs uppercase tracking-wider text-fg-muted">Equity curve · 30D</span>
+                <div class="flex gap-1 text-[10px]">
+                  <button class="rounded px-2 py-0.5 text-fg-muted">24H</button><button class="rounded px-2 py-0.5 text-fg-muted">7D</button>
+                  <button class="rounded bg-brand/15 px-2 py-0.5 text-brand font-semibold">30D</button><button class="rounded px-2 py-0.5 text-fg-muted">ALL</button>
+                </div>
+              </header>
+              <div class="relative flex-1 px-4 py-3">
+                <svg viewBox="0 0 1000 200" class="h-full w-full" preserveAspectRatio="none">
+                  <path d="M 0,180 L 80,170 L 160,150 L 240,160 L 320,135 L 400,115 L 480,120 L 560,95 L 640,80 L 720,90 L 800,60 L 880,50 L 1000,40 L 1000,200 L 0,200 Z" fill="rgba(14,203,129,0.12)"/>
+                  <path d="M 0,180 L 80,170 L 160,150 L 240,160 L 320,135 L 400,115 L 480,120 L 560,95 L 640,80 L 720,90 L 800,60 L 880,50 L 1000,40" fill="none" stroke="#0ECB81" stroke-width="2"/>
+                  <circle cx="1000" cy="40" r="5" fill="#0ECB81"/>
+                </svg>
+              </div>
+            </div>
+            <div class="col-span-6 rounded-2xl border border-border-subtle card-coin98 overflow-hidden flex flex-col">
+              <header class="flex items-center justify-between border-b border-border-subtle px-4 py-2.5">
+                <span class="text-xs uppercase tracking-wider text-fg-muted">Recent fills · last 5</span>
+                <a class="text-[10px] text-brand hover:underline">All trades →</a>
+              </header>
+              <div class="flex-1 px-4 py-2 text-[11px] mono tabular">
+                <div class="grid grid-cols-[50px_70px_70px_60px_60px_1fr] gap-2 text-fg-muted text-[9px] uppercase tracking-wider pb-1 border-b border-border-subtle">
+                  <span>Side</span><span>Entry</span><span>Exit</span><span>Size</span><span>P&amp;L</span><span class="text-right">When</span>
+                </div>
+                <div class="grid grid-cols-[50px_70px_70px_60px_60px_1fr] gap-2 py-1 border-b border-border-subtle"><span class="text-bullish">LONG</span><span>2287.30</span><span>2310.40</span><span>0.05</span><span class="text-bullish">+$23.10</span><span class="text-right text-fg-muted">12m</span></div>
+                <div class="grid grid-cols-[50px_70px_70px_60px_60px_1fr] gap-2 py-1 border-b border-border-subtle"><span class="text-bullish">LONG</span><span>2278.00</span><span>2289.50</span><span>0.05</span><span class="text-bullish">+$11.50</span><span class="text-right text-fg-muted">38m</span></div>
+                <div class="grid grid-cols-[50px_70px_70px_60px_60px_1fr] gap-2 py-1 border-b border-border-subtle"><span class="text-bullish">LONG</span><span>2265.20</span><span>2280.10</span><span>0.05</span><span class="text-bullish">+$14.90</span><span class="text-right text-fg-muted">1h 7m</span></div>
+                <div class="grid grid-cols-[50px_70px_70px_60px_60px_1fr] gap-2 py-1 border-b border-border-subtle"><span class="text-bullish">LONG</span><span>2261.50</span><span>2263.80</span><span>0.05</span><span class="text-bullish">+$2.30</span><span class="text-right text-fg-muted">2h 14m</span></div>
+                <div class="grid grid-cols-[50px_70px_70px_60px_60px_1fr] gap-2 py-1"><span class="text-bearish">LONG</span><span>2250.00</span><span>2247.10</span><span>0.05</span><span class="text-bearish">-$2.90</span><span class="text-right text-fg-muted">3h 02m</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ V2 · TERMINAL ════════ -->
+    <section id="v2" class="mx-auto max-w-[1760px] px-10 pt-16 scroll-mt-6">
+      <div class="mb-3 flex items-center gap-3">
+        <span class="rounded-md bg-fg-secondary/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fg">V2</span>
+        <h2 class="text-lg font-semibold">Terminal — 3 panes, dense, monospace HUD</h2>
+      </div>
+      <p class="mb-5 max-w-3xl text-sm text-fg-muted leading-relaxed">Left = bot state + fills feed. Center = chart with Bollinger + RSI strip + threshold lines. Right = depth ladder + market movers. Cypheus = top one-liner ribbon.</p>
+      <div class="viewport overflow-hidden rounded-2xl">
+        <div class="dot-canvas relative" style="height: 920px;">
+          <div class="flex items-center justify-between border-b border-border-subtle bg-black/40 px-4 py-2 backdrop-blur">
+            <div class="flex items-center gap-3">
+              <span class="font-pixel text-[9px] tracking-widest text-brand">COIN98 · BOT</span><span class="text-fg-muted text-xs">/</span>
+              <span class="mono text-xs font-semibold">RSI-MOMO-LONG-ETH</span>
+              <span class="mono tabular text-[10px] text-fg-muted">UPTIME 5d 17h</span>
+              <span class="inline-flex items-center gap-1 rounded border border-bullish/30 bg-bullish/10 px-1.5 py-0.5 text-[10px] font-bold text-bullish live-pulse">LIVE</span>
+            </div>
+            <div class="mono tabular text-[10px] text-fg-muted flex items-center gap-3">
+              <span>FILLS 23</span><span>WR 78%</span><span class="text-bullish">PNL +$234.10</span><span class="text-fg-muted">|</span>
+              <button class="rounded border border-border bg-input px-2 py-0.5 text-fg-secondary">PAUSE</button>
+              <button class="rounded border border-bearish/40 bg-bearish/10 px-2 py-0.5 text-bearish">STOP</button>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 border-b border-border-subtle bg-brand-soft px-4 py-1">
+            <span class="shrink-0 inline-flex items-center gap-1 rounded bg-brand/20 px-1.5 py-0.5 text-[9px] font-bold text-brand mono">⌬ NARR</span>
+            <span class="text-[11px] mono text-fg-secondary truncate"><span class="text-bullish">+$23.10</span> WIN 12M AGO · 7TH IN ROW · WAITING BB↑ CROSS · RSI 64.2 SAFE · ETA ~6 CANDLES</span>
+          </div>
+          <div class="grid grid-cols-[280px_1fr_320px] gap-px bg-border-subtle" style="height: calc(100% - 64px);">
+            <div class="bg-base flex flex-col overflow-hidden">
+              <div class="border-b border-border-subtle px-4 py-3">
+                <div class="grid-pill">P&amp;L · 30D</div>
+                <div class="mono tabular text-bullish text-[28px] font-bold leading-none mt-1">+$234.10</div>
+                <div class="mt-1 mono tabular text-[11px] text-bullish">+2.34% · 23 trades</div>
+                <div class="mt-3 grid grid-cols-2 gap-2 text-[10px]">
+                  <div class="border border-border-subtle bg-surface rounded p-1.5"><div class="grid-pill text-[8px]">WIN RATE</div><div class="mono tabular text-fg font-semibold">78%</div></div>
+                  <div class="border border-border-subtle bg-surface rounded p-1.5"><div class="grid-pill text-[8px]">STREAK</div><div class="mono tabular text-bullish font-semibold">7 🔥</div></div>
+                  <div class="border border-border-subtle bg-surface rounded p-1.5"><div class="grid-pill text-[8px]">AVG</div><div class="mono tabular text-fg font-semibold">+$10.18</div></div>
+                  <div class="border border-border-subtle bg-surface rounded p-1.5"><div class="grid-pill text-[8px]">MAX DD</div><div class="mono tabular text-bearish font-semibold">-$18.40</div></div>
+                </div>
+              </div>
+              <div class="border-b border-border-subtle px-4 py-2">
+                <div class="flex items-center justify-between"><span class="grid-pill">EQUITY · 30D</span>
+                  <div class="flex gap-0.5 text-[9px] mono"><button class="rounded px-1 py-0 text-fg-muted">24H</button><button class="rounded px-1 py-0 text-fg-muted">7D</button><button class="rounded bg-brand/20 px-1 py-0 text-brand font-bold">30D</button></div>
+                </div>
+                <svg viewBox="0 0 240 60" class="mt-1 w-full h-12" preserveAspectRatio="none">
+                  <path d="M 0,50 L 20,46 L 40,38 L 60,42 L 80,32 L 100,22 L 120,26 L 140,16 L 160,12 L 180,14 L 200,8 L 220,4 L 240,2 L 240,60 L 0,60 Z" fill="rgba(14,203,129,0.12)"/>
+                  <path d="M 0,50 L 20,46 L 40,38 L 60,42 L 80,32 L 100,22 L 120,26 L 140,16 L 160,12 L 180,14 L 200,8 L 220,4 L 240,2" fill="none" stroke="#0ECB81" stroke-width="1.5"/>
+                </svg>
+              </div>
+              <div class="flex-1 overflow-hidden flex flex-col">
+                <div class="flex items-center justify-between border-b border-border-subtle px-4 py-2"><span class="grid-pill">FILLS FEED · LIVE</span><span class="text-[10px] mono text-fg-muted">23 total</span></div>
+                <div class="flex-1 overflow-y-auto px-4 py-1 text-[10px] mono tabular">
+                  <div class="flex items-baseline justify-between border-b border-border-subtle/50 py-1.5"><div><span class="text-bullish font-bold">L</span> <span class="text-fg">2287.30→2310.40</span></div><div class="text-bullish">+$23.10</div></div>
+                  <div class="flex items-baseline justify-between border-b border-border-subtle/50 py-1.5"><div><span class="text-bullish font-bold">L</span> <span class="text-fg">2278.00→2289.50</span></div><div class="text-bullish">+$11.50</div></div>
+                  <div class="flex items-baseline justify-between border-b border-border-subtle/50 py-1.5"><div><span class="text-bullish font-bold">L</span> <span class="text-fg">2265.20→2280.10</span></div><div class="text-bullish">+$14.90</div></div>
+                  <div class="flex items-baseline justify-between border-b border-border-subtle/50 py-1.5"><div><span class="text-bullish font-bold">L</span> <span class="text-fg">2261.50→2263.80</span></div><div class="text-bullish">+$2.30</div></div>
+                  <div class="flex items-baseline justify-between border-b border-border-subtle/50 py-1.5"><div><span class="text-bullish font-bold">L</span> <span class="text-fg">2250.00→2247.10</span></div><div class="text-bearish">-$2.90</div></div>
+                  <div class="flex items-baseline justify-between border-b border-border-subtle/50 py-1.5"><div><span class="text-bullish font-bold">L</span> <span class="text-fg">2241.30→2254.20</span></div><div class="text-bullish">+$12.90</div></div>
+                  <div class="flex items-baseline justify-between py-1.5"><div><span class="text-bullish font-bold">L</span> <span class="text-fg">2235.10→2240.00</span></div><div class="text-bullish">+$4.90</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="bg-base flex flex-col overflow-hidden">
+              <div class="flex items-center justify-between border-b border-border-subtle px-4 py-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-bearish live-pulse inline-flex items-center rounded border border-bearish/30 bg-bearish/10 px-1.5 py-0.5 text-[9px] font-bold mono">LIVE</span>
+                  <span class="mono text-xs font-semibold">ETH-USDC · 5M</span>
+                </div>
+                <div class="mono tabular text-sm font-bold text-fg">$2,299.70 <span class="text-bearish text-[11px]">-0.33%</span></div>
+              </div>
+              <div class="relative px-4 pt-2" style="height: 60%;">
+                <div class="absolute right-1 top-2 bottom-2 flex flex-col justify-between text-[9px] text-fg-muted mono tabular text-right pr-1">
+                  <span>2315</span><span class="text-brand">2308 BB↑</span><span>2300</span><span class="text-brand">2292 BB↓</span><span>2285</span>
+                </div>
+                <svg viewBox="0 0 1000 320" class="h-full w-[calc(100%-44px)]" preserveAspectRatio="none">
+                  <path d="M 0,60 C 100,60 200,80 320,110 C 440,140 560,150 700,130 C 820,110 920,80 1000,55 L 1000,260 C 920,275 820,260 700,250 C 560,250 440,235 320,230 C 200,230 100,260 0,260 Z" fill="rgba(240,185,11,0.05)" stroke="rgba(240,185,11,0.35)" stroke-width="1" stroke-dasharray="3 3"/>
+                  <path d="M 0,160 C 100,165 200,175 320,180 C 440,185 560,188 700,182 C 820,175 920,165 1000,160" fill="none" stroke="rgba(240,185,11,0.5)" stroke-width="1"/>
+                  <line x1="0" y1="58" x2="1000" y2="58" stroke="#F0B90B" stroke-width="0.6" stroke-dasharray="6 4" opacity="0.7"/>
+                  <text x="8" y="52" fill="#F0B90B" font-size="10" font-family="JetBrains Mono">▲ TRIGGER · CROSS BB↑ AT 2308</text>
+                  <path d="M 0,75 C 60,82 100,110 150,130 C 200,145 240,105 280,130 C 320,160 360,210 410,235 C 450,255 490,245 510,205 C 540,170 580,150 620,170 C 680,200 720,245 760,225 C 800,210 840,180 880,160 C 920,140 960,120 1000,100" fill="none" stroke="#F6465D" stroke-width="2" stroke-linecap="round"/>
+                  <circle cx="200" cy="125" r="4" fill="#0ECB81" stroke="#000" stroke-width="1.5"/>
+                  <circle cx="510" cy="205" r="4" fill="#0ECB81" stroke="#000" stroke-width="1.5"/>
+                  <circle cx="1000" cy="100" r="6" fill="#F6465D"/>
+                  <circle cx="1000" cy="100" r="11" fill="none" stroke="#F6465D" stroke-opacity="0.4" stroke-width="2"/>
+                </svg>
+              </div>
+              <div class="border-t border-border-subtle px-4 pt-2 pb-2" style="height: 22%;">
+                <div class="flex items-center justify-between"><span class="grid-pill">RSI(14)</span><span class="text-[10px] mono tabular"><span class="text-bullish font-semibold">64.2</span> · &lt;70 ✓</span></div>
+                <div class="relative h-[calc(100%-20px)] mt-1">
+                  <div class="absolute left-0 right-0 border-t border-dashed border-brand/60" style="top: 30%"></div>
+                  <span class="absolute right-1 text-[9px] text-brand/80" style="top: 18%">70</span>
+                  <svg viewBox="0 0 1000 100" class="h-full w-full" preserveAspectRatio="none">
+                    <path d="M 0,55 C 60,40 120,30 200,28 C 260,28 320,40 400,55 C 480,68 540,75 620,60 C 700,45 780,50 860,45 C 920,40 980,38 1000,36" fill="none" stroke="#F0B90B" stroke-width="1.5"/>
+                    <circle cx="1000" cy="36" r="3" fill="#F0B90B"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="border-t border-border-subtle px-4 py-2 flex items-center justify-between text-[11px]">
+                <div class="flex items-center gap-3 mono"><span class="grid-pill">TRIGGER</span>
+                  <span class="rounded border border-bullish/40 bg-bullish-subtle text-bullish px-1.5 py-0.5 text-[9px] font-bold">RSI &lt; 70 ✓</span>
+                  <span class="rounded border border-bearish/40 bg-bearish-subtle text-bearish/90 px-1.5 py-0.5 text-[9px] font-bold">BB↑ CROSS ✗</span>
+                </div>
+                <div class="mono tabular text-fg-muted">$8.30 to cross · ETA ~6 candles · <span class="text-bullish">●</span> 12s</div>
+              </div>
+            </div>
+            <div class="bg-base flex flex-col overflow-hidden">
+              <div class="flex items-center justify-between border-b border-border-subtle px-4 py-2">
+                <div class="flex items-center gap-2"><span class="text-bullish live-pulse inline-flex items-center rounded border border-bullish/30 bg-bullish/10 px-1.5 py-0.5 text-[9px] font-bold mono">L2</span><span class="grid-pill">ORDER BOOK</span></div>
+                <span class="text-[10px] mono text-fg-muted">1s</span>
+              </div>
+              <div class="px-3 py-2 flex-1 overflow-y-auto text-[10px] mono tabular space-y-0.5">
+                <div class="grid grid-cols-[60px_1fr_46px] items-center gap-1.5"><span class="text-bearish text-right">2,298.00</span><div class="h-3 rounded ob-bar-ask" style="width: 9%"></div><span class="text-right text-fg-muted">91</span></div>
+                <div class="grid grid-cols-[60px_1fr_46px] items-center gap-1.5"><span class="text-bearish text-right">2,297.80</span><div class="h-3 rounded ob-bar-ask" style="width: 24%"></div><span class="text-right text-fg-muted">230</span></div>
+                <div class="grid grid-cols-[60px_1fr_46px] items-center gap-1.5"><span class="text-bearish text-right">2,297.70</span><div class="h-3 rounded ob-bar-ask" style="width: 72%"></div><span class="text-right text-fg-muted">683</span></div>
+                <div class="grid grid-cols-[60px_1fr_46px] items-center gap-1.5"><span class="text-bearish text-right">2,297.50</span><div class="h-3 rounded ob-bar-ask" style="width: 100%"></div><span class="text-right text-fg-muted">956</span></div>
+                <div class="relative -mx-3 my-1.5 border-t border-dashed border-brand/60"><span class="absolute -top-2 left-1/2 -translate-x-1/2 bg-base px-2 text-[10px] font-bold text-brand mono">MID 2,299.45</span></div>
+                <div class="grid grid-cols-[60px_1fr_46px] items-center gap-1.5"><span class="text-bullish text-right">2,300.90</span><div class="h-3 rounded ob-bar-bid" style="width: 100%"></div><span class="text-right text-fg-muted">772</span></div>
+                <div class="grid grid-cols-[60px_1fr_46px] items-center gap-1.5"><span class="text-bullish text-right">2,301.20</span><div class="h-3 rounded ob-bar-bid" style="width: 69%"></div><span class="text-right text-fg-muted">530</span></div>
+                <div class="grid grid-cols-[60px_1fr_46px] items-center gap-1.5"><span class="text-bullish text-right">2,301.30</span><div class="h-3 rounded ob-bar-bid" style="width: 27%"></div><span class="text-right text-fg-muted">211</span></div>
+                <div class="grid grid-cols-[60px_1fr_46px] items-center gap-1.5"><span class="text-bullish text-right">2,301.40</span><div class="h-3 rounded ob-bar-bid" style="width: 28%"></div><span class="text-right text-fg-muted">216</span></div>
+              </div>
+              <div class="border-t border-border-subtle px-4 py-2">
+                <span class="grid-pill">24H MOVERS</span>
+                <div class="mt-1 text-[10px] mono tabular space-y-0.5">
+                  <div class="flex justify-between"><span class="text-fg">SUI</span><span class="text-bullish">+18.4%</span></div>
+                  <div class="flex justify-between"><span class="text-fg">AVAX</span><span class="text-bullish">+12.1%</span></div>
+                  <div class="flex justify-between"><span class="text-fg">ETH</span><span class="text-bearish">-0.33%</span></div>
+                  <div class="flex justify-between"><span class="text-fg">DOGE</span><span class="text-bearish">-5.1%</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ V3 · EDITORIAL ════════ -->
+    <section id="v3" class="mx-auto max-w-[1760px] px-10 pt-16 scroll-mt-6">
+      <div class="mb-3 flex items-center gap-3">
+        <span class="rounded-md bg-bullish-subtle px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-bullish">V3</span>
+        <h2 class="text-lg font-semibold">Editorial — narrative scroll, casual check-in</h2>
+      </div>
+      <p class="mb-5 max-w-3xl text-sm text-fg-muted leading-relaxed">Single centered column. Big status sentence, then chart with Bollinger overlay, equity story with annotations, "trade journal" cards. Cypheus narration inline. No rails.</p>
+      <div class="viewport overflow-hidden rounded-2xl">
+        <div class="dot-canvas relative overflow-y-auto" style="height: 920px;">
+          <div class="sticky top-0 z-10 flex items-center justify-between border-b border-border-subtle bg-black/70 px-6 py-3 backdrop-blur">
+            <div class="flex items-center gap-3"><span class="font-pixel text-[10px] tracking-widest text-brand">COIN98 · BOT</span><span class="text-fg-muted text-xs">/</span><span class="text-sm font-semibold">RSI Momentum Long</span></div>
+            <div class="flex gap-2"><button class="rounded-lg border border-border bg-input px-3 py-1.5 text-xs text-fg-secondary">Pause</button><button class="rounded-lg border border-bearish/40 bg-bearish/10 px-3 py-1.5 text-xs text-bearish">Stop</button></div>
+          </div>
+          <div class="mx-auto max-w-[920px] px-6 py-10 space-y-8">
+            <section>
+              <div class="flex items-center gap-2"><span class="inline-flex items-center gap-1.5 rounded-full border border-bullish/30 bg-bullish/10 px-2.5 py-1 text-[11px] font-bold text-bullish live-pulse">LIVE · ACTIVE</span><span class="text-xs text-fg-muted">5d 17h since deploy</span></div>
+              <h1 class="mt-3 text-[34px] leading-tight font-semibold tracking-tight">Up <span class="text-bullish">+$234.10</span> in 5 days, 7 wins in a row. <span class="text-fg-muted">Waiting for the next Bollinger cross.</span></h1>
+              <p class="mt-3 text-[15px] leading-relaxed text-fg-secondary max-w-[680px]">Your RSI Momentum bot closed its last trade <span class="text-fg">12 minutes ago</span> at <span class="text-bullish font-semibold">+$23.10</span>. Right now it's watching ETH at $2,299.70 — about $8 below the upper Bollinger band — and will fire a long entry the moment price crosses and RSI stays below 70.</p>
+              <div class="mt-6 grid grid-cols-4 gap-px bg-border-subtle rounded-xl overflow-hidden">
+                <div class="bg-base p-4"><div class="grid-pill">P&amp;L</div><div class="mono tabular text-bullish text-2xl font-bold mt-1">+$234.10</div><div class="text-[11px] text-bullish mt-0.5">+2.34%</div></div>
+                <div class="bg-base p-4"><div class="grid-pill">Trades</div><div class="mono tabular text-fg text-2xl font-bold mt-1">23</div><div class="text-[11px] text-fg-muted mt-0.5">78% win rate</div></div>
+                <div class="bg-base p-4"><div class="grid-pill">Win streak</div><div class="mono tabular text-fg text-2xl font-bold mt-1">7 🔥</div><div class="text-[11px] text-bullish mt-0.5">best so far</div></div>
+                <div class="bg-base p-4"><div class="grid-pill">Max drawdown</div><div class="mono tabular text-bearish text-2xl font-bold mt-1">-$18.40</div><div class="text-[11px] text-fg-muted mt-0.5">3d ago</div></div>
+              </div>
+            </section>
+            <section>
+              <h2 class="text-[20px] font-semibold tracking-tight">What the bot is watching now</h2>
+              <div class="mt-3 rounded-xl border border-brand/30 bg-brand-soft p-4 flex items-start gap-3">
+                <div class="h-8 w-8 shrink-0 rounded-full bg-brand/20 flex items-center justify-center"><span class="text-brand">⌬</span></div>
+                <p class="text-[13px] leading-relaxed text-fg-secondary"><span class="text-fg font-medium">Cypheus:</span> Price retreated to the lower half of the Bollinger band over the past 4 candles — typical pre-rally compression. RSI sits at 64.2, well below 70. When momentum returns the second condition stays valid.</p>
+              </div>
+              <div class="mt-4 rounded-2xl border border-border-subtle card-coin98 overflow-hidden">
+                <header class="flex items-center justify-between border-b border-border-subtle px-5 py-3">
+                  <div class="flex items-center gap-2"><span class="text-bearish live-pulse inline-flex items-center rounded border border-bearish/30 bg-bearish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider">LIVE</span><span class="text-xs uppercase tracking-wider text-fg-muted">ETH · 5m</span></div>
+                  <span class="mono tabular text-base font-semibold">$2,299.70 <span class="text-bearish text-xs">-0.33%</span></span>
+                </header>
+                <div class="relative px-5 pt-4 pb-7" style="height: 240px;">
+                  <svg viewBox="0 0 1000 200" class="h-full w-full" preserveAspectRatio="none">
+                    <path d="M 0,40 C 100,40 200,55 320,75 C 440,95 560,105 700,90 C 820,75 920,55 1000,38 L 1000,170 C 920,180 820,170 700,165 C 560,165 440,155 320,150 C 200,150 100,170 0,170 Z" fill="rgba(240,185,11,0.05)" stroke="rgba(240,185,11,0.35)" stroke-width="1" stroke-dasharray="3 3"/>
+                    <line x1="0" y1="38" x2="1000" y2="38" stroke="#F0B90B" stroke-width="0.5" stroke-dasharray="6 4" opacity="0.6"/>
+                    <text x="8" y="32" fill="#F0B90B" font-size="11" font-family="Inter">▲ Trigger · cross BB↑ at $2,308</text>
+                    <path d="M 0,50 C 60,55 100,75 150,85 C 200,95 240,70 280,85 C 320,110 360,140 410,155 C 450,170 490,160 510,140 C 540,115 580,100 620,110 C 680,130 720,160 760,150 C 800,140 840,120 880,105 C 920,90 960,80 1000,70" fill="none" stroke="#F6465D" stroke-width="2"/>
+                    <circle cx="1000" cy="70" r="6" fill="#F6465D"/>
+                  </svg>
+                </div>
+              </div>
+            </section>
+            <section>
+              <h2 class="text-[20px] font-semibold tracking-tight">Trade journal</h2>
+              <div class="mt-4 space-y-2">
+                <article class="rounded-xl border border-border-subtle bg-base/60 p-4">
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2"><span class="rounded bg-bullish-subtle text-bullish px-1.5 py-0.5 text-[10px] font-bold">LONG · WIN</span><span class="text-[11px] text-fg-muted">12m ago · 4m hold</span></div>
+                      <p class="mt-1.5 text-[13px] text-fg-secondary">Entered at <span class="mono tabular text-fg">$2,287.30</span>, exited at <span class="mono tabular text-fg">$2,310.40</span> after the upper Bollinger cross held for 2 candles.</p>
+                    </div>
+                    <div class="mono tabular text-bullish text-xl font-bold">+$23.10</div>
+                  </div>
+                </article>
+                <article class="rounded-xl border border-border-subtle bg-base/60 p-4">
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1"><div class="flex items-center gap-2"><span class="rounded bg-bullish-subtle text-bullish px-1.5 py-0.5 text-[10px] font-bold">LONG · WIN</span><span class="text-[11px] text-fg-muted">38m ago</span></div>
+                    <p class="mt-1.5 text-[13px] text-fg-secondary">Quick scalp on RSI bounce from 58.</p></div>
+                    <div class="mono tabular text-bullish text-xl font-bold">+$11.50</div>
+                  </div>
+                </article>
+                <button class="block w-full text-center text-[11px] text-fg-muted py-2">Show all 23 trades →</button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ V4 · MISSION CONTROL ════════ -->
+    <section id="v4" class="mx-auto max-w-[1760px] px-10 pt-16 scroll-mt-6">
+      <div class="mb-3 flex items-center gap-3">
+        <span class="rounded-md bg-violet text-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">V4</span>
+        <h2 class="text-lg font-semibold">Mission Control — event stream is the page</h2>
+      </div>
+      <p class="mb-5 max-w-3xl text-sm text-fg-muted leading-relaxed">Borrows from NASA Open MCT + Microsoft Agent 365. Vertical event timeline (entry, exit, missed signal, Cypheus note, system). Left = aggregate state + filters. Right = "now" hero with rule + chart + depth. New content: <span class="text-fg">missed signals</span>.</p>
+      <div class="viewport overflow-hidden rounded-2xl">
+        <div class="dot-canvas relative" style="height: 940px;">
+          <div class="flex items-center justify-between border-b border-border-subtle bg-black/40 px-6 py-3 backdrop-blur">
+            <div class="flex items-center gap-3">
+              <span class="font-pixel text-[10px] tracking-widest text-brand">COIN98 · BOT</span><span class="text-fg-muted">/</span><span class="text-sm font-semibold">RSI Momentum Long · ETH-USDC</span>
+              <span class="inline-flex items-center gap-1 rounded-full border border-bullish/30 bg-bullish/10 px-2 py-0.5 text-[10px] font-bold text-bullish live-pulse">LIVE</span>
+            </div>
+            <div class="flex items-center gap-2 text-[11px]">
+              <div class="rounded-md bg-input px-2 py-1 mono tabular"><span class="text-fg-muted">FILLS</span> <span class="text-fg">23</span></div>
+              <div class="rounded-md bg-bullish/10 border border-bullish/30 px-2 py-1 mono tabular text-bullish">+$234.10 · +2.34%</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-[240px_minmax(0,520px)_minmax(0,1fr)] gap-px bg-border-subtle" style="height: calc(100% - 56px);">
+            <div class="bg-base px-4 py-4 flex flex-col gap-4 overflow-y-auto">
+              <div>
+                <div class="grid-pill">P&amp;L · 30D</div>
+                <div class="mono tabular text-bullish text-[28px] font-bold leading-none mt-1">+$234.10</div>
+                <div class="text-[11px] text-bullish mt-1 flex items-center gap-2"><span>+2.34%</span><span class="text-fg-muted">·</span><span>7 wins 🔥</span></div>
+              </div>
+              <div>
+                <div class="grid-pill">Equity · 30D</div>
+                <svg viewBox="0 0 220 60" class="mt-1 w-full h-12" preserveAspectRatio="none">
+                  <path d="M 0,50 L 30,46 L 60,38 L 90,42 L 120,28 L 150,18 L 180,12 L 220,4 L 220,60 L 0,60 Z" fill="rgba(14,203,129,0.12)"/>
+                  <path d="M 0,50 L 30,46 L 60,38 L 90,42 L 120,28 L 150,18 L 180,12 L 220,4" fill="none" stroke="#0ECB81" stroke-width="1.5"/>
+                </svg>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-[10px]">
+                <div class="border border-border-subtle bg-surface rounded p-2"><div class="grid-pill text-[8px]">Sharpe</div><div class="mono tabular text-fg font-semibold">2.14</div></div>
+                <div class="border border-border-subtle bg-surface rounded p-2"><div class="grid-pill text-[8px]">PF</div><div class="mono tabular text-fg font-semibold">2.8</div></div>
+                <div class="border border-border-subtle bg-surface rounded p-2"><div class="grid-pill text-[8px]">Avg</div><div class="mono tabular text-fg font-semibold">+$10.18</div></div>
+                <div class="border border-border-subtle bg-surface rounded p-2"><div class="grid-pill text-[8px]">Max DD</div><div class="mono tabular text-bearish font-semibold">-$18.40</div></div>
+              </div>
+              <div>
+                <div class="grid-pill mb-2">Event filter</div>
+                <div class="space-y-1 text-[11px]">
+                  <label class="flex items-center justify-between rounded px-1 py-0.5"><span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-bullish"></span> Entries / Exits</span><span class="text-fg-muted">23</span></label>
+                  <label class="flex items-center justify-between rounded px-1 py-0.5"><span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-brand"></span> Triggers fired</span><span class="text-fg-muted">23</span></label>
+                  <label class="flex items-center justify-between rounded px-1 py-0.5"><span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-fg-muted"></span> Triggers <em>missed</em></span><span class="text-fg-muted">7</span></label>
+                  <label class="flex items-center justify-between rounded px-1 py-0.5"><span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-violet"></span> Cypheus notes</span><span class="text-fg-muted">14</span></label>
+                  <label class="flex items-center justify-between rounded px-1 py-0.5"><span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-cyan"></span> System</span><span class="text-fg-muted">4</span></label>
+                </div>
+              </div>
+            </div>
+            <div class="bg-base flex flex-col overflow-hidden">
+              <div class="flex items-center justify-between border-b border-border-subtle px-4 py-2.5">
+                <div class="flex items-center gap-2"><span class="grid-pill">Event stream</span><span class="text-[10px] mono tabular text-fg-muted">71 events · live</span></div>
+                <div class="flex gap-1 text-[10px] mono"><button class="rounded bg-brand/20 px-2 py-0.5 text-brand font-bold">LIVE</button><button class="rounded px-2 py-0.5 text-fg-muted">24H</button><button class="rounded px-2 py-0.5 text-fg-muted">7D</button></div>
+              </div>
+              <div class="relative timeline-rail flex-1 overflow-y-auto pl-12 pr-4 py-3 space-y-3">
+                <div class="relative"><span class="absolute -left-[26px] top-1.5 h-3 w-3 rounded-full border-2 border-brand bg-base"></span><span class="absolute -left-[27px] top-1.5 h-4 w-4 rounded-full border-2 border-brand animate-ping opacity-30"></span>
+                  <article class="rounded-lg border border-brand/30 bg-brand-soft p-3">
+                    <div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="grid-pill text-brand">Pending trigger</span><span class="text-[10px] mono tabular text-fg-muted">next check 12s</span></div><span class="rounded bg-input text-fg-muted px-1.5 py-0.5 text-[10px] mono">1/2 met</span></div>
+                    <p class="mt-1.5 text-[12px] text-fg-secondary">Watching <span class="text-fg">close ↑ BB↑ (2,308)</span> + <span class="text-fg">RSI &lt; 70</span> · $8.30 below band · RSI 64.2 ✓</p>
+                  </article>
+                </div>
+                <div class="relative"><span class="absolute -left-[26px] top-1.5 h-3 w-3 rounded-full bg-bullish"></span>
+                  <article class="rounded-lg border border-border-subtle bg-surface p-3">
+                    <div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="rounded bg-bullish-subtle text-bullish px-1.5 py-0.5 text-[10px] font-bold">CLOSED · LONG WIN</span><span class="text-[10px] mono tabular text-fg-muted">12m ago</span></div><span class="mono tabular text-bullish font-semibold">+$23.10</span></div>
+                    <p class="mt-1 text-[12px] text-fg-secondary">Entry 2287.30 · Exit 2310.40 · held 4m · trigger held 2 candles.</p>
+                  </article>
+                </div>
+                <div class="relative"><span class="absolute -left-[26px] top-1.5 h-3 w-3 rounded-full bg-violet"></span>
+                  <article class="rounded-lg border border-violet/30 bg-violet/5 p-3">
+                    <div class="flex items-center gap-2"><span class="rounded bg-violet/20 text-violet px-1.5 py-0.5 text-[10px] font-bold">⌬ CYPHEUS</span><span class="text-[10px] mono tabular text-fg-muted">15m ago</span></div>
+                    <p class="mt-1 text-[12px] text-fg-secondary">7th win in a row — strongest streak in 30 days.</p>
+                  </article>
+                </div>
+                <div class="relative"><span class="absolute -left-[26px] top-1.5 h-3 w-3 rounded-full bg-brand"></span>
+                  <article class="rounded-lg border border-border-subtle bg-surface p-3">
+                    <div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="rounded bg-brand/15 text-brand px-1.5 py-0.5 text-[10px] font-bold">▲ TRIGGER · ENTRY</span><span class="text-[10px] mono tabular text-fg-muted">16m ago</span></div><span class="mono tabular text-fg-muted text-[11px]">LONG 0.05 ETH</span></div>
+                    <p class="mt-1 text-[12px] text-fg-secondary">close crossed BB↑ at 2287.30 with RSI 67.4 — both conditions met for 1 candle.</p>
+                  </article>
+                </div>
+                <div class="relative"><span class="absolute -left-[26px] top-1.5 h-3 w-3 rounded-full bg-fg-muted"></span>
+                  <article class="rounded-lg border border-dashed border-border bg-surface/40 p-3">
+                    <div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="rounded bg-input text-fg-muted px-1.5 py-0.5 text-[10px] font-bold">○ MISSED · BB cross</span><span class="text-[10px] mono tabular text-fg-muted">42m ago</span></div><span class="text-[11px] text-fg-muted">RSI 71.8 — over ceiling</span></div>
+                    <p class="mt-1 text-[12px] text-fg-secondary">Price crossed BB↑ momentarily but RSI was above 70 — rule rejected. <span class="text-fg-muted">No trade taken.</span></p>
+                  </article>
+                </div>
+                <div class="relative"><span class="absolute -left-[26px] top-1.5 h-3 w-3 rounded-full bg-bearish"></span>
+                  <article class="rounded-lg border border-bearish/30 bg-bearish/5 p-3">
+                    <div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="rounded bg-bearish-subtle text-bearish px-1.5 py-0.5 text-[10px] font-bold">CLOSED · STOPPED OUT</span><span class="text-[10px] mono tabular text-fg-muted">3h 02m</span></div><span class="mono tabular text-bearish font-semibold">-$2.90</span></div>
+                    <p class="mt-1 text-[12px] text-fg-secondary">Entry 2250.00 · stopped 2247.10 after BB↑ cross faded. Bot held discipline.</p>
+                  </article>
+                </div>
+              </div>
+            </div>
+            <div class="bg-base flex flex-col overflow-hidden">
+              <div class="flex items-center justify-between border-b border-border-subtle px-4 py-2.5"><div class="flex items-center gap-2"><span class="grid-pill">Now</span><span class="text-bearish live-pulse inline-flex items-center rounded border border-bearish/30 bg-bearish/10 px-1.5 py-0.5 text-[10px] font-bold mono">LIVE</span></div><span class="mono tabular text-base font-semibold">$2,299.70 <span class="text-bearish text-[11px]">-0.33%</span></span></div>
+              <div class="px-4 py-3 border-b border-border-subtle">
+                <div class="text-[13px] text-fg-secondary"><span class="text-fg-muted">When</span> <span class="text-fg font-medium">close ↑ BB↑</span> <span class="text-fg-muted">and</span> <span class="text-fg font-medium">RSI &lt; 70</span></div>
+                <div class="mt-2 space-y-2">
+                  <div><div class="flex justify-between text-[11px]"><span class="text-fg-secondary">close → 2,308</span><span class="mono tabular text-bearish">$8.30 away</span></div><div class="mt-0.5 h-1.5 rounded-full bg-input overflow-hidden"><div class="h-full bg-bearish/60" style="width: 64%"></div></div></div>
+                  <div><div class="flex justify-between text-[11px]"><span class="text-fg-secondary">RSI &lt; 70</span><span class="mono tabular text-bullish">64.2 ✓</span></div><div class="mt-0.5 h-1.5 rounded-full bg-input overflow-hidden"><div class="h-full bg-bullish/70" style="width: 92%"></div></div></div>
+                </div>
+              </div>
+              <div class="relative" style="height: 200px;">
+                <svg viewBox="0 0 1000 200" class="h-full w-full" preserveAspectRatio="none">
+                  <path d="M 0,40 C 100,40 200,55 320,75 C 440,95 560,105 700,90 C 820,75 920,55 1000,38 L 1000,170 C 920,180 820,170 700,165 C 560,165 440,155 320,150 C 200,150 100,170 0,170 Z" fill="rgba(240,185,11,0.05)" stroke="rgba(240,185,11,0.3)" stroke-width="1" stroke-dasharray="3 3"/>
+                  <line x1="0" y1="38" x2="1000" y2="38" stroke="#F0B90B" stroke-width="0.6" stroke-dasharray="6 4" opacity="0.6"/>
+                  <path d="M 0,50 C 100,80 200,100 300,120 C 400,140 500,150 600,140 C 700,130 800,110 900,90 C 950,80 980,75 1000,70" fill="none" stroke="#F6465D" stroke-width="2"/>
+                  <circle cx="1000" cy="70" r="6" fill="#F6465D"/>
+                </svg>
+              </div>
+              <div class="border-t border-border-subtle px-4 py-3 text-[10px] mono tabular flex-1">
+                <div class="flex justify-between text-fg-muted mb-1.5"><span class="grid-pill">Depth</span><span><span class="text-brand">$3.90</span> spread</span></div>
+                <div class="space-y-0.5">
+                  <div class="grid grid-cols-[60px_1fr_44px] items-center gap-1.5"><span class="text-bearish text-right">2,297.70</span><div class="h-3 rounded ob-bar-ask" style="width: 72%"></div><span class="text-right text-fg-muted">683</span></div>
+                  <div class="grid grid-cols-[60px_1fr_44px] items-center gap-1.5"><span class="text-bearish text-right">2,297.50</span><div class="h-3 rounded ob-bar-ask" style="width: 100%"></div><span class="text-right text-fg-muted">956</span></div>
+                  <div class="text-center text-brand py-0.5">─── 2,299.45 ───</div>
+                  <div class="grid grid-cols-[60px_1fr_44px] items-center gap-1.5"><span class="text-bullish text-right">2,300.90</span><div class="h-3 rounded ob-bar-bid" style="width: 100%"></div><span class="text-right text-fg-muted">772</span></div>
+                  <div class="grid grid-cols-[60px_1fr_44px] items-center gap-1.5"><span class="text-bullish text-right">2,301.20</span><div class="h-3 rounded ob-bar-bid" style="width: 69%"></div><span class="text-right text-fg-muted">530</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ V5 · STRATEGY LAB ════════ -->
+    <section id="v5" class="mx-auto max-w-[1760px] px-10 pt-16 scroll-mt-6">
+      <div class="mb-3 flex items-center gap-3">
+        <span class="rounded-md bg-cyan/20 text-cyan px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">V5</span>
+        <h2 class="text-lg font-semibold">Strategy Lab — TradingView-style tabbed analytics</h2>
+      </div>
+      <p class="mb-5 max-w-3xl text-sm text-fg-muted leading-relaxed">Tabs: Overview / Performance / Trades / Logs. Overview shows equity vs hodl benchmark + drawdown chart + P&amp;L histogram + Cypheus verdict grade. New content: <span class="text-fg">Sharpe · profit factor · drawdown chart · P&amp;L distribution · verdict</span>.</p>
+      <div class="viewport overflow-hidden rounded-2xl">
+        <div class="dot-canvas relative" style="height: 960px;">
+          <div class="flex items-center justify-between border-b border-border-subtle bg-black/40 px-6 py-3 backdrop-blur">
+            <div class="flex items-center gap-3"><span class="font-pixel text-[10px] tracking-widest text-brand">COIN98 · BOT</span><span class="text-fg-muted">/</span><span class="text-sm font-semibold">RSI Momentum Long · ETH-USDC</span><span class="inline-flex items-center gap-1 rounded-full border border-bullish/30 bg-bullish/10 px-2 py-0.5 text-[10px] font-bold text-bullish live-pulse">LIVE</span></div>
+            <div class="flex gap-2"><button class="rounded-md border border-border bg-input px-3 py-1 text-xs text-fg-secondary">Pause</button><button class="rounded-md border border-bearish/40 bg-bearish/10 px-3 py-1 text-xs text-bearish">Stop</button></div>
+          </div>
+          <div class="flex items-center justify-between border-b border-border-subtle bg-base px-6">
+            <div class="flex">
+              <button class="relative px-4 py-3 text-[13px] font-semibold text-fg">Overview<span class="absolute bottom-0 left-2 right-2 h-0.5 bg-brand"></span></button>
+              <button class="px-4 py-3 text-[13px] text-fg-secondary">Performance</button>
+              <button class="px-4 py-3 text-[13px] text-fg-secondary">Trades <span class="ml-1 rounded bg-surface px-1.5 py-0.5 text-[10px] text-fg-muted mono">23</span></button>
+              <button class="px-4 py-3 text-[13px] text-fg-secondary">Logs <span class="ml-1 rounded bg-surface px-1.5 py-0.5 text-[10px] text-fg-muted mono">71</span></button>
+            </div>
+            <div class="flex gap-1 text-[10px] mono py-2"><button class="rounded px-2 py-1 text-fg-muted">24H</button><button class="rounded px-2 py-1 text-fg-muted">7D</button><button class="rounded bg-brand/20 px-2 py-1 text-brand font-bold">30D</button><button class="rounded px-2 py-1 text-fg-muted">ALL</button></div>
+          </div>
+          <div class="grid grid-cols-[minmax(0,1fr)_320px] gap-px bg-border-subtle" style="height: calc(100% - 110px);">
+            <div class="bg-base overflow-y-auto p-6 space-y-5">
+              <div class="rounded-2xl border border-border-subtle card-coin98 overflow-hidden">
+                <header class="flex items-center justify-between border-b border-border-subtle px-5 py-3">
+                  <div><div class="grid-pill">Net equity · 30D</div><div class="flex items-baseline gap-3 mt-1"><span class="mono tabular text-bullish text-3xl font-bold">+$234.10</span><span class="text-bullish text-sm">+2.34%</span></div></div>
+                  <div class="text-right"><div class="grid-pill">Hodl benchmark · ETH</div><div class="mono tabular text-bearish text-base font-semibold mt-1">-1.24%</div></div>
+                </header>
+                <div class="relative px-5 pt-4 pb-6" style="height: 240px;">
+                  <svg viewBox="0 0 1000 200" class="h-full w-full" preserveAspectRatio="none">
+                    <path d="M 0,100 C 200,105 400,115 600,120 C 800,125 900,128 1000,130" fill="none" stroke="#848e9c" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>
+                    <text x="1000" y="135" fill="#848e9c" font-size="9" font-family="JetBrains Mono" text-anchor="end">Hodl -1.24%</text>
+                    <path d="M 0,180 L 80,170 L 160,148 L 240,158 L 320,128 L 400,108 L 480,115 L 560,86 L 640,72 L 720,82 L 800,52 L 880,42 L 1000,28 L 1000,200 L 0,200 Z" fill="rgba(14,203,129,0.12)"/>
+                    <path d="M 0,180 L 80,170 L 160,148 L 240,158 L 320,128 L 400,108 L 480,115 L 560,86 L 640,72 L 720,82 L 800,52 L 880,42 L 1000,28" fill="none" stroke="#0ECB81" stroke-width="2"/>
+                    <circle cx="240" cy="158" r="4" fill="#F6465D"/><circle cx="1000" cy="28" r="5" fill="#0ECB81"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="rounded-2xl border border-border-subtle card-coin98 overflow-hidden">
+                <header class="flex items-center justify-between border-b border-border-subtle px-5 py-2.5"><span class="grid-pill">Drawdown · % from peak</span><span class="mono tabular text-[11px] text-bearish">Max -7.85% · 3d ago</span></header>
+                <div class="relative px-5 pt-3 pb-2" style="height: 100px;">
+                  <svg viewBox="0 0 1000 80" class="h-full w-full" preserveAspectRatio="none">
+                    <path d="M 0,0 L 80,4 L 160,20 L 200,55 L 240,72 L 280,40 L 320,12 L 400,4 L 480,18 L 560,2 L 640,0 L 720,5 L 800,0 L 1000,0 L 1000,80 L 0,80 Z" fill="rgba(246,70,93,0.18)"/>
+                    <path d="M 0,0 L 80,4 L 160,20 L 200,55 L 240,72 L 280,40 L 320,12 L 400,4 L 480,18 L 560,2 L 640,0 L 720,5 L 800,0 L 1000,0" fill="none" stroke="#F6465D" stroke-width="1.5"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="rounded-xl border border-border-subtle bg-base p-3"><div class="grid-pill">Win rate</div><div class="mono tabular text-fg text-xl font-bold mt-1">78%</div><div class="text-[10px] text-fg-muted">18 W / 5 L</div></div>
+                <div class="rounded-xl border border-border-subtle bg-base p-3"><div class="grid-pill">Profit factor</div><div class="mono tabular text-fg text-xl font-bold mt-1">2.8</div><div class="text-[10px] text-fg-muted">gain / loss</div></div>
+                <div class="rounded-xl border border-border-subtle bg-base p-3"><div class="grid-pill">Sharpe</div><div class="mono tabular text-fg text-xl font-bold mt-1">2.14</div><div class="text-[10px] text-fg-muted">good &gt; 1</div></div>
+                <div class="rounded-xl border border-border-subtle bg-base p-3"><div class="grid-pill">Avg trade</div><div class="mono tabular text-bullish text-xl font-bold mt-1">+$10.18</div><div class="text-[10px] text-fg-muted">23 trades</div></div>
+                <div class="rounded-xl border border-border-subtle bg-base p-3"><div class="grid-pill">Best</div><div class="mono tabular text-bullish text-xl font-bold mt-1">+$45</div><div class="text-[10px] text-fg-muted">8d ago</div></div>
+                <div class="rounded-xl border border-border-subtle bg-base p-3"><div class="grid-pill">Worst</div><div class="mono tabular text-bearish text-xl font-bold mt-1">-$18.40</div><div class="text-[10px] text-fg-muted">3d ago</div></div>
+              </div>
+              <div class="rounded-2xl border border-border-subtle card-coin98 overflow-hidden">
+                <header class="flex items-center justify-between border-b border-border-subtle px-5 py-2.5"><span class="grid-pill">Trade P&amp;L distribution · 23 trades</span><span class="text-[10px] text-fg-muted">bucket: $5</span></header>
+                <div class="flex items-end gap-1 px-5 pb-3 pt-5" style="height: 130px;">
+                  <div class="flex-1 bg-bearish/40 rounded-t" style="height: 14%;"></div><div class="flex-1 bg-bearish/60 rounded-t" style="height: 28%;"></div><div class="flex-1 bg-bearish/40 rounded-t" style="height: 7%;"></div><div class="flex-1 bg-input rounded-t" style="height: 4%;"></div>
+                  <div class="flex-1 bg-bullish/50 rounded-t" style="height: 22%;"></div><div class="flex-1 bg-bullish/70 rounded-t" style="height: 65%;"></div><div class="flex-1 bg-bullish/90 rounded-t" style="height: 88%;"></div><div class="flex-1 bg-bullish/80 rounded-t" style="height: 48%;"></div><div class="flex-1 bg-bullish/60 rounded-t" style="height: 32%;"></div><div class="flex-1 bg-bullish/40 rounded-t" style="height: 14%;"></div>
+                </div>
+                <div class="flex justify-between px-5 pb-3 text-[10px] mono tabular text-fg-muted"><span>-$20</span><span>-$10</span><span>0</span><span>+$10</span><span>+$20</span><span>+$45</span></div>
+              </div>
+            </div>
+            <div class="bg-base flex flex-col overflow-y-auto">
+              <div class="px-5 py-3 border-b border-border-subtle"><div class="grid-pill">Live · now</div><div class="mt-2 mono tabular text-2xl font-bold">$2,299.70</div><div class="text-bearish text-sm">-0.33% on 5m</div></div>
+              <div class="px-5 py-4 border-b border-border-subtle">
+                <div class="grid-pill mb-1.5">Cypheus verdict</div>
+                <div class="flex items-baseline gap-2"><span class="text-bullish text-3xl font-bold">A−</span><span class="text-fg-muted text-[11px]">/ overall grade</span></div>
+                <p class="mt-2 text-[12px] text-fg-secondary leading-relaxed">Strategy is <span class="text-bullish font-medium">consistently outperforming hodl</span>. Profit factor 2.8 + Sharpe 2.14 suggest the edge is real. Watch the drawdown on day 3.</p>
+              </div>
+              <div class="px-5 py-4 border-b border-border-subtle">
+                <div class="grid-pill mb-1.5">Trigger rule</div>
+                <p class="text-[12px] text-fg-secondary"><span class="text-fg-muted">When</span> close ↑ BB↑ <span class="text-fg-muted">and</span> RSI &lt; 70</p>
+                <div class="mt-3 space-y-1.5 text-[11px]"><div class="flex justify-between"><span class="text-fg-secondary">BB cross</span><span class="text-bearish mono tabular">$8.30 away</span></div><div class="flex justify-between"><span class="text-fg-secondary">RSI</span><span class="text-bullish mono tabular">64.2 ✓</span></div></div>
+                <div class="mt-3 rounded-md bg-input px-3 py-1.5 flex items-center justify-between text-[11px]"><span class="text-fg-muted">Conditions</span><span class="mono tabular text-fg font-bold">1/2</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ V6 · CALENDAR STORY ════════ -->
+    <section id="v6" class="mx-auto max-w-[1760px] px-10 pt-16 scroll-mt-6">
+      <div class="mb-3 flex items-center gap-3">
+        <span class="rounded-md bg-bullish-subtle text-bullish px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">V6</span>
+        <h2 class="text-lg font-semibold">Calendar Story — heatmap + biggest-moments cards</h2>
+      </div>
+      <p class="mb-5 max-w-3xl text-sm text-fg-muted leading-relaxed">GitHub-graph energy on bot performance. 30-day daily P&amp;L heatmap hero + 3 story cards (biggest win/loss/streak) + phase progression + today-so-far widget.</p>
+      <div class="viewport overflow-hidden rounded-2xl">
+        <div class="dot-canvas relative overflow-y-auto" style="height: 1020px;">
+          <div class="sticky top-0 z-10 flex items-center justify-between border-b border-border-subtle bg-black/70 px-6 py-3 backdrop-blur">
+            <div class="flex items-center gap-3"><span class="font-pixel text-[10px] tracking-widest text-brand">COIN98 · BOT</span><span class="text-fg-muted">/</span><span class="text-sm font-semibold">RSI Momentum Long</span><span class="inline-flex items-center gap-1 rounded-full border border-bullish/30 bg-bullish/10 px-2 py-0.5 text-[10px] font-bold text-bullish live-pulse">LIVE</span></div>
+          </div>
+          <div class="mx-auto max-w-[1200px] px-6 py-8 space-y-7">
+            <section class="flex items-baseline justify-between gap-8">
+              <div>
+                <div class="flex items-center gap-2 text-[11px]"><span class="text-fg-muted">5d 17h since deploy ·</span><span class="text-bullish">7 wins in a row</span></div>
+                <h1 class="mt-2 text-[30px] leading-tight font-semibold tracking-tight"><span class="text-bullish">+$234.10</span> <span class="text-fg-muted">over the last 30 days.</span></h1>
+              </div>
+              <div class="rounded-xl border border-brand/30 bg-brand-soft px-5 py-3 min-w-[280px]">
+                <div class="grid-pill text-brand">Today · 03:14 UTC</div>
+                <div class="mt-1 flex items-baseline gap-2"><span class="mono tabular text-bullish text-2xl font-bold">+$23.10</span><span class="text-[12px] text-fg-muted">1 trade · 2 pending</span></div>
+                <div class="mt-1 text-[11px] text-fg-secondary">Watching BB↑ cross · next check 12s</div>
+              </div>
+            </section>
+            <section class="rounded-2xl border border-border-subtle card-coin98 overflow-hidden">
+              <header class="flex items-center justify-between border-b border-border-subtle px-5 py-3">
+                <div><div class="grid-pill">Daily P&amp;L · last 30 days</div><div class="text-[11px] text-fg-muted mt-0.5">Click a day to drill into trades.</div></div>
+                <div class="flex items-center gap-2 text-[10px] text-fg-muted"><span>Less</span>
+                  <div class="h-3 w-3 rounded heat-loss-3"></div><div class="h-3 w-3 rounded heat-loss-2"></div><div class="h-3 w-3 rounded heat-loss-1"></div><div class="h-3 w-3 rounded heat-0"></div>
+                  <div class="h-3 w-3 rounded heat-win-1"></div><div class="h-3 w-3 rounded heat-win-2"></div><div class="h-3 w-3 rounded heat-win-3"></div><div class="h-3 w-3 rounded heat-win-4"></div>
+                  <span>More</span>
+                </div>
+              </header>
+              <div class="px-5 py-5">
+                <div class="flex gap-2">
+                  <div class="flex flex-col gap-1.5 text-[10px] text-fg-muted mono pt-5">
+                    <span style="height: 24px;">Mon</span><span style="height: 24px;">Wed</span><span style="height: 24px;">Fri</span><span style="height: 24px;">Sun</span>
+                  </div>
+                  <div class="flex-1">
+                    <div class="grid grid-flow-col grid-rows-7 gap-1.5" style="width: 100%;">
+                      <div class="heat-cell heat-win-1"></div><div class="heat-cell heat-win-2"></div><div class="heat-cell heat-0"></div><div class="heat-cell heat-loss-2"></div><div class="heat-cell heat-win-1"></div><div class="heat-cell heat-win-3"></div><div class="heat-cell heat-0"></div>
+                      <div class="heat-cell heat-win-2"></div><div class="heat-cell heat-win-1"></div><div class="heat-cell heat-win-3"></div><div class="heat-cell heat-loss-1"></div><div class="heat-cell heat-win-2"></div><div class="heat-cell heat-0"></div><div class="heat-cell heat-win-1"></div>
+                      <div class="heat-cell heat-win-3"></div><div class="heat-cell heat-loss-3"></div><div class="heat-cell heat-win-1"></div><div class="heat-cell heat-win-4"></div><div class="heat-cell heat-win-2"></div><div class="heat-cell heat-loss-1"></div><div class="heat-cell heat-win-1"></div>
+                      <div class="heat-cell heat-win-2"></div><div class="heat-cell heat-win-1"></div><div class="heat-cell heat-win-3"></div><div class="heat-cell heat-win-2"></div><div class="heat-cell heat-loss-1"></div><div class="heat-cell heat-win-2"></div><div class="heat-cell heat-win-4"></div>
+                      <div class="heat-cell heat-win-2"></div><div class="heat-cell heat-win-3"></div><div class="heat-cell heat-win-2"></div><div class="heat-cell heat-win-2 today"></div><div class="heat-cell heat-0 opacity-40"></div><div class="heat-cell heat-0 opacity-40"></div><div class="heat-cell heat-0 opacity-40"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-5 grid grid-cols-4 gap-px bg-border-subtle rounded-lg overflow-hidden">
+                  <div class="bg-base px-4 py-3"><div class="grid-pill">Best day</div><div class="mono tabular text-bullish font-bold text-lg mt-1">+$45.30</div><div class="text-[10px] text-fg-muted">8 days ago</div></div>
+                  <div class="bg-base px-4 py-3"><div class="grid-pill">Worst day</div><div class="mono tabular text-bearish font-bold text-lg mt-1">-$18.40</div><div class="text-[10px] text-fg-muted">3 days ago</div></div>
+                  <div class="bg-base px-4 py-3"><div class="grid-pill">Avg / day</div><div class="mono tabular text-fg font-bold text-lg mt-1">+$7.80</div><div class="text-[10px] text-fg-muted">30-day mean</div></div>
+                  <div class="bg-base px-4 py-3"><div class="grid-pill">Green days</div><div class="mono tabular text-fg font-bold text-lg mt-1">22 / 30</div><div class="text-[10px] text-fg-muted">73%</div></div>
+                </div>
+              </div>
+            </section>
+            <section>
+              <div class="flex items-baseline justify-between"><h2 class="text-[20px] font-semibold tracking-tight">Big moments</h2><span class="text-[12px] text-fg-muted">3 most narrative-worthy trades</span></div>
+              <div class="mt-4 grid grid-cols-3 gap-4">
+                <article class="rounded-xl border border-bullish/30 bg-bullish-subtle p-4">
+                  <div class="flex items-center gap-2"><span class="rounded bg-bullish/20 text-bullish px-1.5 py-0.5 text-[10px] font-bold">🏆 BIGGEST WIN</span><span class="text-[10px] text-fg-muted">8 days ago</span></div>
+                  <div class="mt-2 mono tabular text-bullish text-2xl font-bold">+$45.30</div>
+                  <p class="mt-1 text-[12px] text-fg-secondary">RSI dropped to 32 then bounced. Held long 47 minutes — biggest move of the run.</p>
+                </article>
+                <article class="rounded-xl border border-bearish/30 bg-bearish-subtle p-4">
+                  <div class="flex items-center gap-2"><span class="rounded bg-bearish/20 text-bearish px-1.5 py-0.5 text-[10px] font-bold">⚠ BIGGEST LOSS</span><span class="text-[10px] text-fg-muted">3 days ago</span></div>
+                  <div class="mt-2 mono tabular text-bearish text-2xl font-bold">-$18.40</div>
+                  <p class="mt-1 text-[12px] text-fg-secondary">BB cross faded after 1 candle. Stop fired clean — bot stayed disciplined.</p>
+                </article>
+                <article class="rounded-xl border border-brand/30 bg-brand-soft p-4">
+                  <div class="flex items-center gap-2"><span class="rounded bg-brand/20 text-brand px-1.5 py-0.5 text-[10px] font-bold">🔥 ON A STREAK</span><span class="text-[10px] text-fg-muted">started 4 days ago</span></div>
+                  <div class="mt-2 flex items-baseline gap-2"><span class="mono tabular text-brand text-2xl font-bold">7</span><span class="text-[12px] text-fg-muted">wins in a row</span></div>
+                  <p class="mt-1 text-[12px] text-fg-secondary">All long-side. Avg gain in this streak: <span class="mono tabular text-fg">+$13.20</span>.</p>
+                </article>
+              </div>
+            </section>
+            <section>
+              <h2 class="text-[20px] font-semibold tracking-tight">Bot maturity</h2>
+              <p class="mt-1 text-[12px] text-fg-muted">3-stage lifecycle: 0–7 trades Warming · 8–30 Active · 30+ Seasoned.</p>
+              <div class="mt-4 rounded-xl border border-border-subtle bg-base/60 p-5">
+                <div class="flex items-center gap-3">
+                  <div class="flex-1 relative h-2 rounded-full bg-input overflow-hidden">
+                    <div class="absolute inset-y-0 left-0 bg-bullish" style="width: 60%"></div>
+                    <span class="absolute top-1/2 -translate-y-1/2 left-[60%] h-3.5 w-3.5 rounded-full bg-bullish ring-4 ring-bullish/30"></span>
+                  </div>
+                  <div class="text-right"><div class="text-[10px] text-fg-muted mono tabular">23 / 30</div><div class="text-bullish text-xs font-semibold">ACTIVE</div></div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ V7 · CYPHEUS CHAT ════════ (NEW) -->
+    <section id="v7" class="mx-auto max-w-[1760px] px-10 pt-16 scroll-mt-6">
+      <div class="mb-3 flex items-center gap-3">
+        <span class="rounded-md bg-pink text-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">V7 · NEW</span>
+        <h2 class="text-lg font-semibold">Cypheus Chat — conversational, copilot-first</h2>
+      </div>
+      <p class="mb-5 max-w-3xl text-sm text-fg-muted leading-relaxed">
+        Borrows from ChatGPT/Claude/Linear Asks. The page <em>is</em> the conversation
+        with Cypheus. User asks questions in natural language; Cypheus answers with
+        <span class="text-fg">inline data widgets</span> (chart cards, fill rows, trigger
+        gauges, equity sparklines) instead of plain text. Sidebar on the left holds the
+        always-on hero stat strip + chat history. Slash-commands trigger pre-built views
+        (<span class="mono text-[11px]">/equity</span>, <span class="mono text-[11px]">/depth</span>,
+        <span class="mono text-[11px]">/whymissed</span>). Trading bot reimagined as a
+        copilot you talk to.
+      </p>
+      <div class="viewport overflow-hidden rounded-2xl">
+        <div class="dot-canvas relative" style="height: 960px;">
+          <div class="flex items-center justify-between border-b border-border-subtle bg-black/40 px-6 py-3 backdrop-blur">
+            <div class="flex items-center gap-3"><span class="font-pixel text-[10px] tracking-widest text-brand">COIN98 · BOT</span><span class="text-fg-muted">/</span><span class="text-sm font-semibold">RSI Momentum Long · Ask Cypheus</span><span class="inline-flex items-center gap-1 rounded-full border border-bullish/30 bg-bullish/10 px-2 py-0.5 text-[10px] font-bold text-bullish live-pulse">LIVE</span></div>
+            <div class="flex gap-2"><button class="rounded-md border border-border bg-input px-3 py-1 text-xs text-fg-secondary">Pause</button><button class="rounded-md border border-bearish/40 bg-bearish/10 px-3 py-1 text-xs text-bearish">Stop</button></div>
+          </div>
+
+          <div class="grid grid-cols-[280px_1fr] gap-px bg-border-subtle" style="height: calc(100% - 56px);">
+            <!-- LEFT: persistent state + chat history -->
+            <div class="bg-base overflow-y-auto p-4 space-y-4">
+              <div>
+                <div class="grid-pill">Bot · always on</div>
+                <div class="mt-2 mono tabular text-bullish text-2xl font-bold">+$234.10</div>
+                <div class="text-[11px] text-bullish">+2.34% · 7 wins · 78% WR</div>
+              </div>
+              <div class="rounded-lg border border-brand/30 bg-brand-soft p-3">
+                <div class="grid-pill text-brand mb-1.5">Live status</div>
+                <p class="text-[12px] text-fg-secondary">Watching BB↑ cross · RSI 64.2 ✓</p>
+                <div class="mt-2 text-[10px] text-fg-muted mono tabular"><span class="text-bullish">●</span> Next check 12s</div>
+              </div>
+              <div>
+                <div class="grid-pill mb-2">Conversations</div>
+                <div class="space-y-1 text-[12px]">
+                  <div class="rounded bg-brand/15 border border-brand/30 px-2.5 py-1.5"><div class="text-fg font-medium">Today's session</div><div class="text-[10px] text-fg-muted mono tabular">10 messages · live</div></div>
+                  <div class="rounded px-2.5 py-1.5 text-fg-secondary hover:bg-surface cursor-pointer"><div>Yesterday · stop-out review</div><div class="text-[10px] text-fg-muted mono tabular">3 messages</div></div>
+                  <div class="rounded px-2.5 py-1.5 text-fg-secondary hover:bg-surface cursor-pointer"><div>4d ago · strategy tune</div><div class="text-[10px] text-fg-muted mono tabular">7 messages</div></div>
+                </div>
+              </div>
+              <div>
+                <div class="grid-pill mb-2">Slash commands</div>
+                <div class="space-y-0.5 text-[11px] mono">
+                  <div class="rounded px-2 py-1 text-fg-secondary hover:bg-surface cursor-pointer"><span class="text-brand">/equity</span> [range]</div>
+                  <div class="rounded px-2 py-1 text-fg-secondary hover:bg-surface cursor-pointer"><span class="text-brand">/trades</span> [filter]</div>
+                  <div class="rounded px-2 py-1 text-fg-secondary hover:bg-surface cursor-pointer"><span class="text-brand">/whymissed</span></div>
+                  <div class="rounded px-2 py-1 text-fg-secondary hover:bg-surface cursor-pointer"><span class="text-brand">/depth</span></div>
+                  <div class="rounded px-2 py-1 text-fg-secondary hover:bg-surface cursor-pointer"><span class="text-brand">/grade</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: conversation thread -->
+            <div class="bg-base flex flex-col overflow-hidden">
+              <div class="flex-1 overflow-y-auto px-8 py-6 space-y-6 max-w-[820px] mx-auto w-full">
+
+                <!-- system greeting -->
+                <div class="text-center">
+                  <div class="inline-flex items-center gap-2 rounded-full bg-input px-3 py-1 text-[11px] text-fg-muted">
+                    <span class="h-1.5 w-1.5 rounded-full bg-bullish"></span> Cypheus is live · 5d 17h since deploy
+                  </div>
+                </div>
+
+                <!-- Cypheus opens -->
+                <div class="flex items-start gap-3">
+                  <div class="h-8 w-8 shrink-0 rounded-full bg-pink/20 flex items-center justify-center text-pink font-bold">⌬</div>
+                  <div class="flex-1 space-y-3">
+                    <div class="text-[12px] text-fg-muted">Cypheus · just now</div>
+                    <div class="rounded-2xl rounded-tl-none border border-border-subtle bg-surface p-4">
+                      <p class="text-[14px] text-fg-secondary leading-relaxed">Hey — you're up <span class="text-bullish font-semibold">+$234.10</span> over 30 days, and on a <span class="text-brand font-semibold">7-win streak</span>. Last trade closed 12 minutes ago. Right now I'm watching for the next Bollinger cross. Want a deeper look at anything?</p>
+                      <div class="mt-3 flex flex-wrap gap-1.5">
+                        <button class="rounded-full border border-border bg-input px-2.5 py-1 text-[11px] text-fg-secondary hover:text-brand">How am I doing?</button>
+                        <button class="rounded-full border border-border bg-input px-2.5 py-1 text-[11px] text-fg-secondary hover:text-brand">Show recent trades</button>
+                        <button class="rounded-full border border-border bg-input px-2.5 py-1 text-[11px] text-fg-secondary hover:text-brand">Why didn't it fire?</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- User message -->
+                <div class="flex items-start gap-3 flex-row-reverse">
+                  <div class="h-8 w-8 shrink-0 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold">T</div>
+                  <div class="rounded-2xl rounded-tr-none bg-brand/10 border border-brand/20 px-4 py-3 max-w-[480px]">
+                    <p class="text-[14px] text-fg">Show me equity for the last 30 days and the biggest swings.</p>
+                  </div>
+                </div>
+
+                <!-- Cypheus reply with widgets -->
+                <div class="flex items-start gap-3">
+                  <div class="h-8 w-8 shrink-0 rounded-full bg-pink/20 flex items-center justify-center text-pink font-bold">⌬</div>
+                  <div class="flex-1 space-y-3">
+                    <div class="text-[12px] text-fg-muted">Cypheus · just now</div>
+                    <div class="rounded-2xl rounded-tl-none border border-border-subtle bg-surface p-4 space-y-4">
+                      <p class="text-[14px] text-fg-secondary leading-relaxed">Here's the equity curve. Two notable moments — the big drawdown 3 days ago and the biggest single-trade win 8 days ago.</p>
+                      <!-- Inline equity widget -->
+                      <div class="rounded-xl border border-border-subtle bg-base overflow-hidden">
+                        <div class="flex items-center justify-between border-b border-border-subtle px-4 py-2"><span class="grid-pill">Equity · 30D · widget</span><span class="mono tabular text-[11px] text-bullish">+$234.10</span></div>
+                        <div class="relative" style="height: 160px;">
+                          <svg viewBox="0 0 1000 140" class="h-full w-full" preserveAspectRatio="none">
+                            <path d="M 0,125 L 80,118 L 160,100 L 240,112 L 320,85 L 400,72 L 480,80 L 560,55 L 640,40 L 720,52 L 800,28 L 880,18 L 1000,8 L 1000,140 L 0,140 Z" fill="rgba(14,203,129,0.12)"/>
+                            <path d="M 0,125 L 80,118 L 160,100 L 240,112 L 320,85 L 400,72 L 480,80 L 560,55 L 640,40 L 720,52 L 800,28 L 880,18 L 1000,8" fill="none" stroke="#0ECB81" stroke-width="2"/>
+                            <circle cx="240" cy="112" r="4" fill="#F6465D"/><text x="248" y="106" fill="#F6465D" font-size="10" font-family="Inter">drawdown -$18</text>
+                            <circle cx="800" cy="28" r="4" fill="#F0B90B"/><text x="752" y="22" fill="#F0B90B" font-size="10" font-family="Inter">+$45 biggest</text>
+                            <circle cx="1000" cy="8" r="4" fill="#0ECB81"/>
+                          </svg>
+                        </div>
+                      </div>
+                      <p class="text-[13px] text-fg-secondary">The drawdown was a clean BB cross + RSI signal that faded after one candle. The +$45 swing was an RSI-32 oversold bounce — high-conviction setup.</p>
+                      <div class="flex gap-1.5">
+                        <button class="rounded-full border border-border bg-input px-2.5 py-1 text-[11px] text-fg-secondary hover:text-brand">Show the drawdown trade</button>
+                        <button class="rounded-full border border-border bg-input px-2.5 py-1 text-[11px] text-fg-secondary hover:text-brand">Compare to hodl</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- User asks about missed -->
+                <div class="flex items-start gap-3 flex-row-reverse">
+                  <div class="h-8 w-8 shrink-0 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold">T</div>
+                  <div class="rounded-2xl rounded-tr-none bg-brand/10 border border-brand/20 px-4 py-3 max-w-[480px]">
+                    <p class="text-[14px] text-fg">/whymissed</p>
+                  </div>
+                </div>
+
+                <!-- Cypheus answers with missed-signal table -->
+                <div class="flex items-start gap-3">
+                  <div class="h-8 w-8 shrink-0 rounded-full bg-pink/20 flex items-center justify-center text-pink font-bold">⌬</div>
+                  <div class="flex-1 space-y-3">
+                    <div class="text-[12px] text-fg-muted">Cypheus · streaming</div>
+                    <div class="rounded-2xl rounded-tl-none border border-border-subtle bg-surface p-4 space-y-3">
+                      <p class="text-[14px] text-fg-secondary leading-relaxed">7 signals were <span class="text-fg">rejected</span> this week — almost all because RSI sat above the 70 ceiling when price crossed BB↑. Here's the most recent:</p>
+                      <!-- Missed-signal card -->
+                      <div class="rounded-xl border border-dashed border-border bg-surface/40 p-3">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center gap-2"><span class="rounded bg-input text-fg-muted px-1.5 py-0.5 text-[10px] font-bold">○ MISSED · 42m ago</span><span class="text-[11px] text-fg-muted">ETH crossed BB↑ momentarily</span></div>
+                          <span class="text-[11px] text-bearish mono tabular">RSI 71.8</span>
+                        </div>
+                        <p class="mt-1 text-[12px] text-fg-secondary">Rule rejected (RSI &gt; 70). <span class="text-fg-muted">Hypothetical entry would have been -$3.40 (price faded).</span> Discipline paid off here.</p>
+                      </div>
+                      <p class="text-[13px] text-fg-secondary">Net effect of these 7 rejections: avoided a calculated <span class="text-bullish font-semibold">~+$12 in saved losses</span> vs hypothetical entries.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- streaming dots -->
+                <div class="flex items-start gap-3">
+                  <div class="h-8 w-8 shrink-0 rounded-full bg-pink/20 flex items-center justify-center text-pink font-bold">⌬</div>
+                  <div class="rounded-2xl rounded-tl-none border border-border-subtle bg-surface px-4 py-3">
+                    <div class="flex items-center gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-fg-muted animate-pulse"></span><span class="h-1.5 w-1.5 rounded-full bg-fg-muted animate-pulse" style="animation-delay: 0.2s"></span><span class="h-1.5 w-1.5 rounded-full bg-fg-muted animate-pulse" style="animation-delay: 0.4s"></span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Composer -->
+              <div class="border-t border-border-subtle px-8 py-4">
+                <div class="max-w-[820px] mx-auto">
+                  <div class="rounded-2xl border border-border bg-input p-2 flex items-end gap-2">
+                    <textarea rows="1" placeholder="Ask Cypheus anything about your bot…" class="flex-1 bg-transparent text-[14px] placeholder:text-fg-muted resize-none focus:outline-none px-2 py-1.5"></textarea>
+                    <button class="rounded-lg bg-brand text-black font-semibold text-[12px] px-3 py-1.5">Send ↑</button>
+                  </div>
+                  <div class="mt-1.5 text-[10px] text-fg-muted">Tip: try <span class="mono text-brand">/equity 7d</span> · <span class="mono text-brand">/trades wins</span> · <span class="mono text-brand">/whymissed</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <dl class="mt-4 grid grid-cols-2 gap-3 text-xs max-w-3xl">
+        <div class="rounded-md border border-border-subtle bg-surface/70 p-3"><dt class="text-bullish font-semibold">Pros</dt><dd class="mt-1 text-fg-secondary leading-relaxed">Most novel surface. Pulls Cypheus from background rail to centerpiece — feels like a real AI product. Slash commands give power-user speed. Mobile-friendly by nature.</dd></div>
+        <div class="rounded-md border border-border-subtle bg-surface/70 p-3"><dt class="text-bearish font-semibold">Cons</dt><dd class="mt-1 text-fg-secondary leading-relaxed">Highest content cost: requires a real conversational engine + widget-rendering tool calls. Wrong answer = trust damage. Hides always-on data behind questions.</dd></div>
+      </dl>
+    </section>
+
+    <!-- ════════ V8 · NOTEBOOK ════════ (NEW) -->
+    <section id="v8" class="mx-auto max-w-[1760px] px-10 pt-16 scroll-mt-6">
+      <div class="mb-3 flex items-center gap-3">
+        <span class="rounded-md bg-cyan text-black px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">V8 · NEW</span>
+        <h2 class="text-lg font-semibold">Notebook — research-log / Jupyter aesthetic</h2>
+      </div>
+      <p class="mb-5 max-w-3xl text-sm text-fg-muted leading-relaxed">
+        Bot rendered as a living research notebook. Jupyter/Observable/Linear-doc vibe:
+        markdown-style headings, code blocks for the rule, embedded cells showing equity,
+        trades, indicator state. Side TOC navigates sections. Treats trading as
+        experimentation, not just monitoring — fits users who think in hypotheses.
+      </p>
+      <div class="viewport overflow-hidden rounded-2xl">
+        <div class="dot-canvas relative" style="height: 980px;">
+          <div class="flex items-center justify-between border-b border-border-subtle bg-black/40 px-6 py-3 backdrop-blur">
+            <div class="flex items-center gap-3"><span class="font-pixel text-[10px] tracking-widest text-brand">COIN98 · BOT</span><span class="text-fg-muted">/</span><span class="mono text-sm font-semibold">rsi-momentum-long.ipynb</span><span class="inline-flex items-center gap-1 rounded-full border border-bullish/30 bg-bullish/10 px-2 py-0.5 text-[10px] font-bold text-bullish live-pulse">LIVE</span></div>
+            <div class="flex gap-2 text-[11px] mono">
+              <button class="rounded-md border border-border bg-input px-2 py-1 text-fg-secondary">▶ Run all</button>
+              <button class="rounded-md border border-border bg-input px-2 py-1 text-fg-secondary">↓ Export PDF</button>
+              <button class="rounded-md border border-bearish/40 bg-bearish/10 px-2 py-1 text-bearish">Stop</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-[240px_1fr] gap-px bg-border-subtle" style="height: calc(100% - 56px);">
+            <!-- TOC -->
+            <div class="bg-base overflow-y-auto p-4 space-y-3 text-[12px]">
+              <div>
+                <div class="grid-pill mb-2">Cells</div>
+                <ul class="space-y-1">
+                  <li class="text-fg font-medium border-l-2 border-brand pl-2 py-0.5">1. Hypothesis</li>
+                  <li class="text-fg-secondary border-l-2 border-transparent pl-2 py-0.5 hover:border-border">2. Rule</li>
+                  <li class="text-fg-secondary border-l-2 border-transparent pl-2 py-0.5 hover:border-border">3. Live signal state</li>
+                  <li class="text-fg-secondary border-l-2 border-transparent pl-2 py-0.5 hover:border-border">4. Observed equity</li>
+                  <li class="text-fg-secondary border-l-2 border-transparent pl-2 py-0.5 hover:border-border">5. Trade ledger</li>
+                  <li class="text-fg-secondary border-l-2 border-transparent pl-2 py-0.5 hover:border-border">6. Cypheus analysis</li>
+                  <li class="text-fg-secondary border-l-2 border-transparent pl-2 py-0.5 hover:border-border">7. Open questions</li>
+                </ul>
+              </div>
+              <div class="pt-3 border-t border-border-subtle">
+                <div class="grid-pill mb-1">Kernel</div>
+                <div class="text-[11px] mono tabular space-y-0.5">
+                  <div><span class="text-bullish">●</span> <span class="text-fg-secondary">connected</span></div>
+                  <div class="text-fg-muted">last run · just now</div>
+                  <div class="text-fg-muted">cells · 7</div>
+                </div>
+              </div>
+              <div class="pt-3 border-t border-border-subtle">
+                <div class="grid-pill mb-1">Verdict</div>
+                <div class="text-[28px] mono tabular text-bullish font-bold">A−</div>
+                <div class="text-[10px] text-fg-muted">strategy holding edge</div>
+              </div>
+            </div>
+
+            <!-- Notebook body -->
+            <div class="bg-base overflow-y-auto px-10 py-8 max-w-[920px] mx-auto w-full space-y-6 font-sans">
+              <!-- title -->
+              <h1 class="text-[26px] font-semibold tracking-tight nb-h1">RSI Momentum Long · ETH-USDC</h1>
+              <p class="text-[12px] text-fg-muted mono tabular">deployed 2026-05-10 · uptime 5d 17h · author you · status <span class="text-bullish">live</span></p>
+
+              <!-- cell 1 -->
+              <section>
+                <h2 class="text-[18px] font-semibold mt-3 nb-heading">Hypothesis</h2>
+                <p class="mt-2 text-[14px] text-fg-secondary leading-relaxed">When ETH price retraces inside the Bollinger band <em>and</em> RSI is not overheated, a momentum push back through the upper band is a high-quality long signal. Test on Hyperliquid 5-min closes.</p>
+              </section>
+
+              <!-- cell 2: rule -->
+              <section>
+                <h2 class="text-[18px] font-semibold nb-heading">Rule</h2>
+                <pre class="mt-2 nb-code">
+<span style="color:#7C5CFF">when</span> close crosses_above BB(<span style="color:#F0B90B">20</span>, std=<span style="color:#F0B90B">2</span>).upper
+  <span style="color:#7C5CFF">and</span> RSI(<span style="color:#F0B90B">14</span>) &lt; <span style="color:#F0B90B">70</span>
+<span style="color:#7C5CFF">then</span> enter_long(size=<span style="color:#F0B90B">0.05</span>, sl=<span style="color:#F0B90B">-0.5%</span>, tp=<span style="color:#F0B90B">+1.0%</span>)</pre>
+              </section>
+
+              <!-- cell 3: live signal -->
+              <section>
+                <h2 class="text-[18px] font-semibold nb-heading">Live signal state</h2>
+                <div class="mt-2 grid grid-cols-[1fr_auto] gap-4 items-center">
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-[12px]"><span class="text-fg-secondary">close → BB↑ (2,308)</span><span class="mono tabular text-bearish">$8.30 away</span></div>
+                    <div class="h-1.5 rounded-full bg-input overflow-hidden"><div class="h-full bg-bearish/60" style="width: 64%"></div></div>
+                    <div class="flex items-center justify-between text-[12px]"><span class="text-fg-secondary">RSI &lt; 70</span><span class="mono tabular text-bullish">64.2 ✓</span></div>
+                    <div class="h-1.5 rounded-full bg-input overflow-hidden"><div class="h-full bg-bullish/70" style="width: 92%"></div></div>
+                  </div>
+                  <div class="rounded-md bg-input px-4 py-3 text-center">
+                    <div class="grid-pill">Conditions</div>
+                    <div class="mono tabular text-fg text-2xl font-bold mt-1">1/2</div>
+                    <div class="text-[10px] text-fg-muted">next check 12s</div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- cell 4: equity -->
+              <section>
+                <h2 class="text-[18px] font-semibold nb-heading">Observed equity · 30D</h2>
+                <div class="mt-3 rounded-xl border border-border-subtle bg-surface overflow-hidden">
+                  <div class="px-4 py-2 border-b border-border-subtle flex items-center justify-between">
+                    <span class="text-[11px] mono tabular text-fg-muted">out_1: equity_curve · 30D</span>
+                    <span class="text-[11px] mono tabular text-bullish">+$234.10 / +2.34%</span>
+                  </div>
+                  <div class="relative" style="height: 180px;">
+                    <svg viewBox="0 0 1000 160" class="h-full w-full" preserveAspectRatio="none">
+                      <path d="M 0,140 L 80,128 L 160,108 L 240,118 L 320,88 L 400,68 L 480,75 L 560,48 L 640,32 L 720,42 L 800,18 L 880,8 L 1000,2 L 1000,160 L 0,160 Z" fill="rgba(14,203,129,0.12)"/>
+                      <path d="M 0,140 L 80,128 L 160,108 L 240,118 L 320,88 L 400,68 L 480,75 L 560,48 L 640,32 L 720,42 L 800,18 L 880,8 L 1000,2" fill="none" stroke="#0ECB81" stroke-width="2"/>
+                    </svg>
+                  </div>
+                </div>
+                <p class="mt-2 text-[12px] text-fg-muted">Sharpe 2.14 · Profit factor 2.8 · Max DD −7.85% · Win rate 78%.</p>
+              </section>
+
+              <!-- cell 5: trade ledger -->
+              <section>
+                <h2 class="text-[18px] font-semibold nb-heading">Trade ledger</h2>
+                <div class="mt-2 rounded-lg border border-border-subtle overflow-hidden">
+                  <table class="w-full text-[11px] mono tabular">
+                    <thead class="bg-input text-fg-muted text-[9px] uppercase tracking-wider">
+                      <tr><th class="px-3 py-2 text-left">#</th><th class="text-left">Side</th><th class="text-left">Entry</th><th class="text-left">Exit</th><th class="text-right">P&amp;L</th><th class="text-right">When</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-subtle">
+                      <tr><td class="px-3 py-1.5 text-fg-muted">23</td><td class="text-bullish">LONG</td><td class="text-fg">2287.30</td><td class="text-fg">2310.40</td><td class="text-right text-bullish">+$23.10</td><td class="text-right text-fg-muted">12m</td></tr>
+                      <tr><td class="px-3 py-1.5 text-fg-muted">22</td><td class="text-bullish">LONG</td><td class="text-fg">2278.00</td><td class="text-fg">2289.50</td><td class="text-right text-bullish">+$11.50</td><td class="text-right text-fg-muted">38m</td></tr>
+                      <tr><td class="px-3 py-1.5 text-fg-muted">21</td><td class="text-bullish">LONG</td><td class="text-fg">2265.20</td><td class="text-fg">2280.10</td><td class="text-right text-bullish">+$14.90</td><td class="text-right text-fg-muted">1h 7m</td></tr>
+                      <tr><td class="px-3 py-1.5 text-fg-muted">20</td><td class="text-bullish">LONG</td><td class="text-fg">2250.00</td><td class="text-fg">2247.10</td><td class="text-right text-bearish">-$2.90</td><td class="text-right text-fg-muted">3h 02m</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p class="mt-2 text-[12px] text-fg-muted">23 of 23 trades shown · <a class="text-brand hover:underline">expand ledger ▸</a></p>
+              </section>
+
+              <!-- cell 6: cypheus -->
+              <section>
+                <h2 class="text-[18px] font-semibold nb-heading">Cypheus analysis</h2>
+                <div class="mt-2 rounded-lg border border-violet/30 bg-violet/5 p-4">
+                  <p class="text-[13px] text-fg-secondary leading-relaxed">
+                    The strategy is showing a real edge — Sharpe 2.14 is well above the 1.0
+                    threshold, and 78% win rate with profit factor 2.8 means even your
+                    losing trades aren't dragging much. <span class="text-fg">Caveat:</span>
+                    only 23 trades is a small sample, and the 7-day max drawdown of $18 is
+                    your first real test of discipline. Watch for over-fitting if the streak
+                    is RSI bouncing repeatedly from the same band — try varying the period
+                    once you hit 50 trades.
+                  </p>
+                </div>
+              </section>
+
+              <!-- cell 7: open q -->
+              <section>
+                <h2 class="text-[18px] font-semibold nb-heading">Open questions · TODO</h2>
+                <ul class="mt-2 space-y-1 text-[13px] text-fg-secondary list-disc list-inside">
+                  <li>Does the edge hold on 15-min bars too?</li>
+                  <li>Should the RSI ceiling drop from 70 → 65 for cleaner signals?</li>
+                  <li>What's the bot's profit factor in red-market periods?</li>
+                </ul>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+      <dl class="mt-4 grid grid-cols-2 gap-3 text-xs max-w-3xl">
+        <div class="rounded-md border border-border-subtle bg-surface/70 p-3"><dt class="text-bullish font-semibold">Pros</dt><dd class="mt-1 text-fg-secondary leading-relaxed">Treats bot as a research artifact — exportable, shareable, reviewable. Strong for serious users (quants, prop-shop). Rule-as-code surfaces the actual semantics of the strategy.</dd></div>
+        <div class="rounded-md border border-border-subtle bg-surface/70 p-3"><dt class="text-bearish font-semibold">Cons</dt><dd class="mt-1 text-fg-secondary leading-relaxed">Niche audience. Casual users won't get it. Loses live-trader feel — no constant chart movement. Pseudo-DSL for the rule needs design (current state is a UI tree, not a sentence).</dd></div>
+      </dl>
+    </section>
+
+    <!-- ════════ V9 · GAME HUD ════════ (NEW) -->
+    <section id="v9" class="mx-auto max-w-[1760px] px-10 pt-16 scroll-mt-6 pb-20">
+      <div class="mb-3 flex items-center gap-3">
+        <span class="rounded-md bg-bullish text-black px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">V9 · NEW</span>
+        <h2 class="text-lg font-semibold">Game HUD — Apple Fitness / Duolingo for trading bots</h2>
+      </div>
+      <p class="mb-5 max-w-3xl text-sm text-fg-muted leading-relaxed">
+        Gamified. Hero = a closing "win ring" (Apple Fitness style). Achievement cards
+        unlock as the bot hits milestones (first $100, first drawdown survived, 10-win
+        streak). Daily quest gives the user something to root for. Level bar = bot
+        maturity. Emotional, sticky — best for keeping casual users engaged so they don't
+        kill the bot during normal drawdowns.
+      </p>
+      <div class="viewport overflow-hidden rounded-2xl">
+        <div class="dot-canvas relative overflow-y-auto" style="height: 1020px;">
+          <div class="sticky top-0 z-10 flex items-center justify-between border-b border-border-subtle bg-black/70 px-6 py-3 backdrop-blur">
+            <div class="flex items-center gap-3"><span class="font-pixel text-[10px] tracking-widest text-brand">COIN98 · BOT</span><span class="text-fg-muted">/</span><span class="text-sm font-semibold">RSI Momentum Long</span><span class="inline-flex items-center gap-1 rounded-full border border-bullish/30 bg-bullish/10 px-2 py-0.5 text-[10px] font-bold text-bullish live-pulse">LIVE</span></div>
+            <div class="flex items-center gap-3 text-[11px]">
+              <span class="rounded-full bg-input border border-border px-2 py-1 mono tabular text-fg-secondary">🔥 7 day streak</span>
+              <span class="rounded-full bg-input border border-border px-2 py-1 mono tabular text-fg-secondary">Lv. 3 · Active</span>
+            </div>
+          </div>
+
+          <div class="mx-auto max-w-[1200px] px-6 py-8 space-y-8">
+
+            <!-- HERO: Apple-Fitness-style ring + 3 numbers -->
+            <section class="grid grid-cols-[1fr_1.4fr] gap-8 items-center">
+              <div class="relative aspect-square max-w-[300px] mx-auto">
+                <svg viewBox="0 0 200 200" class="w-full h-full">
+                  <!-- outer ring · P&L progress to daily goal -->
+                  <circle cx="100" cy="100" r="86" fill="none" stroke="#1e2329" stroke-width="14"/>
+                  <circle cx="100" cy="100" r="86" fill="none" stroke="#0ECB81" stroke-width="14" stroke-dasharray="540.3" stroke-dashoffset="180" stroke-linecap="round" class="ring-progress"/>
+                  <!-- middle ring · win-rate -->
+                  <circle cx="100" cy="100" r="62" fill="none" stroke="#1e2329" stroke-width="14"/>
+                  <circle cx="100" cy="100" r="62" fill="none" stroke="#F0B90B" stroke-width="14" stroke-dasharray="389.5" stroke-dashoffset="86" stroke-linecap="round" class="ring-progress"/>
+                  <!-- inner ring · streak -->
+                  <circle cx="100" cy="100" r="38" fill="none" stroke="#1e2329" stroke-width="14"/>
+                  <circle cx="100" cy="100" r="38" fill="none" stroke="#FF6FB3" stroke-width="14" stroke-dasharray="238.8" stroke-dashoffset="48" stroke-linecap="round" class="ring-progress"/>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <div class="mono tabular text-bullish text-3xl font-bold leading-none">+$234</div>
+                  <div class="text-[10px] text-fg-muted mt-1">30D · 67% to goal</div>
+                </div>
+              </div>
+              <div>
+                <div class="text-[11px] uppercase tracking-wider text-fg-muted">Today's three rings</div>
+                <h2 class="mt-1 text-[26px] font-semibold tracking-tight">Two rings closed. <span class="text-fg-muted">Streak ring is almost there.</span></h2>
+                <p class="mt-3 text-[14px] text-fg-secondary leading-relaxed max-w-[460px]">Hit your daily P&amp;L goal of $20 and you'll close all three. Bot's already up <span class="text-bullish font-semibold">$23.10</span> today — exceeded.</p>
+                <div class="mt-4 space-y-2">
+                  <div class="flex items-center gap-3">
+                    <span class="h-3 w-3 rounded-full bg-bullish"></span>
+                    <span class="text-[13px] text-fg-secondary flex-1">P&amp;L · $23.10 / $20 daily</span>
+                    <span class="text-bullish text-[12px] font-semibold">✓ closed</span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span class="h-3 w-3 rounded-full bg-brand"></span>
+                    <span class="text-[13px] text-fg-secondary flex-1">Win rate · 78% / 70%</span>
+                    <span class="text-brand text-[12px] font-semibold">✓ closed</span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span class="h-3 w-3 rounded-full bg-pink"></span>
+                    <span class="text-[13px] text-fg-secondary flex-1">Streak · 7 / 10 wins</span>
+                    <span class="text-pink text-[12px] font-semibold">3 to go</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- DAILY QUEST -->
+            <section class="rounded-2xl border border-brand/30 bg-brand-soft p-5">
+              <div class="flex items-start gap-4">
+                <div class="h-12 w-12 rounded-xl bg-brand/20 border border-brand/40 flex items-center justify-center text-brand text-xl">⚔</div>
+                <div class="flex-1">
+                  <div class="grid-pill text-brand">Today's quest · expires in 18h 46m</div>
+                  <h3 class="mt-1 text-[18px] font-semibold">Close 3 wins without a stop-out</h3>
+                  <p class="mt-1 text-[13px] text-fg-secondary">Progress: 1 of 3 · reward: <span class="text-brand font-medium">+200 XP</span> + unlocks "Iron Hands" badge.</p>
+                  <div class="mt-3 flex gap-1.5">
+                    <span class="flex-1 h-2 rounded-full bg-bullish"></span>
+                    <span class="flex-1 h-2 rounded-full bg-input"></span>
+                    <span class="flex-1 h-2 rounded-full bg-input"></span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="mono tabular text-2xl font-bold text-brand">1/3</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ACHIEVEMENTS UNLOCKED -->
+            <section>
+              <div class="flex items-baseline justify-between"><h2 class="text-[20px] font-semibold tracking-tight">Achievements</h2><span class="text-[12px] text-fg-muted">9 of 24 unlocked</span></div>
+              <div class="mt-4 grid grid-cols-4 gap-3">
+                <article class="rounded-xl border border-bullish/30 bg-bullish-subtle p-4 text-center">
+                  <div class="text-3xl">💰</div>
+                  <div class="mt-1 text-[12px] font-semibold text-fg">First $100</div>
+                  <div class="text-[10px] text-fg-muted">unlocked 9d ago</div>
+                </article>
+                <article class="rounded-xl border border-bullish/30 bg-bullish-subtle p-4 text-center">
+                  <div class="text-3xl">🛡</div>
+                  <div class="mt-1 text-[12px] font-semibold text-fg">Drawdown survived</div>
+                  <div class="text-[10px] text-fg-muted">unlocked 3d ago</div>
+                </article>
+                <article class="rounded-xl border border-bullish/30 bg-bullish-subtle p-4 text-center">
+                  <div class="text-3xl">🔥</div>
+                  <div class="mt-1 text-[12px] font-semibold text-fg">Hot streak · 5+</div>
+                  <div class="text-[10px] text-fg-muted">unlocked today</div>
+                </article>
+                <article class="rounded-xl border border-border-subtle bg-base p-4 text-center opacity-50">
+                  <div class="text-3xl grayscale">⛰</div>
+                  <div class="mt-1 text-[12px] font-semibold text-fg-muted">10-win streak</div>
+                  <div class="text-[10px] text-fg-muted">3 to go</div>
+                </article>
+                <article class="rounded-xl border border-border-subtle bg-base p-4 text-center opacity-50">
+                  <div class="text-3xl grayscale">🌊</div>
+                  <div class="mt-1 text-[12px] font-semibold text-fg-muted">Survive red week</div>
+                  <div class="text-[10px] text-fg-muted">locked</div>
+                </article>
+                <article class="rounded-xl border border-border-subtle bg-base p-4 text-center opacity-50">
+                  <div class="text-3xl grayscale">🏔</div>
+                  <div class="mt-1 text-[12px] font-semibold text-fg-muted">First $1K profit</div>
+                  <div class="text-[10px] text-fg-muted">$234 / $1000</div>
+                </article>
+                <article class="rounded-xl border border-border-subtle bg-base p-4 text-center opacity-50">
+                  <div class="text-3xl grayscale">🎯</div>
+                  <div class="mt-1 text-[12px] font-semibold text-fg-muted">100 trades</div>
+                  <div class="text-[10px] text-fg-muted">23 / 100</div>
+                </article>
+                <article class="rounded-xl border border-border-subtle bg-base p-4 text-center opacity-50">
+                  <div class="text-3xl grayscale">⚡</div>
+                  <div class="mt-1 text-[12px] font-semibold text-fg-muted">Sharpe &gt; 3</div>
+                  <div class="text-[10px] text-fg-muted">2.14 / 3.0</div>
+                </article>
+              </div>
+            </section>
+
+            <!-- LEVEL & PHASE -->
+            <section>
+              <div class="rounded-2xl border border-border-subtle card-coin98 p-5">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="grid-pill">Bot level</div>
+                    <h3 class="mt-1 text-[20px] font-semibold">Lv. 3 — Active <span class="text-fg-muted">→ Lv. 4 Seasoned</span></h3>
+                  </div>
+                  <div class="text-right">
+                    <div class="mono tabular text-fg font-bold">2,300 XP</div>
+                    <div class="text-[10px] text-fg-muted">700 to next</div>
+                  </div>
+                </div>
+                <div class="mt-3 h-3 rounded-full bg-input overflow-hidden relative">
+                  <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-brand/80 to-bullish" style="width: 77%"></div>
+                </div>
+                <div class="mt-2 flex justify-between text-[10px] mono tabular text-fg-muted">
+                  <span>Lv. 1 Warming</span><span>Lv. 2 Trial</span><span class="text-brand">Lv. 3 Active</span><span>Lv. 4 Seasoned</span><span>Lv. 5 Veteran</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- Live mini chart (subordinate to gamification) -->
+            <section class="grid grid-cols-[1fr_1fr] gap-4">
+              <div class="rounded-2xl border border-border-subtle card-coin98 p-4">
+                <div class="flex items-center justify-between">
+                  <span class="grid-pill">⚔ Battle for the upper band</span>
+                  <span class="text-[11px] mono tabular text-bearish">$8.30 to win</span>
+                </div>
+                <p class="mt-2 text-[13px] text-fg-secondary">ETH needs to push <span class="text-fg font-medium">+0.36%</span> to cross BB↑. RSI is safely under the ceiling — bot is armed.</p>
+                <div class="mt-3 h-1.5 rounded-full bg-input overflow-hidden"><div class="h-full bg-gradient-to-r from-bearish to-brand" style="width: 64%"></div></div>
+              </div>
+              <div class="rounded-2xl border border-bullish/30 bg-bullish-subtle p-4">
+                <div class="grid-pill text-bullish">Today's haul</div>
+                <div class="mt-1 mono tabular text-bullish text-2xl font-bold">+$23.10 / +1.02%</div>
+                <p class="mt-1 text-[12px] text-fg-secondary">1 win · 2 still hunting · daily best so far this week.</p>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+      <dl class="mt-4 grid grid-cols-2 gap-3 text-xs max-w-3xl">
+        <div class="rounded-md border border-border-subtle bg-surface/70 p-3"><dt class="text-bullish font-semibold">Pros</dt><dd class="mt-1 text-fg-secondary leading-relaxed">Stickiness. Solves a real problem: users panic-killing bots during normal drawdowns. Gamification keeps them watching the journey. Visually unique — nothing else in fintech looks like this.</dd></div>
+        <div class="rounded-md border border-border-subtle bg-surface/70 p-3"><dt class="text-bearish font-semibold">Cons</dt><dd class="mt-1 text-fg-secondary leading-relaxed">Risk of feeling unserious to power users. Achievement system needs careful design — wrong goals incentivize bad behavior (e.g. "10-win streak" → over-fitted strategies). Requires XP/levels infra.</dd></div>
+      </dl>
+    </section>
+
+    <!-- ════════ MATRIX + FOOTER ════════ -->
+    <footer id="matrix" class="mx-auto max-w-[1760px] border-t border-border-subtle px-10 py-10 text-xs text-fg-muted scroll-mt-6">
+      <h3 class="text-fg font-semibold text-sm">All 9 directions · trade-off matrix</h3>
+      <div class="overflow-x-auto mt-3">
+        <table class="w-full text-left text-fg-secondary min-w-[1200px]">
+          <thead class="text-fg">
+            <tr>
+              <th class="py-2 pr-3 font-medium">Variant</th>
+              <th class="py-2 pr-3 font-medium">Shape</th>
+              <th class="py-2 pr-3 font-medium">Hero</th>
+              <th class="py-2 pr-3 font-medium">New content</th>
+              <th class="py-2 pr-3 font-medium">Audience</th>
+              <th class="py-2 pr-3 font-medium">Effort</th>
+            </tr>
+          </thead>
+          <tbody class="[&>tr]:border-t [&>tr]:border-border-subtle">
+            <tr><td class="py-2 pr-3 text-fg">V1 Cockpit</td><td>Bento, no scroll</td><td>PnL + trigger</td><td>Trigger card; ticker</td><td>Builder, post-deploy</td><td>Medium</td></tr>
+            <tr><td class="py-2 pr-3 text-fg">V2 Terminal</td><td>3 panes, dense</td><td>Chart with BB/RSI</td><td>RSI strip; rule rail</td><td>Pro trader, big monitor</td><td>High</td></tr>
+            <tr><td class="py-2 pr-3 text-fg">V3 Editorial</td><td>1 col, scroll</td><td>Status sentence</td><td>Trade journal; narration</td><td>Casual once-a-day</td><td>Medium</td></tr>
+            <tr><td class="py-2 pr-3 text-fg">V4 Mission Control</td><td>3 cols, event rail</td><td>Event timeline</td><td><span class="text-fg">Missed signals</span>; event types</td><td>Operator, debug-curious</td><td>High</td></tr>
+            <tr><td class="py-2 pr-3 text-fg">V5 Strategy Lab</td><td>Tabbed</td><td>Equity + drawdown</td><td><span class="text-fg">Sharpe / PF / DD / histogram / verdict</span></td><td>Analyst, refiner</td><td>Highest</td></tr>
+            <tr><td class="py-2 pr-3 text-fg">V6 Calendar Story</td><td>1 col, scroll</td><td>30-day heatmap</td><td><span class="text-fg">Daily heatmap; story cards; phase</span></td><td>Owner reviewing weekly</td><td>Medium</td></tr>
+            <tr class="bg-pink/5"><td class="py-2 pr-3 text-pink font-semibold">V7 Cypheus Chat</td><td>Conversation thread</td><td>The chat itself</td><td><span class="text-fg">Inline widgets; slash commands; missed-signal Q&amp;A</span></td><td>"I just want to ask my bot"</td><td>Highest (LLM)</td></tr>
+            <tr class="bg-cyan/5"><td class="py-2 pr-3 text-cyan font-semibold">V8 Notebook</td><td>Scrollable doc</td><td>Cell 1 hypothesis</td><td><span class="text-fg">Rule as code; export; TOC navigation</span></td><td>Quant / serious user</td><td>Medium-high</td></tr>
+            <tr class="bg-bullish/5"><td class="py-2 pr-3 text-bullish font-semibold">V9 Game HUD</td><td>1 col, scroll</td><td>Apple-rings + quest</td><td><span class="text-fg">Rings; daily quest; achievements; XP/level</span></td><td>Casual, retention-focused</td><td>Medium (XP infra)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="text-fg font-semibold text-sm mt-6">Picking by user goal</h3>
+      <div class="mt-3 grid grid-cols-3 gap-3 max-w-5xl">
+        <div class="rounded-lg border border-border-subtle bg-surface p-3">
+          <div class="text-fg font-medium mb-1">"I want to glance and know"</div>
+          <p class="text-fg-secondary">→ <span class="text-fg">V1 Cockpit</span> (default) · or <span class="text-fg">V6 Calendar</span> (weekly).</p>
+        </div>
+        <div class="rounded-lg border border-border-subtle bg-surface p-3">
+          <div class="text-fg font-medium mb-1">"I want to dig into performance"</div>
+          <p class="text-fg-secondary">→ <span class="text-fg">V5 Strategy Lab</span> or <span class="text-fg">V8 Notebook</span>.</p>
+        </div>
+        <div class="rounded-lg border border-border-subtle bg-surface p-3">
+          <div class="text-fg font-medium mb-1">"I want to feel something"</div>
+          <p class="text-fg-secondary">→ <span class="text-fg">V3 Editorial</span> (narrative) or <span class="text-fg">V9 Game HUD</span> (gamified).</p>
+        </div>
+        <div class="rounded-lg border border-border-subtle bg-surface p-3">
+          <div class="text-fg font-medium mb-1">"I want to debug / audit"</div>
+          <p class="text-fg-secondary">→ <span class="text-fg">V4 Mission Control</span> (events) or <span class="text-fg">V2 Terminal</span>.</p>
+        </div>
+        <div class="rounded-lg border border-border-subtle bg-surface p-3">
+          <div class="text-fg font-medium mb-1">"I want to talk to the bot"</div>
+          <p class="text-fg-secondary">→ <span class="text-fg">V7 Cypheus Chat</span>. Highest bet on the AI narrative.</p>
+        </div>
+        <div class="rounded-lg border border-border-subtle bg-surface p-3">
+          <div class="text-fg font-medium mb-1">Pragmatic ship today</div>
+          <p class="text-fg-secondary">→ Start with <span class="text-fg">V1</span>. Add <span class="text-fg">V5 Performance tab</span> when bot ≥30 trades. Layer <span class="text-fg">V9 quest/rings</span> on top later for retention.</p>
+        </div>
+      </div>
+
+      <h3 class="text-fg font-semibold text-sm mt-6">Refs that shaped these</h3>
+      <ul class="mt-2 space-y-1 list-disc list-inside leading-relaxed">
+        <li>NASA Open MCT · Microsoft Agent 365 — event-stream patterns (V4)</li>
+        <li>TradingView Strategy Tester — tabbed Overview/Performance/Trades/Logs (V5)</li>
+        <li>GitHub contribution heatmap, Apple Stocks daily story — calendar + story cards (V6)</li>
+        <li>ChatGPT / Claude / Linear Asks — conversational copilot with inline widgets (V7)</li>
+        <li>Jupyter / Observable / Linear docs — notebook aesthetic (V8)</li>
+        <li>Apple Fitness rings · Duolingo · Strava — gamification (V9)</li>
+        <li>Dribbble "Trading Dashboard Dark UI" — base dense-card rhythm</li>
+      </ul>
+    </footer>
+  </body>
+</html>
