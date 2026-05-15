@@ -44,6 +44,46 @@ export function StrategyDrawerContent({
   const setupComplete = isPhaseSetupComplete(state, 'strategy');
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Field counts feed the collapsed-section hint ("{n} fields"). Numbers
+  // reflect what's actually configurable inside each section so the user
+  // knows what they'd see if they expanded.
+  const entryRulesCount = state.strategy.entryConditions.groups.reduce(
+    (sum, g) => sum + g.rules.length,
+    0,
+  );
+  const entryFieldCount =
+    1 /* strategy name */ +
+    state.strategy.indicators.length +
+    entryRulesCount;
+
+  const closeBodyCount = ((): number => {
+    const cm = state.closeMethod;
+    switch (cm.type) {
+      case 'manual':
+        return 0;
+      case 'tp_sl':
+        return (
+          (cm.tpEnabled ? cm.tpLevels.length : 0) +
+          (cm.slEnabled ? 1 : 0) +
+          (cm.trailingEnabled ? 1 : 0)
+        );
+      case 'roi':
+        return cm.roiSteps.length;
+      case 'indicator':
+        return cm.exitConditions.groups.reduce(
+          (sum, g) => sum + g.rules.length,
+          0,
+        );
+      default:
+        return 0;
+    }
+  })();
+  const actionFieldCount =
+    2 /* direction + order type */ +
+    (state.directionForm.orderType === 'limit' ? 1 : 0) +
+    1 /* close-method type picker */ +
+    closeBodyCount;
+
   return (
     <>
       <SheetBody ref={scrollRef} className="drawer-no-scrollbar">
@@ -55,6 +95,7 @@ export function StrategyDrawerContent({
             <StrategySection
               title={strings.strategyDrawer.sections.entry}
               defaultOpen
+              fieldCount={entryFieldCount}
             >
               <EntryStrategySetup />
             </StrategySection>
@@ -64,6 +105,7 @@ export function StrategyDrawerContent({
             <StrategySection
               title={strings.strategyDrawer.sections.action}
               defaultOpen
+              fieldCount={actionFieldCount}
             >
               <DirectionSetup />
               <CloseMethodSetup />

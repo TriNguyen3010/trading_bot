@@ -7,10 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  BotConfigSetup,
-  BotConfigConfigure,
-} from '@/features/bot-builder/steps/BotConfigStep';
+import { BotConfigComposite } from '@/features/bot-builder/steps/BotConfigStep';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { isStepSetupComplete } from '@/lib/validator';
 import { strings } from '@/i18n/en';
@@ -22,18 +19,14 @@ export interface BotConfigDrawerContentProps {
 }
 
 /**
- * Composite drawer body for the "Bot Basics" phase. Replaces the legacy
- * Setup/Configure tabs with a single scrolling form so users see every
- * field at once — same pattern Phase 2 (Strategy) already uses.
- *
- * The body is just the existing `BotConfigSetup` + `BotConfigConfigure`
- * stacked. We deliberately don't refactor those two — they're cohesive
- * and reusable; merging them would just duplicate field markup.
+ * Composite drawer body for the "Bot Basics" phase. Renders the merged
+ * `BotConfigComposite` form (Name / Market / Capital grouped via
+ * `StrategySection` — same accordion pattern Phase 2 uses).
  *
  * Save gate uses `isStepSetupComplete('bot-config')` (pair / timeframe /
- * leverage required). The Configure-only fields all carry sensible
- * defaults so they don't need to be validated here — `validateBuilder`
- * catches the rest at export time.
+ * leverage required). The remaining fields all carry sensible defaults so
+ * they don't need to be validated here — `validateBuilder` catches the
+ * rest at export time.
  */
 export function BotConfigDrawerContent({
   onCancel,
@@ -46,9 +39,8 @@ export function BotConfigDrawerContent({
   return (
     <>
       <SheetBody ref={scrollRef} className="drawer-no-scrollbar">
-        <div className="space-y-5">
-          <BotConfigSetup />
-          <BotConfigConfigure />
+        <div className="space-y-0">
+          <BotConfigComposite />
         </div>
       </SheetBody>
       <DrawerProgressGlow scrollRef={scrollRef} />

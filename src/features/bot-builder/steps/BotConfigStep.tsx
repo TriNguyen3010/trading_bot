@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { StrategySection } from '@/features/bot-builder/components/StrategySection';
 import {
   LEVERAGE_MAX,
   LEVERAGE_MIN,
@@ -25,6 +26,8 @@ import {
 } from '@/lib/constants';
 import { strings } from '@/i18n/en';
 import type { TradingMode, MarginMode } from '@/types/builder.types';
+
+const SECTIONS = strings.botConfigDrawer.sections;
 
 const HELP = strings.helpText.botConfig;
 
@@ -285,6 +288,251 @@ export function BotConfigConfigure() {
           />
         </FormField>
       ) : null}
+    </>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  BotConfigComposite — Phase 1 single-pane form grouped into 3 sections     */
+/*  (Name / Market / Capital). Mirrors Phase 2's StrategySection pattern so   */
+/*  the two phases feel like one product. Replaces the legacy Setup+Configure */
+/*  stacking inside BotConfigDrawerContent.                                   */
+/* -------------------------------------------------------------------------- */
+export function BotConfigComposite() {
+  const config = useBuilderStore((s) => s.botConfig);
+  const patch = useBuilderStore((s) => s.patchBotConfig);
+  const botName = useBuilderStore((s) => s.botName);
+  const setBotName = useBuilderStore((s) => s.setBotName);
+  const [pendingLive, setPendingLive] = useState(false);
+
+  // Silent migration: persisted state from before the lock that still has a
+  // non-Hyperliquid exchange or spot market type gets coerced on mount.
+  useEffect(() => {
+    const updates: Partial<typeof config> = {};
+    if (config.exchange !== 'hyperliquid') updates.exchange = 'hyperliquid';
+    if (config.marketType !== 'futures') updates.marketType = 'futures';
+    if (Object.keys(updates).length > 0) {
+      patch(updates);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleTradingMode = (next: TradingMode) => {
+    if (next === 'live' && config.tradingMode !== 'live') {
+      setPendingLive(true);
+      return;
+    }
+    patch({ tradingMode: next });
+  };
+
+  const isDryRun = config.tradingMode === 'dry-run';
+
+  // Counts what the user would see if they expanded each section. Capital
+  // hides one field (Dry-run wallet) when in live mode, so its count moves
+  // 7 → 6 — keeps the badge honest.
+  const nameFieldCount = 1;
+  const marketFieldCount = 4; // Pair + Timeframe + Exchange + Market type
+  const capitalFieldCount = 6 + (isDryRun ? 1 : 0);
+
+  return (
+    <>
+      <StrategySection
+        title={SECTIONS.name}
+        defaultOpen
+        fieldCount={nameFieldCount}
+      >
+        <FormField label="Bot name" required help={HELP.botName}>
+          <Input
+            value={botName}
+            onChange={(e) => setBotName(e.target.value)}
+            placeholder="My RSI Bot"
+          />
+        </FormField>
+      </StrategySection>
+
+      <StrategySection
+        title={SECTIONS.market}
+        defaultOpen
+        fieldCount={marketFieldCount}
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <div data-cy-anchor="bot-config:pair">
+            <FormField label="Pair" required help={HELP.pair}>
+              <Input
+                list="pair-suggestions"
+                placeholder="BTC-USDC"
+                value={config.pair}
+                onChange={(e) => patch({ pair: e.target.value.toUpperCase() })}
+                autoFocus
+              />
+              <datalist id="pair-suggestions">
+                {PAIR_SUGGESTIONS.map((p) => (
+                  <option key={p} value={p} />
+                ))}
+              </datalist>
+            </FormField>
+          </div>
+
+          <FormField label="Timeframe" required help={HELP.timeframe}>
+            <Select
+              value={config.timeframe}
+              onChange={(e) => patch({ timeframe: e.target.value })}
+            >
+              {TIMEFRAMES.map((tf) => (
+                <option key={tf.value} value={tf.value}>
+                  {tf.label}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div data-cy-anchor="bot-config:exchange">
+            <FormField label="Exchange" required help={HELP.exchange}>
+              <LockedChip value="Hyperliquid" />
+            </FormField>
+          </div>
+          <FormField label="Market type" required help={HELP.marketType}>
+            <LockedChip value="Futures" />
+          </FormField>
+        </div>
+      </StrategySection>
+
+      <StrategySection
+        title={SECTIONS.capital}
+        defaultOpen
+        fieldCount={capitalFieldCount}
+      >
+        <FormField label="Trading mode" required help={HELP.tradingMode}>
+          <ToggleGroup<TradingMode>
+            value={config.tradingMode}
+            onChange={handleTradingMode}
+            fullWidth
+            ariaLabel="Trading mode"
+            options={[
+              { value: 'dry-run', label: 'Dry-run' },
+              { value: 'live', label: 'Live trade', tone: 'bearish' },
+            ]}
+          />
+        </FormField>
+
+        <FormField label="Margin mode" required help={HELP.marginMode}>
+          <ToggleGroup<MarginMode>
+            value={config.marginMode}
+            onChange={(v) => patch({ marginMode: v })}
+            fullWidth
+            options={[
+              { value: 'cross', label: 'Cross' },
+              { value: 'isolated', label: 'Isolated' },
+            ]}
+          />
+        </FormField>
+
+        <div data-cy-anchor="bot-config:leverage">
+          <FormField label="Leverage" help={HELP.leverage}>
+            <div className="flex items-center gap-3">
+              <Slider
+                className="min-w-0 flex-1"
+                value={config.leverage}
+                onValueChange={(v) => patch({ leverage: clampLeverage(v) })}
+                min={LEVERAGE_MIN}
+                max={LEVERAGE_MAX}
+                step={1}
+                ariaLabel="Leverage"
+                showValue={false}
+              />
+              <NumberInput
+                value={config.leverage}
+                onValueChange={(v) => patch({ leverage: clampLeverage(v) })}
+                min={LEVERAGE_MIN}
+                max={LEVERAGE_MAX}
+                step={1}
+                suffix="x"
+                aria-label="Leverage value"
+                className="w-20 pr-8 text-right"
+              />
+            </div>
+          </FormField>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <FormField label="Max open trades" help={HELP.maxOpenTrades}>
+            <NumberInput
+              value={config.maxOpenTrades}
+              onValueChange={(v) => patch({ maxOpenTrades: v ?? -1 })}
+              min={-1}
+              step={1}
+            />
+          </FormField>
+          <FormField label="Stake currency" help={HELP.stakeCurrency}>
+            <Select
+              value={config.stakeCurrency}
+              onChange={(e) => patch({ stakeCurrency: e.target.value })}
+            >
+              {STAKE_CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+          <FormField label="Stake amount" help={HELP.stakeAmount}>
+            <NumberInput
+              value={config.stakeAmount}
+              onValueChange={(v) =>
+                patch({ stakeAmount: Math.max(0, v ?? 0) })
+              }
+              min={0}
+              step={1}
+              suffix={config.stakeCurrency}
+            />
+          </FormField>
+        </div>
+
+        {isDryRun ? (
+          <FormField label="Dry-run wallet" help={HELP.dryRunWallet}>
+            <NumberInput
+              value={config.dryRunWallet}
+              onValueChange={(v) =>
+                patch({ dryRunWallet: Math.max(0, v ?? 0) })
+              }
+              min={0}
+              step={100}
+              suffix={config.stakeCurrency}
+            />
+          </FormField>
+        ) : null}
+      </StrategySection>
+
+      <Dialog open={pendingLive} onOpenChange={setPendingLive}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-bearish/15 text-bearish">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <DialogTitle>Switch to Live trading?</DialogTitle>
+            <DialogDescription>
+              Live mode places orders with real funds. Dry-run is recommended
+              while you tune the strategy.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPendingLive(false)}>
+              Stay in Dry-run
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                patch({ tradingMode: 'live' });
+                setPendingLive(false);
+              }}
+            >
+              I understand, go Live
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -219,6 +219,11 @@ export const strings = {
     title: 'Bot Basics',
     description:
       'Pick the market, timeframe, trading mode and stake — all in one place.',
+    sections: {
+      name: 'Name',
+      market: 'Market',
+      capital: 'Capital',
+    },
   },
   drawer: {
     setupTab: 'Setup',

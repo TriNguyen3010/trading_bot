@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Phase 1 · Field grouping — 3 schemes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              canvas: '#0a0a0b', base: '#0b0e11', surface: '#14181f',
+              elevated: '#1e2329', input: '#181c22',
+              'border-subtle': '#1e2329', border: '#2b3139',
+              fg: '#eaecef', 'fg-secondary': '#b7bdc6', 'fg-muted': '#848e9c', 'fg-disabled': '#5e6673',
+              brand: '#F0B90B', 'brand-subtle': 'rgba(240,185,11,0.12)',
+              bullish: '#0ECB81', bearish: '#F6465D',
+            },
+            fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], pixel: ['"Press Start 2P"', 'monospace'] },
+          },
+        },
+      };
+    </script>
+    <style>
+      html, body { background: #050505; color: #eaecef; font-family: Inter, system-ui, sans-serif; }
+      .card-coin98 { background: linear-gradient(180deg, #16161a 0%, #0c0c0e 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); }
+      /* Form-field "input" look matching src/components/ui/input.tsx + select.tsx */
+      .ff-input { display: flex; height: 44px; width: 100%; border-radius: 16px; background: rgba(0,0,0,0.4); padding: 0 16px; font-size: 14px; color: #eaecef; align-items: center; }
+      .ff-toggle { display: flex; gap: 4px; border-radius: 16px; background: rgba(0,0,0,0.4); padding: 4px; }
+      .ff-toggle button { flex: 1; padding: 8px 12px; border-radius: 12px; font-size: 13px; font-weight: 500; }
+      .ff-toggle button[aria-checked="true"] { background: rgba(240,185,11,0.75); color: black; font-weight: 600; }
+      .ff-toggle button[aria-checked="true"].bearish { background: #F6465D; color: white; }
+      .ff-toggle button[aria-checked="false"] { color: #b7bdc6; }
+      .ff-chip-locked { display: flex; align-items: center; border-radius: 16px; border: 1px solid #2b3139; background: rgba(11,14,17,0.4); padding: 8px 16px; height: 44px; font-size: 14px; color: #eaecef; }
+      .ff-label { font-size: 13px; font-weight: 500; color: #eaecef; display: flex; align-items: center; gap: 4px; }
+      .ff-help { color: #848e9c; cursor: help; font-size: 11px; }
+      /* Group section header */
+      .group-h { display: flex; align-items: baseline; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 16px; }
+      .group-h .num { font-size: 10px; color: #F0B90B; font-weight: 700; letter-spacing: 0.08em; }
+      .group-h .title { font-size: 13px; font-weight: 600; color: #eaecef; text-transform: uppercase; letter-spacing: 0.06em; }
+      .group-h .sub { font-size: 11px; color: #848e9c; }
+    </style>
+  </head>
+
+  <body class="min-h-screen">
+    <header class="mx-auto max-w-[1640px] px-10 pt-10">
+      <div class="flex items-baseline gap-4">
+        <span class="text-brand font-pixel text-[10px] tracking-widest">BOT BUILDER · PHASE 1</span>
+        <span class="text-fg-muted text-xs">Design exploration · Field grouping for the Bot Basics drawer</span>
+      </div>
+      <h1 class="mt-3 text-3xl font-semibold tracking-tight">
+        Grouping 12 fields into sections —
+        <span class="text-fg-muted">Scheme D selected</span>
+      </h1>
+      <p class="mt-3 max-w-3xl text-sm text-fg-secondary leading-relaxed">
+        <span class="text-fg">Scheme D ✓</span> is the refined version of B with three tweaks:
+        (1) "Phase 1" + "Bot basics" on a single header row, (2) each section
+        <span class="text-fg">collapsible</span> using the same pattern as Phase 2's
+        <code class="rounded bg-input px-1.5 py-0.5 text-[12px]">StrategySection</code>,
+        (3) merge Mode &amp; leverage + Capital &amp; positions → one
+        <span class="text-fg">Capital</span> section. Schemes A/B/C kept below as reference.
+      </p>
+      <details class="mt-4 max-w-3xl">
+        <summary class="cursor-pointer text-xs text-fg-muted hover:text-fg">Field inventory (12 fields)</summary>
+        <ol class="mt-2 text-xs text-fg-secondary list-decimal list-inside leading-relaxed">
+          <li>Bot name (required)</li>
+          <li>Pair (required, datalist)</li>
+          <li>Timeframe (required)</li>
+          <li>Trading mode (Dry-run / Live · confirm dialog)</li>
+          <li>Leverage (slider + number)</li>
+          <li>Exchange (Hyperliquid, locked chip)</li>
+          <li>Market type (Futures, locked chip)</li>
+          <li>Margin mode (Cross / Isolated)</li>
+          <li>Max open trades</li>
+          <li>Stake currency</li>
+          <li>Stake amount</li>
+          <li>Dry-run wallet (only when tradingMode === 'dry-run')</li>
+        </ol>
+      </details>
+    </header>
+
+    <!-- ═══════════ SCHEME D · FEATURED (fix of B) ═══════════ -->
+    <section class="mx-auto max-w-[1640px] px-10 pt-12">
+      <div class="mb-3 flex items-center gap-3">
+        <span class="rounded-md bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-black">Scheme D ✓ fix</span>
+        <h2 class="text-xl font-semibold">B refined — single-row header · collapsible · Phase 2 styling</h2>
+      </div>
+      <p class="mb-6 max-w-3xl text-sm text-fg-muted leading-relaxed">
+        Sections use the exact <code class="rounded bg-input px-1.5 py-0.5 text-[12px]">StrategySection</code> pattern
+        from Phase 2: <span class="text-fg">border-b only</span>, uppercase title row, ChevronDown rotates on open.
+        Section 3 below is shown collapsed to demonstrate the fold state.
+      </p>
+
+      <div class="grid grid-cols-[520px_520px] gap-8 justify-center">
+
+        <!-- ── Default state: all open ── -->
+        <div>
+          <div class="mb-2 text-[10px] uppercase tracking-wider text-fg-muted">Default — all sections open</div>
+          <div class="rounded-2xl border border-border-subtle card-coin98">
+            <!-- Header: Phase 1 · Bot basics on ONE row -->
+            <div class="px-6 pt-5 pb-4 border-b border-border-subtle">
+              <div class="flex items-center gap-2">
+                <span class="rounded bg-brand-subtle text-brand px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">Phase 1</span>
+                <span class="text-base font-semibold text-fg">Bot basics</span>
+              </div>
+              <div class="mt-1 text-xs text-fg-muted">Define what this bot trades and how much.</div>
+            </div>
+
+            <div class="px-6 pb-2">
+              <!-- Section 1: NAME -->
+              <section class="border-b border-border-subtle">
+                <button class="flex w-full items-center justify-between gap-2 py-3 text-left">
+                  <span class="text-sm font-semibold uppercase tracking-wide text-fg">Name</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-fg-muted rotate-180 transition-transform"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="space-y-5 pb-5 pt-1">
+                  <div><div class="ff-label">Bot name <span class="ff-help">ⓘ</span></div><div class="ff-input mt-1.5">My RSI Bot</div></div>
+                </div>
+              </section>
+
+              <!-- Section 2: MARKET -->
+              <section class="border-b border-border-subtle">
+                <button class="flex w-full items-center justify-between gap-2 py-3 text-left">
+                  <span class="text-sm font-semibold uppercase tracking-wide text-fg">Market</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-fg-muted rotate-180 transition-transform"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="space-y-5 pb-5 pt-1">
+                  <div class="grid grid-cols-2 gap-3">
+                    <div><div class="ff-label">Pair <span class="ff-help">ⓘ</span></div><div class="ff-input mt-1.5">BTC-USDC</div></div>
+                    <div><div class="ff-label">Timeframe</div><div class="ff-input mt-1.5">5m</div></div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div><div class="ff-label">Exchange <span class="text-fg-disabled">·🔒</span></div><div class="ff-chip-locked mt-1.5">Hyperliquid</div></div>
+                    <div><div class="ff-label">Market type <span class="text-fg-disabled">·🔒</span></div><div class="ff-chip-locked mt-1.5">Futures</div></div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Section 3: RISK & CAPITAL (merged from B's group 3+4) -->
+              <section class="last:border-b-0">
+                <button class="flex w-full items-center justify-between gap-2 py-3 text-left">
+                  <span class="text-sm font-semibold uppercase tracking-wide text-fg">Capital</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-fg-muted rotate-180 transition-transform"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="space-y-5 pb-5 pt-1">
+                  <div><div class="ff-label">Trading mode</div><div class="ff-toggle mt-1.5"><button aria-checked="true">Dry-run</button><button aria-checked="false" class="bearish">Live trade</button></div></div>
+                  <div><div class="ff-label">Margin mode</div><div class="ff-toggle mt-1.5"><button aria-checked="true">Cross</button><button aria-checked="false">Isolated</button></div></div>
+                  <div><div class="ff-label">Leverage</div>
+                    <div class="mt-1.5 flex items-center gap-3">
+                      <div class="flex-1 h-1.5 bg-input rounded-full relative"><div class="absolute inset-y-0 left-0 bg-brand rounded-full" style="width: 25%"></div><div class="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-brand" style="left: 25%"></div></div>
+                      <div class="ff-input w-20 text-right">2x</div>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-3 gap-3">
+                    <div><div class="ff-label">Max open</div><div class="ff-input mt-1.5">3</div></div>
+                    <div><div class="ff-label">Currency</div><div class="ff-input mt-1.5">USDC</div></div>
+                    <div><div class="ff-label">Stake</div><div class="ff-input mt-1.5">50</div></div>
+                  </div>
+                  <div><div class="ff-label">Dry-run wallet</div><div class="ff-input mt-1.5">1,000 USDC</div></div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Folded state: section 3 collapsed ── -->
+        <div>
+          <div class="mb-2 text-[10px] uppercase tracking-wider text-fg-muted">Folded — section 3 collapsed</div>
+          <div class="rounded-2xl border border-border-subtle card-coin98">
+            <div class="px-6 pt-5 pb-4 border-b border-border-subtle">
+              <div class="flex items-center gap-2">
+                <span class="rounded bg-brand-subtle text-brand px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">Phase 1</span>
+                <span class="text-base font-semibold text-fg">Bot basics</span>
+              </div>
+              <div class="mt-1 text-xs text-fg-muted">Define what this bot trades and how much.</div>
+            </div>
+
+            <div class="px-6 pb-2">
+              <section class="border-b border-border-subtle">
+                <button class="flex w-full items-center justify-between gap-2 py-3 text-left">
+                  <span class="text-sm font-semibold uppercase tracking-wide text-fg">Name</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-fg-muted rotate-180 transition-transform"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="space-y-5 pb-5 pt-1">
+                  <div><div class="ff-label">Bot name</div><div class="ff-input mt-1.5">My RSI Bot</div></div>
+                </div>
+              </section>
+
+              <section class="border-b border-border-subtle">
+                <button class="flex w-full items-center justify-between gap-2 py-3 text-left">
+                  <span class="text-sm font-semibold uppercase tracking-wide text-fg">Market</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-fg-muted rotate-180 transition-transform"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="space-y-5 pb-5 pt-1">
+                  <div class="grid grid-cols-2 gap-3">
+                    <div><div class="ff-label">Pair</div><div class="ff-input mt-1.5">BTC-USDC</div></div>
+                    <div><div class="ff-label">Timeframe</div><div class="ff-input mt-1.5">5m</div></div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div><div class="ff-label">Exchange <span class="text-fg-disabled">·🔒</span></div><div class="ff-chip-locked mt-1.5">Hyperliquid</div></div>
+                    <div><div class="ff-label">Market type <span class="text-fg-disabled">·🔒</span></div><div class="ff-chip-locked mt-1.5">Futures</div></div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Collapsed -->
+              <section class="last:border-b-0">
+                <button class="flex w-full items-center justify-between gap-2 py-3 text-left">
+                  <span class="text-sm font-semibold uppercase tracking-wide text-fg">Capital</span>
+                  <span class="text-[10px] text-fg-muted mono ml-auto mr-2">7 fields</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 text-fg-muted transition-transform"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pattern reference -->
+      <div class="mt-6 mx-auto max-w-3xl rounded-xl border border-border-subtle bg-surface/50 p-4 text-xs text-fg-secondary">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="rounded bg-brand/15 text-brand px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">Pattern source</span>
+          <span class="text-fg-muted">Phase 2 · <code class="rounded bg-input px-1.5 py-0.5">StrategySection</code></span>
+        </div>
+        <p class="leading-relaxed">Same primitive: <code class="text-fg-muted">section</code> with <code class="text-fg-muted">border-b border-border-subtle last:border-b-0</code>, button row <code class="text-fg-muted">py-3</code>, title <code class="text-fg-muted">text-sm font-semibold uppercase tracking-wide</code>, ChevronDown rotates 180° when open, body <code class="text-fg-muted">space-y-5 pb-5 pt-1</code>. Pass <code class="text-fg-muted">defaultOpen</code> per section (all true for Phase 1).</p>
+      </div>
+    </section>
+
+    <!-- ─────────── Earlier 3 schemes (reference) ─────────── -->
+    <div class="mx-auto max-w-[1640px] px-10 pt-14">
+      <div class="flex items-center gap-3 mb-2">
+        <h3 class="text-sm font-semibold text-fg-muted uppercase tracking-wider">Earlier options · reference</h3>
+        <div class="flex-1 h-px bg-border-subtle"></div>
+      </div>
+      <p class="text-xs text-fg-muted max-w-2xl">A / B / C kept below for comparison. Scheme D inherits B's structure but applies the three fixes above.</p>
+    </div>
+    <main class="mx-auto max-w-[1640px] grid grid-cols-3 gap-8 px-10 pt-6 pb-16">
+
+      <!-- ═══════════ SCHEME A · 3 groups (recommended) ═══════════ -->
+      <section>
+        <div class="mb-4 flex items-center gap-3">
+          <span class="rounded-md bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-black">Scheme A</span>
+          <h2 class="text-base font-semibold">3 groups · functional</h2>
+        </div>
+        <p class="mb-4 text-xs text-fg-muted leading-relaxed h-12">
+          Grouped by <span class="text-fg">purpose</span>: what + where + how-much. Three
+          sections, each ~3–5 fields. Easiest scan.
+        </p>
+
+        <!-- Drawer mock -->
+        <div class="rounded-2xl border border-border-subtle card-coin98 p-5">
+          <div class="text-[11px] uppercase tracking-wider text-fg-muted">Phase 1</div>
+          <div class="text-base font-semibold">Bot basics</div>
+
+          <!-- group 1 -->
+          <div class="mt-6">
+            <div class="group-h">
+              <span class="num">01</span>
+              <span class="title">Identity &amp; market</span>
+              <span class="sub">what this bot trades</span>
+            </div>
+            <div class="space-y-4">
+              <div><div class="ff-label">Bot name <span class="ff-help">ⓘ</span></div><div class="ff-input mt-1.5">My RSI Bot</div></div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><div class="ff-label">Pair <span class="ff-help">ⓘ</span></div><div class="ff-input mt-1.5">BTC-USDC</div></div>
+                <div><div class="ff-label">Timeframe</div><div class="ff-input mt-1.5">5m</div></div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><div class="ff-label">Exchange <span class="text-fg-disabled">·🔒</span></div><div class="ff-chip-locked mt-1.5">Hyperliquid</div></div>
+                <div><div class="ff-label">Market type <span class="text-fg-disabled">·🔒</span></div><div class="ff-chip-locked mt-1.5">Futures</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- group 2 -->
+          <div class="mt-7">
+            <div class="group-h">
+              <span class="num">02</span>
+              <span class="title">Position &amp; risk</span>
+              <span class="sub">how aggressive</span>
+            </div>
+            <div class="space-y-4">
+              <div><div class="ff-label">Trading mode</div>
+                <div class="ff-toggle mt-1.5"><button aria-checked="true">Dry-run</button><button aria-checked="false" class="bearish">Live trade</button></div>
+              </div>
+              <div><div class="ff-label">Margin mode</div>
+                <div class="ff-toggle mt-1.5"><button aria-checked="true">Cross</button><button aria-checked="false">Isolated</button></div>
+              </div>
+              <div><div class="ff-label">Leverage</div>
+                <div class="mt-1.5 flex items-center gap-3">
+                  <div class="flex-1 h-1.5 bg-input rounded-full relative"><div class="absolute inset-y-0 left-0 bg-brand rounded-full" style="width: 25%"></div><div class="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-brand" style="left: 25%"></div></div>
+                  <div class="ff-input w-20 text-right">2x</div>
+                </div>
+              </div>
+              <div><div class="ff-label">Max open trades</div><div class="ff-input mt-1.5">3</div></div>
+            </div>
+          </div>
+
+          <!-- group 3 -->
+          <div class="mt-7">
+            <div class="group-h">
+              <span class="num">03</span>
+              <span class="title">Capital</span>
+              <span class="sub">how much per trade</span>
+            </div>
+            <div class="space-y-4">
+              <div class="grid grid-cols-2 gap-3">
+                <div><div class="ff-label">Stake currency</div><div class="ff-input mt-1.5">USDC</div></div>
+                <div><div class="ff-label">Stake amount</div><div class="ff-input mt-1.5">50 USDC</div></div>
+              </div>
+              <div><div class="ff-label">Dry-run wallet</div><div class="ff-input mt-1.5">1,000 USDC</div></div>
+            </div>
+          </div>
+        </div>
+
+        <dl class="mt-4 grid grid-cols-2 gap-3 text-xs">
+          <div class="rounded-md border border-border-subtle bg-surface/70 p-3"><dt class="text-bullish font-semibold">Pros</dt><dd class="mt-1 text-fg-secondary">Best balance — 3 chunks, each answers one question. Numbered → scannable. Group titles match user mental model.</dd></div>
+          <div class="rounded-md border border-border-subtle bg-surface/70 p-3"><dt class="text-bearish font-semibold">Cons</dt><dd class="mt-1 text-fg-secondary">Group 2 has 4 fields — borderline crowded. Mode/margin/leverage mix toggles + slider.</dd></div>
+        </dl>
+      </section>
+
+      <!-- ═══════════ SCHEME B · 4 groups (granular) ═══════════ -->
+      <section>
+        <div class="mb-4 flex items-center gap-3">
+          <span class="rounded-md bg-fg-secondary/20 text-fg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">Scheme B</span>
+          <h2 class="text-base font-semibold">4 groups · narrative</h2>
+        </div>
+        <p class="mb-4 text-xs text-fg-muted leading-relaxed h-12">
+          Splits more finely: Identity / Market / Mode / Capital. Each group has 2–3
+          fields max — easier to digest but more headers.
+        </p>
+
+        <div class="rounded-2xl border border-border-subtle card-coin98 p-5">
+          <div class="text-[11px] uppercase tracking-wider text-fg-muted">Phase 1</div>
+          <div class="text-base font-semibold">Bot basics</div>
+
+          <div class="mt-6">
+            <div class="group-h"><span class="num">01</span><span class="title">Name</span></div>
+            <div><div class="ff-label">Bot name</div><div class="ff-input mt-1.5">My RSI Bot</div></div>
+          </div>
+
+          <div class="mt-7">
+            <div class="group-h"><span class="num">02</span><span class="title">Market</span><span class="sub">pair + venue</span></div>
+            <div class="space-y-4">
+              <div class="grid grid-cols-2 gap-3">
+                <div><div class="ff-label">Pair</div><div class="ff-input mt-1.5">BTC-USDC</div></div>
+                <div><div class="ff-label">Timeframe</div><div class="ff-input mt-1.5">5m</div></div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><div class="ff-label">Exchange ·🔒</div><div class="ff-chip-locked mt-1.5">Hyperliquid</div></div>
+                <div><div class="ff-label">Market type ·🔒</div><div class="ff-chip-locked mt-1.5">Futures</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-7">
+            <div class="group-h"><span class="num">03</span><span class="title">Mode &amp; leverage</span></div>
+            <div class="space-y-4">
+              <div><div class="ff-label">Trading mode</div><div class="ff-toggle mt-1.5"><button aria-checked="true">Dry-run</button><button aria-checked="false" class="bearish">Live trade</button></div></div>
+              <div><div class="ff-label">Margin mode</div><div class="ff-toggle mt-1.5"><button aria-checked="true">Cross</button><button aria-checked="false">Isolated</button></div></div>
+              <div><div class="ff-label">Leverage</div>
+                <div class="mt-1.5 flex items-center gap-3">
+                  <div class="flex-1 h-1.5 bg-input rounded-full relative"><div class="absolute inset-y-0 left-0 bg-brand rounded-full" style="width: 25%"></div><div class="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-brand" style="left: 25%"></div></div>
+                  <div class="ff-input w-20 text-right">2x</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-7">
+            <div class="group-h"><span class="num">04</span><span class="title">Capital &amp; positions</span></div>
+            <div class="space-y-4">
+              <div class="grid grid-cols-3 gap-3">
+                <div><div class="ff-label">Max open</div><div class="ff-input mt-1.5">3</div></div>
+                <div><div class="ff-label">Currency</div><div class="ff-input mt-1.5">USDC</div></div>
+                <div><div class="ff-label">Stake</div><div class="ff-input mt-1.5">50</div></div>
+              </div>
+              <div><div class="ff-label">Dry-run wallet</div><div class="ff-input mt-1.5">1,000 USDC</div></div>
+            </div>
+          </div>
+        </div>
+
+        <dl class="mt-4 grid grid-cols-2 gap-3 text-xs">
+          <div class="rounded-md border border-border-subtle bg-surface/70 p-3"><dt class="text-bullish font-semibold">Pros</dt><dd class="mt-1 text-fg-secondary">No group has &gt;3 fields. Closer to "wizard step" feel — narrative progression top to bottom.</dd></div>
+          <div class="rounded-md border border-border-subtle bg-surface/70 p-3"><dt class="text-bearish font-semibold">Cons</dt><dd class="mt-1 text-fg-secondary">Group 1 has just 1 field — feels like overkill. More vertical space spent on headers.</dd></div>
+        </dl>
+      </section>
+
+      <!-- ═══════════ SCHEME C · Quick-start + Advanced ═══════════ -->
+      <section>
+        <div class="mb-4 flex items-center gap-3">
+          <span class="rounded-md bg-bullish/30 text-bullish px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">Scheme C</span>
+          <h2 class="text-base font-semibold">Quick-start + Advanced</h2>
+        </div>
+        <p class="mb-4 text-xs text-fg-muted leading-relaxed h-12">
+          Progressive disclosure. Top: only the 4 fields a beginner needs.
+          "Advanced" collapsed by default, holds the other 8.
+        </p>
+
+        <div class="rounded-2xl border border-border-subtle card-coin98 p-5">
+          <div class="text-[11px] uppercase tracking-wider text-fg-muted">Phase 1</div>
+          <div class="text-base font-semibold">Bot basics</div>
+
+          <div class="mt-6">
+            <div class="group-h"><span class="num">01</span><span class="title">Quick start</span><span class="sub">the 4 fields you can't skip</span></div>
+            <div class="space-y-4">
+              <div><div class="ff-label">Bot name</div><div class="ff-input mt-1.5">My RSI Bot</div></div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><div class="ff-label">Pair</div><div class="ff-input mt-1.5">BTC-USDC</div></div>
+                <div><div class="ff-label">Timeframe</div><div class="ff-input mt-1.5">5m</div></div>
+              </div>
+              <div><div class="ff-label">Trading mode</div><div class="ff-toggle mt-1.5"><button aria-checked="true">Dry-run</button><button aria-checked="false" class="bearish">Live trade</button></div></div>
+            </div>
+          </div>
+
+          <!-- Collapsed advanced -->
+          <div class="mt-7 rounded-xl border border-border-subtle bg-base/60">
+            <button class="w-full flex items-center justify-between px-4 py-3 text-left">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] uppercase tracking-wider text-brand font-bold">02</span>
+                <span class="text-sm font-semibold">Advanced</span>
+                <span class="text-[11px] text-fg-muted">venue · risk · capital</span>
+              </div>
+              <span class="text-fg-muted text-xs">8 fields · click to expand ⌃</span>
+            </button>
+            <!-- expanded contents (shown here for preview) -->
+            <div class="border-t border-border-subtle p-4 space-y-4">
+              <div class="grid grid-cols-2 gap-3">
+                <div><div class="ff-label">Exchange ·🔒</div><div class="ff-chip-locked mt-1.5">Hyperliquid</div></div>
+                <div><div class="ff-label">Market type ·🔒</div><div class="ff-chip-locked mt-1.5">Futures</div></div>
+              </div>
+              <div><div class="ff-label">Margin mode</div><div class="ff-toggle mt-1.5"><button aria-checked="true">Cross</button><button aria-checked="false">Isolated</button></div></div>
+              <div><div class="ff-label">Leverage</div>
+                <div class="mt-1.5 flex items-center gap-3">
+                  <div class="flex-1 h-1.5 bg-input rounded-full relative"><div class="absolute inset-y-0 left-0 bg-brand rounded-full" style="width: 25%"></div><div class="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-brand" style="left: 25%"></div></div>
+                  <div class="ff-input w-20 text-right">2x</div>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div><div class="ff-label">Max open</div><div class="ff-input mt-1.5">3</div></div>
+                <div><div class="ff-label">Currency</div><div class="ff-input mt-1.5">USDC</div></div>
+                <div><div class="ff-label">Stake</div><div class="ff-input mt-1.5">50</div></div>
+              </div>
+              <div><div class="ff-label">Dry-run wallet</div><div class="ff-input mt-1.5">1,000 USDC</div></div>
+            </div>
+          </div>
+        </div>
+
+        <dl class="mt-4 grid grid-cols-2 gap-3 text-xs">
+          <div class="rounded-md border border-border-subtle bg-surface/70 p-3"><dt class="text-bullish font-semibold">Pros</dt><dd class="mt-1 text-fg-secondary">Friendliest for first-time users. "I just want a bot" path is 4 fields. Defaults for everything else are sensible.</dd></div>
+          <div class="rounded-md border border-border-subtle bg-surface/70 p-3"><dt class="text-bearish font-semibold">Cons</dt><dd class="mt-1 text-fg-secondary">Power users have to click. Hidden fields = forgotten fields (leverage default may surprise). Needs <code>showAdvanced</code> state (or persist).</dd></div>
+        </dl>
+      </section>
+    </main>
+
+    <!-- ─────────── footer ─────────── -->
+    <footer class="mx-auto max-w-[1640px] border-t border-border-subtle px-10 py-10 text-xs text-fg-muted">
+      <h3 class="text-fg font-semibold text-sm">Trade-off matrix</h3>
+      <table class="mt-3 w-full text-left text-fg-secondary max-w-4xl">
+        <thead class="text-fg">
+          <tr><th class="py-2 pr-4 font-medium">Concern</th><th class="py-2 pr-4 font-medium">A · 3 groups</th><th class="py-2 pr-4 font-medium">B · 4 groups</th><th class="py-2 pr-4 font-medium">C · Quick + Advanced</th></tr>
+        </thead>
+        <tbody class="[&>tr]:border-t [&>tr]:border-border-subtle">
+          <tr><td class="py-2 pr-4">Groups</td><td>3</td><td>4</td><td>1 + 1 collapsed</td></tr>
+          <tr><td class="py-2 pr-4">Total vertical height</td><td>Medium</td><td>Largest (most headers)</td><td>Smallest collapsed</td></tr>
+          <tr><td class="py-2 pr-4">First-time friendliness</td><td>Good</td><td>Good</td><td>Best</td></tr>
+          <tr><td class="py-2 pr-4">Power-user speed</td><td>Best</td><td>Good</td><td>Slowest (extra click)</td></tr>
+          <tr><td class="py-2 pr-4">Code change scope</td><td>Wrap fields in 3 sections</td><td>Wrap in 4 sections</td><td>+ collapse state + persistence</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="text-fg font-semibold text-sm mt-6">Locked in · Scheme D</h3>
+      <p class="mt-2 leading-relaxed max-w-3xl">
+        Final pick: <span class="text-fg">Scheme D</span> (see featured section at top).
+        Three collapsible <code class="rounded bg-input px-1.5 py-0.5 text-[12px]">StrategySection</code>-style
+        groups — Name · Market · Capital — reusing Phase 2's exact primitive so the
+        two phases feel like one product. Header keeps "Phase 1 · Bot basics" on one row.
+      </p>
+
+      <p class="mt-4 text-fg-secondary">Ready to apply to <code class="rounded bg-input px-1.5 py-0.5 text-[12px]">BotConfigStep.tsx</code> — merge <code>BotConfigSetup</code> + <code>BotConfigConfigure</code> into a single composite and wrap fields in 3 <code class="rounded bg-input px-1.5 py-0.5 text-[12px]">&lt;StrategySection&gt;</code> blocks. Header text comes from <code>strings.botConfigDrawer.title</code>; add a "Phase 1" pill before it.</p>
+    </footer>
+  </body>
+</html>
