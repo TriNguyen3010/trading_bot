@@ -2,7 +2,12 @@ import { X } from 'lucide-react';
 import { Select } from '@/components/ui/select';
 import { NumberInput } from '@/components/ui/number-input';
 import { cn } from '@/lib/utils';
-import { indicatorOutputId } from '../indicators/indicator-registry';
+import { formatConditionRefLabel } from '@/lib/condition-labels';
+import {
+  INDICATOR_REGISTRY,
+  indicatorOutputId,
+} from '../indicators/indicator-registry';
+import { MetricCombobox, type MetricOption } from './MetricCombobox';
 import type {
   ConditionOp,
   ConditionRow as ConditionRowType,
@@ -17,7 +22,11 @@ export interface ConditionRowProps {
   onRemove: () => void;
 }
 
-const ALL_OPS: { value: ConditionOp; label: string; rightType: 'value' | 'none' }[] = [
+const ALL_OPS: {
+  value: ConditionOp;
+  label: string;
+  rightType: 'value' | 'none';
+}[] = [
   { value: '>', label: '>', rightType: 'value' },
   { value: '<', label: '<', rightType: 'value' },
   { value: '>=', label: '≥', rightType: 'value' },
@@ -39,23 +48,50 @@ export function ConditionRow({
   const opMeta = ALL_OPS.find((o) => o.value === row.op) ?? ALL_OPS[0];
   const needsRightValue = opMeta.rightType === 'value';
 
-  const leftOptions: { value: string; label: string }[] = [
+  const leftOptions: MetricOption[] = [
     ...candlestickChannels.map((c) => ({
       value: `candle.${c}`,
-      label: `candle.${c}`,
+      label: formatConditionRefLabel(`candle.${c}`),
+      category: 'Candle',
     })),
     ...indicators.map((i) => {
       const id = indicatorOutputId(i);
-      return { value: id, label: id };
+      return {
+        value: id,
+        label: id,
+        category: INDICATOR_REGISTRY[i.name]?.category ?? 'Custom',
+        description: INDICATOR_REGISTRY[i.name]?.description,
+      };
     }),
   ];
 
-  // Ensure the row's left is at least visible in the dropdown.
+  // Ensure the row's left is at least visible in the dropdown — covers
+  // imported / templated refs whose definition isn't in the catalog.
   if (row.left && !leftOptions.find((o) => o.value === row.left)) {
-    leftOptions.push({ value: row.left, label: row.left });
+    leftOptions.push({
+      value: row.left,
+      label: formatConditionRefLabel(row.left),
+      category: 'Custom',
+    });
   }
 
-  const indicatorChoices = indicators.map((i) => indicatorOutputId(i));
+  const indicatorOptions: MetricOption[] = indicators.map((i) => ({
+    value: indicatorOutputId(i),
+    label: indicatorOutputId(i),
+    category: INDICATOR_REGISTRY[i.name]?.category ?? 'Custom',
+    description: INDICATOR_REGISTRY[i.name]?.description,
+  }));
+  if (
+    row.right_indicator &&
+    !indicatorOptions.find((o) => o.value === row.right_indicator)
+  ) {
+    indicatorOptions.push({
+      value: row.right_indicator,
+      label: formatConditionRefLabel(row.right_indicator),
+      category: 'Custom',
+    });
+  }
+  const hasIndicators = indicatorOptions.length > 0;
 
   const isInvalid =
     needsRightValue &&
@@ -73,7 +109,7 @@ export function ConditionRow({
         type="button"
         onClick={onRemove}
         aria-label="Remove condition"
-        className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-md text-fg-muted/40 transition-colors hover:bg-bearish/10 hover:text-bearish focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        className="text-fg-muted/40 hover:bg-bearish/10 absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:text-bearish focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
       >
         <X className="h-3.5 w-3.5" />
       </button>
@@ -82,18 +118,13 @@ export function ConditionRow({
        * width — without this, `<select>` and `<input>` size to their
        * longest option / size attribute and the two rows misalign. */}
       <div className="grid grid-cols-2 gap-2 pr-7">
-        <Select
-          aria-label="Left side"
+        <MetricCombobox
+          ariaLabel="Left side"
           value={row.left}
-          onChange={(e) => onChange({ left: e.target.value })}
+          onChange={(value) => onChange({ left: value })}
+          options={leftOptions}
           className="min-w-0 flex-1"
-        >
-          {leftOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </Select>
+        />
         <Select
           aria-label="Operator"
           value={row.op}
@@ -136,34 +167,26 @@ export function ConditionRow({
                   right_number: t === 'number' ? (row.right_number ?? 0) : null,
                   right_indicator:
                     t === 'indicator'
-                      ? row.right_indicator ?? indicatorChoices[0] ?? null
+                      ? (row.right_indicator ?? indicatorOptions[0]?.value ?? null)
                       : null,
                 });
               }}
               className="min-w-0 flex-1"
             >
               <option value="number">Number</option>
-              <option value="indicator" disabled={indicatorChoices.length === 0}>
+              <option value="indicator" disabled={!hasIndicators}>
                 Indicator
               </option>
             </Select>
             {row.right_type === 'indicator' ? (
-              <Select
-                aria-label="Right indicator"
+              <MetricCombobox
+                ariaLabel="Right indicator"
                 value={row.right_indicator ?? ''}
-                onChange={(e) => onChange({ right_indicator: e.target.value })}
+                onChange={(value) => onChange({ right_indicator: value })}
+                options={indicatorOptions}
+                placeholder={hasIndicators ? 'Select indicator…' : '—'}
                 className="min-w-0 flex-1"
-              >
-                {indicatorChoices.length === 0 ? (
-                  <option value="">—</option>
-                ) : (
-                  indicatorChoices.map((id) => (
-                    <option key={id} value={id}>
-                      {id}
-                    </option>
-                  ))
-                )}
-              </Select>
+              />
             ) : (
               <NumberInput
                 aria-label="Right number"
