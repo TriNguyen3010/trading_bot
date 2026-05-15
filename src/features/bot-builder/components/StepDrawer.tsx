@@ -170,8 +170,22 @@ export function StepDrawer({
 
     const handleOutsidePress = (event: PointerEvent | MouseEvent) => {
       const target = event.target;
-      if (!(target instanceof Node)) return;
+      if (!(target instanceof Element)) return;
       if (drawerContentRef.current?.contains(target)) return;
+      // Nested Radix overlays (Dialog confirm modals, Popovers, Menus,
+      // Tooltips, Selects) render via portal to <body>, so they live
+      // outside drawerContentRef even though, visually and logically,
+      // they're "inside" the drawer interaction. Treat presses inside
+      // any of them as in-drawer. Without this, clicking "I understand,
+      // go Live" in the Live-trade confirm Dialog silently closed the
+      // whole drawer before the patch could apply.
+      if (
+        target.closest(
+          '[role="dialog"],[role="alertdialog"],[role="menu"],[role="listbox"],[role="tooltip"],[data-radix-popper-content-wrapper]',
+        )
+      ) {
+        return;
+      }
       onManualClose();
     };
 
@@ -215,13 +229,25 @@ export function StepDrawer({
                   transition={{ duration: 0.15 }}
                 >
                   <SheetTitle>
-                    {isCompositeStrategy && strategyHeader
-                      ? strategyHeader.title
-                      : isCompositeBotConfig && botConfigHeader
-                        ? botConfigHeader.title
-                        : content
-                          ? `${strings.drawer.stepLabel(content.index)}: ${content.title}`
-                          : ''}
+                    {isCompositeStrategy && strategyHeader ? (
+                      <span className="inline-flex items-baseline gap-2">
+                        <span className="rounded bg-brand-subtle px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand">
+                          Phase 2
+                        </span>
+                        <span>{strategyHeader.title}</span>
+                      </span>
+                    ) : isCompositeBotConfig && botConfigHeader ? (
+                      <span className="inline-flex items-baseline gap-2">
+                        <span className="rounded bg-brand-subtle px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand">
+                          Phase 1
+                        </span>
+                        <span>{botConfigHeader.title}</span>
+                      </span>
+                    ) : content ? (
+                      `${strings.drawer.stepLabel(content.index)}: ${content.title}`
+                    ) : (
+                      ''
+                    )}
                   </SheetTitle>
                   {/* Description kept (empty) so Radix Dialog's a11y
                       `aria-describedby` link doesn't warn. */}

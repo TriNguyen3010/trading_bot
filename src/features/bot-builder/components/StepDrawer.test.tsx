@@ -1,6 +1,12 @@
+import { useState } from 'react';
 import { describe, expect, it, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { StepDrawer, type StepContentMap } from './StepDrawer';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import type { StepId } from '@/types/builder.types';
 
@@ -124,5 +130,55 @@ describe('StepDrawer integration', () => {
     await waitFor(() => {
       expect(useBuilderStore.getState().openStep).toBeNull();
     });
+  });
+
+  it('stays open when pressing inside a nested Radix Dialog (e.g. Live-trade confirm)', async () => {
+    // Repro for the "Live trade" bug: the confirmation Dialog inside
+    // BotConfig is portaled to <body>, so the drawer's outside-press
+    // listener used to treat clicks on the confirm button as "outside"
+    // and silently closed the drawer before the user could confirm.
+    function NestedDialogContent() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>
+            open nested
+          </button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent>
+              <DialogTitle>Nested</DialogTitle>
+              <button type="button">confirm nested</button>
+            </DialogContent>
+          </Dialog>
+        </>
+      );
+    }
+
+    const contentWithDialog: Record<StepId, StepContentMap> = {
+      ...CONTENT,
+      'bot-config': {
+        ...CONTENT['bot-config'],
+        setup: <NestedDialogContent />,
+      },
+    };
+
+    useBuilderStore.getState().setOpenStep('bot-config');
+    render(
+      <StepDrawer
+        {...baseProps}
+        contentByStep={contentWithDialog}
+        onManualClose={() => useBuilderStore.getState().setOpenStep(null)}
+      />,
+    );
+
+    fireEvent.click(await screen.findByText('open nested'));
+    const confirm = await screen.findByRole('button', {
+      name: 'confirm nested',
+    });
+
+    fireEvent.pointerDown(confirm);
+    fireEvent.mouseDown(confirm);
+
+    expect(useBuilderStore.getState().openStep).toBe('bot-config');
   });
 });
