@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Indicator picker — directions (drawer-faithful)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Tokens mirrored from src/styles/tokens.css.
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              canvas: '#0a0a0b',
+              base: '#0b0e11',
+              surface: '#14181f',
+              'surface-hover': '#1f1f23',
+              'surface-active': '#2b3139',
+              elevated: '#1e2329',
+              input: '#181c22',
+              'border-subtle': '#1e2329',
+              border: '#2b3139',
+              'border-strong': '#474d57',
+              fg: '#eaecef',
+              'fg-secondary': '#b7bdc6',
+              'fg-muted': '#848e9c',
+              brand: '#F0B90B',
+              'brand-subtle': 'rgba(240,185,11,0.12)',
+              bullish: '#0ecb81',
+              'bullish-subtle': 'rgba(14,203,129,0.12)',
+              bearish: '#f6465d',
+              'bearish-subtle': 'rgba(246,70,93,0.12)',
+            },
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+              pixel: ['"Press Start 2P"', 'monospace'],
+            },
+            boxShadow: {
+              drawer: '0 30px 60px -30px rgba(0,0,0,0.7)',
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      html,
+      body {
+        background: #0a0a0b;
+        color: #eaecef;
+        font-family: Inter, system-ui, sans-serif;
+      }
+      /* Coin98 elevated card look, same as src/styles/tokens.css `.card-coin98` */
+      .card-coin98 {
+        background: linear-gradient(180deg, #16161a 0%, #0c0c0e 100%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      .canvas-bg {
+        background-image: radial-gradient(
+          rgba(255, 255, 255, 0.025) 1px,
+          transparent 1px
+        );
+        background-size: 18px 18px;
+      }
+      .scroll-thin::-webkit-scrollbar {
+        width: 8px;
+      }
+      .scroll-thin::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .scroll-thin::-webkit-scrollbar-thumb {
+        background: #2b3139;
+        border-radius: 999px;
+        border: 1px solid #14181f;
+      }
+      /* Native-select-look pill — matches src/components/ui/select.tsx feel */
+      .pill-select {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 10px;
+        border: 1px solid #2b3139;
+        background: #181c22;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #eaecef;
+      }
+      .pill-select:hover {
+        border-color: #474d57;
+      }
+      .chevron::after {
+        content: '⌄';
+        font-size: 14px;
+        color: #848e9c;
+        margin-left: 4px;
+      }
+      .if-pill {
+        display: inline-flex;
+        align-items: center;
+        height: 22px;
+        padding: 0 8px;
+        border-radius: 6px;
+        background: rgba(240, 185, 11, 0.15);
+        color: #F0B90B;
+        font-weight: 600;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+      }
+    </style>
+  </head>
+
+  <body class="min-h-screen canvas-bg">
+    <!-- ───────── header ───────── -->
+    <header class="mx-auto max-w-[1660px] px-10 pt-10">
+      <div class="flex items-baseline gap-4">
+        <span class="text-brand font-pixel text-[10px] tracking-widest"
+          >TRADING-BOT-BUILDER</span
+        >
+        <span class="text-fg-muted text-xs"
+          >Design exploration · Indicator picker · v2 — aligned to current
+          drawer UI</span
+        >
+      </div>
+      <h1 class="mt-3 text-3xl font-semibold tracking-tight">
+        Picking from many indicators —
+        <span class="text-fg-muted">in the real ConditionRow context</span>
+      </h1>
+      <p
+        class="mt-3 max-w-3xl text-sm text-fg-secondary leading-relaxed"
+      >
+        <span class="text-fg">Current reality:</span> indicators are picked
+        from a native
+        <code class="rounded bg-input px-1.5 py-0.5 text-[12px]">&lt;select&gt;</code>
+        inside each <code class="rounded bg-input px-1.5 py-0.5 text-[12px]">ConditionRow</code> —
+        one row per rule. The chip tray above only shows what's already been
+        referenced. Today the dropdown lists <b>5 candle channels + ~6
+        indicators</b> = 11 options; once the catalog hits ~150 (talib +
+        pandas_ta) that native select breaks. Below are 3 directions, each
+        drawn in the actual drawer surroundings with the real tokens
+        (<span class="font-mono text-[11px] text-fg">#14181f / #181c22 /
+        #F0B90B</span>).
+      </p>
+    </header>
+
+    <!-- ───────── columns ───────── -->
+    <main
+      class="mx-auto mt-10 grid max-w-[1660px] grid-cols-3 gap-8 px-10 pb-16"
+    >
+      <!-- ===================== V1 ===================== -->
+      <section>
+        <div class="mb-4 flex items-center gap-2">
+          <span
+            class="rounded-md bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-black"
+            >V1</span
+          >
+          <h2 class="text-base font-semibold">
+            Searchable combobox replaces the native &lt;select&gt;
+          </h2>
+        </div>
+        <p class="text-xs text-fg-muted leading-relaxed mb-4 h-14">
+          Smallest delta: same row, same flow — only the left/right metric
+          dropdown becomes a searchable popover with category groups. Single
+          pick per row. Multi-add isn't here; chip tray still grows
+          implicitly from the rows.
+        </p>
+
+        <!-- Drawer slice mockup -->
+        <div class="rounded-2xl border border-border-subtle card-coin98 p-4 shadow-drawer">
+          <!-- Sheet header strip -->
+          <div class="mb-3 flex items-center justify-between">
+            <div>
+              <div class="text-[11px] uppercase tracking-wider text-fg-muted">
+                Strategy · Entry conditions
+              </div>
+              <div class="text-sm font-semibold mt-0.5">RSI Momentum Long</div>
+            </div>
+            <button class="h-7 w-7 rounded-md text-fg-muted hover:bg-surface-hover">×</button>
+          </div>
+
+          <!-- IF card -->
+          <div class="rounded-xl border border-border-subtle bg-surface p-3">
+            <div class="flex items-center justify-between">
+              <span class="if-pill">IF · ALL</span>
+              <button class="text-fg-muted text-xs hover:text-fg">⋯</button>
+            </div>
+
+            <!-- Existing row, with the NEW combobox replacing left <select> -->
+            <div class="mt-3 rounded-lg border border-border-subtle bg-base p-3 relative">
+              <button class="absolute right-1 top-1 h-6 w-6 rounded-md text-fg-muted/50 hover:text-bearish">×</button>
+              <div class="grid grid-cols-2 gap-2 pr-7">
+                <!-- The picker trigger: looks like a select, behaves as combobox -->
+                <button class="pill-select chevron justify-between w-full text-left">
+                  <span class="truncate"><span class="text-brand font-medium">RSI-14</span></span>
+                </button>
+                <button class="pill-select chevron justify-between w-full text-left">
+                  <span>crosses above</span>
+                </button>
+              </div>
+              <div class="mt-2 grid grid-cols-2 gap-2 pr-7">
+                <button class="pill-select chevron justify-between w-full text-left">
+                  <span>Number</span>
+                </button>
+                <input value="30" class="pill-select w-full justify-end text-right" />
+              </div>
+            </div>
+
+            <!-- Floating combobox popup, anchored to the left field -->
+            <div class="relative mt-2">
+              <div class="absolute top-0 left-0 w-[320px] rounded-xl border border-border bg-elevated shadow-2xl">
+                <!-- Search -->
+                <div class="border-b border-border-subtle px-2.5 py-2">
+                  <div class="flex items-center gap-2 rounded-md bg-input px-2.5 py-1.5">
+                    <span class="text-fg-muted">⌕</span>
+                    <input
+                      type="text"
+                      placeholder="Search candle / indicator…"
+                      class="w-full bg-transparent text-[13px] placeholder:text-fg-muted focus:outline-none"
+                    />
+                    <kbd class="rounded border border-border bg-base px-1.5 py-0.5 text-[10px] text-fg-muted">⌘K</kbd>
+                  </div>
+                </div>
+                <!-- Category strip -->
+                <div class="flex gap-1 overflow-x-auto px-2 py-1.5 border-b border-border-subtle scroll-thin">
+                  <button class="shrink-0 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-black">All · 24</button>
+                  <button class="shrink-0 rounded-full border border-border-subtle px-2 py-0.5 text-[11px] text-fg-secondary hover:text-brand">Candle · 5</button>
+                  <button class="shrink-0 rounded-full border border-border-subtle px-2 py-0.5 text-[11px] text-fg-secondary hover:text-brand">Momentum · 8</button>
+                  <button class="shrink-0 rounded-full border border-border-subtle px-2 py-0.5 text-[11px] text-fg-secondary hover:text-brand">Trend · 7</button>
+                  <button class="shrink-0 rounded-full border border-border-subtle px-2 py-0.5 text-[11px] text-fg-secondary hover:text-brand">Volatility · 4</button>
+                </div>
+                <!-- List -->
+                <div class="max-h-64 overflow-y-auto py-1 scroll-thin">
+                  <div class="px-2.5 pt-1.5 pb-1 text-[10px] uppercase tracking-wider text-fg-muted">Candle</div>
+                  <button class="w-full text-left px-2.5 py-1.5 text-[13px] hover:bg-surface-hover">candle.close</button>
+                  <button class="w-full text-left px-2.5 py-1.5 text-[13px] hover:bg-surface-hover">candle.open</button>
+                  <button class="w-full text-left px-2.5 py-1.5 text-[13px] hover:bg-surface-hover">candle.high</button>
+                  <div class="px-2.5 pt-2 pb-1 text-[10px] uppercase tracking-wider text-fg-muted">Momentum</div>
+                  <button class="w-full flex items-baseline gap-2 px-2.5 py-1.5 hover:bg-surface-hover">
+                    <span class="text-[13px]"><span class="text-brand font-medium">RSI-14</span></span>
+                    <span class="ml-auto text-[10px] text-fg-muted">period 14</span>
+                  </button>
+                  <button class="w-full flex items-baseline gap-2 px-2.5 py-1.5 bg-brand-subtle">
+                    <span class="text-[13px]">MACD-12-26-9</span>
+                    <span class="ml-auto text-[10px] text-fg-muted">fast/slow/signal</span>
+                  </button>
+                  <button class="w-full flex items-baseline gap-2 px-2.5 py-1.5 hover:bg-surface-hover">
+                    <span class="text-[13px]">Stochastic %K</span>
+                    <span class="ml-auto text-[10px] text-fg-muted">14/3/3</span>
+                  </button>
+                  <button class="w-full flex items-baseline gap-2 px-2.5 py-1.5 hover:bg-surface-hover">
+                    <span class="text-[13px]">CCI</span>
+                  </button>
+                </div>
+                <div class="flex items-center justify-between border-t border-border-subtle px-2.5 py-1.5 text-[10px] text-fg-muted">
+                  <span>Newly picked indicators get added to the chip tray with default params.</span>
+                </div>
+              </div>
+              <div class="h-[340px]"></div>
+            </div>
+          </div>
+        </div>
+
+        <dl class="mt-4 grid grid-cols-2 gap-3 text-xs">
+          <div class="rounded-md border border-border-subtle bg-surface/70 p-3">
+            <dt class="text-bullish font-semibold">Pros</dt>
+            <dd class="mt-1 text-fg-secondary leading-relaxed">
+              Drop-in for both left + right <code>&lt;select&gt;</code> in
+              ConditionRow. Scales to 150 with search/categories. No new
+              modality, no store changes.
+            </dd>
+          </div>
+          <div class="rounded-md border border-border-subtle bg-surface/70 p-3">
+            <dt class="text-bearish font-semibold">Cons</dt>
+            <dd class="mt-1 text-fg-secondary leading-relaxed">
+              Doesn't solve "I want 3 rules at once"; still 1 indicator per
+              click. Chip tray growth stays implicit (could feel magical).
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <!-- ===================== V2 ===================== -->
+      <section>
+        <div class="mb-4 flex items-center gap-2">
+          <span
+            class="rounded-md bg-fg-secondary/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fg"
+            >V2</span
+          >
+          <h2 class="text-base font-semibold">
+            Multi-select chip-tray + auto-seed rows
+          </h2>
+        </div>
+        <p class="text-xs text-fg-muted leading-relaxed mb-4 h-14">
+          Adds an explicit <span class="text-fg">Add indicators</span> button
+          on the chip tray. Opens a multi-checkbox popover. On apply, each
+          picked indicator (a) appears as a chip and (b) seeds an empty
+          ConditionRow under "IF" so the user just fills operator/value.
+        </p>
+
+        <div class="rounded-2xl border border-border-subtle card-coin98 p-4 shadow-drawer">
+          <div class="mb-3 flex items-center justify-between">
+            <div>
+              <div class="text-[11px] uppercase tracking-wider text-fg-muted">
+                Strategy · Entry conditions
+              </div>
+              <div class="text-sm font-semibold mt-0.5">Trend + Pullback</div>
+            </div>
+            <button class="h-7 w-7 rounded-md text-fg-muted hover:bg-surface-hover">×</button>
+          </div>
+
+          <!-- Chip tray + Add button -->
+          <div class="mb-3">
+            <div class="text-[11px] uppercase tracking-wider text-fg-muted mb-1.5">
+              Indicators in this strategy
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="inline-flex items-center gap-1 rounded-full border border-brand/60 bg-brand-subtle pl-3 pr-2 py-1 text-xs">
+                <span class="font-medium">RSI-14</span>
+                <span class="text-fg-muted">⚙</span>
+                <span class="text-fg-muted hover:text-bearish">×</span>
+              </span>
+              <span class="inline-flex items-center gap-1 rounded-full border border-brand/60 bg-brand-subtle pl-3 pr-2 py-1 text-xs">
+                <span class="font-medium">MA-50</span>
+                <span class="text-fg-muted">⚙</span>
+                <span class="text-fg-muted hover:text-bearish">×</span>
+              </span>
+              <button class="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3 py-1 text-xs text-fg-secondary hover:border-brand hover:text-brand">
+                ＋ Add indicators
+              </button>
+            </div>
+          </div>
+
+          <!-- Multi-select popover (this is what the button opens) -->
+          <div class="relative">
+            <div class="rounded-xl border border-border bg-elevated shadow-2xl">
+              <div class="border-b border-border-subtle px-3 py-2 flex items-center justify-between">
+                <div class="text-[12px] font-semibold">Add indicators</div>
+                <div class="text-[11px] text-fg-muted"><span class="text-fg">2</span> selected · max 10/strategy</div>
+              </div>
+              <div class="border-b border-border-subtle px-3 py-2">
+                <div class="flex items-center gap-2 rounded-md bg-input px-2.5 py-1.5">
+                  <span class="text-fg-muted">⌕</span>
+                  <input placeholder="Search…" class="w-full bg-transparent text-[13px] placeholder:text-fg-muted focus:outline-none" />
+                </div>
+              </div>
+              <div class="flex">
+                <div class="w-24 shrink-0 border-r border-border-subtle py-1 text-[11px]">
+                  <button class="w-full border-l-2 border-brand bg-brand-subtle px-2.5 py-1.5 text-left text-fg font-medium">All <span class="text-fg-muted">24</span></button>
+                  <button class="w-full border-l-2 border-transparent px-2.5 py-1.5 text-left text-fg-secondary hover:text-fg">Momentum <span class="text-fg-muted">8</span></button>
+                  <button class="w-full border-l-2 border-transparent px-2.5 py-1.5 text-left text-fg-secondary hover:text-fg">Trend <span class="text-fg-muted">7</span></button>
+                  <button class="w-full border-l-2 border-transparent px-2.5 py-1.5 text-left text-fg-secondary hover:text-fg">Volatility <span class="text-fg-muted">4</span></button>
+                  <button class="w-full border-l-2 border-transparent px-2.5 py-1.5 text-left text-fg-secondary hover:text-fg">Volume <span class="text-fg-muted">3</span></button>
+                </div>
+                <div class="flex-1 max-h-52 overflow-y-auto scroll-thin">
+                  <label class="flex items-start gap-2.5 px-3 py-2 bg-brand-subtle/40 cursor-pointer">
+                    <span class="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border border-brand bg-brand text-[10px] text-black">✓</span>
+                    <span class="flex-1">
+                      <span class="text-[13px] font-medium">Stochastic %K</span>
+                      <span class="ml-2 text-[10px] text-fg-muted">Momentum</span>
+                      <p class="text-[11px] text-fg-muted">Overbought / oversold via price range.</p>
+                    </span>
+                  </label>
+                  <label class="flex items-start gap-2.5 px-3 py-2 bg-brand-subtle/40 cursor-pointer">
+                    <span class="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border border-brand bg-brand text-[10px] text-black">✓</span>
+                    <span class="flex-1">
+                      <span class="text-[13px] font-medium">ADX</span>
+                      <span class="ml-2 text-[10px] text-fg-muted">Trend</span>
+                      <p class="text-[11px] text-fg-muted">Trend strength 0–100.</p>
+                    </span>
+                  </label>
+                  <label class="flex items-start gap-2.5 px-3 py-2 hover:bg-surface-hover cursor-pointer">
+                    <span class="mt-0.5 inline-flex h-4 w-4 shrink-0 rounded border border-border"></span>
+                    <span class="flex-1">
+                      <span class="text-[13px] font-medium">CCI</span>
+                      <span class="ml-2 text-[10px] text-fg-muted">Momentum</span>
+                    </span>
+                  </label>
+                  <label class="flex items-start gap-2.5 px-3 py-2 hover:bg-surface-hover cursor-pointer">
+                    <span class="mt-0.5 inline-flex h-4 w-4 shrink-0 rounded border border-border"></span>
+                    <span class="flex-1">
+                      <span class="text-[13px] font-medium">ATR</span>
+                      <span class="ml-2 text-[10px] text-fg-muted">Volatility</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+              <!-- Pre-flight toggle -->
+              <div class="border-t border-border-subtle px-3 py-2 text-[11px] flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <span class="inline-flex h-4 w-7 items-center rounded-full bg-brand p-0.5">
+                    <span class="h-3 w-3 translate-x-3 rounded-full bg-black"></span>
+                  </span>
+                  <span class="text-fg-secondary">Also seed empty rules under IF</span>
+                </label>
+                <div class="flex items-center gap-2">
+                  <button class="rounded-md px-2.5 py-1 text-fg-secondary hover:text-fg">Cancel</button>
+                  <button class="rounded-md bg-brand px-3 py-1 font-semibold text-black">Add 2 + seed</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Result preview (after applying) -->
+          <div class="mt-3 rounded-xl border border-border-subtle bg-surface p-3">
+            <div class="flex items-center justify-between">
+              <span class="if-pill">IF · ALL</span>
+              <button class="text-fg-muted text-xs hover:text-fg">⋯</button>
+            </div>
+            <p class="mt-2 text-[11px] text-fg-muted">After "Add 2 + seed", you'd get 2 new empty rules pre-filled with the indicator on the left:</p>
+            <div class="mt-2 rounded-lg border border-dashed border-brand/40 bg-base p-3">
+              <div class="grid grid-cols-2 gap-2 pr-7">
+                <div class="pill-select chevron justify-between"><span class="text-brand font-medium">Stoch %K</span></div>
+                <div class="pill-select chevron justify-between text-fg-muted italic"><span>choose operator…</span></div>
+              </div>
+            </div>
+            <div class="mt-2 rounded-lg border border-dashed border-brand/40 bg-base p-3">
+              <div class="grid grid-cols-2 gap-2 pr-7">
+                <div class="pill-select chevron justify-between"><span class="text-brand font-medium">ADX-14</span></div>
+                <div class="pill-select chevron justify-between text-fg-muted italic"><span>choose operator…</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <dl class="mt-4 grid grid-cols-2 gap-3 text-xs">
+          <div class="rounded-md border border-border-subtle bg-surface/70 p-3">
+            <dt class="text-bullish font-semibold">Pros</dt>
+            <dd class="mt-1 text-fg-secondary leading-relaxed">
+              Real multi-add UX. Pre-seeds condition rows so user only picks
+              operator/value. Chip tray becomes intentional, not magical.
+            </dd>
+          </div>
+          <div class="rounded-md border border-border-subtle bg-surface/70 p-3">
+            <dt class="text-bearish font-semibold">Cons</dt>
+            <dd class="mt-1 text-fg-secondary leading-relaxed">
+              Adds a button + a store action ("seed rows"); ConditionRow
+              still needs its own picker (otherwise selecting a different
+              metric in an existing row is awkward).
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <!-- ===================== V3 ===================== -->
+      <section>
+        <div class="mb-4 flex items-center gap-2">
+          <span
+            class="rounded-md bg-bullish-subtle px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-bullish"
+            >V3</span
+          >
+          <h2 class="text-base font-semibold">
+            Typeahead chip + short row select
+          </h2>
+        </div>
+        <p class="text-xs text-fg-muted leading-relaxed mb-4 h-14">
+          Decouples "what's in the strategy" from "what this row references."
+          Add metrics via typeahead chip (no modal). The row's metric select
+          becomes <b>short</b> — only the chips you've already added — so 150
+          items never explode into one row.
+        </p>
+
+        <div class="rounded-2xl border border-border-subtle card-coin98 p-4 shadow-drawer">
+          <div class="mb-3 flex items-center justify-between">
+            <div>
+              <div class="text-[11px] uppercase tracking-wider text-fg-muted">
+                Strategy · Entry conditions
+              </div>
+              <div class="text-sm font-semibold mt-0.5">Vol Squeeze Long</div>
+            </div>
+            <button class="h-7 w-7 rounded-md text-fg-muted hover:bg-surface-hover">×</button>
+          </div>
+
+          <!-- Chip tray with active "+" typeahead chip -->
+          <div class="mb-3">
+            <div class="text-[11px] uppercase tracking-wider text-fg-muted mb-1.5">
+              Indicators in this strategy
+            </div>
+            <div class="relative flex flex-wrap items-center gap-2">
+              <span class="inline-flex items-center gap-1 rounded-full border border-brand/60 bg-brand-subtle pl-3 pr-2 py-1 text-xs">
+                <span class="font-medium">BB-20</span>
+                <span class="text-fg-muted">⚙</span>
+                <span class="text-fg-muted hover:text-bearish">×</span>
+              </span>
+              <span class="inline-flex items-center gap-1 rounded-full border border-brand/60 bg-brand-subtle pl-3 pr-2 py-1 text-xs">
+                <span class="font-medium">RSI-14</span>
+                <span class="text-fg-muted">⚙</span>
+                <span class="text-fg-muted hover:text-bearish">×</span>
+              </span>
+              <!-- Active typing chip -->
+              <span class="inline-flex items-center gap-1 rounded-full border border-brand bg-base pl-2 pr-1 py-1 text-xs ring-2 ring-brand/30">
+                <span class="text-fg-muted">＋</span>
+                <input value="adx" placeholder="type metric…" class="w-20 bg-transparent text-sm focus:outline-none" />
+              </span>
+
+              <!-- Dropdown below the active chip -->
+              <div class="absolute left-[200px] top-full mt-1 w-[280px] rounded-xl border border-border bg-elevated shadow-2xl">
+                <div class="flex items-center justify-between border-b border-border-subtle px-3 py-1.5 text-[10px] text-fg-muted">
+                  <span>Filtering by <span class="text-fg">"adx"</span></span>
+                  <span class="flex gap-1">
+                    <kbd class="rounded border border-border bg-base px-1 py-0 text-[9px]">↑↓</kbd>
+                    <kbd class="rounded border border-border bg-base px-1 py-0 text-[9px]">↵</kbd>
+                    <kbd class="rounded border border-border bg-base px-1 py-0 text-[9px]">esc</kbd>
+                  </span>
+                </div>
+                <div class="max-h-52 overflow-y-auto py-1 scroll-thin">
+                  <button class="w-full flex items-baseline gap-2 px-3 py-1.5 text-left bg-brand-subtle">
+                    <span class="text-[13px] font-medium"><span class="text-brand underline decoration-brand/50">ADX</span></span>
+                    <span class="text-[10px] text-fg-muted">Trend</span>
+                    <span class="ml-auto text-[10px] text-fg-muted">period 14</span>
+                  </button>
+                  <button class="w-full flex items-baseline gap-2 px-3 py-1.5 text-left hover:bg-surface-hover">
+                    <span class="text-[13px]"><span class="text-brand underline decoration-brand/50">ADX</span>R</span>
+                    <span class="text-[10px] text-fg-muted">Trend</span>
+                  </button>
+                  <button class="w-full flex items-baseline gap-2 px-3 py-1.5 text-left hover:bg-surface-hover">
+                    <span class="text-[13px]">A<span class="text-brand underline decoration-brand/50">D</span><span class="text-brand underline decoration-brand/50">X</span> DI+</span>
+                  </button>
+                </div>
+                <div class="border-t border-border-subtle px-3 py-1.5 text-[10px] text-fg-muted">
+                  Press <kbd class="rounded border border-border bg-base px-1 text-[9px]">↵</kbd> to add. Chip stays open for the next.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- IF card — row's metric select is the SHORT list -->
+          <div class="rounded-xl border border-border-subtle bg-surface p-3 mt-[150px]">
+            <div class="flex items-center justify-between">
+              <span class="if-pill">IF · ALL</span>
+              <button class="text-fg-muted text-xs hover:text-fg">⋯</button>
+            </div>
+            <div class="mt-3 rounded-lg border border-border-subtle bg-base p-3 relative">
+              <button class="absolute right-1 top-1 h-6 w-6 rounded-md text-fg-muted/50 hover:text-bearish">×</button>
+              <div class="grid grid-cols-2 gap-2 pr-7">
+                <button class="pill-select chevron justify-between w-full text-left">
+                  <span class="text-brand font-medium">BB-20.upper</span>
+                </button>
+                <button class="pill-select chevron justify-between w-full text-left">
+                  <span>crosses below</span>
+                </button>
+              </div>
+              <div class="mt-2 grid grid-cols-2 gap-2 pr-7">
+                <button class="pill-select chevron justify-between w-full text-left">
+                  <span>candle.close</span>
+                </button>
+                <span class="text-[11px] italic text-fg-muted self-center pl-1">(left + right swap)</span>
+              </div>
+              <p class="mt-2 text-[10px] text-fg-muted">
+                Metric select only lists the
+                <span class="text-fg">3 indicators</span> from the chip tray
+                + 5 candle channels — never the full 150.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <dl class="mt-4 grid grid-cols-2 gap-3 text-xs">
+          <div class="rounded-md border border-border-subtle bg-surface/70 p-3">
+            <dt class="text-bullish font-semibold">Pros</dt>
+            <dd class="mt-1 text-fg-secondary leading-relaxed">
+              Keyboard-first. Row select stays a native short list. No
+              modal. Two surfaces with clean separation of concerns.
+            </dd>
+          </div>
+          <div class="rounded-md border border-border-subtle bg-surface/70 p-3">
+            <dt class="text-bearish font-semibold">Cons</dt>
+            <dd class="mt-1 text-fg-secondary leading-relaxed">
+              Implicit-add path (typing in ConditionRow today) breaks: user
+              must add to chip tray first, then pick in row. Slight extra
+              step. Worse for discovery (no category browsing).
+            </dd>
+          </div>
+        </dl>
+      </section>
+    </main>
+
+    <!-- ───────── notes ───────── -->
+    <footer
+      class="mx-auto max-w-[1660px] border-t border-border-subtle px-10 py-10 text-xs text-fg-muted"
+    >
+      <h3 class="text-fg font-semibold text-sm">Reading the trade-offs</h3>
+      <table class="mt-3 w-full text-left text-fg-secondary">
+        <thead class="text-fg">
+          <tr>
+            <th class="py-2 pr-4 font-medium">Concern</th>
+            <th class="py-2 pr-4 font-medium">V1 combobox</th>
+            <th class="py-2 pr-4 font-medium">V2 multi-select + seed</th>
+            <th class="py-2 pr-4 font-medium">V3 typeahead chip</th>
+          </tr>
+        </thead>
+        <tbody class="[&>tr]:border-t [&>tr]:border-border-subtle">
+          <tr><td class="py-2 pr-4">Scales to 150 indicators</td><td>✓ search + groups</td><td>✓ search + groups</td><td>✓ typeahead (no browse view)</td></tr>
+          <tr><td class="py-2 pr-4">Multi-add in one go</td><td class="text-bearish">— single pick</td><td>✓ checkbox + seed rows</td><td class="text-fg-muted">enter / enter / enter (sequential)</td></tr>
+          <tr><td class="py-2 pr-4">Touches store / data model</td><td>None</td><td>Adds "seed empty rule" action</td><td>None</td></tr>
+          <tr><td class="py-2 pr-4">Net new components</td><td>1 (combobox)</td><td>2 (combobox + multi popover)</td><td>2 (combobox + typeahead chip)</td></tr>
+          <tr><td class="py-2 pr-4">Drawer modality risk</td><td>Low — popover only</td><td>Medium — popover stacks over drawer</td><td>Low — inline only</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="text-fg font-semibold text-sm mt-6">Recommendation</h3>
+      <ul class="mt-2 space-y-1 list-disc list-inside leading-relaxed">
+        <li>
+          Ship <span class="text-fg">V1 first</span> — it's the smallest
+          change that unblocks the 150-item catalog. Same Popover primitive
+          you already use for IndicatorChip, plugs into both left + right
+          ConditionRow selects.
+        </li>
+        <li>
+          Stack <span class="text-fg">V2 on top</span> later, only after we
+          see users add ≥3 indicators per strategy (Cypheus / analytics
+          signal). The "seed rows" action is the real value-add.
+        </li>
+        <li>
+          V3 is the most opinionated rewrite — defer unless we want the
+          chip tray to be the canonical add path.
+        </li>
+      </ul>
+    </footer>
+
+    <script>
+      // Prevent form submits in static mockup.
+      document.querySelectorAll('input').forEach((el) =>
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') e.preventDefault();
+        }),
+      );
+    </script>
+  </body>
+</html>

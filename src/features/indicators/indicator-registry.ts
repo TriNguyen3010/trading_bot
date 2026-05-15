@@ -1,5 +1,12 @@
 import type { IndicatorItem } from '@/types/builder.types';
 
+export type IndicatorCategory =
+  | 'Momentum'
+  | 'Trend'
+  | 'Volatility'
+  | 'Volume'
+  | 'Overlay';
+
 export interface IndicatorParam {
   key: string;
   label: string;
@@ -15,6 +22,7 @@ export interface IndicatorParam {
 export interface IndicatorDefinition {
   name: string; // canonical name used in JSON, e.g. "RSI"
   type: 'talib' | 'pandas_ta' | 'custom';
+  category: IndicatorCategory;
   description: string;
   /**
    * Output channel suffix used when computing condition `left` ids.
@@ -28,6 +36,7 @@ export const INDICATOR_REGISTRY: Record<string, IndicatorDefinition> = {
   RSI: {
     name: 'RSI',
     type: 'talib',
+    category: 'Momentum',
     description: 'Relative Strength Index — momentum oscillator (0–100).',
     buildId: (p) => `RSI-${p.timeperiod ?? 14}`,
     parameters: [
@@ -45,6 +54,7 @@ export const INDICATOR_REGISTRY: Record<string, IndicatorDefinition> = {
   MA: {
     name: 'MA',
     type: 'talib',
+    category: 'Trend',
     description: 'Simple Moving Average — trend following.',
     buildId: (p) => `MA-${p.timeperiod ?? 50}`,
     parameters: [
@@ -74,6 +84,7 @@ export const INDICATOR_REGISTRY: Record<string, IndicatorDefinition> = {
   MACD: {
     name: 'MACD',
     type: 'talib',
+    category: 'Momentum',
     description: 'Moving Average Convergence Divergence — trend + momentum.',
     buildId: (p) =>
       `MACD-${p.fastperiod ?? 12}-${p.slowperiod ?? 26}-${p.signalperiod ?? 9}`,
@@ -110,6 +121,7 @@ export const INDICATOR_REGISTRY: Record<string, IndicatorDefinition> = {
   BB: {
     name: 'BB',
     type: 'talib',
+    category: 'Volatility',
     description: 'Bollinger Bands — volatility envelope around an SMA.',
     buildId: (p) => `BB-${p.timeperiod ?? 20}`,
     parameters: [
@@ -145,6 +157,7 @@ export const INDICATOR_REGISTRY: Record<string, IndicatorDefinition> = {
   ATR: {
     name: 'ATR',
     type: 'talib',
+    category: 'Volatility',
     description: 'Average True Range — measures volatility.',
     buildId: (p) => `ATR-${p.timeperiod ?? 14}`,
     parameters: [
@@ -162,6 +175,7 @@ export const INDICATOR_REGISTRY: Record<string, IndicatorDefinition> = {
   Stochastic: {
     name: 'Stochastic',
     type: 'talib',
+    category: 'Momentum',
     description: 'Stochastic oscillator — overbought / oversold (%K / %D).',
     buildId: (p) =>
       `Stoch-${p.fastk_period ?? 14}-${p.slowk_period ?? 3}-${p.slowd_period ?? 3}`,
