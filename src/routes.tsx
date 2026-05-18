@@ -1,17 +1,27 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { BuilderPage } from './pages/BuilderPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { LandingPage } from './pages/LandingPage';
 import { BotMonitoringPage } from './features/bot-monitoring/BotMonitoringPage';
 import { LoginPage } from './features/auth/LoginPage';
 import { ProtectedRoute } from './features/auth/ProtectedRoute';
 
 export const router = createBrowserRouter([
   {
+    path: '/',
+    element: <LandingPage />,
+  },
+  {
     path: '/login',
     element: <LoginPage />,
   },
   {
-    path: '/',
-    element: <Navigate to="/builder" replace />,
+    path: '/dashboard',
+    element: (
+      <ProtectedRoute>
+        <DashboardPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/builder',
@@ -31,6 +41,6 @@ export const router = createBrowserRouter([
   },
   {
     path: '*',
-    element: <Navigate to="/builder" replace />,
+    element: <Navigate to="/" replace />,
   },
 ]);
