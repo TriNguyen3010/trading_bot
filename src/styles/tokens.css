@@ -362,3 +362,30 @@
 .drawer-no-scrollbar::-webkit-scrollbar {
   display: none !important;
 }
+
+/* === Landing page surface tokens (deferred-auth flow) === */
+
+/* Subtle yellow-tinted dotted backdrop, matches public/*.html demos. */
+.dot-canvas {
+  background:
+    radial-gradient(circle, rgba(240, 185, 11, 0.05) 1px, transparent 1.3px) 0 0 / 18px 18px,
+    #060607;
+}
+
+/* Soft brand glow centered at the top — paired with .dot-canvas. */
+.glow-brand {
+  background-image: radial-gradient(
+    ellipse 60% 50% at 50% 0%,
+    rgba(240, 185, 11, 0.08) 0%,
+    transparent 70%
+  );
+}
+
+/* Hero word underline in brand yellow (e.g. "Build your <first bot>"). */
+.underline-brand {
+  background-image: linear-gradient(to right, #f0b90b, #f0b90b);
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 100% 2px;
+  padding-bottom: 4px;
+}
