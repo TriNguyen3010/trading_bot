@@ -1,6 +1,7 @@
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ArrowLeft,
   PanelLeftClose,
   PanelLeftOpen,
   Pause,
@@ -508,6 +509,7 @@ function formatUptime(deployedAt: number) {
 // Header (mirrors HeaderToolbar styling: dense top bar, semantic tokens)
 // ──────────────────────────────────────────────────────────────────────
 function MonitoringHeader({ meta }: { meta: BotMeta }) {
+  const navigate = useNavigate();
   const uptime = formatUptime(meta.deployedAt);
   const isLive = meta.mode === 'live';
 
@@ -517,7 +519,19 @@ function MonitoringHeader({ meta }: { meta: BotMeta }) {
   return (
     <header className="flex h-[var(--layout-header,56px)] flex-shrink-0 items-center px-3 pt-2">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 rounded-full card-coin98 px-2 py-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
-        <div className="flex min-w-0 items-center gap-3 pl-1">
+        <div className="flex min-w-0 items-center gap-2 pl-1">
+          {/* Back to dashboard */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/dashboard')}
+            className="rounded-full px-2.5 text-fg-muted hover:text-fg hover:bg-black/40"
+            aria-label="Back to dashboard"
+          >
+            <ArrowLeft className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+            All bots
+          </Button>
+          <span className="text-border-strong">/</span>
           {/* Bot identity — circular brand badge */}
           <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-brand text-black shadow-[0_0_12px_rgba(240,185,11,0.5)]">
             <Sparkles className="h-4 w-4" aria-hidden="true" />
@@ -569,6 +583,11 @@ function MonitoringHeader({ meta }: { meta: BotMeta }) {
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => {
+              // TODO(wallet-team): wire to bot stop API + confirm modal.
+              // For demo: stop confirmed → return to dashboard.
+              navigate('/dashboard');
+            }}
             className="rounded-full px-3 text-bearish hover:bg-bearish-subtle hover:text-bearish-hover"
           >
             <StopCircle className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
@@ -577,6 +596,7 @@ function MonitoringHeader({ meta }: { meta: BotMeta }) {
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => navigate('/builder')}
             className="rounded-full px-3 text-fg-muted hover:text-fg hover:bg-black/40"
           >
             <Pencil className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />

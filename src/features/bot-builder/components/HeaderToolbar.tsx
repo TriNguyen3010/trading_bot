@@ -19,8 +19,6 @@ import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { CreateNewBotButton } from '@/features/cypheus/CreateNewBotButton';
 import { ExportDialog } from '@/features/export-import/ExportDialog';
 import { useExportDialogStore } from '@/features/export-import/export-dialog.store';
-import { MyBotsDialog } from '@/features/bot-monitoring/MyBotsDialog';
-import { useMyBotsDialogStore } from '@/features/bot-monitoring/my-bots-dialog.store';
 import { ImportDialog } from '@/features/export-import/ImportDialog';
 import { validateBuilder } from '@/lib/validator';
 import { strings } from '@/i18n/en';
@@ -48,7 +46,6 @@ export function HeaderToolbar() {
 
   const exportOpen = useExportDialogStore((s) => s.open);
   const setExportOpen = useExportDialogStore((s) => s.setOpen);
-  const setMyBotsOpen = useMyBotsDialogStore((s) => s.setOpen);
 
   const [importOpen, setImportOpen] = useState(false);
 
@@ -98,12 +95,19 @@ export function HeaderToolbar() {
             * navigation/account controls (User, Create new bot, My bots).
             * Order per user request: Logo · User · Create new bot · My bots. */}
           <div className="flex items-center gap-1.5 pl-1">
-            <img
-              src="/logo.png"
-              alt="Strategy Builder"
-              className="mr-2 h-8 w-8 select-none rounded-full object-contain"
-              draggable={false}
-            />
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              aria-label="Back to dashboard"
+              className="mr-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            >
+              <img
+                src="/logo.png"
+                alt="Strategy Builder · click to view dashboard"
+                className="h-8 w-8 select-none rounded-full object-contain transition hover:brightness-110"
+                draggable={false}
+              />
+            </button>
             <span
               className={cn(
                 'mr-2 text-xs text-fg-muted',
@@ -154,11 +158,11 @@ export function HeaderToolbar() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setMyBotsOpen(true)}
+                  onClick={() => navigate('/dashboard')}
                   className="rounded-full px-3"
                 >
                   <List className="h-3.5 w-3.5" />
-                  My Bots
+                  Dashboard
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Browse and monitor all your bots.</TooltipContent>
@@ -230,7 +234,6 @@ export function HeaderToolbar() {
 
       <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
-      <MyBotsDialog />
     </header>
   );
 }
