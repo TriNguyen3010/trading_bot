@@ -47,3 +47,17 @@ coverage
 
 # temp files
 _tmp_*
+
+# Local-only artifacts (per Tri preference): design mockups, plans, reports.
+# Code goes to remote. References stay local.
+PLAN_DEFERRED_AUTH_SCOPE.md
+public/deferred-auth-flow.html
+public/dashboard-design.html
+public/first-screen-redesign.html
+public/full-flow-design.html
+public/leverage-bar-designs.html
+public/user-journey.html
+public/wallet-connect-design.html
+public/closemethod-manual-fix-demo.html
+docs/superpowers/reports/
+assets/*.mp4
