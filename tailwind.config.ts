@@ -61,7 +61,12 @@ const config: Config = {
           hover: 'var(--brand-hover)',
           active: 'var(--brand-active)',
           subtle: 'var(--brand-subtle)',
+          soft: 'rgba(240, 185, 11, 0.06)',
         },
+
+        // Accent colors used by wallet-auth flow + landing
+        cyan: '#22D3EE',
+        violet: '#7C5CFF',
 
         // Trading semantic
         bullish: {
