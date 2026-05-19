@@ -183,7 +183,7 @@ export function ConnectWalletPanel({ onCancel }: ConnectWalletPanelProps) {
       </div>
 
       {/* DEV NOTE — visible to dev only. Remove or comment out before prod. */}
-      <div className="rounded-md border border-dashed border-cyan/40 bg-cyan/5 px-3 py-2 text-[10px] leading-relaxed text-cyan/90">
+      <div className="rounded-md border border-dashed border-info/40 bg-info/5 px-3 py-2 text-2xs leading-relaxed text-info">
         <span className="font-semibold">PLACEHOLDER UI</span> · final visual +
         real wallet logic owned by external team. Stub <code>connect()</code>{' '}
         plays detect → connecting → signing → ready over ~3.2s for end-to-end
