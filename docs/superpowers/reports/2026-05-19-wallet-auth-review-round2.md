@@ -253,3 +253,53 @@ BE doc dùng "MetaMask" xuyên suốt nhưng FE dùng Coin98. Nên sửa thành 
 ## Summary
 
 Round 1 fixes đều **PASS** — apply đúng intent. 1 bug nhỏ mới (C1 import), 1 defensive feature nên thêm (`is_active` check), và 3 doc gaps ở BE doc. Không có regression từ các fixes.
+
+---
+
+## Round 3 Sign-off (commit `b3d8b2f`)
+
+> **Date:** 2026-05-19
+> **Scope:** Verify 3 fixes from round 2 action items + BE confirmation Q8 (is_active)
+
+### Check 1: Gap #1 fix — `Object.assign` pattern
+
+**PASS.** Plan line 1257-1259 dùng đúng Option A:
+```ts
+Object.assign(new Error('Forbidden'), { name: 'HttpError', status: 403 })
+```
+Consistent với tests line 1156/1176. Comment giải thích lý do (tránh import HttpError).
+
+### Check 2: Defensive `is_active` check
+
+**PASS.** Spec §3.2 step 6 + Plan `connect()` line 1514 khớp recommend round 2:
+- `if (!user.is_active)` → `clearStorage()` + set error + return
+- Comment ghi rõ: BE blocks ở middleware, check FE là belt-and-suspenders
+- Test line 1272: mock `is_active: false` → assert status='error' + creds cleared
+
+**Edge cases:**
+- `user === null`: Không xảy ra — `walletApi.getStatus()` parse JSON qua `http<AuthUser>()`, null response sẽ throw trước khi tới check
+- `user.is_active === undefined`: `!undefined` = `true` → user bị block (safe direction). Rất unlikely vì field đã trong BE contract (Q2). Low risk, acceptable.
+
+### Check 3: 403 pass-through implementation
+
+**PASS.** Plan `http.ts` line 909-921 cover đủ 5 response shapes:
+
+| Shape | Handling | Test |
+|-------|----------|------|
+| JSON `{detail: "msg"}` | Parse + pass-through | Line 582 ✅ |
+| Non-JSON plain text | Raw text as toast | Line 598 ✅ |
+| Empty body | Default "Quyền truy cập bị từ chối." | Line 611 ✅ |
+| `silentToast` path | No toast | Line 637 ✅ |
+| `res.text()` throws | `.catch(() => '')` → default msg | Handled by catch ✅ |
+
+Theoretical edge (not a bug): `{detail: 123}` (numeric) → shows raw JSON. Acceptable — FastAPI always returns string `detail`.
+
+### Q8 Resolution
+
+BE Tuấn confirm: deactivated user → **403 + message** (middleware block). Spec §4.4 + §10 Q10 + §14.4 đã cập nhật đầy đủ. Q8 **CLOSED**.
+
+### Verdict
+
+**Round 3: clean — ready to implement.**
+
+Tất cả fixes apply đúng intent. Không có issue mới. Spec + plan ở commit `b3d8b2f` là baseline sạch cho implementation phase.
