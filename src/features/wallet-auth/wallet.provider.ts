@@ -1,45 +1,86 @@
 // =============================================================================
-// STUB · wallet provider detection + EIP-1193 surface
+// Wallet provider — Coin98 detection + low-level EIP-1193 RPC.
 //
-// TODO(wallet-team): replace this entire file with the real Coin98 integration.
-// Spec lives in docs/superpowers/specs/2026-05-14-c98-wallet-auth-design.md §3.3.
-//
-// The interface below is what the rest of the app consumes — keep its shape
-// stable when swapping in the real implementation:
-//   - detectCoin98(): EthereumProvider | null
-//   - requestAccounts(provider): Promise<string[]>
-//   - personalSign(provider, message, address): Promise<string>
+// Spec: docs/superpowers/specs/2026-05-14-c98-wallet-auth-design.md §3.3.
 // =============================================================================
 
-export interface EthereumProvider {
-  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-  on?: (event: string, handler: (...args: unknown[]) => void) => void;
-  removeListener?: (
-    event: string,
-    handler: (...args: unknown[]) => void,
-  ) => void;
+import type { EthereumProvider } from './wallet.types';
+
+export class UserRejectedError extends Error {
+  constructor() {
+    super('Bạn đã từ chối yêu cầu từ ví');
+    this.name = 'UserRejectedError';
+  }
+}
+
+export class NoProviderError extends Error {
+  constructor() {
+    super('Không tìm thấy ví Coin98');
+    this.name = 'NoProviderError';
+  }
+}
+
+interface RpcErrorLike {
+  code?: number;
+  message?: string;
+}
+
+function isUserReject(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    (err as RpcErrorLike).code === 4001
+  );
 }
 
 /**
  * Detect a Coin98 wallet provider injected on `window`.
- *
- * STUB: returns null so the UI can render the "no Coin98" branch for demo.
- * The stub `connect()` flow in wallet.store.ts bypasses this for the mock path.
+ * Checks the official `window.coin98.provider` first, then falls back to
+ * the legacy `window.ethereum` injection when it carries the `isCoin98`
+ * flag (some older C98 builds expose only this shim).
  */
 export function detectCoin98(): EthereumProvider | null {
+  const win = window as unknown as {
+    coin98?: { provider?: EthereumProvider };
+    ethereum?: EthereumProvider & { isCoin98?: boolean };
+  };
+  if (win.coin98?.provider) return win.coin98.provider;
+  if (win.ethereum?.isCoin98) return win.ethereum;
   return null;
 }
 
 export async function requestAccounts(
-  _provider: EthereumProvider,
+  provider: EthereumProvider,
 ): Promise<string[]> {
-  throw new Error('wallet.provider stub: requestAccounts not implemented');
+  if (!provider) throw new NoProviderError();
+  try {
+    const result = (await provider.request({
+      method: 'eth_requestAccounts',
+    })) as string[];
+    // Empty array = wallet locked + user cancelled password prompt.
+    // Treat as a rejection so the UI shows the "try again" branch.
+    if (!result || result.length === 0) throw new UserRejectedError();
+    return result.map((a) => a.toLowerCase());
+  } catch (err) {
+    if (err instanceof UserRejectedError) throw err;
+    if (isUserReject(err)) throw new UserRejectedError();
+    throw err;
+  }
 }
 
 export async function personalSign(
-  _provider: EthereumProvider,
-  _message: string,
-  _address: string,
+  provider: EthereumProvider,
+  message: string,
+  address: string,
 ): Promise<string> {
-  throw new Error('wallet.provider stub: personalSign not implemented');
+  if (!provider) throw new NoProviderError();
+  try {
+    return (await provider.request({
+      method: 'personal_sign',
+      params: [message, address],
+    })) as string;
+  } catch (err) {
+    if (isUserReject(err)) throw new UserRejectedError();
+    throw err;
+  }
 }
