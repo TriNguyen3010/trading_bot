@@ -1,6 +1,9 @@
 import type { Config } from 'tailwindcss';
 import animate from 'tailwindcss-animate';
 
+const withAlpha = (variableName: string) =>
+  `rgb(var(${variableName}) / <alpha-value>)`;
+
 const config: Config = {
   darkMode: ['class'],
   content: ['./index.html', './src/**/*.{ts,tsx}'],
@@ -29,69 +32,65 @@ const config: Config = {
       },
       colors: {
         // Surfaces
-        canvas: 'var(--color-bg-canvas)',
+        canvas: withAlpha('--color-bg-canvas-rgb'),
         surface: {
-          DEFAULT: 'var(--color-bg-surface)',
-          hover: 'var(--color-bg-surface-hover)',
-          active: 'var(--color-bg-surface-active)',
-          elevated: 'var(--color-bg-elevated)',
+          DEFAULT: withAlpha('--color-bg-surface-rgb'),
+          hover: withAlpha('--color-bg-surface-hover-rgb'),
+          active: withAlpha('--color-bg-surface-active-rgb'),
+          elevated: withAlpha('--color-bg-elevated-rgb'),
         },
-        input: 'var(--color-bg-input)',
+        input: withAlpha('--color-bg-input-rgb'),
 
         // Borders
         border: {
-          DEFAULT: 'var(--color-border-default)',
-          subtle: 'var(--color-border-subtle)',
-          strong: 'var(--color-border-strong)',
-          focus: 'var(--color-border-focus)',
+          DEFAULT: withAlpha('--color-border-default-rgb'),
+          subtle: withAlpha('--color-border-subtle-rgb'),
+          strong: withAlpha('--color-border-strong-rgb'),
+          focus: withAlpha('--brand-primary-rgb'),
         },
 
         // Text
         fg: {
-          DEFAULT: 'var(--color-text-primary)',
-          secondary: 'var(--color-text-secondary)',
-          muted: 'var(--color-text-muted)',
-          disabled: 'var(--color-text-disabled)',
-          inverse: 'var(--color-text-inverse)',
+          DEFAULT: withAlpha('--color-text-primary-rgb'),
+          secondary: withAlpha('--color-text-secondary-rgb'),
+          muted: withAlpha('--color-text-muted-rgb'),
+          disabled: withAlpha('--color-text-disabled-rgb'),
+          inverse: withAlpha('--color-text-inverse-rgb'),
         },
 
         // Brand
         brand: {
-          DEFAULT: 'var(--brand-primary)',
-          hover: 'var(--brand-hover)',
-          active: 'var(--brand-active)',
+          DEFAULT: withAlpha('--brand-primary-rgb'),
+          hover: withAlpha('--brand-hover-rgb'),
+          active: withAlpha('--brand-active-rgb'),
           subtle: 'var(--brand-subtle)',
-          soft: 'rgba(240, 185, 11, 0.06)',
+          soft: 'rgb(var(--brand-primary-rgb) / 0.06)',
         },
-
-        // Accent colors used by wallet-auth flow + landing
-        cyan: '#22D3EE',
-        violet: '#7C5CFF',
 
         // Trading semantic
         bullish: {
-          DEFAULT: 'var(--color-bullish)',
-          hover: 'var(--color-bullish-hover)',
+          DEFAULT: withAlpha('--color-bullish-rgb'),
+          hover: withAlpha('--color-bullish-hover-rgb'),
           subtle: 'var(--color-bullish-subtle)',
         },
         bearish: {
-          DEFAULT: 'var(--color-bearish)',
-          hover: 'var(--color-bearish-hover)',
+          DEFAULT: withAlpha('--color-bearish-rgb'),
+          hover: withAlpha('--color-bearish-hover-rgb'),
           subtle: 'var(--color-bearish-subtle)',
         },
 
         // Status
-        success: 'var(--color-success)',
-        warning: 'var(--color-warning)',
-        danger: 'var(--color-danger)',
-        info: 'var(--color-info)',
+        success: withAlpha('--color-success-rgb'),
+        warning: withAlpha('--color-warning-rgb'),
+        danger: withAlpha('--color-danger-rgb'),
+        info: withAlpha('--color-info-rgb'),
 
         // Edge colors for flow lines
         edge: {
-          default: 'var(--color-edge-default)',
-          long: 'var(--color-edge-long)',
-          short: 'var(--color-edge-short)',
-          signal: 'var(--color-edge-signal)',
+          default: withAlpha('--color-edge-default-rgb'),
+          long: withAlpha('--color-bullish-rgb'),
+          short: withAlpha('--color-bearish-rgb'),
+          signal: withAlpha('--brand-primary-rgb'),
         },
       },
       borderRadius: {

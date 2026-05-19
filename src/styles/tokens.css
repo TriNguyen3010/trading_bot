@@ -114,54 +114,87 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
+/* Variant without the 1px top highlight — used on Landing + Dashboard
+ * where the design calls for a flatter card edge (no "glass" rim). */
+.card-coin98-flat {
+  background: linear-gradient(180deg, #16161a 0%, #0c0c0e 100%);
+}
+
 :root {
   color-scheme: dark;
 
   /* === BACKGROUND === */
   --color-bg-canvas: #0a0a0b;
+  --color-bg-canvas-rgb: 10 10 11;
   --color-bg-base: #0b0e11;
+  --color-bg-base-rgb: 11 14 17;
   --color-bg-surface: #14181f;
+  --color-bg-surface-rgb: 20 24 31;
   --color-bg-surface-hover: #1f1f23;
+  --color-bg-surface-hover-rgb: 31 31 35;
   --color-bg-surface-active: #2b3139;
+  --color-bg-surface-active-rgb: 43 49 57;
   --color-bg-elevated: #1e2329;
+  --color-bg-elevated-rgb: 30 35 41;
   --color-bg-input: #181c22;
+  --color-bg-input-rgb: 24 28 34;
   --color-bg-overlay: rgba(0, 0, 0, 0.6);
 
   /* === BORDER === */
   --color-border-subtle: #1e2329;
+  --color-border-subtle-rgb: 30 35 41;
   --color-border-default: #2b3139;
+  --color-border-default-rgb: 43 49 57;
   --color-border-strong: #474d57;
+  --color-border-strong-rgb: 71 77 87;
   --color-border-focus: var(--brand-primary);
 
   /* === TEXT === */
   --color-text-primary: #eaecef;
+  --color-text-primary-rgb: 234 236 239;
   --color-text-secondary: #b7bdc6;
+  --color-text-secondary-rgb: 183 189 198;
   --color-text-muted: #848e9c;
+  --color-text-muted-rgb: 132 142 156;
   --color-text-disabled: #5e6673;
+  --color-text-disabled-rgb: 94 102 115;
   --color-text-inverse: #0b0e11;
+  --color-text-inverse-rgb: 11 14 17;
 
   /* === BRAND (placeholder yellow until user provides) === */
   --brand-primary: #f0b90b;
+  --brand-primary-rgb: 240 185 11;
   --brand-hover: #fcd535;
+  --brand-hover-rgb: 252 213 53;
   --brand-active: #d9a400;
+  --brand-active-rgb: 217 164 0;
   --brand-subtle: rgba(240, 185, 11, 0.1);
 
   /* === TRADING (Bullish / Bearish) === */
   --color-bullish: #0ecb81;
+  --color-bullish-rgb: 14 203 129;
   --color-bullish-hover: #2ebd85;
+  --color-bullish-hover-rgb: 46 189 133;
   --color-bullish-subtle: rgba(14, 203, 129, 0.12);
   --color-bearish: #f6465d;
+  --color-bearish-rgb: 246 70 93;
   --color-bearish-hover: #f6647b;
+  --color-bearish-hover-rgb: 246 100 123;
   --color-bearish-subtle: rgba(246, 70, 93, 0.12);
 
   /* === STATUS === */
   --color-success: #0ecb81;
+  --color-success-rgb: 14 203 129;
   --color-warning: #f0b90b;
+  --color-warning-rgb: 240 185 11;
   --color-danger: #f6465d;
+  --color-danger-rgb: 246 70 93;
   --color-info: #3b82f6;
+  --color-info-rgb: 59 130 246;
 
   /* === EDGE / FLOW (for step connectors) === */
   --color-edge-default: #3f3f46;
+  --color-edge-default-rgb: 63 63 70;
   --color-edge-long: var(--color-bullish);
   --color-edge-short: var(--color-bearish);
   --color-edge-signal: var(--brand-primary);
@@ -361,31 +394,4 @@
 }
 .drawer-no-scrollbar::-webkit-scrollbar {
   display: none !important;
-}
-
-/* === Landing page surface tokens (deferred-auth flow) === */
-
-/* Subtle yellow-tinted dotted backdrop, matches public/*.html demos. */
-.dot-canvas {
-  background:
-    radial-gradient(circle, rgba(240, 185, 11, 0.05) 1px, transparent 1.3px) 0 0 / 18px 18px,
-    #060607;
-}
-
-/* Soft brand glow centered at the top — paired with .dot-canvas. */
-.glow-brand {
-  background-image: radial-gradient(
-    ellipse 60% 50% at 50% 0%,
-    rgba(240, 185, 11, 0.08) 0%,
-    transparent 70%
-  );
-}
-
-/* Hero word underline in brand yellow (e.g. "Build your <first bot>"). */
-.underline-brand {
-  background-image: linear-gradient(to right, #f0b90b, #f0b90b);
-  background-position: 0 100%;
-  background-repeat: no-repeat;
-  background-size: 100% 2px;
-  padding-bottom: 4px;
 }
