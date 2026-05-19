@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { ConnectWalletModal } from './ConnectWalletModal';
-import { useWalletStore } from './wallet.store';
+import { useIsWalletConnected } from './wallet.store';
 
 const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true';
 
@@ -40,15 +40,16 @@ export function RequireWalletProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const pendingAction = useRef<(() => void) | null>(null);
 
-  const isConnected = useWalletStore(
-    (s) => !!s.address && !!s.signature,
-  );
+  // Shared hook checks all 3 credential fields AND honours BYPASS_AUTH.
+  // Using it (instead of a local 2-field check) keeps the gate in sync
+  // with http.ts validation and the rest of the app.
+  const isConnected = useIsWalletConnected();
 
   const requireWalletThen = useCallback(
     (action: () => void) => {
-      // BYPASS_AUTH (offline dev / CI): never open the modal — pretend
-      // every caller is authenticated and let the action run immediately.
-      // Spec §7.1: ProtectedRoute + http.ts already skip auth in this mode.
+      // BYPASS_AUTH already collapsed into isConnected via the hook,
+      // but keep the explicit check so the intent reads at the call
+      // site — "if bypass or really-connected, just run."
       if (BYPASS_AUTH || isConnected) {
         action();
         return;
