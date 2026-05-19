@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { walletApi } from './wallet.api';
-import type { AuthUser, WalletCredentials, WalletStatus } from './wallet.types';
+import {
+  detectCoin98,
+  NoProviderError,
+  personalSign,
+  requestAccounts,
+  UserRejectedError,
+} from './wallet.provider';
+import type { AuthUser, WalletStatus } from './wallet.types';
 
 const STORAGE_KEY = 'trading_bot_wallet_auth';
 
@@ -14,6 +21,8 @@ interface WalletState {
   user: AuthUser | null;
   status: WalletStatus;
   error: string | null;
+  /** Set while status === 'signing' so the UI can display the message
+   * the wallet is asking the user to sign. */
   signingMessage: string | null;
 
   // Actions
@@ -24,17 +33,11 @@ interface WalletState {
   reset: () => void;
 }
 
-function readSession(): WalletCredentials | null {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as WalletCredentials;
-  } catch {
-    return null;
-  }
-}
-
-function writeSession(creds: WalletCredentials) {
+function writeStorage(creds: {
+  address: string;
+  nonce: string;
+  signature: string;
+}) {
   try {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(creds));
   } catch {
@@ -42,7 +45,7 @@ function writeSession(creds: WalletCredentials) {
   }
 }
 
-function clearSession() {
+function clearStorage() {
   try {
     sessionStorage.removeItem(STORAGE_KEY);
   } catch {
@@ -50,11 +53,15 @@ function clearSession() {
   }
 }
 
-function sleep(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+function readableError(err: unknown): string {
+  if (err instanceof UserRejectedError)
+    return 'Bạn đã từ chối yêu cầu từ ví Coin98.';
+  if (err instanceof NoProviderError) return 'Không tìm thấy ví Coin98.';
+  if (err instanceof Error) return err.message;
+  return 'Đã có lỗi xảy ra. Vui lòng thử lại.';
 }
 
-export const useWalletStore = create<WalletState>()((set, get) => ({
+export const useWalletStore = create<WalletState>()((set) => ({
   address: null,
   nonce: null,
   signature: null,
@@ -64,32 +71,37 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
   signingMessage: null,
 
   hydrate: () => {
-    const creds = readSession();
-    if (creds) {
-      set({
-        address: creds.address,
-        nonce: creds.nonce,
-        signature: creds.signature,
-      });
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        address?: string;
+        nonce?: string;
+        signature?: string;
+      };
+      if (parsed.address && parsed.nonce && parsed.signature) {
+        set({
+          address: parsed.address,
+          nonce: parsed.nonce,
+          signature: parsed.signature,
+          status: 'ready',
+        });
+      }
+    } catch {
+      /* malformed — leave idle */
     }
   },
 
   // =========================================================================
-  // STUB connect() — drives the modal state machine and simulates a successful
-  // wallet sign over ~3.2s. External team replaces the body with real
-  // detectCoin98 → eth_requestAccounts → personal_sign → walletApi.getStatus.
-  //
-  // Timeline (matches spec §3.2 happy path):
-  //   0.0s   detecting       (provider lookup)
-  //   0.6s   connecting      (eth_requestAccounts — user opens Coin98)
-  //   1.5s   address known   (still connecting, now we know the wallet)
-  //   2.0s   signing         (personal_sign — user reviews message)
-  //   3.0s   getStatus       (BE verifies signature)
-  //   3.2s   ready           (success)
+  // Real connect() chain — replaces the earlier setTimeout simulation.
+  //   detecting → no-c98 (early return) OR
+  //   detecting → connecting → signing → ready
+  // On any failure: clear creds + sessionStorage, set status='error' with
+  // a user-readable message. Per spec §3.2 verification step, /user/status
+  // is called DIRECTLY (not via loadUser which swallows errors) so 403/401/
+  // network failures translate to error state, never to a false 'ready'.
   // =========================================================================
   connect: async () => {
-    const FAKE_ADDRESS = '0x4a7c8e2bd3f4a91f6f0ab95cc7e1d3a4b5c6d9f21';
-
     set({
       status: 'detecting',
       error: null,
@@ -98,55 +110,72 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
       signature: null,
       signingMessage: null,
     });
-    await sleep(600);
-
-    set({ status: 'connecting' });
-    await sleep(900);
-
-    // Discovered the account — surface it to the UI early so the user sees
-    // which wallet is signing before the message popup.
-    set({ address: FAKE_ADDRESS });
-    await sleep(500);
-
-    const nonceResp = await walletApi.getNonce(FAKE_ADDRESS);
-    set({
-      status: 'signing',
-      nonce: nonceResp.nonce,
-      signingMessage: nonceResp.message,
-    });
-    await sleep(1000);
-
-    const signature = '0x' + 'a'.repeat(130);
-    const creds: WalletCredentials = {
-      address: FAKE_ADDRESS,
-      nonce: nonceResp.nonce,
-      signature,
-    };
-    writeSession(creds);
-
-    let user: AuthUser | null = null;
-    try {
-      user = await walletApi.getStatus();
-    } catch {
-      // STUB: ignore — real impl handles 401/403 via http.ts.
+    const provider = detectCoin98();
+    if (!provider) {
+      set({ status: 'no-c98' });
+      return;
     }
-    await sleep(200);
 
-    set({
-      address: creds.address,
-      nonce: creds.nonce,
-      signature: creds.signature,
-      user,
-      status: 'ready',
-      error: null,
-    });
+    try {
+      set({ status: 'connecting' });
+      const [address] = await requestAccounts(provider);
+
+      set({ status: 'signing', address });
+      const { nonce, message } = await walletApi.getNonce(address);
+      set({ nonce, signingMessage: message });
+      const signature = await personalSign(provider, message, address);
+
+      writeStorage({ address, nonce, signature });
+      set({ address, nonce, signature });
+
+      // Verify credentials by calling /user/status DIRECTLY. Do NOT call
+      // loadUser() — it swallows errors, which would let 403/401/network
+      // failures slip through and set status='ready' with bad credentials.
+      const user = await walletApi.getStatus();
+
+      // Defensive is_active check (spec §3.2 + §14.4). BE confirms
+      // deactivated user → 403 at middleware (FE never receives 200 +
+      // is_active=false in current implementation). Keep the check as
+      // belt-and-suspenders for future BE policy changes.
+      if (!user.is_active) {
+        clearStorage();
+        set({
+          address: null,
+          nonce: null,
+          signature: null,
+          user: null,
+          status: 'error',
+          error: 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ admin.',
+          signingMessage: null,
+        });
+        return;
+      }
+
+      set({ user, status: 'ready', signingMessage: null });
+    } catch (err) {
+      clearStorage();
+      set({
+        address: null,
+        nonce: null,
+        signature: null,
+        user: null,
+        status: 'error',
+        error: readableError(err),
+        signingMessage: null,
+      });
+    }
   },
 
+  // BẮT BUỘC await: BE removes wallet_nonce:0x... from Redis. If FE only
+  // clears local without calling BE → old nonce remains valid for 24h →
+  // a stolen cred can still auth. Caller MUST await this before navigate.
   disconnect: async () => {
-    walletApi.disconnect().catch(() => {
-      /* best-effort */
-    });
-    clearSession();
+    try {
+      await walletApi.disconnect();
+    } catch {
+      /* ignore network/5xx — nonce will auto-expire ≤24h */
+    }
+    clearStorage();
     set({
       address: null,
       nonce: null,
@@ -159,18 +188,17 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
   },
 
   loadUser: async () => {
-    const { address } = get();
-    if (!address) return;
     try {
       const user = await walletApi.getStatus();
       set({ user });
     } catch {
-      // STUB: real impl — 401 clears creds via http.ts.
+      // http.ts already handles 401 (clear + redirect) and 403 (toast).
+      // Other errors: leave state alone, UI will show stale user briefly.
     }
   },
 
   reset: () => {
-    clearSession();
+    clearStorage();
     set({
       address: null,
       nonce: null,
@@ -183,8 +211,14 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
   },
 }));
 
+// Check all 3 fields (match http.ts validation). If we only checked 2,
+// a partial-state edge case would slip past ProtectedRoute → one wasted
+// cycle: request fails 401 → http.ts clears+redirects. Not an infinite
+// loop but the UX flashes the failure.
 export const useIsWalletConnected = () =>
-  useWalletStore((s) => !!s.address && !!s.signature);
+  useWalletStore(
+    (s) => !!s.address && !!s.nonce && !!s.signature,
+  );
 
 export const useWalletAddress = () =>
   useWalletStore((s) => s.address);
