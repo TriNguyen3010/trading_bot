@@ -125,12 +125,18 @@ src/main.tsx                 — SỬA: hydrate wallet store + bootstrap loadUse
 6. walletApi.getStatus()  → verify cred + lấy user (call TRỰC TIẾP trong connect, KHÔNG qua loadUser)
    └─ GET /user/status với X-Wallet-* headers
       ├─ 401 → http.ts auto-clear sessionStorage + redirect /connect (loop break)
-      ├─ 403 → http.ts toast (no clear, no redirect); connect() outer catch nhận error → clear sessionStorage + state: error
+      ├─ 403 → http.ts toast với BE message (no clear, no redirect); connect() outer catch → clear + state: error
       ├─ Network/5xx → connect() outer catch nhận error → clear sessionStorage + state: error
       └─ 200 { id, email: null, wallet_address, is_active, is_admin }
-         └─ setUser(...) → state: ready → navigate('/builder', { replace: true })
+         ├─ if !user.is_active → clear + state: error ("Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ admin.")
+         └─ else → setUser(...) → state: ready → navigate('/builder', { replace: true })
 
 **Important**: `connect()` MUST call `walletApi.getStatus()` directly and throw on failure — NOT via the `loadUser()` action which swallows errors. Otherwise a 403/network fail would still set `status='ready'` and let user into builder with bad credentials.
+
+**Defensive `is_active` check**: BE Tuấn confirm deactivated user → 403 (middleware block trước handler). Tức là FE không bao giờ nhận 200 với `is_active=false` ở implementation hiện tại. Nhưng FE vẫn giữ check `if (!user.is_active)` như belt-and-suspenders cho 3 lý do:
+1. Nếu BE policy thay đổi sau này (chuyển sang trả 200 + flag), FE vẫn safe.
+2. Defensive 1 if-statement rẻ.
+3. Nếu BE bug và lọt qua middleware, user bị deactivated vẫn không vào được app.
 ```
 
 ### 3.3. Coin98 detection
@@ -218,10 +224,13 @@ function clearWalletAuth() {
 | **401** | Nonce hết hạn / không có trong Redis (TTL 24h hoặc đã `/wallet/disconnect`) | `clearWalletAuth()` + toast "Phiên ví hết hạn, vui lòng kết nối lại" + redirect `/connect` |
 | **401** | Thiếu 1 trong 3 headers `X-Wallet-{Address,Nonce,Signature}` | (như trên) |
 | **401** | Address hoặc Signature sai định dạng | (như trên) |
-| **403** | Signature recover thành công nhưng address ≠ header | Toast "Chữ ký không khớp địa chỉ ví" + **KHÔNG** clear + **KHÔNG** redirect + **KHÔNG** retry auto |
+| **403** | Signature recover thành công nhưng address ≠ header | Toast với **BE-provided message** (pass-through từ body `{detail}`) + **KHÔNG** clear + **KHÔNG** redirect + **KHÔNG** retry auto |
+| **403** | User bị deactivate (`is_active=false` ở BE — confirm bởi Tuấn 2026-05-19) | (như trên — toast với BE message; xem §14.4 về UX trade-off) |
 | **403** | User thường gọi admin-only route | (như trên — không xảy ra ở MVP vì FE không gọi admin routes) |
 | **400** | Generic bad request | Giữ nguyên — chung |
 | **422** | Validation error | Giữ nguyên — `ValidationError` |
+
+**Important**: 403 toast **không hardcode message** — parse từ BE response body `{detail: "..."}` (FastAPI format). Lý do: BE trả message khác nhau cho từng case (signature mismatch vs deactivated) → FE pass-through để user thấy lý do thực.
 
 **Đặc biệt**: 403 ở submit endpoint (`/bot-strategy/*`, `/bot/*`) → `silentToast = true` để dialog hiện error riêng, http.ts không fire toast.
 
@@ -460,7 +469,7 @@ Tránh case BE compare lowercase mà FE gửi checksum → recover khớp nhưng
 
 ## 10. BE confirmations (đã có)
 
-Tất cả từ file `Q1-Q6.md` của Tuấn:
+Q1-Q7 từ file `Q1-Q6.md` của Tuấn; Q8-Q10 từ chat 2026-05-19:
 
 | # | Câu hỏi | BE confirm |
 |---|---------|------------|
@@ -471,6 +480,9 @@ Tất cả từ file `Q1-Q6.md` của Tuấn:
 | 5 | Register flow? | ✅ Không cần — auto-create user khi lần đầu connect |
 | 6 | Disconnect body? | ✅ Empty body, chỉ headers; response `{status: "ok"}` |
 | 7 | HTTPS? | ⏳ Dev BE đang HTTP (mạng local cty) — HTTPS sẽ áp dụng khi lên stag/prod |
+| 8 | 401 vs 403 mapping? (2026-05-19) | ✅ 401 = nonce hết hạn / thiếu/sai format headers. 403 = signature mismatch / lack permission. Xem §4.4 chi tiết |
+| 9 | `/wallet/disconnect` side effect? (2026-05-19) | ✅ Xoá `wallet_nonce:{address}` khỏi Redis ngay → cred cũ invalid lập tức. FE **bắt buộc** gọi trước khi clear local (security) |
+| 10 | `is_active=false` behavior? (2026-05-19) | ✅ BE trả **403** kèm message khi user bị deactivate. Middleware block trước khi tới handler |
 
 **Hệ quả Q7**: tiếp tục dùng Vite proxy ở dev (`VITE_API_BASE_URL=/api` → forward `http://tradingbot.ne.com:8088`). Production cần BE bật HTTPS hoặc Vercel rewrite — vẫn là open question như PLAN_LOGIN_SUBMIT.md cũ.
 
@@ -550,3 +562,20 @@ Tất cả từ file `Q1-Q6.md` của Tuấn:
 **Accepted vì:**
 - `sessionStorage` chính là barrier — đây là intentional design (mỗi tab session riêng).
 - User mở tab mới sẽ thấy `/connect` page và ký lại — UX acceptable cho MVP.
+
+### 14.4. User deactivated — UX stuck nếu user đã có session
+
+**Risk:** User đang authenticated → admin deactivate ở BE → lần request tiếp theo BE trả 403. FE handle 403 = toast + giữ cred + KHÔNG redirect (per §4.4 design).
+
+Hệ quả:
+- Nếu user vào lần đầu (connect flow): `connect()` outer catch nhận 403 → clear + state: error → user thấy lý do qua message → acceptable.
+- Nếu user đang ở `/builder` (đã connect trước đó, giờ bị deactivate): mỗi API call → 403 → toast → user thấy toast lặp → effectively stuck. Không thể tự fix, phải contact admin.
+
+**Accepted vì:**
+- Use case admin deactivate user đang dùng app là edge case (admin tool action, không thường xuyên).
+- Alternative (force redirect khi 403) sẽ break case "signature mismatch" — user click "Thử lại" pattern không còn dùng được.
+- Phân biệt 2 case 403 bằng parse message body fragile — sẽ break nếu BE đổi wording.
+
+**Mitigation tương lai:**
+- BE thêm `error_code` enum vào response body (e.g., `{"detail": "...", "code": "USER_DEACTIVATED"}`) để FE phân biệt 403 cases và handle khác nhau.
+- Hoặc BE trả 401 cho deactivated thay vì 403 → FE auto-clear + redirect → cleaner UX (nhưng cần BE confirm).

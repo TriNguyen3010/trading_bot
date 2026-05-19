@@ -579,18 +579,46 @@ describe('http wrapper (wallet auth)', () => {
     expect(toast.warning).toHaveBeenCalled();
   });
 
-  it('on 403: toasts error, does NOT clear, does NOT redirect', async () => {
+  it('on 403 with BE {detail}: pass-through message, does NOT clear, does NOT redirect', async () => {
+    setWalletCreds();
+    // FastAPI shape: body = `{"detail": "..."}`. http.ts parse và pass-through.
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      statusText: 'Forbidden',
+      text: async () =>
+        JSON.stringify({ detail: 'Signature does not match wallet address.' }),
+    });
+
+    await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
+    expect(sessionStorage.getItem(STORAGE_KEY)).not.toBeNull();
+    expect(toast.error).toHaveBeenCalledWith('Signature does not match wallet address.');
+  });
+
+  it('on 403 with non-JSON body: uses raw text as toast message', async () => {
     setWalletCreds();
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 403,
       statusText: 'Forbidden',
-      text: async () => 'Signature mismatch',
+      text: async () => 'Tài khoản đã bị vô hiệu hoá.',
     });
 
     await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
-    expect(sessionStorage.getItem(STORAGE_KEY)).not.toBeNull();
-    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Chữ ký'));
+    expect(toast.error).toHaveBeenCalledWith('Tài khoản đã bị vô hiệu hoá.');
+  });
+
+  it('on 403 with empty body: falls back to default message', async () => {
+    setWalletCreds();
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      statusText: 'Forbidden',
+      text: async () => '',
+    });
+
+    await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
+    expect(toast.error).toHaveBeenCalledWith('Quyền truy cập bị từ chối.');
   });
 
   it('does NOT toast 5xx for /bot-strategy/* (dialog handles)', async () => {
@@ -875,10 +903,20 @@ export async function http<T>(
     throw new HttpError(401, 'Unauthorized');
   }
 
-  // 403 = signature mismatch. Per spec: toast, no clear, no redirect, no auto-retry.
+  // 403 = sig mismatch / user deactivated / lack permission. Per spec §4.4:
+  // toast (BE-provided message), no clear, no redirect, no auto-retry.
+  // BE trả message khác nhau cho từng case → pass-through để user thấy lý do thực.
   if (res.status === 403) {
     if (!silentToast) {
-      toast.error('Chữ ký không khớp địa chỉ ví. Vui lòng kết nối lại.');
+      const text = await res.text().catch(() => '');
+      let msg = 'Quyền truy cập bị từ chối.';
+      try {
+        const data = JSON.parse(text) as { detail?: string };
+        if (typeof data.detail === 'string' && data.detail.trim()) msg = data.detail;
+      } catch {
+        if (text.trim()) msg = text;
+      }
+      toast.error(msg);
     }
     throw new HttpError(403, 'Forbidden');
   }
@@ -1215,8 +1253,10 @@ describe('wallet.store', () => {
         message: 'm',
       });
       vi.mocked(personalSign).mockResolvedValueOnce('0xsig');
+      // Dùng Object.assign pattern (consistent với các test khác trong file)
+      // thay vì `new HttpError(...)` để khỏi cần import từ '@/lib/http'.
       vi.mocked(walletApi.getStatus).mockRejectedValueOnce(
-        new HttpError(403, 'Forbidden'),
+        Object.assign(new Error('Forbidden'), { name: 'HttpError', status: 403 }),
       );
 
       await useWalletStore.getState().connect();
@@ -1226,6 +1266,34 @@ describe('wallet.store', () => {
       expect(s.address).toBeNull();
       expect(s.nonce).toBeNull();
       expect(s.signature).toBeNull();
+      expect(sessionStorage.getItem('trading_bot_wallet_auth')).toBeNull();
+    });
+
+    it('clears creds and sets error when user is inactive (defensive — BE blocks at middleware in practice)', async () => {
+      vi.mocked(detectCoin98).mockReturnValue(fakeProvider);
+      vi.mocked(requestAccounts).mockResolvedValueOnce(['0xabc']);
+      vi.mocked(walletApi.getNonce).mockResolvedValueOnce({
+        nonce: 'n',
+        message: 'm',
+      });
+      vi.mocked(personalSign).mockResolvedValueOnce('0xsig');
+      // BE Tuấn confirm: deactivated user → 403, không phải 200 + is_active=false.
+      // Test này validate defensive check (xem spec §3.2 + §14.4) — không cover
+      // BE behavior thực tế, chỉ cover edge case BE bug / future policy change.
+      vi.mocked(walletApi.getStatus).mockResolvedValueOnce({
+        id: 1,
+        email: null,
+        wallet_address: '0xabc',
+        is_active: false,
+        is_admin: false,
+      });
+
+      await useWalletStore.getState().connect();
+
+      const s = useWalletStore.getState();
+      expect(s.status).toBe('error');
+      expect(s.error).toContain('vô hiệu hoá');
+      expect(s.address).toBeNull();
       expect(sessionStorage.getItem('trading_bot_wallet_auth')).toBeNull();
     });
   });
@@ -1438,6 +1506,24 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
       // Do NOT call loadUser() — it swallows errors, which would let 403/401/network
       // failures slip through and set status='ready' with bad credentials.
       const user = await walletApi.getStatus();
+
+      // Defensive is_active check (spec §3.2 + §14.4). BE Tuấn confirm deactivated
+      // user → 403 ở middleware (FE không bao giờ nhận 200 + is_active=false trong
+      // implementation hiện tại). Giữ check làm belt-and-suspenders cho future BE
+      // policy changes / middleware bypass / etc.
+      if (!user.is_active) {
+        clearStorage();
+        set({
+          address: null,
+          nonce: null,
+          signature: null,
+          user: null,
+          status: 'error',
+          error: 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ admin.',
+        });
+        return;
+      }
+
       set({ user, status: 'ready' });
     } catch (err) {
       clearStorage();
@@ -2362,6 +2448,11 @@ Then in browser open `http://127.0.0.1:5173/`:
    - Wallet popup asks to sign message → approve
    - Page redirects to `/builder`
 4. In wallet UI, switch to a different account → app should auto-redirect back to `/connect`.
+4b. **Network tab verify (DoD requirement)**: Khi switch account ở bước 4, Network tab phải show:
+    - `POST /wallet/disconnect` fires
+    - Response 200 với `{"status": "ok"}` HOÀN THÀNH
+    - **TRƯỚC KHI** page navigate sang `/connect`
+    Nếu thấy `/wallet/disconnect` bị cancel/pending khi nav xảy ra → caller chưa `await disconnect()` → fail DoD (xem §13).
 5. Refresh `/builder` directly → still authenticated (sessionStorage survives reload).
 6. Close tab + reopen → unauthenticated (sessionStorage gone) → `/connect`.
 7. Network tab: verify every API call has `X-Wallet-Address`, `X-Wallet-Nonce`, `X-Wallet-Signature` headers.
