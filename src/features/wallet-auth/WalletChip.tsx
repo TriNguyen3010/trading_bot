@@ -2,8 +2,10 @@ import { Button } from '@/components/ui/button';
 import { useWalletStore } from './wallet.store';
 import { useRequireWallet } from './RequireWalletProvider';
 
+const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true';
+
 function truncateAddress(address: string): string {
-  if (address.length < 12) return address;
+  if (!address || address.length < 12) return address || '—';
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
@@ -13,9 +15,29 @@ export function WalletChip() {
   const disconnect = useWalletStore((s) => s.disconnect);
   const { openConnect } = useRequireWallet();
 
-  const isConnected = !!address && !!signature;
+  const isConnectedReal = !!address && !!signature;
 
-  if (isConnected) {
+  // In bypass mode the chip can't usefully connect/disconnect. Show a
+  // dev-only badge so it's obvious the auth wall is off (and clicks
+  // don't open the modal — RequireWalletProvider swallows them).
+  if (BYPASS_AUTH && !isConnectedReal) {
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled
+        className="rounded-full bg-info/10 px-3 text-info hover:bg-info/10 hover:text-info"
+        title="VITE_BYPASS_AUTH=true · auth gate disabled"
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-info" />
+        <span className="font-mono text-xs uppercase tracking-wider">
+          DEV bypass
+        </span>
+      </Button>
+    );
+  }
+
+  if (isConnectedReal) {
     return (
       <Button
         variant="ghost"

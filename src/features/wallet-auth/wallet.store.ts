@@ -215,9 +215,15 @@ export const useWalletStore = create<WalletState>()((set) => ({
 // a partial-state edge case would slip past ProtectedRoute → one wasted
 // cycle: request fails 401 → http.ts clears+redirects. Not an infinite
 // loop but the UX flashes the failure.
+//
+// BYPASS_AUTH short-circuits to true so offline dev (away from the BE
+// network) can navigate the authed UX without ever opening the wallet
+// modal. Spec §7.1.
+const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true';
+
 export const useIsWalletConnected = () =>
   useWalletStore(
-    (s) => !!s.address && !!s.nonce && !!s.signature,
+    (s) => BYPASS_AUTH || (!!s.address && !!s.nonce && !!s.signature),
   );
 
 export const useWalletAddress = () =>

@@ -9,6 +9,8 @@ import {
 import { ConnectWalletModal } from './ConnectWalletModal';
 import { useWalletStore } from './wallet.store';
 
+const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true';
+
 interface RequireWalletContextValue {
   /**
    * Open the intent-gate modal if the user is not connected yet, otherwise
@@ -44,7 +46,10 @@ export function RequireWalletProvider({ children }: { children: ReactNode }) {
 
   const requireWalletThen = useCallback(
     (action: () => void) => {
-      if (isConnected) {
+      // BYPASS_AUTH (offline dev / CI): never open the modal — pretend
+      // every caller is authenticated and let the action run immediately.
+      // Spec §7.1: ProtectedRoute + http.ts already skip auth in this mode.
+      if (BYPASS_AUTH || isConnected) {
         action();
         return;
       }
@@ -55,6 +60,9 @@ export function RequireWalletProvider({ children }: { children: ReactNode }) {
   );
 
   const openConnect = useCallback(() => {
+    // In bypass mode, the chip has nothing useful to do — silently no-op
+    // so a stray click doesn't pop a modal that can't progress.
+    if (BYPASS_AUTH) return;
     pendingAction.current = null;
     setOpen(true);
   }, []);
