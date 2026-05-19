@@ -76,3 +76,33 @@ if (
     } as Storage,
   });
 }
+
+// Mirror the localStorage polyfill for sessionStorage — same jsdom 25 +
+// Node + vitest fragility surface. Wallet auth lives in sessionStorage
+// so any test exercising http.ts / wallet.store needs setItem to work.
+if (
+  typeof globalThis.sessionStorage === 'undefined' ||
+  typeof globalThis.sessionStorage.setItem !== 'function'
+) {
+  const store = new Map<string, string>();
+  Object.defineProperty(globalThis, 'sessionStorage', {
+    configurable: true,
+    value: {
+      getItem: (k: string) => (store.has(k) ? (store.get(k) as string) : null),
+      setItem: (k: string, v: string) => store.set(k, String(v)),
+      removeItem: (k: string) => store.delete(k),
+      clear: () => store.clear(),
+      key: (i: number) => Array.from(store.keys())[i] ?? null,
+      get length() {
+        return store.size;
+      },
+    } as Storage,
+  });
+}
+
+// Wallet-auth tests stub `window.coin98` per-test. Provide a clean
+// baseline (`undefined`) so a leaked stub from one test never bleeds
+// into another.
+if (typeof window !== 'undefined') {
+  delete (window as unknown as { coin98?: unknown }).coin98;
+}
