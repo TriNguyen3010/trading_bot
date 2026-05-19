@@ -3,17 +3,12 @@ import { BuilderPage } from './pages/BuilderPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LandingPage } from './pages/LandingPage';
 import { BotMonitoringPage } from './features/bot-monitoring/BotMonitoringPage';
-import { LoginPage } from './features/auth/LoginPage';
-import { ProtectedRoute } from './features/auth/ProtectedRoute';
+import { ProtectedRoute } from './features/wallet-auth/ProtectedRoute';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <LandingPage />,
-  },
-  {
-    path: '/login',
-    element: <LoginPage />,
   },
   {
     path: '/dashboard',
