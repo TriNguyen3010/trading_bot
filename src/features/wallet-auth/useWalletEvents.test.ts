@@ -103,6 +103,18 @@ describe('useWalletEvents', () => {
     expect(disconnectSpy).not.toHaveBeenCalled();
   });
 
+  it('on disconnect event → disconnect + redirect to /', async () => {
+    const disconnectSpy = vi
+      .spyOn(useWalletStore.getState(), 'disconnect')
+      .mockResolvedValueOnce();
+    renderHook(() => useWalletEvents());
+
+    await onHandlers.disconnect();
+
+    expect(disconnectSpy).toHaveBeenCalled();
+    expect(window.location.href).toBe('/');
+  });
+
   it('does nothing when no provider', () => {
     vi.mocked(detectCoin98).mockReturnValue(null);
     expect(() => renderHook(() => useWalletEvents())).not.toThrow();

@@ -87,6 +87,16 @@ describe('wallet.store', () => {
       useWalletStore.getState().hydrate();
       expect(useWalletStore.getState().status).toBe('idle');
     });
+
+    it('ignores partial credentials (missing signature)', () => {
+      sessionStorage.setItem(
+        'trading_bot_wallet_auth',
+        JSON.stringify({ address: '0xabc', nonce: 'n' }),
+      );
+      useWalletStore.getState().hydrate();
+      expect(useWalletStore.getState().status).toBe('idle');
+      expect(useWalletStore.getState().address).toBeNull();
+    });
   });
 
   describe('connect', () => {

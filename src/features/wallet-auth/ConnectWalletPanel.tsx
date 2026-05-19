@@ -1,12 +1,14 @@
 // =============================================================================
-// PLACEHOLDER UI · Connect wallet panel body
+// ConnectWalletPanel · body of the wallet auth modal.
 //
-// TODO(wallet-team): replace this component with the final Coin98 visual.
-// Keep these contract points stable so the rest of the app keeps working:
-//   - reads useWalletStore.status to drive UI state
-//   - calls useWalletStore.connect() when user accepts
-//   - calls props.onCancel when user dismisses
-//   - signals "ready" by transitioning useWalletStore.status to 'ready'
+// State-driven UI for the wallet.store.status state machine:
+//   detecting → connecting → signing → ready
+//             or → no-c98 / error
+//
+// User clicks the primary button → calls useWalletStore.connect() which
+// runs the real Coin98 flow (detectCoin98 → eth_requestAccounts →
+// getNonce → personal_sign → getStatus). Cancel resets to 'idle' via
+// the modal wrapper.
 // =============================================================================
 
 import { CheckCircle2, Loader2, Wallet } from 'lucide-react';
@@ -180,14 +182,6 @@ export function ConnectWalletPanel({ onCancel }: ConnectWalletPanelProps) {
             Cancel
           </button>
         )}
-      </div>
-
-      {/* DEV NOTE — visible to dev only. Remove or comment out before prod. */}
-      <div className="rounded-md border border-dashed border-info/40 bg-info/5 px-3 py-2 text-2xs leading-relaxed text-info">
-        <span className="font-semibold">PLACEHOLDER UI</span> · final visual +
-        real wallet logic owned by external team. Stub <code>connect()</code>{' '}
-        plays detect → connecting → signing → ready over ~3.2s for end-to-end
-        demo.
       </div>
     </div>
   );

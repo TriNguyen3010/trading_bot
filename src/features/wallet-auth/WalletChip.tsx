@@ -11,11 +11,15 @@ function truncateAddress(address: string): string {
 
 export function WalletChip() {
   const address = useWalletStore((s) => s.address);
+  const nonce = useWalletStore((s) => s.nonce);
   const signature = useWalletStore((s) => s.signature);
   const disconnect = useWalletStore((s) => s.disconnect);
   const { openConnect } = useRequireWallet();
 
-  const isConnectedReal = !!address && !!signature;
+  // Check all 3 fields (match http.ts validation + useIsWalletConnected).
+  // Partial state shouldn't trick the chip into showing the "connected"
+  // variant when the next request will fail.
+  const isConnectedReal = !!address && !!nonce && !!signature;
 
   // In bypass mode the chip can't usefully connect/disconnect. Show a
   // dev-only badge so it's obvious the auth wall is off (and clicks
@@ -42,7 +46,13 @@ export function WalletChip() {
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => void disconnect()}
+        // Explicit await — disconnect() POSTs /wallet/disconnect so BE
+        // drops the Redis nonce. If a future caller adds a hard
+        // navigation (window.location.href = ...) after this, the await
+        // makes sure the BE call lands before the page leaves.
+        onClick={async () => {
+          await disconnect();
+        }}
         title="Click to disconnect"
         className="rounded-full bg-bullish-subtle px-3 text-bullish hover:bg-bullish-subtle hover:text-bullish"
       >
