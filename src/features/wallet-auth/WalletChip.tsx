@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { useWalletStore } from './wallet.store';
 import { useRequireWallet } from './RequireWalletProvider';
 
@@ -16,32 +17,32 @@ export function WalletChip() {
 
   if (isConnected) {
     return (
-      <button
-        type="button"
-        onClick={() => {
-          void disconnect();
-        }}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => void disconnect()}
         title="Click to disconnect"
-        className="inline-flex items-center gap-2 rounded-lg border border-bullish/30 bg-bullish/10 px-3 py-1.5 text-[12px] text-bullish hover:bg-bullish/15"
+        className="rounded-full bg-bullish-subtle px-3 text-bullish hover:bg-bullish-subtle hover:text-bullish"
       >
         <span className="h-1.5 w-1.5 rounded-full bg-bullish" />
         <span className="font-mono tabular-nums text-fg">
           {truncateAddress(address)}
         </span>
-      </button>
+      </Button>
     );
   }
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="primary"
+      size="sm"
       onClick={openConnect}
-      className="inline-flex items-center gap-2 rounded-lg border border-border bg-input px-3 py-1.5 text-[12px] text-fg-secondary hover:border-brand hover:text-fg"
+      className="rounded-full px-4 shadow-[0_0_16px_rgba(240,185,11,0.35)]"
     >
-      <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-brand text-[7px] font-bold leading-none text-black">
+      <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-black text-[7px] font-bold leading-none text-brand">
         C98
       </span>
       Connect wallet
-    </button>
+    </Button>
   );
 }
