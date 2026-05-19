@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Code2, FlaskConical, Wallet, type LucideIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { ImportDialog } from '@/features/export-import/ImportDialog';
 import { useRequireWallet } from '@/features/wallet-auth/RequireWalletProvider';
-import { WalletChip } from '@/features/wallet-auth/WalletChip';
 import {
   useIsWalletConnected,
   useWalletStore,
 } from '@/features/wallet-auth/wallet.store';
+import { AppHeader } from './AppHeader';
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -16,8 +19,8 @@ export function LandingPage() {
   const [importOpen, setImportOpen] = useState(false);
 
   // After connect, returning users land on /dashboard (matches user-journey s02).
-  // If the user is already connected (subsequent click), "+ New bot" goes
-  // straight to /builder since the intent is explicit.
+  // If already connected (subsequent click), "+ New bot" goes straight to
+  // /builder since the intent is explicit.
   const onBuild = () => {
     if (isConnected) {
       navigate('/builder');
@@ -29,222 +32,259 @@ export function LandingPage() {
   const onImport = () => requireWalletThen(() => setImportOpen(true));
 
   return (
-    <div className="dot-canvas relative min-h-screen text-fg">
-      {/* glow */}
+    <div className="relative flex min-h-screen w-screen flex-col bg-black text-fg">
+      {/* Page-wide subtle yellow glow accents (Coin98 hero halos) —
+          matches BotMonitoringPage / BuilderPage exactly so route
+          transitions feel continuous. */}
       <div
-        className="glow-brand pointer-events-none absolute inset-0"
+        className="pointer-events-none fixed -top-20 left-1/2 z-0 h-[420px] w-[700px] -translate-x-1/2 rounded-full opacity-50 blur-3xl"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, rgba(240,185,11,0.12), transparent 70%)',
+        }}
         aria-hidden
       />
 
-      {/* Header */}
-      <header className="relative flex items-center justify-between border-b border-border-subtle bg-black/40 px-8 py-4 backdrop-blur">
-        <div className="flex items-baseline gap-3">
-          <span className="font-pixel text-[9px] tracking-[0.2em] text-brand">
-            COIN98 BOT
-          </span>
-          <span className="h-3 w-px bg-border" />
-          <span className="text-xs text-fg-muted">v0.1.0 · alpha</span>
-        </div>
-        <div className="flex items-center gap-3 text-[12px]">
-          {isConnected && (
-            <button
-              type="button"
-              onClick={() => navigate('/dashboard')}
-              className="text-fg-secondary hover:text-fg"
-            >
-              Dashboard
-            </button>
-          )}
-          <a
-            className="text-fg-muted hover:text-fg"
-            href="https://docs.coin98.com"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Docs
-          </a>
-          <WalletChip />
-        </div>
-      </header>
+      {/* Dot-grid texture — constrained to start below the floating header
+          pill, matching Builder + Monitoring conventions. */}
+      <DotGridSpotlight
+        className="pointer-events-none fixed z-0"
+        style={{
+          top: 'var(--layout-header, 56px)',
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
+        dimmed={false}
+      />
 
-      {/* Hero */}
-      <main className="relative mx-auto max-w-[1180px] px-10 pt-12 pb-20">
-        {isConnected ? <AuthedHero /> : <AnonymousHero />}
+      <AppHeader />
 
-        <div className="mt-9 flex flex-wrap items-center gap-4">
-          <button
-            type="button"
-            onClick={onBuild}
-            className="rounded-xl bg-brand px-6 py-3.5 text-[15px] font-semibold text-black shadow-lg shadow-brand/20 transition hover:brightness-110"
-          >
-            {isConnected ? '＋ New bot' : 'Build a bot →'}
-          </button>
-          <button
-            type="button"
-            onClick={onImport}
-            className="rounded-xl border border-border bg-input/60 px-5 py-3.5 text-[14px] text-fg transition hover:border-brand"
-          >
-            Import config (.json)
-          </button>
+      {/* Main */}
+      <main className="relative z-10 flex flex-1 flex-col">
+        {/* Hero — text left, video bleeds to viewport right */}
+        <section className="grid grid-cols-1 gap-8 py-12 md:grid-cols-2 md:items-center md:gap-12">
+          {/* Left col — content aligned to where max-w 1400 container starts */}
+          <div className="px-6 md:pl-[max(24px,calc(50vw-660px))] md:pr-0">
+            <div className="flex items-center gap-2 text-2xs uppercase tracking-wider text-fg-muted">
+              <span className="h-1 w-1 rounded-full bg-brand" />
+              Welcome
+            </div>
+            <h1 className="mt-4 text-4xl font-bold leading-tight tracking-tight text-fg">
+              Build your first <span className="text-brand">bot</span>.
+            </h1>
+            <p className="mt-4 max-w-[480px] text-md leading-relaxed text-fg-secondary">
+              You write the rules. The bot watches the market and follows them
+              — no discretion, no surprises. Start in dry-run, switch to live
+              only when you&apos;re ready.
+            </p>
+
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Button variant="primary" size="lg" onClick={onBuild}>
+                {isConnected ? 'New bot' : 'Build a bot'}
+              </Button>
+              <Button variant="secondary" size="lg" onClick={onImport}>
+                Import config
+              </Button>
+              {!isConnected && (
+                <span className="ml-1 max-w-md text-xs text-fg-muted">
+                  Either action will ask you to connect your Coin98 wallet.
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Right col — hero video, bleed flush to right viewport edge */}
+          <div className="hidden md:block">
+            <video
+              src="/hero-demo.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              aria-label="Trading bot demo"
+              className="aspect-video w-full border-y border-l border-border-subtle bg-black object-cover shadow-[0_12px_32px_rgba(0,0,0,0.6)] md:rounded-l-xl"
+            />
+          </div>
+        </section>
+
+        {/* Below the hero — features (anonymous) or cockpit + bots (authed) */}
+        <div className="mx-auto w-full max-w-[1400px] px-6 pb-16">
           {!isConnected && (
-            <span className="ml-2 max-w-md text-[11px] text-fg-muted">
-              Either action will ask you to connect your Coin98 wallet.
-            </span>
-          )}
-        </div>
-
-        {/* Cockpit */}
-        <div className="mt-16">
-          <div className="mb-3 flex items-baseline justify-between">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-fg-muted">
-              Your portfolio · cockpit
-            </div>
-            <div className="text-[10px] font-mono tabular-nums text-fg-disabled">
-              {isConnected
-                ? '● live · last update 12s ago'
-                : 'anonymous · sign in to see real numbers'}
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border-subtle bg-border-subtle sm:grid-cols-2 lg:grid-cols-4">
-            {isConnected ? (
-              <>
-                <CockpitCell
-                  label="P&L · 30D"
-                  valueClassName="mt-3 font-mono text-[34px] font-bold leading-none tabular-nums text-bullish"
-                  value="+$734.20"
-                  hint={<span className="text-bullish">+5.6%</span>}
-                />
-                <CockpitCell
-                  label="Active bots"
-                  valueClassName="mt-3 font-mono text-[34px] font-bold leading-none tabular-nums text-fg"
-                  value={
-                    <span>
-                      5<span className="text-fg-muted text-base"> / 8</span>
-                    </span>
-                  }
-                  hint="3 paused"
-                />
-                <CockpitCell
-                  label="Capital deployed"
-                  valueClassName="mt-3 font-mono text-[34px] font-bold leading-none tabular-nums text-fg"
-                  value="$3,420"
-                  hint="across 3 pairs"
-                />
-                <CockpitCell
-                  label="Wallet"
-                  valueClassName="mt-3 text-fg text-[17px] font-semibold"
-                  value={
-                    <span className="font-mono tabular-nums">
-                      {truncate(walletAddress ?? '')}
-                    </span>
-                  }
-                  hint={
-                    <span className="flex items-center gap-1 text-bullish">
-                      <span className="h-1.5 w-1.5 rounded-full bg-bullish" />{' '}
-                      Connected
-                    </span>
-                  }
-                />
-              </>
-            ) : (
-              <>
-                <CockpitCell
-                  label="P&L · 30D"
-                  value="$0"
-                  hint="no bots yet"
-                />
-                <CockpitCell
-                  label="Active bots"
-                  value="0"
-                  hint="deploy when ready"
-                />
-                <CockpitCell
-                  label="Capital deployed"
-                  value="$0"
-                  hint="dry-run is free"
-                />
-                <CockpitCell
-                  label="Wallet"
-                  accent
-                  valueClassName="mt-3 text-fg-muted text-[17px] font-semibold"
-                  value="Not connected"
-                  hint={
-                    <span className="flex items-center gap-1 text-fg-muted">
-                      <span className="h-1.5 w-1.5 rounded-full bg-fg-disabled" />{' '}
-                      sign in to link
-                    </span>
-                  }
-                />
-              </>
-            )}
-          </div>
-
-          {isConnected ? null : (
-            <div className="mt-4 flex items-center justify-between">
-              <p className="max-w-[680px] text-[12px] text-fg-muted">
-                Coin98 Wallet only. Your wallet is your identity — it signs
-                trades. Keys never leave Coin98. There is no email, no
-                password, no account creation.
-              </p>
-              <a
-                className="flex items-center gap-1 text-[11px] text-fg-muted hover:text-fg"
-                href="https://wallet.coin98.com"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Don't have Coin98? <span className="text-brand">Install →</span>
-              </a>
-            </div>
-          )}
-        </div>
-
-        {isConnected && (
-          <div className="mt-10">
-            <div className="mb-3 flex items-baseline justify-between">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-fg-muted">
-                Recent activity · top bots
+            <div className="mt-8">
+              <div className="mb-4 flex items-baseline justify-between">
+                <h2 className="text-2xs font-semibold uppercase tracking-wider text-fg-muted">
+                  What you get
+                </h2>
+                <span className="font-mono text-2xs tabular-nums text-fg-disabled">
+                  Coin98 · alpha
+                </span>
               </div>
-              <button
-                type="button"
-                onClick={() => navigate('/dashboard')}
-                className="text-[11px] text-brand hover:underline"
-              >
-                View dashboard →
-              </button>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <FeatureCard
+                  icon={Code2}
+                  title="You write the rules"
+                  body="No AI suggestions. No recommended setups. The strategy is yours — every entry, every exit, every dollar of risk."
+                />
+                <FeatureCard
+                  icon={FlaskConical}
+                  title="Dry-run is free"
+                  body="Test on real market data with paper money. Promote to live only when you're confident. Pause or stop at any time."
+                />
+                <FeatureCard
+                  icon={Wallet}
+                  title="Wallet-only auth"
+                  body="Coin98 wallet signs trades directly. No email, no password, no account creation. Keys never leave your wallet."
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <BotCard
-                badge="LIVE"
-                badgeColor="bullish"
-                streak="7-WIN"
-                name="RSI Momentum Long"
-                pair="ETH-USDC · 5m"
-                pnl="+$234.10"
-                pnlColor="bullish"
-                onClick={() => navigate('/bots/1')}
-              />
-              <BotCard
-                badge="DRY-RUN"
-                badgeColor="cyan"
-                name="MACD Cross"
-                pair="SOL-USDC · 1h"
-                pnl="+$18.40"
-                pnlColor="cyan"
-                onClick={() => navigate('/bots/2')}
-              />
-              <button
-                type="button"
-                onClick={onBuild}
-                className="rounded-xl border border-dashed border-border-strong bg-transparent p-4 text-center transition hover:border-brand hover:bg-brand-soft"
-              >
-                <div className="text-2xl text-fg-muted">＋</div>
-                <div className="mt-1 text-[12px] font-semibold text-fg-secondary">
-                  Build another
+          )}
+
+          {isConnected && (
+            <>
+              {/* Portfolio hero — mirrors HeroPnL on the bot page */}
+              <section className="mt-8">
+                <div className="mb-3 flex items-baseline justify-between">
+                  <h2 className="text-2xs font-semibold uppercase tracking-wider text-fg-muted">
+                    Your portfolio
+                  </h2>
+                  <span className="font-mono text-2xs tabular-nums text-bullish">
+                    ● live · last update 12s ago
+                  </span>
                 </div>
-              </button>
-            </div>
-          </div>
-        )}
+                <section
+                  aria-labelledby="landing-portfolio-label"
+                  className="relative grid grid-cols-1 gap-6 overflow-hidden rounded-3xl card-coin98 p-8 md:grid-cols-[1fr_auto]"
+                >
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -left-16 -top-24 h-80 w-80 rounded-full opacity-40 blur-2xl"
+                    style={{
+                      background:
+                        'radial-gradient(circle, rgba(240,185,11,0.25), transparent 70%)',
+                    }}
+                  />
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full opacity-30 blur-2xl"
+                    style={{
+                      background:
+                        'radial-gradient(circle, var(--color-bullish), transparent 70%)',
+                    }}
+                  />
+
+                  <div className="relative">
+                    <div
+                      id="landing-portfolio-label"
+                      className="mb-4 flex flex-wrap items-center gap-3 text-2xs uppercase tracking-widest text-fg-muted"
+                    >
+                      <span>Portfolio · 30D</span>
+                      <span className="inline-flex items-center gap-1.5 text-bullish">
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
+                        Live
+                      </span>
+                      <span className="text-border-strong">·</span>
+                      <span>{truncate(walletAddress ?? '')}</span>
+                    </div>
+
+                    <div
+                      className="font-mono text-6xl font-bold tabular-nums tracking-tight text-bullish"
+                      style={{
+                        textShadow: '0 0 38px rgba(14, 203, 129, 0.45)',
+                        lineHeight: 1.0,
+                      }}
+                    >
+                      +$734.20
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-secondary">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="text-bullish">▲</span>
+                        <span className="font-semibold tabular-nums text-fg">
+                          5
+                        </span>
+                        <span className="text-fg-muted">active · 8 total</span>
+                      </span>
+                      <span className="text-border-strong">·</span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="font-semibold tabular-nums text-fg-muted">
+                          3
+                        </span>
+                        <span className="text-fg-muted">paused</span>
+                      </span>
+                      <span className="text-border-strong">·</span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="font-semibold tabular-nums text-fg">
+                          $3,420
+                        </span>
+                        <span className="text-fg-muted">
+                          deployed across 3 pairs
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="relative flex w-32 flex-col justify-center md:items-center">
+                    <div className="font-mono text-3xl font-bold tabular-nums text-bullish">
+                      +5.6%
+                    </div>
+                    <div className="mt-2 text-2xs uppercase tracking-widest text-fg-muted">
+                      30-day return
+                    </div>
+                  </div>
+                </section>
+              </section>
+
+              {/* Recent activity · top bots */}
+              <section className="mt-8">
+                <div className="mb-3 flex items-baseline justify-between">
+                  <h2 className="text-2xs font-semibold uppercase tracking-wider text-fg-muted">
+                    Recent activity · top bots
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/dashboard')}
+                    className="text-2xs text-brand hover:underline"
+                  >
+                    View dashboard →
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <BotCard
+                    badge="LIVE"
+                    badgeVariant="live"
+                    streak="7-WIN"
+                    name="RSI Momentum Long"
+                    pair="ETH-USDC · 5m"
+                    pnl="+$234.10"
+                    pnlVariant="bullish"
+                    onClick={() => navigate('/bots/1')}
+                  />
+                  <BotCard
+                    badge="DRY-RUN"
+                    badgeVariant="dry-run"
+                    name="MACD Cross"
+                    pair="SOL-USDC · 1h"
+                    pnl="+$18.40"
+                    pnlVariant="brand"
+                    onClick={() => navigate('/bots/2')}
+                  />
+                  <button
+                    type="button"
+                    onClick={onBuild}
+                    className="card-coin98-flat flex min-h-[110px] flex-col items-center justify-center rounded-2xl p-4 text-center transition hover:bg-brand-soft"
+                  >
+                    <div className="text-xl text-fg-muted">＋</div>
+                    <div className="mt-1 text-xs font-semibold text-fg-secondary">
+                      Build another
+                    </div>
+                  </button>
+                </div>
+              </section>
+            </>
+          )}
+        </div>
       </main>
 
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
@@ -252,75 +292,25 @@ export function LandingPage() {
   );
 }
 
-function AnonymousHero() {
-  return (
-    <div>
-      <div className="flex items-baseline gap-2 text-[11px] uppercase tracking-wider text-fg-muted">
-        <span className="h-1 w-1 rounded-full bg-brand" />
-        <span>Welcome</span>
-      </div>
-      <h1 className="mt-5 text-[56px] font-semibold leading-[0.95] tracking-tight text-fg">
-        Build your <span className="underline-brand">first bot</span>.
-      </h1>
-      <p className="mt-6 max-w-[560px] text-[16px] leading-relaxed text-fg-secondary">
-        You write the rules. The bot watches the market and follows them — no
-        discretion, no surprises. Start in dry-run, switch to live only when
-        you're ready.
-      </p>
-    </div>
-  );
+// ─────────────────────────────────────────────────────────────────────
+// Sub-components
+// ─────────────────────────────────────────────────────────────────────
+
+interface FeatureCardProps {
+  icon: LucideIcon;
+  title: string;
+  body: string;
 }
 
-function AuthedHero() {
+function FeatureCard({ icon: Icon, title, body }: FeatureCardProps) {
   return (
-    <div>
-      <div className="flex items-baseline gap-2 text-[11px] uppercase tracking-wider text-fg-muted">
-        <span className="h-1 w-1 rounded-full bg-bullish" />
-        <span>Welcome back</span>
+    <article className="card-coin98-flat rounded-2xl p-5 ">
+      <div className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-subtle text-brand">
+        <Icon className="h-4 w-4" />
       </div>
-      <h1 className="mt-4 text-[44px] font-semibold leading-tight tracking-tight text-fg">
-        Ready when you are.
-      </h1>
-      <p className="mt-4 max-w-[560px] text-[15px] leading-relaxed text-fg-secondary">
-        Wallet linked. Open the builder to spin up a new bot, or import an
-        existing config.
-      </p>
-    </div>
-  );
-}
-
-interface CockpitCellProps {
-  label: string;
-  value: React.ReactNode;
-  hint: React.ReactNode;
-  accent?: boolean;
-  valueClassName?: string;
-}
-
-function CockpitCell({
-  label,
-  value,
-  hint,
-  accent,
-  valueClassName,
-}: CockpitCellProps) {
-  return (
-    <div
-      className={`bg-base p-6 ${accent ? 'border-l-2 border-brand/40' : ''}`}
-    >
-      <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-fg-muted">
-        {label}
-      </div>
-      <div
-        className={
-          valueClassName ??
-          'mt-3 font-mono text-[40px] font-bold leading-none tabular-nums text-fg-disabled'
-        }
-      >
-        {value}
-      </div>
-      <div className="mt-1 text-[11px] text-fg-muted">{hint}</div>
-    </div>
+      <h3 className="mt-3 text-md font-semibold text-fg">{title}</h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-fg-secondary">{body}</p>
+    </article>
   );
 }
 
@@ -331,63 +321,58 @@ function truncate(addr: string): string {
 
 interface BotCardProps {
   badge: string;
-  badgeColor: 'bullish' | 'cyan' | 'bearish';
+  badgeVariant: 'live' | 'dry-run' | 'error';
   streak?: string;
   name: string;
   pair: string;
   pnl: string;
-  pnlColor: 'bullish' | 'cyan' | 'bearish';
+  pnlVariant: 'bullish' | 'bearish' | 'brand';
   onClick: () => void;
 }
 
 function BotCard({
   badge,
-  badgeColor,
+  badgeVariant,
   streak,
   name,
   pair,
   pnl,
-  pnlColor,
+  pnlVariant,
   onClick,
 }: BotCardProps) {
   const badgeClass = {
-    bullish: 'border-bullish/30 bg-bullish/10 text-bullish',
-    cyan: 'border-cyan/30 bg-cyan/10 text-cyan',
-    bearish: 'border-bearish/30 bg-bearish/10 text-bearish',
-  }[badgeColor];
-  const cardClass = {
-    bullish: 'border-bullish/30',
-    cyan: 'border-cyan/30',
-    bearish: 'border-bearish/30',
-  }[badgeColor];
+    live: 'border-bullish/30 bg-bullish-subtle text-bullish',
+    'dry-run': 'border-brand/30 bg-brand-subtle text-brand',
+    error: 'border-bearish/40 bg-bearish-subtle text-bearish',
+  }[badgeVariant];
   const pnlClass = {
     bullish: 'text-bullish',
-    cyan: 'text-cyan',
     bearish: 'text-bearish',
-  }[pnlColor];
+    brand: 'text-brand',
+  }[pnlVariant];
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`card-coin98 rounded-xl border p-4 text-left transition hover:brightness-110 ${cardClass}`}
+      className="card-coin98-flat cursor-pointer rounded-2xl p-4 text-left transition hover:brightness-110"
     >
       <div className="flex items-center gap-1.5">
         <span
-          className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-bold ${badgeClass}`}
+          className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-2xs font-bold uppercase ${badgeClass}`}
         >
           {badge}
         </span>
         {streak && (
-          <span className="rounded bg-bullish-subtle px-1.5 py-0.5 text-[10px] font-bold text-bullish">
+          <span className="rounded-sm bg-bullish-subtle px-1.5 py-0.5 text-2xs font-bold text-bullish">
             {streak}
           </span>
         )}
       </div>
-      <div className="mt-2 text-sm font-semibold text-fg">{name}</div>
-      <div className="text-[11px] text-fg-muted">{pair}</div>
+      <h3 className="mt-2 text-base font-semibold text-fg">{name}</h3>
+      <div className="text-xs text-fg-muted">{pair}</div>
       <div
-        className={`mt-1.5 font-mono text-base font-bold tabular-nums ${pnlClass}`}
+        className={`mt-2 font-mono text-lg font-bold tabular-nums ${pnlClass}`}
       >
         {pnl}
       </div>

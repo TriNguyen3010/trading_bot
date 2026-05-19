@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Settings as SettingsIcon } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { ImportDialog } from '@/features/export-import/ImportDialog';
 import { useRequireWallet } from '@/features/wallet-auth/RequireWalletProvider';
-import { WalletChip } from '@/features/wallet-auth/WalletChip';
+import { AppHeader } from './AppHeader';
 
 // =============================================================================
 // MOCK DATA — Dashboard demo. Real impl will wire to botApi.list() via the
-// existing `MyBotsDialog` logic (or a thin variant of it).
+// existing MyBotsDialog logic once the wallet team finishes the BE integration.
 // =============================================================================
 interface MockBot {
   id: number;
@@ -117,156 +119,215 @@ export function DashboardPage() {
   const [importOpen, setImportOpen] = useState(false);
 
   const filteredBots = search
-    ? MOCK_BOTS.filter((b) =>
-        b.name.toLowerCase().includes(search.toLowerCase()) ||
-        b.pair.toLowerCase().includes(search.toLowerCase()),
+    ? MOCK_BOTS.filter(
+        (b) =>
+          b.name.toLowerCase().includes(search.toLowerCase()) ||
+          b.pair.toLowerCase().includes(search.toLowerCase()),
       )
     : MOCK_BOTS;
 
   return (
-    <div className="dot-canvas relative min-h-screen text-fg">
-      {/* Header */}
-      <header className="relative flex items-center justify-between border-b border-border-subtle bg-black/40 px-8 py-4 backdrop-blur">
-        <div className="flex items-baseline gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="font-pixel text-[9px] tracking-[0.2em] text-brand hover:brightness-110"
-          >
-            COIN98 BOT
-          </button>
-          <span className="h-3 w-px bg-border" />
-          <span className="text-xs text-fg-muted">
-            My bots · {MOCK_BOTS.length} total · 2 LIVE · 1 DRY-RUN
-          </span>
-        </div>
-        <div className="flex items-center gap-3 text-[12px]">
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 text-fg-muted hover:text-fg"
-            onClick={() => {
-              /* TODO: /settings route */
-            }}
-          >
-            <SettingsIcon className="h-3.5 w-3.5" />
-            Settings
-          </button>
-          <WalletChip />
-        </div>
-      </header>
+    <div className="flex h-screen w-screen flex-col bg-black text-fg">
+      {/* Page-wide subtle yellow glow accents (Coin98 hero halos) —
+          matches BotMonitoringPage exactly so route transitions feel
+          continuous. */}
+      <div
+        className="pointer-events-none fixed -top-20 left-1/2 z-0 h-[420px] w-[700px] -translate-x-1/2 rounded-full opacity-50 blur-3xl"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, rgba(240,185,11,0.12), transparent 70%)',
+        }}
+        aria-hidden
+      />
+      {/* Dot-grid texture — constrained to start below the floating header
+          pill, matching Builder + Monitoring conventions. */}
+      <DotGridSpotlight
+        className="pointer-events-none fixed z-0"
+        style={{
+          top: 'var(--layout-header, 56px)',
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
+        dimmed={false}
+      />
 
-      <main className="relative mx-auto max-w-[1400px] px-8 py-6">
-        {/* Cockpit strip + toolbar */}
-        <div className="grid grid-cols-1 items-end gap-5 lg:grid-cols-[1fr_auto]">
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border-subtle bg-border-subtle md:grid-cols-4">
-            <PortfolioCell
-              label="P&L · 30D"
-              value={PORTFOLIO_STATS.pnl30d}
-              valueClass="text-bullish"
-              hint={
-                <span className="text-bullish">
-                  {PORTFOLIO_STATS.pnl30dPct}
-                </span>
-              }
-            />
-            <PortfolioCell
-              label="Active bots"
-              value={
-                <>
-                  {PORTFOLIO_STATS.activeBots}
-                  <span className="text-base text-fg-muted">
-                    {' '}
-                    / {PORTFOLIO_STATS.totalBots}
-                  </span>
-                </>
-              }
-              hint="3 paused"
-            />
-            <PortfolioCell
-              label="Capital deployed"
-              value={PORTFOLIO_STATS.capitalDeployed}
-              hint={`across ${PORTFOLIO_STATS.capitalPairs}`}
-            />
-            <PortfolioCell
-              label="Trades today"
-              value={PORTFOLIO_STATS.tradesToday}
-              hint={
-                <span className="text-bullish">
-                  {PORTFOLIO_STATS.tradesNet} net
-                </span>
-              }
-            />
-          </div>
+      <AppHeader />
 
-          <div className="flex flex-wrap items-center gap-2">
+      <main className="relative z-10 flex-1 overflow-y-auto">
+        <div className="mx-auto flex max-w-6xl flex-col gap-5 px-8 py-7">
+          {/* Hero portfolio — mirrors HeroPnL frame on the monitoring page */}
+          <section
+            aria-labelledby="portfolio-label"
+            className="relative grid grid-cols-[1fr_auto] gap-6 overflow-hidden rounded-3xl card-coin98-flat p-8 "
+          >
+            {/* Yellow halo behind the number — same as HeroPnL */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -left-16 -top-24 h-80 w-80 rounded-full opacity-40 blur-2xl"
+              style={{
+                background:
+                  'radial-gradient(circle, rgba(240,185,11,0.25), transparent 70%)',
+              }}
+            />
+            {/* Bullish-tinted halo on the right (since portfolio is up) */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full opacity-30 blur-2xl"
+              style={{
+                background:
+                  'radial-gradient(circle, var(--color-bullish), transparent 70%)',
+              }}
+            />
+
             <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search bots…"
-                className="w-44 rounded-lg border border-border bg-input px-3 py-2 pl-8 text-sm text-fg placeholder:text-fg-muted focus:border-brand focus:outline-none"
+              <div
+                id="portfolio-label"
+                className="mb-4 flex items-center gap-3 text-2xs uppercase tracking-widest text-fg-muted"
+              >
+                <span>Portfolio · 30D</span>
+                <span className="inline-flex items-center gap-1.5 text-bullish">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
+                  Live
+                </span>
+                <span className="text-border-strong">·</span>
+                <span>Updated 12s ago</span>
+              </div>
+
+              <div
+                className="font-mono text-6xl font-bold tabular-nums tracking-tight text-bullish"
+                style={{
+                  textShadow: '0 0 38px rgba(14, 203, 129, 0.45)',
+                  lineHeight: 1.0,
+                }}
+              >
+                {PORTFOLIO_STATS.pnl30d}
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-secondary">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="text-bullish">▲</span>
+                  <span className="font-semibold tabular-nums text-fg">
+                    {PORTFOLIO_STATS.activeBots}
+                  </span>
+                  <span className="text-fg-muted">
+                    active · {PORTFOLIO_STATS.totalBots} total
+                  </span>
+                </span>
+                <span className="text-border-strong">·</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="font-semibold tabular-nums text-fg-muted">
+                    3
+                  </span>
+                  <span className="text-fg-muted">paused</span>
+                </span>
+                <span className="text-border-strong">·</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="font-semibold tabular-nums text-fg">
+                    {PORTFOLIO_STATS.capitalDeployed}
+                  </span>
+                  <span className="text-fg-muted">
+                    deployed across {PORTFOLIO_STATS.capitalPairs}
+                  </span>
+                </span>
+                <span className="text-border-strong">·</span>
+                <span className="inline-flex items-center gap-1.5 text-fg-muted">
+                  <span className="font-semibold tabular-nums text-fg">
+                    {PORTFOLIO_STATS.tradesToday}
+                  </span>
+                  <span>trades today</span>
+                  <span className="font-semibold tabular-nums text-bullish">
+                    {PORTFOLIO_STATS.tradesNet} net
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            {/* Right summary — 30D return % */}
+            <div className="relative flex w-32 flex-col items-center justify-center">
+              <div className="font-mono text-3xl font-bold tabular-nums text-bullish">
+                {PORTFOLIO_STATS.pnl30dPct}
+              </div>
+              <div className="mt-2 text-2xs uppercase tracking-widest text-fg-muted">
+                30-day return
+              </div>
+            </div>
+          </section>
+
+          {/* My bots — toolbar in header, grid below */}
+          <section className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-2xs font-semibold uppercase tracking-widest text-fg-muted">
+                My bots · {MOCK_BOTS.length} total
+              </h2>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search bots…"
+                    className="h-9 w-44 rounded-md border border-border bg-input pl-8 pr-3 text-sm text-fg placeholder:text-fg-muted focus:border-brand focus:outline-none"
+                  />
+                </div>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={() => requireWalletThen(() => setImportOpen(true))}
+                >
+                  Import
+                </Button>
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => requireWalletThen(() => navigate('/builder'))}
+                >
+                  New bot
+                </Button>
+              </div>
+            </div>
+
+          {/* Bot cards grid */}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {filteredBots.map((bot) => (
+              <BotCard
+                key={bot.id}
+                bot={bot}
+                onClick={() => navigate(`/bots/${bot.id}`)}
               />
-            </div>
+            ))}
+
             <button
               type="button"
-              onClick={() =>
-                requireWalletThen(() => setImportOpen(true))
-              }
-              className="rounded-lg border border-border bg-input px-3 py-2 text-sm text-fg hover:border-brand"
+              onClick={() => requireWalletThen(() => navigate('/builder'))}
+              className="card-coin98-flat flex min-h-[230px] flex-col items-center justify-center rounded-2xl p-4 text-center transition hover:bg-brand-soft"
             >
-              Import
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                requireWalletThen(() => navigate('/builder'))
-              }
-              className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-black hover:brightness-110"
-            >
-              ＋ New bot
+              <div className="text-2xl text-fg-muted">＋</div>
+              <div className="mt-2 text-sm font-semibold text-fg-secondary">
+                New bot
+              </div>
+              <div className="mt-1 text-xs text-fg-muted">
+                Build from scratch or import
+              </div>
             </button>
           </div>
+
+            {filteredBots.length === 0 && (
+              <div className="card-coin98-flat rounded-2xl p-10 text-center ">
+                <p className="text-sm font-semibold text-fg">
+                  No bots match &quot;{search}&quot;
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="mt-2 text-xs text-brand hover:underline"
+                >
+                  Clear search
+                </button>
+              </div>
+            )}
+          </section>
         </div>
-
-        {/* Bot cards grid */}
-        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {filteredBots.map((bot) => (
-            <BotCard
-              key={bot.id}
-              bot={bot}
-              onClick={() => navigate(`/bots/${bot.id}`)}
-            />
-          ))}
-
-          {/* Add new bot tile spans remaining row(s) for visual weight */}
-          <button
-            type="button"
-            onClick={() => requireWalletThen(() => navigate('/builder'))}
-            className="flex min-h-[230px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border-strong bg-transparent p-4 text-center transition hover:border-brand hover:bg-brand-soft"
-          >
-            <div className="text-2xl text-fg-muted">＋</div>
-            <div className="mt-2 text-sm font-semibold text-fg-secondary">
-              New bot
-            </div>
-            <div className="mt-1 text-[11px] text-fg-muted">
-              Build from scratch or import
-            </div>
-          </button>
-        </div>
-
-        {filteredBots.length === 0 && (
-          <div className="mt-6 rounded-xl border border-border-subtle bg-base p-10 text-center">
-            <p className="text-sm font-semibold text-fg">No bots match "{search}"</p>
-            <button
-              type="button"
-              onClick={() => setSearch('')}
-              className="mt-2 text-[12px] text-brand hover:underline"
-            >
-              Clear search
-            </button>
-          </div>
-        )}
       </main>
 
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
@@ -274,32 +335,9 @@ export function DashboardPage() {
   );
 }
 
-// ----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────
 // Sub-components
-// ----------------------------------------------------------------------------
-
-interface PortfolioCellProps {
-  label: string;
-  value: React.ReactNode;
-  hint: React.ReactNode;
-  valueClass?: string;
-}
-
-function PortfolioCell({ label, value, hint, valueClass }: PortfolioCellProps) {
-  return (
-    <div className="bg-base p-4">
-      <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-fg-muted">
-        {label}
-      </div>
-      <div
-        className={`mt-1 font-mono text-2xl font-bold leading-tight tabular-nums text-fg ${valueClass ?? ''}`}
-      >
-        {value}
-      </div>
-      <div className="mt-0.5 text-[11px] text-fg-muted">{hint}</div>
-    </div>
-  );
-}
+// ─────────────────────────────────────────────────────────────────────
 
 interface BotCardProps {
   bot: MockBot;
@@ -308,17 +346,10 @@ interface BotCardProps {
 
 function BotCard({ bot, onClick }: BotCardProps) {
   const modeStyle = {
-    LIVE: 'border-bullish/30 bg-bullish/10 text-bullish',
-    'DRY-RUN': 'border-cyan/30 bg-cyan/10 text-cyan',
+    LIVE: 'border-bullish/30 bg-bullish-subtle text-bullish',
+    'DRY-RUN': 'border-brand/30 bg-brand-subtle text-brand',
     PAUSED: 'border-fg-muted/30 bg-fg-muted/10 text-fg-muted',
-    ERROR: 'border-bearish/40 bg-bearish/15 text-bearish',
-  }[bot.mode];
-
-  const cardBorder = {
-    LIVE: 'border-bullish/30',
-    'DRY-RUN': 'border-cyan/30',
-    PAUSED: 'border-border-subtle',
-    ERROR: 'border-bearish/50',
+    ERROR: 'border-bearish/40 bg-bearish-subtle text-bearish',
   }[bot.mode];
 
   const pnlClass =
@@ -339,33 +370,33 @@ function BotCard({ bot, onClick }: BotCardProps) {
           onClick();
         }
       }}
-      className={`card-coin98 cursor-pointer rounded-2xl border p-4 transition hover:brightness-110 ${cardBorder}`}
+      className="card-coin98-flat cursor-pointer rounded-2xl p-4 transition hover:brightness-110"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
             <span
-              className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-bold ${modeStyle}`}
+              className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-2xs font-bold uppercase ${modeStyle}`}
             >
               {bot.mode === 'LIVE' && (
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
               )}
               {bot.mode === 'DRY-RUN' && (
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand" />
               )}
-              {bot.mode === 'ERROR' && <span>⚠</span>}
+              {bot.mode === 'ERROR' && <span>!</span>}
               {bot.mode}
             </span>
             {bot.badge && (
-              <span className="rounded bg-bullish-subtle px-1.5 py-0.5 text-[10px] font-bold text-bullish">
+              <span className="rounded-sm bg-bullish-subtle px-1.5 py-0.5 text-2xs font-bold text-bullish">
                 {bot.badge}
               </span>
             )}
           </div>
-          <h3 className="mt-2 truncate text-base font-semibold text-fg">
+          <h3 className="mt-2 truncate text-md font-semibold text-fg">
             {bot.name}
           </h3>
-          <div className="text-[11px] text-fg-muted">
+          <div className="text-xs text-fg-muted">
             {bot.pair} · {bot.timeframe} · {bot.uptime}
           </div>
         </div>
@@ -382,23 +413,23 @@ function BotCard({ bot, onClick }: BotCardProps) {
       {/* PnL hero */}
       <div className="mt-3 flex items-baseline gap-2">
         <span
-          className={`font-mono text-2xl font-bold tabular-nums ${pnlClass}`}
+          className={`font-mono text-xl font-bold tabular-nums ${pnlClass}`}
         >
           {bot.pnl}
         </span>
-        <span className={`text-sm ${pnlClass}`}>{bot.pnlPct}</span>
+        <span className={`text-xs ${pnlClass}`}>{bot.pnlPct}</span>
       </div>
 
-      {/* Sparkline (mock) */}
+      {/* Sparkline */}
       {bot.sparkline && bot.sparkline.length >= 2 && (
         <Sparkline values={bot.sparkline} color={bot.pnlDirection} />
       )}
 
       {/* Error message replaces stats */}
       {bot.mode === 'ERROR' && bot.errorMsg ? (
-        <p className="mt-3 text-[12px] text-bearish/90">{bot.errorMsg}</p>
+        <p className="mt-3 text-xs text-bearish/90">{bot.errorMsg}</p>
       ) : bot.trades != null ? (
-        <div className="mt-3 grid grid-cols-3 gap-2 text-[10px]">
+        <div className="mt-3 grid grid-cols-3 gap-2 text-2xs">
           <div>
             <div className="text-fg-muted">Trades</div>
             <div className="font-mono font-semibold tabular-nums text-fg">
@@ -425,39 +456,27 @@ function BotCard({ bot, onClick }: BotCardProps) {
       ) : null}
 
       {/* Actions */}
-      <div className="mt-3 flex gap-1.5">
+      <div className="mt-3 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
         {bot.mode === 'ERROR' ? (
-          <button
-            type="button"
-            onClick={(e) => e.stopPropagation()}
-            className="flex-1 rounded-md bg-brand py-1.5 text-[11px] font-semibold text-black"
-          >
+          <Button variant="primary" size="sm" className="flex-1">
             Fix connection
-          </button>
+          </Button>
         ) : (
           <>
-            <button
-              type="button"
-              onClick={(e) => e.stopPropagation()}
-              className="flex-1 rounded-md border border-border bg-input py-1.5 text-[11px] text-fg-secondary"
-            >
+            <Button variant="secondary" size="sm" className="flex-1">
               Edit
-            </button>
-            <button
-              type="button"
-              onClick={(e) => e.stopPropagation()}
-              className="flex-1 rounded-md border border-border bg-input py-1.5 text-[11px] text-fg-secondary"
-            >
-              {bot.mode === 'PAUSED' ? '▶ Resume' : '⏸ Pause'}
-            </button>
-            <button
-              type="button"
-              onClick={(e) => e.stopPropagation()}
-              className="rounded-md border border-bearish/40 bg-bearish/10 px-2 py-1.5 text-[11px] text-bearish"
+            </Button>
+            <Button variant="secondary" size="sm" className="flex-1">
+              {bot.mode === 'PAUSED' ? 'Resume' : 'Pause'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="px-2 text-bearish hover:bg-bearish-subtle"
               aria-label="Stop bot"
             >
               ■
-            </button>
+            </Button>
           </>
         )}
       </div>
@@ -471,39 +490,99 @@ interface SparklineProps {
 }
 
 function Sparkline({ values, color }: SparklineProps) {
+  const id = useId().replace(/:/g, '');
   const max = Math.max(...values);
   const min = Math.min(...values);
   const range = max - min || 1;
 
-  const points = values
-    .map((v, i) => {
-      const x = (i / (values.length - 1)) * 200;
-      const y = 50 - ((v - min) / range) * 42 - 2;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' L ');
+  const points = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * 200;
+    const y = 50 - ((v - min) / range) * 42 - 2;
+    return { x, y };
+  });
+
+  const curve = buildRoundedSparklinePath(points);
+  const area = `${curve} L 200,50 L 0,50 Z`;
+  const end = points[points.length - 1];
 
   const stroke =
     color === 'up' ? '#0ECB81' : color === 'down' ? '#F6465D' : '#848e9c';
-  const fill =
+  const glow =
     color === 'up'
-      ? 'rgba(14,203,129,0.15)'
+      ? 'rgba(14,203,129,0.42)'
       : color === 'down'
-        ? 'rgba(246,70,93,0.15)'
-        : 'rgba(132,142,156,0.10)';
+        ? 'rgba(246,70,93,0.42)'
+        : 'rgba(132,142,156,0.34)';
+  const fillStop =
+    color === 'up'
+      ? 'rgba(14,203,129,0.24)'
+      : color === 'down'
+        ? 'rgba(246,70,93,0.22)'
+        : 'rgba(132,142,156,0.14)';
 
   return (
     <svg
       viewBox="0 0 200 50"
-      className="mt-2 h-10 w-full"
+      className="mt-2 h-10 w-full overflow-visible"
       preserveAspectRatio="none"
     >
+      <defs>
+        <linearGradient id={`${id}-area`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={fillStop} />
+          <stop offset="100%" stopColor={stroke} stopOpacity="0" />
+        </linearGradient>
+        <filter id={`${id}-glow`} x="-20%" y="-60%" width="140%" height="220%">
+          <feGaussianBlur stdDeviation="1.6" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <path d={area} fill={`url(#${id}-area)`} stroke="none" />
       <path
-        d={`M ${points} L 200,50 L 0,50 Z`}
-        fill={fill}
-        stroke="none"
+        d={curve}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        filter={`url(#${id}-glow)`}
       />
-      <path d={`M ${points}`} fill="none" stroke={stroke} strokeWidth={2} />
+      <circle cx={end.x} cy={end.y} r="5.5" fill={stroke} opacity="0.16" />
+      <circle
+        cx={end.x}
+        cy={end.y}
+        r="2.4"
+        fill="white"
+        stroke={stroke}
+        strokeWidth="1.6"
+        style={{ filter: `drop-shadow(0 0 5px ${glow})` }}
+      />
     </svg>
   );
+}
+
+function buildRoundedSparklinePath(points: { x: number; y: number }[]) {
+  if (points.length < 2) return '';
+
+  const d = [`M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`];
+  const tension = 0.5;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(0, i - 1)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(points.length - 1, i + 2)];
+    const cp1x = p1.x + ((p2.x - p0.x) / 6) * tension;
+    const cp1y = p1.y + ((p2.y - p0.y) / 6) * tension;
+    const cp2x = p2.x - ((p3.x - p1.x) / 6) * tension;
+    const cp2y = p2.y - ((p3.y - p1.y) / 6) * tension;
+
+    d.push(
+      `C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`,
+    );
+  }
+
+  return d.join(' ');
 }
