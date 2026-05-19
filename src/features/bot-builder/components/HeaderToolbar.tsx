@@ -23,12 +23,17 @@ import { ImportDialog } from '@/features/export-import/ImportDialog';
 import { validateBuilder } from '@/lib/validator';
 import { strings } from '@/i18n/en';
 import { cn } from '@/lib/utils';
-import { useAuthStore } from '@/features/auth/auth.store';
+import { useWalletStore } from '@/features/wallet-auth/wallet.store';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+
+function shortenAddress(addr: string | null | undefined): string {
+  if (!addr) return 'Wallet';
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
 
 function relativeTime(ts: number | null) {
   if (!ts) return null;
@@ -50,8 +55,8 @@ export function HeaderToolbar() {
   const [importOpen, setImportOpen] = useState(false);
 
   const navigate = useNavigate();
-  const authUser = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
+  const user = useWalletStore((s) => s.user);
+  const disconnect = useWalletStore((s) => s.disconnect);
 
   const issues = useMemo(() => validateBuilder(state), [state]);
   const canExport = issues.length === 0;
@@ -124,31 +129,31 @@ export function HeaderToolbar() {
                   className="rounded-full px-3"
                 >
                   <User className="h-3.5 w-3.5" />
-                  <span className="max-w-[120px] truncate text-xs">
-                    {authUser?.email ?? 'User'}
+                  <span className="max-w-[120px] truncate font-mono text-xs tabular-nums">
+                    {shortenAddress(user?.wallet_address)}
                   </span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="start" className="w-56 p-2">
                 <div className="mb-2 border-b border-border px-2 pb-2">
-                  <p className="text-sm font-medium text-fg">
-                    {authUser?.email ?? 'User'}
+                  <p className="font-mono text-sm font-medium tabular-nums text-fg">
+                    {shortenAddress(user?.wallet_address)}
                   </p>
                   <p className="text-xs text-fg-muted">
-                    {authUser?.is_admin ? 'Admin' : 'Member'}
+                    {user?.is_admin ? 'Admin' : 'Member'}
                   </p>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   className="w-full justify-start text-bearish"
-                  onClick={() => {
-                    logout();
-                    navigate('/login', { replace: true });
+                  onClick={async () => {
+                    await disconnect();
+                    navigate('/', { replace: true });
                   }}
                 >
                   <LogOut className="h-3.5 w-3.5" />
-                  Đăng xuất
+                  Ngắt kết nối
                 </Button>
               </PopoverContent>
             </Popover>
