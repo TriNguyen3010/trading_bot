@@ -590,7 +590,7 @@ describe('http wrapper (wallet auth)', () => {
 
     await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
     expect(sessionStorage.getItem(STORAGE_KEY)).not.toBeNull();
-    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Signature'));
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Chữ ký'));
   });
 
   it('does NOT toast 5xx for /bot-strategy/* (dialog handles)', async () => {
@@ -1203,6 +1203,31 @@ describe('wallet.store', () => {
       await useWalletStore.getState().connect();
       expect(useWalletStore.getState().status).toBe('error');
     });
+
+    // Bảo vệ fix của commit f56ecaf: nếu /user/status fail sau khi sign,
+    // KHÔNG được set status='ready'. Nếu test này fail → regression của bug
+    // "user vào builder với cred xấu".
+    it('clears creds and sets error when /user/status fails after sign', async () => {
+      vi.mocked(detectCoin98).mockReturnValue(fakeProvider);
+      vi.mocked(requestAccounts).mockResolvedValueOnce(['0xabc']);
+      vi.mocked(walletApi.getNonce).mockResolvedValueOnce({
+        nonce: 'n',
+        message: 'm',
+      });
+      vi.mocked(personalSign).mockResolvedValueOnce('0xsig');
+      vi.mocked(walletApi.getStatus).mockRejectedValueOnce(
+        new HttpError(403, 'Forbidden'),
+      );
+
+      await useWalletStore.getState().connect();
+
+      const s = useWalletStore.getState();
+      expect(s.status).toBe('error');
+      expect(s.address).toBeNull();
+      expect(s.nonce).toBeNull();
+      expect(s.signature).toBeNull();
+      expect(sessionStorage.getItem('trading_bot_wallet_auth')).toBeNull();
+    });
   });
 
   describe('disconnect', () => {
@@ -1428,11 +1453,14 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
   },
 
   disconnect: async () => {
-    // Best-effort BE call. Ignore result.
+    // BẮT BUỘC await: BE xoá wallet_nonce:0x... ở Redis. Nếu FE chỉ clear local
+    // mà không gọi BE → nonce cũ còn valid 24h → cred bị steal vẫn auth được.
+    // Caller PHẢI await action này trước khi navigate (xem useWalletEvents).
+    // (Confirm với BE Tuấn 2026-05-19.)
     try {
       await walletApi.disconnect();
     } catch {
-      /* ignore */
+      /* ignore network/5xx — nonce sẽ tự expire ≤24h */
     }
     clearStorage();
     set({
@@ -1468,8 +1496,11 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
   },
 }));
 
+// Check cả 3 fields (match http.ts validation). Nếu chỉ check 2, partial-state
+// edge case cho qua ProtectedRoute → 1 cycle thừa: request fail 401 →
+// http.ts clear+redirect /connect. Không phải infinite loop nhưng UX có flash.
 export const useIsAuthenticated = () =>
-  useWalletStore((s) => !!s.address && !!s.signature);
+  useWalletStore((s) => !!s.address && !!s.nonce && !!s.signature);
 
 // Run hydrate synchronously at module load — BEFORE any React render.
 // Required so ProtectedRoute sees the right state on the first render after
@@ -1856,7 +1887,8 @@ describe('useWalletEvents', () => {
       .mockResolvedValueOnce();
     renderHook(() => useWalletEvents());
 
-    onHandlers.accountsChanged(['0xDIFFERENT']);
+    // Handler async — await để window.location.href chắc chắn set xong khi assert.
+    await onHandlers.accountsChanged(['0xDIFFERENT']);
 
     expect(disconnectSpy).toHaveBeenCalled();
     expect(window.location.href).toBe('/connect');
@@ -1868,7 +1900,7 @@ describe('useWalletEvents', () => {
       .mockResolvedValueOnce();
     renderHook(() => useWalletEvents());
 
-    onHandlers.accountsChanged([]);
+    await onHandlers.accountsChanged([]);
 
     expect(disconnectSpy).toHaveBeenCalled();
     expect(window.location.href).toBe('/connect');
@@ -1880,7 +1912,7 @@ describe('useWalletEvents', () => {
       .mockResolvedValueOnce();
     renderHook(() => useWalletEvents());
 
-    onHandlers.accountsChanged(['0xABC']);
+    await onHandlers.accountsChanged(['0xABC']);
 
     expect(disconnectSpy).not.toHaveBeenCalled();
   });
@@ -1941,18 +1973,22 @@ export function useWalletEvents() {
     let attempts = 0;
 
     const attach = (provider: EthereumProvider) => {
-      const onAccountsChanged = (...args: unknown[]) => {
+      // BẮT BUỘC await disconnect() trước khi window.location.href —
+      // BE xoá nonce ở Redis trong /wallet/disconnect call. Nếu không await,
+      // page navigate có thể kill in-flight fetch → nonce còn valid 24h
+      // → security hole (confirm với BE Tuấn 2026-05-19).
+      const onAccountsChanged = async (...args: unknown[]) => {
         const accounts = (args[0] as string[]) ?? [];
         const current = useWalletStore.getState().address;
         const next = accounts[0]?.toLowerCase() ?? null;
         if (!next || next !== current?.toLowerCase()) {
-          void useWalletStore.getState().disconnect();
+          await useWalletStore.getState().disconnect();
           window.location.href = '/connect';
         }
       };
 
-      const onDisconnect = () => {
-        void useWalletStore.getState().disconnect();
+      const onDisconnect = async () => {
+        await useWalletStore.getState().disconnect();
         window.location.href = '/connect';
       };
 
