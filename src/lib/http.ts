@@ -16,10 +16,6 @@ export class ValidationError extends Error {
   }
 }
 
-// BE trả 422 ở 2 format:
-//   1. FastAPI default — `[{loc, msg, type}, ...]`
-//   2. Gamma BE custom — `["Field 'body -> bot_name' (missing): Field required", ...]`
-// Normalize cả 2 về `ValidationDetail[]` để UI render đồng nhất.
 const STRING_DETAIL_RE = /^Field '([^']+)' \(([^)]+)\): (.+)$/;
 
 export function normalizeValidationDetail(raw: unknown): ValidationDetail[] {
@@ -68,47 +64,59 @@ export class HttpError extends Error {
   }
 }
 
-// `/user/login`: 401 = sai cred (không phải session expired) + LoginPage
-// đã có custom message → skip toàn bộ global side-effects.
-const LOGIN_PATH = '/user/login';
+// Endpoints that BE explicitly does NOT require auth headers on
+// (see BE Q1 response from Tuấn, 2026-05-14).
+const PUBLIC_PATHS = [
+  '/wallet/nonce',
+  '/internal/',
+  '/webhook/',
+  '/docs',
+  '/openapi',
+  '/health',
+];
 
-// Endpoints có error UX riêng (red box in dialog) → http.ts không fire toast.
-// 401 vẫn được xử lý global (clearAuth + redirect) vì có thể là token expired.
+// Endpoints with their own error UX (red box in dialog) → http.ts
+// suppresses toast. 401 still triggers global clear+redirect.
 const SILENT_TOAST_PREFIXES = ['/bot-strategy/', '/bot/'];
 
-function hasSilentToast(path: string): boolean {
-  return (
-    path === LOGIN_PATH || SILENT_TOAST_PREFIXES.some((p) => path.startsWith(p))
-  );
+const STORAGE_KEY = 'trading_bot_wallet_auth';
+
+interface WalletCreds {
+  address: string;
+  nonce: string;
+  signature: string;
 }
 
-function getToken(): string | null {
+function isPublicPath(path: string): boolean {
+  return PUBLIC_PATHS.some((p) => path.startsWith(p));
+}
+
+function hasSilentToast(path: string): boolean {
+  return SILENT_TOAST_PREFIXES.some((p) => path.startsWith(p));
+}
+
+function getWalletCreds(): WalletCreds | null {
   try {
-    const raw = localStorage.getItem('auth-storage');
+    const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as { state?: { token?: string } };
-    return parsed?.state?.token ?? null;
+    const parsed = JSON.parse(raw) as Partial<WalletCreds>;
+    if (!parsed.address || !parsed.nonce || !parsed.signature) return null;
+    return parsed as WalletCreds;
   } catch {
     return null;
   }
 }
 
-function clearAuth() {
+function clearWalletAuth() {
   try {
-    localStorage.removeItem('auth-storage');
+    sessionStorage.removeItem(STORAGE_KEY);
   } catch {
     /* noop */
   }
 }
 
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? '';
-
-// Read per-call so tests can override via `vi.stubEnv`. The .env.local
-// demo bypass would otherwise leak into vitest and skip the 401 redirect
-// path that http.test.ts asserts.
-function isAuthBypassed() {
-  return import.meta.env.VITE_BYPASS_AUTH === 'true';
-}
+const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true';
 
 export async function http<T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
@@ -116,17 +124,19 @@ export async function http<T>(
   body?: unknown,
 ): Promise<T> {
   const url = `${baseURL}${path}`;
-  const token = getToken();
+  const creds = getWalletCreds();
+  const isPublic = isPublicPath(path);
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  if (creds && !isPublic && !BYPASS_AUTH) {
+    headers['X-Wallet-Address'] = creds.address;
+    headers['X-Wallet-Nonce'] = creds.nonce;
+    headers['X-Wallet-Signature'] = creds.signature;
   }
 
   const silentToast = hasSilentToast(path);
-  const isLoginRequest = path === LOGIN_PATH;
 
   let res: Response;
   try {
@@ -142,13 +152,35 @@ export async function http<T>(
     throw new Error('Network error');
   }
 
-  // 401 on /user/login = wrong credentials → LoginPage render error, no redirect.
-  // 401 elsewhere = session expired → clear auth + redirect to login.
-  if (res.status === 401 && !isLoginRequest && !isAuthBypassed()) {
-    clearAuth();
-    toast.warning('Phiên hết hạn, vui lòng đăng nhập lại.');
-    window.location.href = '/login';
+  // 401 anywhere → session expired / nonce invalid → clear + redirect to
+  // landing. Em's defer-auth UX uses Landing page as the public entry,
+  // not a forced /connect route — user re-triggers the wallet modal via
+  // the header chip or CTA click on Landing.
+  if (res.status === 401 && !BYPASS_AUTH) {
+    clearWalletAuth();
+    toast.warning('Phiên ví hết hạn, vui lòng kết nối lại.');
+    window.location.href = '/';
     throw new HttpError(401, 'Unauthorized');
+  }
+
+  // 403 = sig mismatch / user deactivated / lack permission. Per spec §4.4:
+  // toast (BE-provided message), no clear, no redirect, no auto-retry.
+  // BE returns a different message per case → pass-through so the user
+  // sees the actual reason.
+  if (res.status === 403) {
+    if (!silentToast) {
+      const text = await res.text().catch(() => '');
+      let msg = 'Quyền truy cập bị từ chối.';
+      try {
+        const data = JSON.parse(text) as { detail?: string };
+        if (typeof data.detail === 'string' && data.detail.trim())
+          msg = data.detail;
+      } catch {
+        if (text.trim()) msg = text;
+      }
+      toast.error(msg);
+    }
+    throw new HttpError(403, 'Forbidden');
   }
 
   if (res.status === 422) {
