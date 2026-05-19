@@ -147,7 +147,7 @@ export function ConnectWalletPanel({ onCancel }: ConnectWalletPanelProps) {
       {status === 'error' && error && (
         <div className="rounded-lg border border-bearish/40 bg-bearish/10 p-3">
           <div className="text-[10px] font-semibold uppercase tracking-wider text-bearish">
-            Signature rejected
+            {errorLabel(error)}
           </div>
           <p className="mt-1 text-[13px] text-fg-secondary">{error}</p>
         </div>
@@ -228,4 +228,21 @@ function StepRow({ label, state }: StepRowProps) {
       </span>
     </li>
   );
+}
+
+/**
+ * Pick a label for the error banner based on the error message shape.
+ * Keeps the title accurate when the failure isn't a signature rejection
+ * (eg. BE 500, network error, address invalid).
+ */
+function errorLabel(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes('từ chối')) return 'Signature rejected';
+  if (m.includes('không tìm thấy ví')) return 'Wallet not found';
+  if (m.includes('http 5') || m.includes('500'))
+    return 'Server error — retry shortly';
+  if (m.includes('http 4')) return 'Request rejected';
+  if (m.includes('network')) return 'Network error';
+  if (m.includes('vô hiệu hoá')) return 'Account disabled';
+  return 'Connection failed';
 }
