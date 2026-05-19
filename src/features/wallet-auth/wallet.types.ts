@@ -25,3 +25,13 @@ export interface NonceResponse {
   nonce: string;
   message: string;
 }
+
+// Minimal EIP-1193 provider shape we actually call.
+export interface EthereumProvider {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on: (event: string, handler: (...args: unknown[]) => void) => void;
+  removeListener: (
+    event: string,
+    handler: (...args: unknown[]) => void,
+  ) => void;
+}
