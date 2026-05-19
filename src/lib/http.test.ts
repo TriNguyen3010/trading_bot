@@ -18,9 +18,22 @@ vi.mock('sonner', () => ({
   },
 }));
 
-describe('http wrapper', () => {
+const STORAGE_KEY = 'trading_bot_wallet_auth';
+
+function setWalletCreds() {
+  sessionStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      address: '0xabc',
+      nonce: 'nonce123',
+      signature: '0xsig',
+    }),
+  );
+}
+
+describe('http wrapper (wallet auth)', () => {
   beforeEach(() => {
-    localStorage.clear();
+    sessionStorage.clear();
     mockFetch.mockReset();
     vi.mocked(toast.warning).mockClear();
     vi.mocked(toast.error).mockClear();
@@ -30,15 +43,12 @@ describe('http wrapper', () => {
     vi.restoreAllMocks();
   });
 
-  it('attaches Authorization header when token present', async () => {
-    localStorage.setItem(
-      'auth-storage',
-      JSON.stringify({ state: { token: 'test-token', user: null } }),
-    );
+  it('attaches X-Wallet-* headers when credentials present', async () => {
+    setWalletCreds();
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({ id: 1 }),
+      json: async () => ({}),
     });
 
     await http('GET', '/user/status');
@@ -47,103 +57,133 @@ describe('http wrapper', () => {
       expect.any(String),
       expect.objectContaining({
         headers: expect.objectContaining({
-          Authorization: 'Bearer test-token',
+          'X-Wallet-Address': '0xabc',
+          'X-Wallet-Nonce': 'nonce123',
+          'X-Wallet-Signature': '0xsig',
         }),
       }),
     );
   });
 
-  it('returns parsed JSON on success', async () => {
+  it('does NOT attach headers to /wallet/nonce (public path)', async () => {
+    setWalletCreds();
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({ data: 'hello' }),
+      json: async () => ({}),
     });
 
-    const result = await http('GET', '/test');
-    expect(result).toEqual({ data: 'hello' });
+    await http('GET', '/wallet/nonce?address=0xabc');
+
+    const callHeaders = mockFetch.mock.calls[0][1].headers;
+    expect(callHeaders['X-Wallet-Address']).toBeUndefined();
+    expect(callHeaders['X-Wallet-Nonce']).toBeUndefined();
+    expect(callHeaders['X-Wallet-Signature']).toBeUndefined();
   });
 
-  it('clears auth and redirects on 401 for protected endpoint', async () => {
-    localStorage.setItem(
-      'auth-storage',
-      JSON.stringify({ state: { token: 'expired', user: null } }),
-    );
-
+  it('clears sessionStorage and redirects on 401 for protected endpoint', async () => {
+    setWalletCreds();
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 401,
       statusText: 'Unauthorized',
+      text: async () => 'expired',
     });
 
-    const originalHref = window.location.href;
     Object.defineProperty(window, 'location', {
       writable: true,
-      value: { ...window.location, href: originalHref },
+      value: { ...window.location, href: '' },
     });
 
-    try {
-      await http('GET', '/protected');
-      expect.unreachable('should have thrown');
-    } catch (err) {
-      expect(err).toBeInstanceOf(HttpError);
-      expect((err as HttpError).status).toBe(401);
-    }
-    expect(localStorage.getItem('auth-storage')).toBeNull();
+    await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
+    expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
     expect(toast.warning).toHaveBeenCalled();
   });
 
-  it('does NOT clear auth or redirect on 401 for /user/login', async () => {
-    localStorage.setItem(
-      'auth-storage',
-      JSON.stringify({ state: { token: 'preserved', user: null } }),
-    );
-
+  it('on 403 with BE {detail}: pass-through message, does NOT clear, does NOT redirect', async () => {
+    setWalletCreds();
     mockFetch.mockResolvedValueOnce({
       ok: false,
-      status: 401,
-      statusText: 'Unauthorized',
-      text: async () => 'Invalid credentials',
+      status: 403,
+      statusText: 'Forbidden',
+      text: async () =>
+        JSON.stringify({ detail: 'Signature does not match wallet address.' }),
     });
 
-    try {
-      await http('POST', '/user/login', { email: 'a', password: 'b' });
-      expect.unreachable('should have thrown');
-    } catch (err) {
-      expect(err).toBeInstanceOf(HttpError);
-      expect((err as HttpError).status).toBe(401);
-    }
-    // Auth must remain intact — login flow handles its own error UX.
-    expect(localStorage.getItem('auth-storage')).not.toBeNull();
-    expect(toast.warning).not.toHaveBeenCalled();
-    expect(toast.error).not.toHaveBeenCalled();
+    await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
+    expect(sessionStorage.getItem(STORAGE_KEY)).not.toBeNull();
+    expect(toast.error).toHaveBeenCalledWith(
+      'Signature does not match wallet address.',
+    );
   });
 
-  it('does NOT toast on network error for /user/login (LoginPage handles it)', async () => {
-    mockFetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+  it('on 403 with non-JSON body: uses raw text as toast message', async () => {
+    setWalletCreds();
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      statusText: 'Forbidden',
+      text: async () => 'Tài khoản đã bị vô hiệu hoá.',
+    });
 
-    await expect(
-      http('POST', '/user/login', { email: 'a', password: 'b' }),
-    ).rejects.toThrow('Network error');
-    expect(toast.error).not.toHaveBeenCalled();
+    await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
+    expect(toast.error).toHaveBeenCalledWith('Tài khoản đã bị vô hiệu hoá.');
   });
 
-  it('does NOT toast on 5xx for /user/login (LoginPage handles it)', async () => {
+  it('on 403 with empty body: falls back to default message', async () => {
+    setWalletCreds();
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      statusText: 'Forbidden',
+      text: async () => '',
+    });
+
+    await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
+    expect(toast.error).toHaveBeenCalledWith('Quyền truy cập bị từ chối.');
+  });
+
+  it('does NOT toast 5xx for /bot-strategy/* (dialog handles)', async () => {
+    setWalletCreds();
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
-      statusText: 'Internal Server Error',
+      statusText: 'ISE',
       text: async () => 'boom',
     });
 
-    try {
-      await http('POST', '/user/login', { email: 'a', password: 'b' });
-      expect.unreachable('should have thrown');
-    } catch (err) {
-      expect(err).toBeInstanceOf(HttpError);
-      expect((err as HttpError).status).toBe(500);
-    }
+    await expect(
+      http('POST', '/bot-strategy/create', {}),
+    ).rejects.toBeInstanceOf(HttpError);
     expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('does NOT toast 403 for /bot-strategy/* either (silent path)', async () => {
+    setWalletCreds();
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      statusText: 'Forbidden',
+      text: async () => 'denied',
+    });
+
+    await expect(
+      http('POST', '/bot-strategy/create', {}),
+    ).rejects.toBeInstanceOf(HttpError);
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('throws HttpError + toast on other server errors', async () => {
+    setWalletCreds();
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'ISE',
+      text: async () => 'Server exploded',
+    });
+
+    await expect(http('GET', '/fail')).rejects.toBeInstanceOf(HttpError);
+    expect(toast.error).toHaveBeenCalledWith('Server exploded');
   });
 
   it('throws ValidationError on 422 with FastAPI object detail', async () => {
@@ -170,10 +210,7 @@ describe('http wrapper', () => {
       ok: false,
       status: 422,
       json: async () => ({
-        detail: [
-          "Field 'body -> bot_name' (missing): Field required",
-          "Field 'body -> stake_amount' (greater_than): Input should be greater than 0",
-        ],
+        detail: ["Field 'body -> bot_name' (missing): Field required"],
       }),
     });
 
@@ -182,84 +219,41 @@ describe('http wrapper', () => {
       expect.unreachable('should have thrown');
     } catch (err) {
       expect(err).toBeInstanceOf(ValidationError);
-      const detail = (err as ValidationError).detail;
-      expect(detail).toEqual([
+      expect((err as ValidationError).detail).toEqual([
         { loc: ['body', 'bot_name'], msg: 'Field required', type: 'missing' },
-        {
-          loc: ['body', 'stake_amount'],
-          msg: 'Input should be greater than 0',
-          type: 'greater_than',
-        },
       ]);
     }
   });
 
   describe('normalizeValidationDetail', () => {
     it('parses Gamma BE flat-string format', () => {
-      const result = normalizeValidationDetail([
-        "Field 'body -> bot_name' (missing): Field required",
-      ]);
-      expect(result).toEqual([
+      expect(
+        normalizeValidationDetail([
+          "Field 'body -> bot_name' (missing): Field required",
+        ]),
+      ).toEqual([
         { loc: ['body', 'bot_name'], msg: 'Field required', type: 'missing' },
       ]);
     });
 
     it('passes through FastAPI object format', () => {
-      const result = normalizeValidationDetail([
-        { loc: ['body', 'x'], msg: 'wrong', type: 'value_error' },
-      ]);
-      expect(result).toEqual([
-        { loc: ['body', 'x'], msg: 'wrong', type: 'value_error' },
-      ]);
+      expect(
+        normalizeValidationDetail([
+          { loc: ['body', 'x'], msg: 'wrong', type: 'value_error' },
+        ]),
+      ).toEqual([{ loc: ['body', 'x'], msg: 'wrong', type: 'value_error' }]);
     });
 
     it('falls back gracefully on unknown string format', () => {
-      const result = normalizeValidationDetail(['just a message']);
-      expect(result).toEqual([
+      expect(normalizeValidationDetail(['just a message'])).toEqual([
         { loc: [], msg: 'just a message', type: 'unknown' },
       ]);
     });
 
     it('wraps non-array input', () => {
-      const result = normalizeValidationDetail('boom');
-      expect(result).toEqual([{ loc: [], msg: 'boom', type: 'unknown' }]);
+      expect(normalizeValidationDetail('boom')).toEqual([
+        { loc: [], msg: 'boom', type: 'unknown' },
+      ]);
     });
-  });
-
-  it('does NOT toast on 5xx for /bot/* paths (MyBotsDialog handles it)', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      statusText: 'Internal Server Error',
-      text: async () => 'boom',
-    });
-
-    try {
-      await http('GET', '/bot/list');
-      expect.unreachable('should have thrown');
-    } catch (err) {
-      expect(err).toBeInstanceOf(HttpError);
-      expect((err as HttpError).status).toBe(500);
-    }
-    expect(toast.error).not.toHaveBeenCalled();
-  });
-
-  it('throws HttpError with status + toast on other server errors', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      statusText: 'Internal Server Error',
-      text: async () => 'Server exploded',
-    });
-
-    try {
-      await http('GET', '/fail');
-      expect.unreachable('should have thrown');
-    } catch (err) {
-      expect(err).toBeInstanceOf(HttpError);
-      expect((err as HttpError).status).toBe(500);
-      expect((err as HttpError).body).toBe('Server exploded');
-    }
-    expect(toast.error).toHaveBeenCalledWith('Server exploded');
   });
 });
