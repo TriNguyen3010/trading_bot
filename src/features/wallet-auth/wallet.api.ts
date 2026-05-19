@@ -1,45 +1,28 @@
 // =============================================================================
-// STUB · wallet auth API calls
+// Wallet auth API client.
 //
-// TODO(wallet-team): replace stub bodies with real fetch() calls against the BE
-// endpoints. Spec: docs/superpowers/specs/2026-05-14-c98-wallet-auth-design.md §4.
+// Delegates to the shared http<T>() wrapper in @/lib/http. At Task 3 time,
+// http.ts still attaches the legacy Bearer header — Task 4 swaps it for
+// X-Wallet-* headers, which makes getStatus + disconnect properly
+// authenticated. The function shapes below stay stable across that swap.
 //
-// Endpoints (per BE):
-//   GET  /wallet/nonce?address=<addr>   public, no headers
-//   GET  /user/status                    with X-Wallet-* headers
-//   POST /wallet/disconnect              with X-Wallet-* headers, empty body
-//
-// Keep the function shapes stable when swapping the bodies.
+// Spec: docs/superpowers/specs/2026-05-14-c98-wallet-auth-design.md §4.
 // =============================================================================
 
+import { http } from '@/lib/http';
 import type { AuthUser, NonceResponse } from './wallet.types';
 
 export const walletApi = {
-  async getNonce(_address: string): Promise<NonceResponse> {
-    // STUB: return a deterministic fake message so the modal can display it.
-    const nonce = `stub-nonce-${Date.now().toString(36)}`;
-    return {
-      nonce,
-      message: [
-        'Sign in to Trading Bot',
-        `Nonce: ${nonce}`,
-        `Expires: ${new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()}`,
-      ].join('\n'),
-    };
-  },
+  /** Public — no auth headers attached (path is whitelisted in http.ts). */
+  getNonce: (address: string) =>
+    http<NonceResponse>(
+      'GET',
+      `/wallet/nonce?address=${address.toLowerCase()}`,
+    ),
 
-  async getStatus(): Promise<AuthUser> {
-    // STUB: return a fake authed user so the rest of the app can proceed.
-    return {
-      id: 1,
-      email: null,
-      wallet_address: '0x4a7c8e2bd3f4a91f6f0ab95cc7e1d3a4b5c6d9f21',
-      is_active: true,
-      is_admin: false,
-    };
-  },
+  /** Authenticated — verifies current credentials + returns user info. */
+  getStatus: () => http<AuthUser>('GET', '/user/status'),
 
-  async disconnect(): Promise<void> {
-    // STUB: best-effort no-op.
-  },
+  /** Authenticated — best-effort server-side nonce invalidation. */
+  disconnect: () => http<{ status: string }>('POST', '/wallet/disconnect'),
 };
