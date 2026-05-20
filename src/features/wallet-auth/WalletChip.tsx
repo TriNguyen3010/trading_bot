@@ -33,7 +33,7 @@ export function WalletChip() {
         variant="ghost"
         size="sm"
         disabled
-        className="rounded-full bg-info/10 px-3 text-info hover:bg-info/10 hover:text-info"
+        className="h-10 rounded-full bg-info/10 px-3 text-info hover:bg-info/10 hover:text-info"
         title="VITE_BYPASS_AUTH=true · auth gate disabled"
       >
         <span className="h-1.5 w-1.5 rounded-full bg-info" />
@@ -52,7 +52,7 @@ export function WalletChip() {
             variant="ghost"
             size="sm"
             title="Wallet menu"
-            className="rounded-full bg-bullish-subtle px-3 text-bullish hover:bg-bullish-subtle hover:text-bullish"
+            className="h-10 rounded-full bg-bullish-subtle px-3 text-bullish hover:bg-bullish-subtle hover:text-bullish"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-bullish" />
             <span className="font-mono tabular-nums text-fg">
@@ -119,7 +119,7 @@ export function WalletChip() {
       variant="primary"
       size="sm"
       onClick={openConnect}
-      className="rounded-full px-4 shadow-[0_0_16px_rgba(240,185,11,0.35)]"
+      className="h-10 rounded-full px-4 shadow-[0_0_16px_rgba(240,185,11,0.35)]"
     >
       <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-black text-[7px] font-bold leading-none text-brand">
         C98

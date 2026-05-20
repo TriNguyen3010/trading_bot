@@ -95,10 +95,10 @@ export function HeaderToolbar() {
   return (
     <header className="flex h-[var(--layout-header)] flex-shrink-0 items-center px-3 pt-2">
       <TooltipProvider delayDuration={300}>
-        <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3 rounded-full card-coin98 px-3 py-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
+        <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between gap-3 rounded-full border border-white/[0.08] bg-white/[0.05] py-3 pl-4 pr-3 shadow-[0_8px_24px_rgba(0,0,0,0.15)] backdrop-blur-[100px]">
           {/* Left cluster: identity (logo + saved) followed by the
-            * navigation/account controls (User, Create new bot, My bots).
-            * Order per user request: Logo · User · Create new bot · My bots. */}
+           * navigation/account controls (User, Create new bot, My bots).
+           * Order per user request: Logo · User · Create new bot · My bots. */}
           <div className="flex items-center gap-1.5 pl-1">
             <button
               type="button"
@@ -123,11 +123,7 @@ export function HeaderToolbar() {
             </span>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="rounded-full px-3"
-                >
+                <Button variant="ghost" size="sm" className="h-10 rounded-full px-3">
                   <User className="h-3.5 w-3.5" />
                   <span className="max-w-[120px] truncate font-mono text-xs tabular-nums">
                     {shortenAddress(user?.wallet_address)}
@@ -164,7 +160,7 @@ export function HeaderToolbar() {
                   variant="secondary"
                   size="sm"
                   onClick={() => navigate('/dashboard')}
-                  className="rounded-full px-3"
+                  className="h-10 rounded-full px-3"
                 >
                   <List className="h-3.5 w-3.5" />
                   Dashboard
@@ -175,15 +171,15 @@ export function HeaderToolbar() {
           </div>
 
           {/* Right cluster: bundle-IO actions in build → ship order:
-            * Backtest · Import · Export (Export keeps the primary glow on
-            * the far right since it's the terminal action). */}
+           * Backtest · Import · Export (Export keeps the primary glow on
+           * the far right since it's the terminal action). */}
           <div className="flex items-center gap-1.5 pr-1">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="rounded-full px-3"
+                  className="h-10 rounded-full px-3"
                   disabled
                 >
                   <FlaskConical className="h-3.5 w-3.5" />
@@ -198,7 +194,7 @@ export function HeaderToolbar() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setImportOpen(true)}
-                  className="rounded-full px-3"
+                  className="h-10 rounded-full px-3"
                   aria-label="Import bundle"
                 >
                   <Upload className="h-3.5 w-3.5" />
@@ -215,7 +211,7 @@ export function HeaderToolbar() {
                     size="sm"
                     disabled={!canExport}
                     onClick={() => setExportOpen(true)}
-                    className="rounded-full px-4 shadow-[0_0_16px_rgba(240,185,11,0.35)]"
+                    className="h-10 rounded-full px-4 shadow-[0_0_16px_rgba(240,185,11,0.35)]"
                   >
                     <Download className="h-3.5 w-3.5" />
                     {strings.header.export}

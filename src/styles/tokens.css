@@ -10,14 +10,23 @@
  */
 
 @keyframes scan {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(360px); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(360px);
+  }
 }
 
 /* Subtle bubble breath — used by GainersLosersBubble SVG groups */
 @keyframes hl-bubble-float {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-2px) scale(1.015); }
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.015);
+  }
 }
 .hl-bubble {
   animation: hl-bubble-float 6s ease-in-out infinite;
@@ -38,38 +47,77 @@
   will-change: width;
 }
 @keyframes ob-flash-ask {
-  0%   { background-color: rgba(246, 70, 93, 0.22); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: rgba(246, 70, 93, 0.22);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 @keyframes ob-flash-bid {
-  0%   { background-color: rgba(14, 203, 129, 0.22); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: rgba(14, 203, 129, 0.22);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
-.ob-flash-ask { animation: ob-flash-ask 500ms ease-out; }
-.ob-flash-bid { animation: ob-flash-bid 500ms ease-out; }
+.ob-flash-ask {
+  animation: ob-flash-ask 500ms ease-out;
+}
+.ob-flash-bid {
+  animation: ob-flash-bid 500ms ease-out;
+}
 
 /* Mid-price subtle pulse on update */
 @keyframes ob-mid-pulse {
-  0%   { transform: scale(1.04); filter: brightness(1.15); }
-  100% { transform: scale(1);    filter: brightness(1);    }
+  0% {
+    transform: scale(1.04);
+    filter: brightness(1.15);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
 }
-.ob-mid-pulse { animation: ob-mid-pulse 280ms ease-out; }
+.ob-mid-pulse {
+  animation: ob-mid-pulse 280ms ease-out;
+}
 
 /* EquityCurve hand-rolled SVG — draw-in + endpoint pulse */
 @keyframes eq-line-draw {
-  to { stroke-dashoffset: 0; }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 @keyframes eq-area-fade {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes eq-endpoint-pop {
-  from { opacity: 0; transform: scale(0.4); }
-  to   { opacity: 1; transform: scale(1);   }
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 @keyframes eq-endpoint-halo {
-  0%, 100% { opacity: 0;   transform: scale(0.6); }
-  50%      { opacity: 0.4; transform: scale(1.6); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.6);
+  }
 }
 
 /* Cypheus narrative — slide-in for new messages, glow ring for latest */
@@ -88,7 +136,8 @@
   will-change: transform, opacity;
 }
 @keyframes cy-msg-glow-pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow:
       0 0 0 1px rgba(14, 203, 129, 0.3),
       0 0 12px rgba(14, 203, 129, 0.15);
@@ -206,9 +255,9 @@
    * hues elsewhere — these tokens are only for the StepCard / StepConnector
    * / SetupProgress dot-and-pill status surfaces. */
   --color-stage-pending: rgba(240, 185, 11, 0.15);
-  --color-stage-active:  var(--brand-primary);
-  --color-stage-done:    rgba(240, 185, 11, 0.50);
-  --color-stage-error:   var(--brand-primary); /* same hue, ring differentiates */
+  --color-stage-active: var(--brand-primary);
+  --color-stage-done: rgba(240, 185, 11, 0.5);
+  --color-stage-error: var(--brand-primary); /* same hue, ring differentiates */
 
   /* === RADIUS === */
   --radius-sm: 4px;
@@ -244,7 +293,11 @@
   --layout-right-drawer: 720px;
   --drawer-width: 0px;
   --dock-height: 0px;
-  --layout-header: 56px;
+  /* Floating pill header — 64px pill + 16px top breathing per Figma spec
+     (docs/superpowers/specs/2026-05-19-header-figma-glass-refresh-design.md).
+     Used by HeaderToolbar (Builder), AppHeader (Landing/Dashboard),
+     BotMonitoringPage header, and sticky/dot-grid offsets on each page. */
+  --layout-header: 80px;
 
   /* === EFFECTS (dot-grid spotlight) === */
   --fx-dot-color: rgba(255, 210, 80, 0.14);
@@ -264,11 +317,9 @@
   --glass-blur: 16px;
   --glass-saturate: 140%;
   --glass-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.42),
-    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+    0 8px 32px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
   --glass-shadow-hover:
-    0 12px 40px rgba(0, 0, 0, 0.5),
-    0 1px 0 rgba(255, 255, 255, 0.08) inset;
+    0 12px 40px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.08) inset;
 }
 
 /* ──────────────────────────────────────────────────────────────────
@@ -298,7 +349,8 @@
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur))
+    saturate(var(--glass-saturate));
   transition:
     background-image var(--duration-normal) var(--ease-out-quick),
     border-color var(--duration-normal) var(--ease-out-quick),
@@ -317,7 +369,9 @@
   box-shadow: var(--glass-shadow-hover);
 }
 
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
   .glass-card {
     background-image: none;
     background-color: var(--color-bg-surface);
@@ -345,12 +399,12 @@
   width: 1px;
   background: linear-gradient(
     to bottom,
-    rgba(240, 185, 11, 0.30) 0%,
+    rgba(240, 185, 11, 0.3) 0%,
     rgba(240, 185, 11, 0.65) 8%,
     rgba(240, 185, 11, 0.65) 92%,
-    rgba(240, 185, 11, 0.30) 100%
+    rgba(240, 185, 11, 0.3) 100%
   );
-  box-shadow: 0 0 6px rgba(240, 185, 11, 0.20);
+  box-shadow: 0 0 6px rgba(240, 185, 11, 0.2);
   pointer-events: none;
   z-index: 1;
 }

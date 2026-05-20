@@ -40,5 +40,7 @@ describe('HeaderToolbar', () => {
     expect(className).toMatch(/border-white\/\[0\.08\]/);
     expect(className).toMatch(/backdrop-blur-\[100px\]/);
     expect(className).toMatch(/max-w-\[1200px\]/);
+    // Pill total height = 64px = h-16 (Figma 1172×40 content + 12+12 padding)
+    expect(className).toMatch(/h-16/);
   });
 });
