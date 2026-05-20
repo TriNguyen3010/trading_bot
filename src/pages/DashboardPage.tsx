@@ -1,37 +1,33 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { RefreshCw, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { ImportDialog } from '@/features/export-import/ImportDialog';
 import { useRequireWallet } from '@/features/wallet-auth/RequireWalletProvider';
+import { botApi } from '@/features/bot-monitoring/bot.api';
+import {
+  zipBotsAndConfigs,
+  type ConfigShape,
+  type DashboardBot,
+} from '@/features/bot-monitoring/bot-list.helpers';
+import { formatBackendError } from '@/lib/format-error';
 import { AppHeader } from './AppHeader';
 
 // =============================================================================
-// MOCK DATA — Dashboard demo. Real impl will wire to botApi.list() via the
-// existing MyBotsDialog logic once the wallet team finishes the BE integration.
+// MOCK DATA — used as visual fallback in the empty state only (real bots = 0).
+// Real bot list is fetched via botApi.list() / botApi.getConfig() per spec
+// docs/superpowers/specs/2026-05-20-dashboard-real-bots-design.md.
 // =============================================================================
-interface MockBot {
-  id: number;
-  name: string;
-  pair: string;
-  timeframe: string;
+
+/** Mock variant of DashboardBot used for the empty-state showcase. Same
+ * shape as a real DashboardBot but with rich human-readable mock values for
+ * fields the BE doesn't yet expose (pnl, trades, sparkline) and `isDemo: true`
+ * so the BotCard renders the DEMO pill. */
+type MockBot = Omit<DashboardBot, 'isDemo' | 'uptime'> & {
+  isDemo: true;
   uptime: string;
-  mode: 'LIVE' | 'DRY-RUN' | 'PAUSED' | 'ERROR';
-  pnl: string;
-  pnlPct: string;
-  pnlDirection: 'up' | 'down' | 'flat';
-  badge?: string;
-  trades?: number;
-  winRate?: number;
-  sharpe?: number;
-  errorMsg?: string;
-  sparkline?: number[];
-  /** Marks hardcoded demo data so it's distinguishable from real BE bots
-   * once the bot-list endpoint is wired. Renders a small "DEMO" pill in
-   * the bot card header. */
-  isDemo?: boolean;
-}
+};
 
 const MOCK_BOTS: MockBot[] = [
   {
@@ -49,6 +45,7 @@ const MOCK_BOTS: MockBot[] = [
     winRate: 78,
     sharpe: 2.14,
     sparkline: [42, 40, 32, 36, 24, 18, 8, 4],
+    errorMsg: null,
     isDemo: true,
   },
   {
@@ -65,6 +62,7 @@ const MOCK_BOTS: MockBot[] = [
     winRate: 75,
     sharpe: 1.42,
     sparkline: [35, 32, 28, 30, 24, 26, 18, 15],
+    errorMsg: null,
     isDemo: true,
   },
   {
@@ -77,22 +75,14 @@ const MOCK_BOTS: MockBot[] = [
     pnl: '-$12.30',
     pnlPct: '-0.12%',
     pnlDirection: 'down',
+    trades: null,
+    winRate: null,
+    sharpe: null,
+    sparkline: null,
     errorMsg: 'Hyperliquid rejected the last order signature.',
     isDemo: true,
   },
 ];
-
-const PORTFOLIO_STATS = {
-  pnl30d: '+$240.20',
-  pnl30dPct: '+2.4%',
-  activeBots: '2',
-  totalBots: '3',
-  pausedBots: '0',
-  capitalDeployed: '$1,840',
-  capitalPairs: '3 pairs',
-  tradesToday: '7',
-  tradesNet: '+$15.40',
-};
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -100,13 +90,94 @@ export function DashboardPage() {
   const [search, setSearch] = useState('');
   const [importOpen, setImportOpen] = useState(false);
 
+  // Real-bot fetch state. `realBots === null` means "not yet loaded";
+  // empty array means "loaded, user has no bots" (we'll render the demo
+  // fallback). Bump `refreshKey` to force the useEffect to re-run.
+  const [realBots, setRealBots] = useState<DashboardBot[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      setLoading(true);
+      setFetchError(null);
+      try {
+        const list = await botApi.list();
+        if (cancelled) return;
+
+        if (list.length === 0) {
+          setRealBots([]);
+          return;
+        }
+
+        const configs = await Promise.allSettled(
+          list.map((b) => botApi.getConfig(b.id)),
+        );
+        if (cancelled) return;
+
+        // Unwrap BotConfigOut → inner ConfigShape. `botApi.getConfig` returns
+        // `{ config: { dry_run, timeframe, exchange, ... } }` (openapi
+        // BotConfigOut). MyBotsDialog.tsx:217 does the same unwrap.
+        const configsOrNull = configs.map((r) =>
+          r.status === 'fulfilled' ? (r.value.config as ConfigShape) : null,
+        );
+        setRealBots(zipBotsAndConfigs(list, configsOrNull));
+      } catch (err) {
+        if (cancelled) return;
+        setFetchError(formatBackendError(err));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey]);
+
+  const handleRefresh = () => setRefreshKey((k) => k + 1);
+
+  // Show real bots when available; fall back to demo samples when the user
+  // has no bots yet (empty state). Loading/error states render their own
+  // UI below and bypass this entirely.
+  const baseBots: (DashboardBot | MockBot)[] =
+    realBots && realBots.length > 0 ? realBots : MOCK_BOTS;
+
   const filteredBots = search
-    ? MOCK_BOTS.filter(
+    ? baseBots.filter(
         (b) =>
           b.name.toLowerCase().includes(search.toLowerCase()) ||
           b.pair.toLowerCase().includes(search.toLowerCase()),
       )
-    : MOCK_BOTS;
+    : baseBots;
+
+  const isEmptyReal = realBots !== null && realBots.length === 0;
+  const isLoadedReal = realBots !== null && realBots.length > 0;
+
+  // Hero counts derived from real bots when present; "—" placeholders for
+  // P&L/capital/trades aggregate until the monitoring phase wires those.
+  const portfolioStats = useMemo(() => {
+    const source = realBots ?? [];
+    const active = source.filter(
+      (b) => b.mode === 'LIVE' || b.mode === 'DRY-RUN',
+    ).length;
+    const paused = source.filter((b) => b.mode === 'PAUSED').length;
+    return {
+      activeBots: String(active),
+      totalBots: String(source.length),
+      pausedBots: String(paused),
+      pnl30d: '—',
+      pnl30dPct: '—',
+      capitalDeployed: '—',
+      capitalPairs: '—',
+      tradesToday: '—',
+      tradesNet: '—',
+    };
+  }, [realBots]);
 
   return (
     <div className="flex h-screen w-screen flex-col bg-black text-fg">
@@ -141,7 +212,7 @@ export function DashboardPage() {
           {/* Hero portfolio — mirrors HeroPnL frame on the monitoring page */}
           <section
             aria-labelledby="portfolio-label"
-            className="relative grid grid-cols-[1fr_auto] gap-6 overflow-hidden rounded-3xl card-coin98-flat p-8 "
+            className="card-coin98-flat relative grid grid-cols-[1fr_auto] gap-6 overflow-hidden rounded-3xl p-8"
           >
             {/* Yellow halo behind the number — same as HeroPnL */}
             <div
@@ -172,15 +243,17 @@ export function DashboardPage() {
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
                   Live
                 </span>
-                <span className="text-border-strong">·</span>
-                <span>Updated 12s ago</span>
-                <span className="text-border-strong">·</span>
-                <span
-                  className="rounded-sm border border-dashed border-fg-muted/40 px-1.5 py-0.5 text-fg-muted"
-                  title="Hardcoded demo data — not from your wallet"
-                >
-                  Demo
-                </span>
+                {isEmptyReal && (
+                  <>
+                    <span className="text-border-strong">·</span>
+                    <span
+                      className="rounded-sm border border-dashed border-fg-muted/40 px-1.5 py-0.5 text-fg-muted"
+                      title="Hardcoded demo data — not from your wallet"
+                    >
+                      Demo
+                    </span>
+                  </>
+                )}
               </div>
 
               <div
@@ -190,43 +263,43 @@ export function DashboardPage() {
                   lineHeight: 1.0,
                 }}
               >
-                {PORTFOLIO_STATS.pnl30d}
+                {portfolioStats.pnl30d}
               </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-secondary">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="text-bullish">▲</span>
                   <span className="font-semibold tabular-nums text-fg">
-                    {PORTFOLIO_STATS.activeBots}
+                    {portfolioStats.activeBots}
                   </span>
                   <span className="text-fg-muted">
-                    active · {PORTFOLIO_STATS.totalBots} total
+                    active · {portfolioStats.totalBots} total
                   </span>
                 </span>
                 <span className="text-border-strong">·</span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="font-semibold tabular-nums text-fg-muted">
-                    {PORTFOLIO_STATS.pausedBots}
+                    {portfolioStats.pausedBots}
                   </span>
                   <span className="text-fg-muted">paused</span>
                 </span>
                 <span className="text-border-strong">·</span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="font-semibold tabular-nums text-fg">
-                    {PORTFOLIO_STATS.capitalDeployed}
+                    {portfolioStats.capitalDeployed}
                   </span>
                   <span className="text-fg-muted">
-                    deployed across {PORTFOLIO_STATS.capitalPairs}
+                    deployed across {portfolioStats.capitalPairs}
                   </span>
                 </span>
                 <span className="text-border-strong">·</span>
                 <span className="inline-flex items-center gap-1.5 text-fg-muted">
                   <span className="font-semibold tabular-nums text-fg">
-                    {PORTFOLIO_STATS.tradesToday}
+                    {portfolioStats.tradesToday}
                   </span>
                   <span>trades today</span>
                   <span className="font-semibold tabular-nums text-bullish">
-                    {PORTFOLIO_STATS.tradesNet} net
+                    {portfolioStats.tradesNet} net
                   </span>
                 </span>
               </div>
@@ -235,7 +308,7 @@ export function DashboardPage() {
             {/* Right summary — 30D return % */}
             <div className="relative flex w-32 flex-col items-center justify-center">
               <div className="font-mono text-3xl font-bold tabular-nums text-bullish">
-                {PORTFOLIO_STATS.pnl30dPct}
+                {portfolioStats.pnl30dPct}
               </div>
               <div className="mt-2 text-2xs uppercase tracking-widest text-fg-muted">
                 30-day return
@@ -247,18 +320,36 @@ export function DashboardPage() {
           <section className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-2xs font-semibold uppercase tracking-widest text-fg-muted">
-                My bots · {MOCK_BOTS.length} total
+                My bots · {portfolioStats.totalBots} total
               </h2>
               <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search bots…"
-                    className="h-9 w-44 rounded-md border border-border bg-input pl-8 pr-3 text-sm text-fg placeholder:text-fg-muted focus:border-brand focus:outline-none"
-                  />
-                </div>
+                {/* Search input only when loaded with real bots — empty/loading/
+                    error states have nothing useful to search. */}
+                {isLoadedReal && (
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search bots…"
+                      className="h-9 w-44 rounded-md border border-border bg-input pl-8 pr-3 text-sm text-fg placeholder:text-fg-muted focus:border-brand focus:outline-none"
+                    />
+                  </div>
+                )}
+                {/* Refresh button visible whenever the fetch isn't mid-flight
+                    or errored — including empty state so user can refetch
+                    after creating a bot in another tab. */}
+                {!loading && !fetchError && (
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    onClick={handleRefresh}
+                    aria-label="Refresh bots"
+                    title="Refresh"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  </Button>
+                )}
                 <Button
                   variant="secondary"
                   size="md"
@@ -276,44 +367,93 @@ export function DashboardPage() {
               </div>
             </div>
 
-          {/* Bot cards grid */}
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {filteredBots.map((bot) => (
-              <BotCard
-                key={bot.id}
-                bot={bot}
-                onClick={() => navigate(`/bots/${bot.id}`)}
-              />
-            ))}
-
-            <button
-              type="button"
-              onClick={() => requireWalletThen(() => navigate('/builder'))}
-              className="card-coin98-flat flex min-h-[230px] flex-col items-center justify-center rounded-2xl p-4 text-center transition hover:bg-brand-soft"
-            >
-              <div className="text-2xl text-fg-muted">＋</div>
-              <div className="mt-2 text-sm font-semibold text-fg-secondary">
-                New bot
+            {/* Four-state machine: loading / error / loaded-or-empty / search-miss. */}
+            {loading ? (
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="card-coin98-flat min-h-[230px] animate-pulse rounded-2xl p-4"
+                  >
+                    <div className="h-4 w-16 rounded bg-fg-muted/15" />
+                    <div className="mt-3 h-6 w-3/4 rounded bg-fg-muted/15" />
+                    <div className="mt-2 h-3 w-1/2 rounded bg-fg-muted/15" />
+                    <div className="mt-6 h-8 w-2/3 rounded bg-fg-muted/15" />
+                  </div>
+                ))}
               </div>
-              <div className="mt-1 text-xs text-fg-muted">
-                Build from scratch or import
-              </div>
-            </button>
-          </div>
-
-            {filteredBots.length === 0 && (
-              <div className="card-coin98-flat rounded-2xl p-10 text-center ">
-                <p className="text-sm font-semibold text-fg">
-                  No bots match &quot;{search}&quot;
+            ) : fetchError ? (
+              <div className="card-coin98-flat rounded-2xl p-10 text-center">
+                <p className="text-sm font-semibold text-bearish">
+                  Couldn&apos;t load your bots
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  className="mt-2 text-xs text-brand hover:underline"
+                <p className="mt-1 text-xs text-fg-muted">{fetchError}</p>
+                <Button
+                  variant="secondary"
+                  className="mt-4"
+                  onClick={handleRefresh}
                 >
-                  Clear search
-                </button>
+                  Retry
+                </Button>
               </div>
+            ) : (
+              <>
+                {isEmptyReal && (
+                  <div className="rounded-lg border border-info/30 bg-info/5 px-4 py-3 text-xs text-info">
+                    You haven&apos;t built any bots yet. Below is a sample — try{' '}
+                    <strong className="mx-1">New bot</strong> to create your
+                    first one.
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {filteredBots.map((bot) => (
+                    <BotCard
+                      key={bot.id}
+                      bot={bot}
+                      // Demo cards use mock ids (1/2/4) — navigating to
+                      // /bots/{id} would 404. Route demos to /builder
+                      // instead so the click is a useful conversion.
+                      onClick={
+                        bot.isDemo
+                          ? () => requireWalletThen(() => navigate('/builder'))
+                          : () => navigate(`/bots/${bot.id}`)
+                      }
+                    />
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      requireWalletThen(() => navigate('/builder'))
+                    }
+                    className="card-coin98-flat flex min-h-[230px] flex-col items-center justify-center rounded-2xl p-4 text-center transition hover:bg-brand-soft"
+                  >
+                    <div className="text-2xl text-fg-muted">＋</div>
+                    <div className="mt-2 text-sm font-semibold text-fg-secondary">
+                      New bot
+                    </div>
+                    <div className="mt-1 text-xs text-fg-muted">
+                      Build from scratch or import
+                    </div>
+                  </button>
+                </div>
+
+                {filteredBots.length === 0 && (
+                  <div className="card-coin98-flat rounded-2xl p-10 text-center">
+                    <p className="text-sm font-semibold text-fg">
+                      No bots match &quot;{search}&quot;
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setSearch('')}
+                      className="mt-2 text-xs text-brand hover:underline"
+                    >
+                      Clear search
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </section>
         </div>
@@ -329,7 +469,7 @@ export function DashboardPage() {
 // ─────────────────────────────────────────────────────────────────────
 
 interface BotCardProps {
-  bot: MockBot;
+  bot: DashboardBot | MockBot;
   onClick: () => void;
 }
 
@@ -394,7 +534,8 @@ function BotCard({ bot, onClick }: BotCardProps) {
             {bot.name}
           </h3>
           <div className="text-xs text-fg-muted">
-            {bot.pair} · {bot.timeframe} · {bot.uptime}
+            {bot.pair} · {bot.timeframe}
+            {bot.uptime ? ` · ${bot.uptime}` : null}
           </div>
         </div>
         <button
