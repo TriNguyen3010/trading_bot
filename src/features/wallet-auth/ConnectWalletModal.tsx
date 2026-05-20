@@ -35,8 +35,8 @@ export function ConnectWalletModal({
       // Hold the success state visible briefly so the user sees the green
       // checkmark, then close + fire toast + run the pending action.
       const timer = setTimeout(() => {
-        toast.success(`Đã kết nối ${truncate(address)}`, {
-          description: 'Phiên đăng nhập sẵn sàng — chuyển sang builder…',
+        toast.success(`Connected ${truncate(address)}`, {
+          description: 'Session ready — switching to builder…',
         });
         if (onSuccess) onSuccess();
         onOpenChange(false);

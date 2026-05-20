@@ -63,10 +63,10 @@ function clearStorage() {
 
 function readableError(err: unknown): string {
   if (err instanceof UserRejectedError)
-    return 'Bạn đã từ chối yêu cầu từ ví Coin98.';
-  if (err instanceof NoProviderError) return 'Không tìm thấy ví Coin98.';
+    return 'You declined the request from Coin98 wallet.';
+  if (err instanceof NoProviderError) return 'Coin98 wallet not found.';
   if (err instanceof Error) return err.message;
-  return 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+  return 'Something went wrong. Please try again.';
 }
 
 export const useWalletStore = create<WalletState>()((set) => ({
@@ -153,7 +153,7 @@ export const useWalletStore = create<WalletState>()((set) => ({
           signature: null,
           user: null,
           status: 'error',
-          error: 'Tài khoản đã bị vô hiệu hoá. Vui lòng liên hệ admin.',
+          error: 'Account has been deactivated. Please contact admin.',
           signingMessage: null,
         });
         return;
@@ -220,13 +220,13 @@ export const useWalletStore = create<WalletState>()((set) => ({
     await useWalletStore.getState().connect();
 
     // Surface a toast since this flow runs outside the ConnectWalletModal
-    // (which is where the regular "Đã kết nối" toast fires). Read state
+    // (which is where the regular "Connected" toast fires). Read state
     // synchronously — connect() has already settled by the time await
     // resolves.
     const final = useWalletStore.getState();
     if (final.status === 'ready' && final.address) {
       const shortAddr = `${final.address.slice(0, 6)}…${final.address.slice(-4)}`;
-      toast.success(`Đã chuyển sang ${shortAddr}`);
+      toast.success(`Switched to ${shortAddr}`);
     } else if (final.status === 'error' && final.error) {
       toast.error(final.error);
     }
@@ -292,5 +292,4 @@ export const useIsWalletConnected = () =>
     (s) => BYPASS_AUTH || (!!s.address && !!s.nonce && !!s.signature),
   );
 
-export const useWalletAddress = () =>
-  useWalletStore((s) => s.address);
+export const useWalletAddress = () => useWalletStore((s) => s.address);

@@ -149,7 +149,7 @@ export function HeaderToolbar() {
                   }}
                 >
                   <LogOut className="h-3.5 w-3.5" />
-                  Ngắt kết nối
+                  Disconnect
                 </Button>
               </PopoverContent>
             </Popover>

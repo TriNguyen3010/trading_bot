@@ -8,14 +8,14 @@ import type { EthereumProvider } from './wallet.types';
 
 export class UserRejectedError extends Error {
   constructor() {
-    super('Bạn đã từ chối yêu cầu từ ví');
+    super('You declined the request from the wallet');
     this.name = 'UserRejectedError';
   }
 }
 
 export class NoProviderError extends Error {
   constructor() {
-    super('Không tìm thấy ví Coin98');
+    super('Coin98 wallet not found');
     this.name = 'NoProviderError';
   }
 }

@@ -37,13 +37,13 @@ export function ConnectWalletPanel({ onCancel }: ConnectWalletPanelProps) {
   const buttonLabel = (() => {
     switch (status) {
       case 'detecting':
-        return 'Đang tìm Coin98…';
+        return 'Detecting Coin98…';
       case 'connecting':
-        return 'Đang chờ Coin98 chấp thuận…';
+        return 'Waiting for Coin98 approval…';
       case 'signing':
-        return 'Đang chờ ký…';
+        return 'Waiting for signature…';
       case 'ready':
-        return 'Đã kết nối ✓';
+        return 'Connected ✓';
       case 'no-c98':
         return 'Install Coin98 →';
       default:
@@ -72,14 +72,14 @@ export function ConnectWalletPanel({ onCancel }: ConnectWalletPanelProps) {
         status === 'signing') && (
         <ol className="flex flex-col gap-2 rounded-lg border border-white/[0.06] bg-black/30 p-3 text-[12px]">
           <StepRow
-            label="Tìm ví Coin98"
+            label="Detect Coin98 wallet"
             state={status === 'detecting' ? 'active' : 'done'}
           />
           <StepRow
             label={
               address
-                ? `Kết nối ví · ${truncateAddress(address)}`
-                : 'Kết nối ví (mở Coin98 để chấp thuận)'
+                ? `Connect wallet · ${truncateAddress(address)}`
+                : 'Connect wallet (open Coin98 to approve)'
             }
             state={
               status === 'connecting'
@@ -90,7 +90,7 @@ export function ConnectWalletPanel({ onCancel }: ConnectWalletPanelProps) {
             }
           />
           <StepRow
-            label="Ký xác thực phiên đăng nhập"
+            label="Sign session authentication"
             state={status === 'signing' ? 'active' : 'pending'}
           />
         </ol>
@@ -131,7 +131,7 @@ export function ConnectWalletPanel({ onCancel }: ConnectWalletPanelProps) {
           <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-bullish" />
           <div>
             <div className="text-[12px] font-semibold text-bullish">
-              Đã kết nối
+              Connected
             </div>
             <div className="mt-0.5 break-all font-mono text-[11px] text-fg-secondary">
               {address}
@@ -223,12 +223,15 @@ function StepRow({ label, state }: StepRowProps) {
  */
 function errorLabel(message: string): string {
   const m = message.toLowerCase();
-  if (m.includes('từ chối')) return 'Signature rejected';
-  if (m.includes('không tìm thấy ví')) return 'Wallet not found';
+  if (m.includes('declined') || m.includes('rejected'))
+    return 'Signature rejected';
+  if (m.includes('wallet not found') || m.includes('no coin98'))
+    return 'Wallet not found';
   if (m.includes('http 5') || m.includes('500'))
     return 'Server error — retry shortly';
   if (m.includes('http 4')) return 'Request rejected';
   if (m.includes('network')) return 'Network error';
-  if (m.includes('vô hiệu hoá')) return 'Account disabled';
+  if (m.includes('deactivated') || m.includes('disabled'))
+    return 'Account disabled';
   return 'Connection failed';
 }

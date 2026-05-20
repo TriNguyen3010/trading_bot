@@ -146,7 +146,10 @@ describe('wallet.store', () => {
       });
       vi.mocked(personalSign).mockResolvedValueOnce('0xsig');
       vi.mocked(walletApi.getStatus).mockRejectedValueOnce(
-        Object.assign(new Error('Forbidden'), { name: 'HttpError', status: 403 }),
+        Object.assign(new Error('Forbidden'), {
+          name: 'HttpError',
+          status: 403,
+        }),
       );
 
       await useWalletStore.getState().connect();
@@ -213,7 +216,7 @@ describe('wallet.store', () => {
 
       const s = useWalletStore.getState();
       expect(s.status).toBe('error');
-      expect(s.error).toContain('từ chối');
+      expect(s.error).toContain('declined');
     });
 
     it('sets error state when user rejects signing', async () => {
@@ -252,7 +255,10 @@ describe('wallet.store', () => {
       });
       vi.mocked(personalSign).mockResolvedValueOnce('0xsig');
       vi.mocked(walletApi.getStatus).mockRejectedValueOnce(
-        Object.assign(new Error('Forbidden'), { name: 'HttpError', status: 403 }),
+        Object.assign(new Error('Forbidden'), {
+          name: 'HttpError',
+          status: 403,
+        }),
       );
 
       await useWalletStore.getState().connect();
@@ -285,7 +291,7 @@ describe('wallet.store', () => {
 
       const s = useWalletStore.getState();
       expect(s.status).toBe('error');
-      expect(s.error).toContain('vô hiệu hoá');
+      expect(s.error).toContain('deactivated');
       expect(s.address).toBeNull();
       expect(sessionStorage.getItem('trading_bot_wallet_auth')).toBeNull();
     });
