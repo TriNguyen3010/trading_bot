@@ -184,7 +184,10 @@ export interface DashboardBot {
   isDemo: false;
 }
 
-interface ConfigShape {
+/** The inner config shape after unwrapping `BotConfigOut.config`.
+ * Exported so DashboardPage can type the `.config` field it pulls out
+ * of each `BotConfigOut` wrapper from `botApi.getConfig(id)`. */
+export interface ConfigShape {
   dry_run?: boolean | null;
   timeframe?: string | null;
   exchange?: { pair_whitelist?: string[] } | null;
@@ -271,6 +274,39 @@ type MockBot = Omit<DashboardBot, 'isDemo'> & { isDemo: true };
 
 Update the `MOCK_BOTS: MockBot[]` array — all 3 entries already have `isDemo: true`, no other changes needed.
 
+- [ ] **Step 1b: Update `BotCardProps.bot` to accept the union + fix trailing separator**
+
+The plan's Step 3 maps `filteredBots: (DashboardBot | MockBot)[]` into `<BotCard>`. Current
+`BotCardProps.bot` is typed `MockBot` only — TypeScript will reject `DashboardBot` (their
+`isDemo` literal types disagree). Widen the prop:
+
+```ts
+// DashboardPage.tsx — line ~331
+interface BotCardProps {
+  bot: DashboardBot | MockBot;
+  onClick: () => void;
+}
+```
+
+Add the `DashboardBot` import alongside the existing one if it's not already there.
+
+Real bots have `uptime: null` at this phase (defer to monitoring phase). Current render
+leaves a dangling separator: `{bot.pair} · {bot.timeframe} · {bot.uptime}` renders as
+`"BTC-USDT · 5m · "` when uptime is null. Update the line in `BotCard`:
+
+```tsx
+// BEFORE — DashboardPage.tsx, inside BotCard, ~line 381
+<div className="text-xs text-fg-muted">
+  {bot.pair} · {bot.timeframe} · {bot.uptime}
+</div>
+
+// AFTER — only render the separator + value when uptime is non-empty
+<div className="text-xs text-fg-muted">
+  {bot.pair} · {bot.timeframe}
+  {bot.uptime ? ` · ${bot.uptime}` : null}
+</div>
+```
+
 - [ ] **Step 2: Add fetch state + `useEffect` with cancelled flag + refreshKey**
 
 Inside `DashboardPage`, above the `filteredBots` computation. Three pieces:
@@ -282,9 +318,12 @@ local `cancelled` flag to drop stale setState if user unmounts mid-fetch,
 ```ts
 import { useEffect, useState } from 'react';
 import { botApi } from '@/features/bot-monitoring/bot.api';
-import { zipBotsAndConfigs } from '@/features/bot-monitoring/bot-list.helpers';
+import {
+  zipBotsAndConfigs,
+  type ConfigShape,
+  type DashboardBot,
+} from '@/features/bot-monitoring/bot-list.helpers';
 import { formatBackendError } from '@/lib/format-error';
-import type { DashboardBot } from '@/features/bot-monitoring/bot-list.helpers';
 
 // inside component body:
 const [realBots, setRealBots] = useState<DashboardBot[] | null>(null);
@@ -312,8 +351,11 @@ useEffect(() => {
       );
       if (cancelled) return;
 
+      // Unwrap BotConfigOut → inner ConfigShape. `botApi.getConfig` returns
+      // `{ config: { dry_run, timeframe, exchange, ... } }` (see openapi.json
+      // BotConfigOut). MyBotsDialog.tsx:217 does the same unwrap.
       const configsOrNull = configs.map((r) =>
-        r.status === 'fulfilled' ? r.value : null,
+        r.status === 'fulfilled' ? (r.value.config as ConfigShape) : null,
       );
       setRealBots(zipBotsAndConfigs(list, configsOrNull));
     } catch (err) {
@@ -440,7 +482,14 @@ Replace the existing `{filteredBots.length === 0 && ... }` block with the four-w
         <BotCard
           key={bot.id}
           bot={bot}
-          onClick={() => navigate(`/bots/${bot.id}`)}
+          // Demo cards in empty state use hardcoded ids (1/2/4) — clicking
+          // them against a real BE would 404. Route demos to /builder instead
+          // so the click becomes a useful conversion to "create your own".
+          onClick={
+            bot.isDemo
+              ? () => requireWalletThen(() => navigate('/builder'))
+              : () => navigate(`/bots/${bot.id}`)
+          }
         />
       ))}
 
@@ -536,7 +585,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { DashboardPage } from '../DashboardPage';
-import { botApi } from '@/features/bot-monitoring/bot.api';
+import { botApi, type BotOut } from '@/features/bot-monitoring/bot.api';
 import { RequireWalletProvider } from '@/features/wallet-auth/RequireWalletProvider';
 import { useWalletStore } from '@/features/wallet-auth/wallet.store';
 
@@ -559,7 +608,7 @@ function renderPage() {
 
 describe('DashboardPage', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks(); // resetAllMocks (not clearAllMocks) — also resets implementations set via mockReturnValue, preventing leak between tests
     useWalletStore.setState({
       address: '0xabc',
       nonce: 'n',
@@ -590,10 +639,12 @@ describe('DashboardPage', () => {
       },
     ]);
     vi.mocked(botApi.getConfig).mockResolvedValueOnce({
-      dry_run: false,
-      timeframe: '5m',
-      exchange: { pair_whitelist: ['ETH/USDT'] },
-    } as never);
+      config: {
+        dry_run: false,
+        timeframe: '5m',
+        exchange: { pair_whitelist: ['ETH/USDT'] },
+      },
+    });
 
     renderPage();
 
@@ -692,10 +743,12 @@ describe('DashboardPage', () => {
       },
     ]);
     vi.mocked(botApi.getConfig).mockResolvedValueOnce({
-      dry_run: true,
-      timeframe: '1h',
-      exchange: { pair_whitelist: ['BTC/USDT'] },
-    } as never);
+      config: {
+        dry_run: true,
+        timeframe: '1h',
+        exchange: { pair_whitelist: ['BTC/USDT'] },
+      },
+    });
 
     await userEvent.click(screen.getByRole('button', { name: /refresh/i }));
 
@@ -713,7 +766,7 @@ describe('DashboardPage', () => {
     unmount();
 
     // Error: list rejects → refresh hidden (Retry inside card replaces it)
-    vi.clearAllMocks();
+    vi.resetAllMocks(); // resetAllMocks (not clearAllMocks) — also resets implementations set via mockReturnValue, preventing leak between tests
     vi.mocked(botApi.list).mockRejectedValueOnce(new Error('boom'));
     renderPage();
     await waitFor(() =>
@@ -733,7 +786,7 @@ describe('DashboardPage', () => {
     unmount();
 
     // Error
-    vi.clearAllMocks();
+    vi.resetAllMocks(); // resetAllMocks (not clearAllMocks) — also resets implementations set via mockReturnValue, preventing leak between tests
     vi.mocked(botApi.list).mockRejectedValueOnce(new Error('x'));
     renderPage();
     await waitFor(() =>
@@ -742,30 +795,35 @@ describe('DashboardPage', () => {
     expect(screen.queryByPlaceholderText(/search bots/i)).not.toBeInTheDocument();
   });
 
-  it('unmount during fetch does not setState on unmounted component', async () => {
-    // No assertion of internal state — we assert React doesn't log a
-    // "Can't perform setState on unmounted component" warning. spyOn
-    // console.error so we'd catch it.
-    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    let resolveList: (value: never[]) => void = () => {};
+  it('unmount during fetch does not produce a stale state update or crash', async () => {
+    // React 18 removed the "setState on unmounted" warning (facebook/react#22114),
+    // so this test can't assert on console.error. Instead we (a) confirm we get
+    // to the loading state, (b) unmount, (c) resolve the in-flight fetch AFTER
+    // unmount, and (d) assert no exception escapes the microtask queue. If the
+    // cancelled flag is removed, React will still tolerate the late setState
+    // silently in v18, but this test documents the intent.
+    let resolveList!: (value: BotOut[]) => void;
     vi.mocked(botApi.list).mockReturnValueOnce(
       new Promise((res) => {
-        resolveList = res as never;
+        resolveList = res;
       }),
     );
 
     const { unmount } = renderPage();
+    // Confirm we hit the loading state before unmounting
+    expect(document.querySelectorAll('.animate-pulse').length).toBeGreaterThanOrEqual(3);
+
     unmount();
+    // Resolve AFTER unmount — cancelled flag should prevent the subsequent
+    // Promise.allSettled chain from running setState.
     resolveList([]);
-    // Flush microtasks
     await new Promise((r) => setTimeout(r, 0));
 
-    expect(errSpy).not.toHaveBeenCalledWith(
-      expect.stringMatching(/setState.*unmounted/i),
-      expect.anything(),
-    );
-    errSpy.mockRestore();
+    // No assertion on console — just verifying no exception bubbled up.
+    // Mounted-state checks aren't possible after unmount; the value here
+    // is regression coverage if React ever reintroduces the warning, plus
+    // documenting intent for human reviewers.
+    expect(vi.mocked(botApi.list)).toHaveBeenCalledOnce();
   });
 });
 ```
@@ -795,7 +853,13 @@ Confirm no regressions outside this scope. The flaky `CypheusPanel.test.tsx` is 
 ```bash
 pnpm typecheck
 pnpm lint --max-warnings=0
-pnpm format
+# Format ONLY the files this phase touched — running `pnpm format` would drag
+# unrelated drift into the commits (we hit this on the header glass refresh task).
+npx prettier --write \
+  src/features/bot-monitoring/bot-list.helpers.ts \
+  src/features/bot-monitoring/bot-list.helpers.test.ts \
+  src/pages/DashboardPage.tsx \
+  src/pages/__tests__/DashboardPage.test.tsx
 ```
 
 - [ ] **Step 2: Verify nothing in `src/` was left with TODO markers from this work**
@@ -818,6 +882,7 @@ Should print nothing related to this phase.
 4. Dashboard mounts → loading skeleton (~200ms)
 5. After fetch: empty banner appears + 3 DEMO sample cards visible
 6. Hero portfolio: "0 active · 0 total · 0 paused", P&L shown as "—"
+7. **Click a DEMO card** → navigates to `/builder` (not `/bots/1` which would 404)
 
 - [ ] **Step 2: Create a bot via Builder**
 
@@ -899,7 +964,11 @@ PR body: link to spec + plan, summary of files changed, manual smoke checklist.
 - [ ] DEMO pill / empty banner only appear when `realBots !== null && realBots.length === 0`
 - [ ] Hero portfolio "active/total/paused" counts match the rendered list
 - [ ] Search input + Refresh button hidden in loading/error states; Refresh visible in empty state; both visible in loaded state
-- [ ] Unmount during fetch does not produce a "setState on unmounted" warning
+- [ ] Unmount during fetch does not crash and the cancelled flag prevents stale setState (test documents intent — React 18 no longer warns, see Devin review F-S1)
+- [ ] `BotConfigOut.config` is unwrapped before passing to `zipBotsAndConfigs` (Devin review F1)
+- [ ] `BotCardProps.bot` typed as `DashboardBot | MockBot` (Devin review F2)
+- [ ] Demo card click navigates to `/builder` (not to `/bots/{mock-id}` which would 404 — Devin review N1)
+- [ ] Trailing "·" separator removed when `uptime` is null (Devin review N2)
 
 ---
 

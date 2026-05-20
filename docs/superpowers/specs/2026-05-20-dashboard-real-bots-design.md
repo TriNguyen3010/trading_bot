@@ -107,6 +107,10 @@ list.length === 0
    └─ No  ↓
         Promise.allSettled(list.map(b => botApi.getConfig(b.id)))
            ↓
+        unwrap: result.value.config       (BotConfigOut → inner ConfigShape)
+                — getConfig returns { config: { dry_run, timeframe, exchange, … } }
+                — same unwrap MyBotsDialog does at MyBotsDialog.tsx:217
+           ↓
         cancelled check — if cleanup ran, drop result
            ↓
         zip(bot, config) → DashboardBot[]    (via bot-list.helpers.ts)
