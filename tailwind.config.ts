@@ -153,6 +153,10 @@ const config: Config = {
           '0%': { backgroundColor: 'var(--color-bullish-subtle)' },
           '100%': { backgroundColor: 'transparent' },
         },
+        'spin-once': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 200ms ease-out',
@@ -161,6 +165,10 @@ const config: Config = {
         march: 'march 1.4s linear infinite',
         shimmer: 'shimmer 2s linear infinite',
         'flash-success': 'flash-success 1000ms ease-out',
+        // Single 360° rotation — used on hover-triggered icons so the
+        // animation does NOT reverse when mouse leaves (`group:hover`
+        // unsetting `animation` cleanly removes the class).
+        'spin-once': 'spin-once 700ms ease-in-out',
       },
     },
   },

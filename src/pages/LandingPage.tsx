@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Code2, FlaskConical, Wallet, type LucideIcon } from 'lucide-react';
+import {
+  ArrowRight,
+  Code2,
+  FlaskConical,
+  Wallet,
+  type LucideIcon,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { ImportDialog } from '@/features/export-import/ImportDialog';
@@ -74,14 +80,20 @@ export function LandingPage() {
               Build your first <span className="text-brand">bot</span>.
             </h1>
             <p className="mt-4 max-w-[480px] text-md leading-relaxed text-fg-secondary">
-              You write the rules. The bot watches the market and follows them
-              — no discretion, no surprises. Start in dry-run, switch to live
-              only when you&apos;re ready.
+              You write the rules. The bot watches the market and follows them —
+              no discretion, no surprises. Start in dry-run, switch to live only
+              when you&apos;re ready.
             </p>
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
-              <Button variant="primary" size="lg" onClick={onBuild}>
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={onBuild}
+                className="group"
+              >
                 {isConnected ? 'New bot' : 'Build a bot'}
+                <ArrowRight className="h-4 w-4 group-hover:animate-spin-once" />
               </Button>
               <Button variant="secondary" size="lg" onClick={onImport}>
                 Import config
@@ -155,7 +167,7 @@ export function LandingPage() {
                 </div>
                 <section
                   aria-labelledby="landing-portfolio-label"
-                  className="relative grid grid-cols-1 gap-6 overflow-hidden rounded-3xl card-coin98 p-8 md:grid-cols-[1fr_auto]"
+                  className="card-coin98 relative grid grid-cols-1 gap-6 overflow-hidden rounded-3xl p-8 md:grid-cols-[1fr_auto]"
                 >
                   <div
                     aria-hidden="true"
@@ -304,7 +316,7 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon: Icon, title, body }: FeatureCardProps) {
   return (
-    <article className="card-coin98-flat rounded-2xl p-5 ">
+    <article className="card-coin98-flat rounded-2xl p-5">
       <div className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-subtle text-brand">
         <Icon className="h-4 w-4" />
       </div>
