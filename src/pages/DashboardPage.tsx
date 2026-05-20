@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, Search } from 'lucide-react';
+import { ArrowRight, RefreshCw, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { ImportDialog } from '@/features/export-import/ImportDialog';
@@ -350,9 +350,13 @@ export function DashboardPage() {
                     <RefreshCw className="h-3.5 w-3.5" />
                   </Button>
                 )}
+                {/* Both CTAs share min-w-[120px] so they line up at the same
+                    width regardless of label length. The arrow on New bot
+                    nudges right on hover for a subtle motion cue. */}
                 <Button
                   variant="secondary"
                   size="md"
+                  className="min-w-[120px]"
                   onClick={() => requireWalletThen(() => setImportOpen(true))}
                 >
                   Import
@@ -360,9 +364,11 @@ export function DashboardPage() {
                 <Button
                   variant="primary"
                   size="md"
+                  className="group min-w-[120px]"
                   onClick={() => requireWalletThen(() => navigate('/builder'))}
                 >
                   New bot
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </Button>
               </div>
             </div>
