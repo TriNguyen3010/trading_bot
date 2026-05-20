@@ -22,12 +22,17 @@ describe('mockBotData', () => {
   it('snapshot reflects fills', () => {
     const fills = generateMockFills(botId, deployedAt, now);
     const snap = generateSnapshot(fills, now);
-    expect(snap.totalTrades).toBe(fills.filter(f => f.closedAt !== null).length);
-    expect(snap.totalPnL).toBeCloseTo(fills.reduce((s, f) => s + f.pnl, 0), 2);
+    expect(snap.totalTrades).toBe(
+      fills.filter((f) => f.closedAt !== null).length,
+    );
+    expect(snap.totalPnL).toBeCloseTo(
+      fills.reduce((s, f) => s + f.pnl, 0),
+      2,
+    );
   });
 
   it('returns empty fills when bot just deployed', () => {
-    const justDeployed = now - 60_000;  // 1m ago
+    const justDeployed = now - 60_000; // 1m ago
     const fills = generateMockFills(botId, justDeployed, now);
     expect(fills).toEqual([]);
   });

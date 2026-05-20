@@ -105,7 +105,8 @@ function CountingNumber({
     const snapTimeout = window.setTimeout(() => {
       if (raf != null) cancelAnimationFrame(raf);
       displayedRef.current = value;
-      if (spanRef.current) spanRef.current.textContent = formatRef.current(value);
+      if (spanRef.current)
+        spanRef.current.textContent = formatRef.current(value);
     }, duration + 50);
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
@@ -113,7 +114,8 @@ function CountingNumber({
       const eased = 1 - Math.pow(1 - t, 3);
       const next = from + (value - from) * eased;
       displayedRef.current = next;
-      if (spanRef.current) spanRef.current.textContent = formatRef.current(next);
+      if (spanRef.current)
+        spanRef.current.textContent = formatRef.current(next);
       if (t < 1) {
         raf = requestAnimationFrame(tick);
       } else {
@@ -131,11 +133,13 @@ function CountingNumber({
   return <span ref={setSpan} className={className} />;
 }
 
-const fmtMoney = (precision = 2) => (v: number) =>
-  v.toLocaleString(undefined, {
-    minimumFractionDigits: precision,
-    maximumFractionDigits: precision,
-  });
+const fmtMoney =
+  (precision = 2) =>
+  (v: number) =>
+    v.toLocaleString(undefined, {
+      minimumFractionDigits: precision,
+      maximumFractionDigits: precision,
+    });
 const fmtInt = (v: number) => Math.round(v).toLocaleString();
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
@@ -413,7 +417,12 @@ function useHLTfPct(
         await Promise.all(
           batch.map(async (coin) => {
             try {
-              const candles = await hlApi.getCandleSnapshot(coin, '1d', startTime, now);
+              const candles = await hlApi.getCandleSnapshot(
+                coin,
+                '1d',
+                startTime,
+                now,
+              );
               if (candles.length >= 2) {
                 const first = candles[0];
                 const last = candles[candles.length - 1];
@@ -434,8 +443,10 @@ function useHLTfPct(
 
     fetchAll().catch((err) => console.warn('useHLTfPct fetch failed:', err));
 
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, tf, cacheKey, coins.join(',')]);
 
   return result;
@@ -518,14 +529,14 @@ function MonitoringHeader({ meta }: { meta: BotMeta }) {
   // sitting on the pure black page so it visually "floats".
   return (
     <header className="flex h-[var(--layout-header,56px)] flex-shrink-0 items-center px-3 pt-2">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 rounded-full card-coin98 px-2 py-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
+      <div className="card-coin98 mx-auto flex w-full max-w-6xl items-center justify-between gap-3 rounded-full px-2 py-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
         <div className="flex min-w-0 items-center gap-2 pl-1">
           {/* Back to dashboard */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/dashboard')}
-            className="rounded-full px-2.5 text-fg-muted hover:text-fg hover:bg-black/40"
+            className="rounded-full px-2.5 text-fg-muted hover:bg-black/40 hover:text-fg"
             aria-label="Back to dashboard"
           >
             <ArrowLeft className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
@@ -564,7 +575,7 @@ function MonitoringHeader({ meta }: { meta: BotMeta }) {
           >
             <span
               className={cn(
-                'h-1.5 w-1.5 rounded-full animate-pulse',
+                'h-1.5 w-1.5 animate-pulse rounded-full',
                 isLive ? 'bg-bullish' : 'bg-brand',
               )}
             />
@@ -575,7 +586,7 @@ function MonitoringHeader({ meta }: { meta: BotMeta }) {
           <Button
             variant="ghost"
             size="sm"
-            className="rounded-full px-3 text-fg-muted hover:text-fg hover:bg-black/40"
+            className="rounded-full px-3 text-fg-muted hover:bg-black/40 hover:text-fg"
           >
             <Pause className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
             Pause
@@ -597,7 +608,7 @@ function MonitoringHeader({ meta }: { meta: BotMeta }) {
             variant="ghost"
             size="sm"
             onClick={() => navigate('/builder')}
-            className="rounded-full px-3 text-fg-muted hover:text-fg hover:bg-black/40"
+            className="rounded-full px-3 text-fg-muted hover:bg-black/40 hover:text-fg"
           >
             <Pencil className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
             Edit
@@ -617,15 +628,27 @@ const CYPHEUS_TYPE_META: Record<
   { label: string; icon: string; color: string }
 > = {
   scan: { label: 'Scanning', icon: '📡', color: 'text-info' },
-  'position-opened': { label: 'Position opened', icon: '↗', color: 'text-fg-secondary' },
+  'position-opened': {
+    label: 'Position opened',
+    icon: '↗',
+    color: 'text-fg-secondary',
+  },
   'tp-hit': { label: 'TP hit', icon: '🎯', color: 'text-bullish' },
   'sl-hit': { label: 'SL hit', icon: '✕', color: 'text-bearish' },
-  'streak-milestone': { label: 'Win streak', icon: '🏆', color: 'text-warning' },
+  'streak-milestone': {
+    label: 'Win streak',
+    icon: '🏆',
+    color: 'text-warning',
+  },
   'pnl-milestone': { label: 'Milestone', icon: '📈', color: 'text-brand' },
   anomaly: { label: 'Anomaly', icon: '⚠', color: 'text-warning' },
   idle: { label: 'Quiet', icon: '⏸', color: 'text-fg-muted' },
   volatility: { label: 'Volatility', icon: '🌪', color: 'text-info' },
-  'session-summary': { label: 'Session', icon: '📊', color: 'text-fg-secondary' },
+  'session-summary': {
+    label: 'Session',
+    icon: '📊',
+    color: 'text-fg-secondary',
+  },
 };
 
 function relativeTimeLabel(ts: number): string {
@@ -701,58 +724,61 @@ function CypheusRail({ messages = [] }: { messages?: CypheusMessage[] }) {
         {/* Content (only when expanded) */}
         {!collapsed && (
           <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-3">
-            <div className="flex items-center gap-2 rounded-2xl card-coin98 p-3">
+            <div className="card-coin98 flex items-center gap-2 rounded-2xl p-3">
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-brand text-black shadow-[0_0_10px_rgba(240,185,11,0.4)]">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-semibold text-fg">Watching bot</div>
-                <div className="text-2xs text-bullish flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" />
+                <div className="text-xs font-semibold text-fg">
+                  Watching bot
+                </div>
+                <div className="flex items-center gap-1 text-2xs text-bullish">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
                   Live
                 </div>
               </div>
             </div>
 
-            <div className="text-2xs uppercase tracking-wider text-fg-muted px-1 mt-2">
+            <div className="mt-2 px-1 text-2xs uppercase tracking-wider text-fg-muted">
               Live narrative
             </div>
 
             {messages.length === 0 ? (
-              <article className="rounded-2xl card-coin98 p-3">
-                <div className="text-2xs uppercase tracking-wider text-fg-muted mb-1">
+              <article className="card-coin98 rounded-2xl p-3">
+                <div className="mb-1 text-2xs uppercase tracking-wider text-fg-muted">
                   ⏸ Quiet
                 </div>
-                <p className="text-xs text-fg-secondary leading-relaxed">
+                <p className="text-xs leading-relaxed text-fg-secondary">
                   Waiting for bot to do something interesting.
                 </p>
               </article>
             ) : (
               messages.map((m, idx) => {
-                const meta = CYPHEUS_TYPE_META[m.type] ?? CYPHEUS_TYPE_META.idle;
+                const meta =
+                  CYPHEUS_TYPE_META[m.type] ?? CYPHEUS_TYPE_META.idle;
                 const isLatest = idx === 0;
                 return (
                   <article
                     key={m.id}
                     className={cn(
-                      'cy-msg rounded-2xl card-coin98 p-3 transition-colors',
+                      'cy-msg card-coin98 rounded-2xl p-3 transition-colors',
                       isLatest &&
                         'cy-msg-latest shadow-[0_0_0_1px_rgba(14,203,129,0.4),0_0_16px_rgba(14,203,129,0.18)]',
                     )}
                   >
                     <div
                       className={cn(
-                        'text-2xs uppercase tracking-wider mb-1 inline-flex items-center gap-1',
+                        'mb-1 inline-flex items-center gap-1 text-2xs uppercase tracking-wider',
                         meta.color,
                       )}
                     >
                       <span aria-hidden="true">{meta.icon}</span>
                       <span>{meta.label}</span>
                     </div>
-                    <p className="text-xs text-fg-secondary leading-relaxed">
+                    <p className="text-xs leading-relaxed text-fg-secondary">
                       {m.text}
                     </p>
-                    <div className="text-2xs text-fg-disabled mt-1.5">
+                    <div className="mt-1.5 text-2xs text-fg-disabled">
                       {isLatest ? 'just now' : relativeTimeLabel(m.ts)}
                     </div>
                   </article>
@@ -772,10 +798,11 @@ function CypheusRail({ messages = [] }: { messages?: CypheusMessage[] }) {
 function WinStreakGauge({ streak }: { streak: number }) {
   const pct = Math.min(streak / 15, 1);
   const dash = pct * 264;
-  const colorVar = streak > 0 ? 'var(--color-bullish)' : 'var(--color-text-disabled)';
+  const colorVar =
+    streak > 0 ? 'var(--color-bullish)' : 'var(--color-text-disabled)';
 
   return (
-    <div className="flex flex-col items-center justify-center w-32">
+    <div className="flex w-32 flex-col items-center justify-center">
       <div className="relative">
         <svg width="96" height="96" viewBox="0 0 100 100" aria-hidden="true">
           <circle
@@ -797,7 +824,8 @@ function WinStreakGauge({ streak }: { streak: number }) {
             strokeLinecap="round"
             transform="rotate(-90 50 50)"
             style={{
-              filter: streak > 0 ? `drop-shadow(0 0 6px ${colorVar})` : undefined,
+              filter:
+                streak > 0 ? `drop-shadow(0 0 6px ${colorVar})` : undefined,
               transition:
                 'stroke-dasharray 600ms cubic-bezier(0.2, 0.8, 0.2, 1)',
             }}
@@ -812,8 +840,8 @@ function WinStreakGauge({ streak }: { streak: number }) {
           <CountingNumber value={streak} format={fmtInt} duration={500} />
         </div>
       </div>
-      <div className="mt-2 text-2xs uppercase tracking-widest text-fg-muted text-center leading-relaxed">
-        <span className={streak > 0 ? 'text-bullish font-semibold' : ''}>
+      <div className="mt-2 text-center text-2xs uppercase leading-relaxed tracking-widest text-fg-muted">
+        <span className={streak > 0 ? 'font-semibold text-bullish' : ''}>
           Win Streak
         </span>
         <br />
@@ -834,7 +862,7 @@ function HeroPnL({
     return (
       <section
         aria-labelledby="hero-pnl-label"
-        className="relative grid grid-cols-[1fr_auto] gap-6 overflow-hidden rounded-3xl card-coin98 p-8"
+        className="card-coin98 relative grid grid-cols-[1fr_auto] gap-6 overflow-hidden rounded-3xl p-8"
       >
         <div className="relative">
           <div
@@ -843,7 +871,7 @@ function HeroPnL({
           >
             <span>Today · Realized PnL</span>
             <span className="inline-flex items-center gap-1.5 text-info">
-              <span className="h-1.5 w-1.5 rounded-full bg-info animate-pulse" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-info" />
               Scanning
             </span>
             <span className="text-border-strong">·</span>
@@ -858,8 +886,7 @@ function HeroPnL({
           <div className="mt-5 flex items-center gap-3 text-xs text-fg-muted">
             <span>
               <span aria-hidden="true">⏱ </span>
-              Est. first signal in{' '}
-              <b className="text-fg-secondary">1–3h</b>
+              Est. first signal in <b className="text-fg-secondary">1–3h</b>
             </span>
             <div className="relative h-1 w-48 overflow-hidden rounded-full bg-black">
               <span className="absolute inset-y-0 -left-12 w-12 animate-[scan_2s_linear_infinite] bg-gradient-to-r from-transparent via-info to-transparent" />
@@ -880,7 +907,7 @@ function HeroPnL({
           <div className="-mt-[68px] text-2xl font-bold text-fg-disabled">
             —
           </div>
-          <div className="mt-8 text-2xs uppercase tracking-widest text-fg-muted text-center leading-relaxed">
+          <div className="mt-8 text-center text-2xs uppercase leading-relaxed tracking-widest text-fg-muted">
             Build a streak
           </div>
         </div>
@@ -898,7 +925,7 @@ function HeroPnL({
   return (
     <section
       aria-labelledby="hero-pnl-label"
-      className="relative grid grid-cols-[1fr_auto] gap-6 overflow-hidden rounded-3xl card-coin98 p-8"
+      className="card-coin98 relative grid grid-cols-[1fr_auto] gap-6 overflow-hidden rounded-3xl p-8"
     >
       {/* Yellow halo (Coin98 brand glow) layered behind the number */}
       <div
@@ -927,7 +954,7 @@ function HeroPnL({
         >
           <span>Today · Realized PnL</span>
           <span className="inline-flex items-center gap-1.5 text-bullish">
-            <span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
             Live
           </span>
           <span className="text-border-strong">·</span>
@@ -956,7 +983,7 @@ function HeroPnL({
               value={snap.totalTrades}
               format={fmtInt}
               duration={600}
-              className="text-fg font-semibold tabular-nums"
+              className="font-semibold tabular-nums text-fg"
             />
             <span className="text-fg-muted">trades</span>
           </span>
@@ -966,7 +993,7 @@ function HeroPnL({
               value={snap.winRate * 100}
               format={fmtPct}
               duration={600}
-              className="text-bullish font-semibold tabular-nums"
+              className="font-semibold tabular-nums text-bullish"
             />
             <span className="text-fg-muted">win</span>
           </span>
@@ -976,7 +1003,7 @@ function HeroPnL({
               value={snap.openPositions}
               format={fmtInt}
               duration={400}
-              className="text-fg font-semibold tabular-nums"
+              className="font-semibold tabular-nums text-fg"
             />
             <span className="text-fg-muted">open</span>
           </span>
@@ -1024,14 +1051,14 @@ function SectionCard({
   // bg contrast against the pure-black canvas), header has no divider
   // — relies on whitespace.
   return (
-    <section className="rounded-3xl card-coin98 overflow-hidden">
-      <header className="flex items-center justify-between gap-3 px-5 pt-4 pb-2">
-        <div className="flex items-center gap-2 min-w-0">
+    <section className="card-coin98 overflow-hidden rounded-3xl">
+      <header className="flex items-center justify-between gap-3 px-5 pb-2 pt-4">
+        <div className="flex min-w-0 items-center gap-2">
           <span className="text-2xs font-semibold uppercase tracking-wider text-fg-muted">
             {title}
           </span>
           {meta && (
-            <span className="text-xs text-fg-secondary truncate">{meta}</span>
+            <span className="truncate text-xs text-fg-secondary">{meta}</span>
           )}
         </div>
         {rightSlot}
@@ -1056,8 +1083,8 @@ function EmptyStateCard({
   body: string;
 }) {
   return (
-    <section className="rounded-3xl card-coin98 p-10 text-center">
-      <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-black flex items-center justify-center text-xl">
+    <section className="card-coin98 rounded-3xl p-10 text-center">
+      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-black text-xl">
         {icon}
       </div>
       <h4 className="m-0 text-sm font-semibold text-fg">{title}</h4>
@@ -1103,12 +1130,10 @@ function buildEquityGeometry(data: EquityPoint[]): EqGeometry | null {
   maxY += yPad;
 
   const sx = (x: number) =>
-    EQ_PAD_X +
-    ((x - minX) / (maxX - minX)) * (EQ_VIEW_W - EQ_PAD_X * 2);
+    EQ_PAD_X + ((x - minX) / (maxX - minX)) * (EQ_VIEW_W - EQ_PAD_X * 2);
   const sy = (y: number) =>
     EQ_PAD_TOP +
-    (1 - (y - minY) / (maxY - minY)) *
-      (EQ_VIEW_H - EQ_PAD_TOP - EQ_PAD_BOTTOM);
+    (1 - (y - minY) / (maxY - minY)) * (EQ_VIEW_H - EQ_PAD_TOP - EQ_PAD_BOTTOM);
 
   const points = data.map((d) => ({ x: sx(d.t), y: sy(d.equity) }));
 
@@ -1214,7 +1239,9 @@ function EquityCurve({
   }
 
   const totalPositive = total >= 0;
-  const lineColor = totalPositive ? 'var(--color-bullish)' : 'var(--color-bearish)';
+  const lineColor = totalPositive
+    ? 'var(--color-bullish)'
+    : 'var(--color-bearish)';
   // Force a new node identity per range so the draw animation re-runs
   // when user switches tabs (vs. silently refreshing on auto-poll).
   const animKey = `${range}-${data.length}`;
@@ -1251,7 +1278,7 @@ function EquityCurve({
                 'rounded-full px-3 py-1 text-2xs font-medium uppercase tracking-wider transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
                 r === range
-                  ? 'bg-brand text-black font-semibold shadow-[0_0_10px_rgba(240,185,11,0.35)]'
+                  ? 'bg-brand font-semibold text-black shadow-[0_0_10px_rgba(240,185,11,0.35)]'
                   : 'text-fg-muted hover:text-fg',
               )}
             >
@@ -1281,15 +1308,10 @@ function EquityCurve({
               </feMerge>
             </filter>
             {/* Clip rectangle that grows with the line tip — gradient
-              * fill below the curve reveals exactly under the part
-              * that's already been drawn. */}
+             * fill below the curve reveals exactly under the part
+             * that's already been drawn. */}
             <clipPath id="eqAreaClip">
-              <rect
-                x="0"
-                y="0"
-                width={endPos?.x ?? 0}
-                height={EQ_VIEW_H}
-              />
+              <rect x="0" y="0" width={endPos?.x ?? 0} height={EQ_VIEW_H} />
             </clipPath>
           </defs>
 
@@ -1325,8 +1347,8 @@ function EquityCurve({
           ))}
 
           {/* Area fill — clipped by a rectangle that grows with the
-            * draw line's tip, so the gradient fills in progressively
-            * underneath the line as it draws (not in one fade flash). */}
+           * draw line's tip, so the gradient fills in progressively
+           * underneath the line as it draws (not in one fade flash). */}
           <path
             d={geometry.areaD}
             fill="url(#eqArea)"
@@ -1334,7 +1356,7 @@ function EquityCurve({
           />
 
           {/* Line — strokeDashoffset is animated by JS rAF (linear,
-            * 10s) so the endpoint sampling stays pixel-perfect. */}
+           * 10s) so the endpoint sampling stays pixel-perfect. */}
           <path
             ref={linePathRef}
             d={geometry.pathD}
@@ -1356,15 +1378,14 @@ function EquityCurve({
             fill={lineColor}
             opacity="0"
             style={{
-              animation:
-                'eq-endpoint-halo 1.6s ease-in-out 10000ms infinite',
+              animation: 'eq-endpoint-halo 1.6s ease-in-out 10000ms infinite',
               transformOrigin: `${geometry.endX}px ${geometry.endY}px`,
             }}
           />
           {/* Endpoint dot + live value label — both travel with the
-            * draw-in via rAF-sampled getPointAtLength. The value is
-            * inverse-mapped from the dot's y so the number matches the
-            * curve's height at every frame. */}
+           * draw-in via rAF-sampled getPointAtLength. The value is
+           * inverse-mapped from the dot's y so the number matches the
+           * curve's height at every frame. */}
           {(() => {
             const ex = endPos?.x ?? geometry.endX;
             const ey = endPos?.y ?? geometry.endY;
@@ -1467,13 +1488,12 @@ function buildSpotGeometry(candles: HLCandle[]): SpotGeometry | null {
   if (maxX === minX) maxX = minX + 1;
   let minY = Math.min(Math.min(...ys), candles[lowIdx].l);
   let maxY = Math.max(Math.max(...ys), candles[highIdx].h);
-  const yPad = (maxY - minY || 1) * 0.10;
+  const yPad = (maxY - minY || 1) * 0.1;
   minY -= yPad;
   maxY += yPad;
 
   const sx = (x: number) =>
-    SPOT_PAD_X +
-    ((x - minX) / (maxX - minX)) * (SPOT_VIEW_W - SPOT_PAD_X * 2);
+    SPOT_PAD_X + ((x - minX) / (maxX - minX)) * (SPOT_VIEW_W - SPOT_PAD_X * 2);
   const sy = (y: number) =>
     SPOT_PAD_TOP +
     (1 - (y - minY) / (maxY - minY)) *
@@ -1596,7 +1616,7 @@ function LiveSpotFeed({
         title={
           <span className="inline-flex items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded border border-bearish/30 bg-bearish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-bearish">
-              <span className="h-1.5 w-1.5 rounded-full bg-bearish animate-pulse" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bearish" />
               LIVE
             </span>
             <span>{coin} · 5m · Market Data</span>
@@ -1610,7 +1630,9 @@ function LiveSpotFeed({
     );
   }
 
-  const lineColor = pctPositive ? 'var(--color-bullish)' : 'var(--color-bearish)';
+  const lineColor = pctPositive
+    ? 'var(--color-bullish)'
+    : 'var(--color-bearish)';
   const labelTextColor = pctPositive ? '#7CFFCB' : '#FFAFB7';
 
   // Bot fill entry markers — only fills whose openedAt sits inside the
@@ -1624,7 +1646,10 @@ function LiveSpotFeed({
   const fillMarkers = visibleFills.map((f) => {
     const x = geometry.sx(f.openedAt);
     const y = geometry.sy(f.entryPrice);
-    const progressAt = Math.max(0, Math.min(1, (x - SPOT_PAD_X) / totalDrawableX));
+    const progressAt = Math.max(
+      0,
+      Math.min(1, (x - SPOT_PAD_X) / totalDrawableX),
+    );
     const revealed = drawProgress >= progressAt;
     return { f, x, y, revealed };
   });
@@ -1638,14 +1663,14 @@ function LiveSpotFeed({
       title={
         <span className="inline-flex items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded border border-bearish/30 bg-bearish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-bearish">
-            <span className="h-1.5 w-1.5 rounded-full bg-bearish animate-pulse" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bearish" />
             LIVE
           </span>
           <span>{coin} · 5m · Market Data</span>
         </span>
       }
       rightSlot={
-        <span className="tabular-nums text-sm font-semibold text-fg">
+        <span className="text-sm font-semibold tabular-nums text-fg">
           ${last.c.toLocaleString(undefined, { maximumFractionDigits: 2 })}{' '}
           <span
             className={cn(
@@ -1679,23 +1704,17 @@ function LiveSpotFeed({
               </feMerge>
             </filter>
             {/* Clip rectangle that grows with the line tip — gradient
-              * fill below the curve reveals progressively under the
-              * already-drawn portion. */}
+             * fill below the curve reveals progressively under the
+             * already-drawn portion. */}
             <clipPath id="spotAreaClip">
-              <rect
-                x="0"
-                y="0"
-                width={endPos?.x ?? 0}
-                height={SPOT_VIEW_H}
-              />
+              <rect x="0" y="0" width={endPos?.x ?? 0} height={SPOT_VIEW_H} />
             </clipPath>
           </defs>
 
           {/* Horizontal grid lines (3 dotted) */}
           {[0.25, 0.5, 0.75].map((p) => {
             const y =
-              SPOT_PAD_TOP +
-              p * (SPOT_VIEW_H - SPOT_PAD_TOP - SPOT_PAD_BOTTOM);
+              SPOT_PAD_TOP + p * (SPOT_VIEW_H - SPOT_PAD_TOP - SPOT_PAD_BOTTOM);
             return (
               <line
                 key={p}
@@ -1725,8 +1744,8 @@ function LiveSpotFeed({
           ))}
 
           {/* Area fill — clipped by a rectangle that grows with the
-            * line tip, so the gradient fills progressively underneath
-            * the curve while it draws (not in one fade flash). */}
+           * line tip, so the gradient fills progressively underneath
+           * the curve while it draws (not in one fade flash). */}
           <path
             d={geometry.areaD}
             fill="url(#spotArea)"
@@ -1734,7 +1753,7 @@ function LiveSpotFeed({
           />
 
           {/* Line — strokeDashoffset is animated by JS rAF (linear,
-            * 10s) for uniform speed + perfect endpoint sync. */}
+           * 10s) for uniform speed + perfect endpoint sync. */}
           <path
             ref={linePathRef}
             d={geometry.pathD}
@@ -1752,8 +1771,7 @@ function LiveSpotFeed({
           <g
             opacity="0"
             style={{
-              animation:
-                'eq-endpoint-pop 400ms ease-out 9500ms forwards',
+              animation: 'eq-endpoint-pop 400ms ease-out 9500ms forwards',
             }}
           >
             <circle
@@ -1782,8 +1800,7 @@ function LiveSpotFeed({
           <g
             opacity="0"
             style={{
-              animation:
-                'eq-endpoint-pop 400ms ease-out 9500ms forwards',
+              animation: 'eq-endpoint-pop 400ms ease-out 9500ms forwards',
             }}
           >
             <circle
@@ -1809,10 +1826,10 @@ function LiveSpotFeed({
           </g>
 
           {/* Bot fill entry markers — each reveals exactly when the
-            * draw-line sweeps past its x-position (gated by
-            * drawProgress, not setTimeout). Visual: full-height
-            * dashed guide, glowing entry dot ON the line with an
-            * infinite pulsing ring, and a colored side badge. */}
+           * draw-line sweeps past its x-position (gated by
+           * drawProgress, not setTimeout). Visual: full-height
+           * dashed guide, glowing entry dot ON the line with an
+           * infinite pulsing ring, and a colored side badge. */}
           {fillMarkers.map(({ f, x, y, revealed }) => {
             const isLong = f.side === 'LONG';
             const colorHex = isLong ? '#0ECB81' : '#F6465D';
@@ -1845,8 +1862,7 @@ function LiveSpotFeed({
                   fill={colorHex}
                   opacity="0"
                   style={{
-                    animation:
-                      'eq-endpoint-halo 1.6s ease-in-out infinite',
+                    animation: 'eq-endpoint-halo 1.6s ease-in-out infinite',
                     transformOrigin: `${x}px ${y}px`,
                   }}
                 />
@@ -1902,7 +1918,8 @@ function LiveSpotFeed({
                     filter: `drop-shadow(0 0 3px ${colorHex})`,
                   }}
                 >
-                  ${f.entryPrice.toLocaleString(undefined, {
+                  $
+                  {f.entryPrice.toLocaleString(undefined, {
                     maximumFractionDigits: 2,
                   })}
                 </text>
@@ -1924,9 +1941,9 @@ function LiveSpotFeed({
           />
 
           {/* Endpoint dot + live price label — travel with the draw-in.
-            * cx/cy come from rAF-sampled getPointAtLength. The price is
-            * inverse-mapped from the dot's y so the number matches the
-            * curve's height at every frame. */}
+           * cx/cy come from rAF-sampled getPointAtLength. The price is
+           * inverse-mapped from the dot's y so the number matches the
+           * curve's height at every frame. */}
           {(() => {
             const ex = endPos?.x ?? geometry.endX;
             const ey = endPos?.y ?? geometry.endY;
@@ -1962,7 +1979,8 @@ function LiveSpotFeed({
                     filter: `drop-shadow(0 0 4px ${lineColor})`,
                   }}
                 >
-                  ${liveVal.toLocaleString(undefined, {
+                  $
+                  {liveVal.toLocaleString(undefined, {
                     maximumFractionDigits: 2,
                     minimumFractionDigits: 2,
                   })}
@@ -1978,7 +1996,7 @@ function LiveSpotFeed({
             <span aria-hidden="true">📡</span>
             <span>Watching for {watchingFor}</span>
           </span>
-          <span className="text-fg-secondary tabular-nums whitespace-nowrap">
+          <span className="whitespace-nowrap tabular-nums text-fg-secondary">
             Next check in 12s
           </span>
         </div>
@@ -2008,7 +2026,7 @@ function ExecutionPipeline({
         <span className="inline-flex items-center gap-2">
           <span
             className={cn(
-              'h-1.5 w-1.5 rounded-full animate-pulse',
+              'h-1.5 w-1.5 animate-pulse rounded-full',
               isScanning ? 'bg-info' : 'bg-bullish',
             )}
           />
@@ -2025,15 +2043,15 @@ function ExecutionPipeline({
       }
       rightSlot={
         isScanning ? (
-          <span className="text-2xs uppercase tracking-wider text-fg-muted tabular-nums normal-case">
+          <span className="text-2xs uppercase normal-case tabular-nums tracking-wider text-fg-muted">
             Last scan <b className="text-info">12s ago</b>
-            <span className="text-border-strong mx-2">·</span>
+            <span className="mx-2 text-border-strong">·</span>
             No signal
           </span>
         ) : (
-          <span className="text-2xs uppercase tracking-wider text-fg-muted tabular-nums normal-case">
+          <span className="text-2xs uppercase normal-case tabular-nums tracking-wider text-fg-muted">
             Budget <b className="text-fg-secondary">{budgetSec}s</b>
-            <span className="text-border-strong mx-2">·</span>
+            <span className="mx-2 text-border-strong">·</span>
             Elapsed{' '}
             <b className={underBudget ? 'text-bullish' : 'text-bearish'}>
               {elapsedSec}s
@@ -2052,67 +2070,69 @@ function ExecutionPipeline({
               : 'pending'
             : s.status;
           return (
-          <div
-            key={s.id}
-            className={cn(
-              'rounded-2xl p-2.5 transition-all',
-              status === 'active' && isScanning &&
-                'bg-info/15 ring-1 ring-info/50 shadow-[0_0_18px_rgba(59,130,246,0.35)]',
-              status === 'active' && !isScanning &&
-                'bg-bullish/15 ring-1 ring-bullish/50 shadow-[0_0_18px_rgba(14,203,129,0.35)]',
-              status === 'done' &&
-                'bg-bullish/8',
-              status === 'pending' &&
-                'bg-black',
-            )}
-          >
             <div
+              key={s.id}
               className={cn(
-                'text-[9px] font-semibold tracking-wider',
-                status === 'active' && isScanning
-                  ? 'text-info'
-                  : status === 'active'
-                    ? 'text-bullish'
-                    : status === 'done'
-                      ? 'text-bullish/70'
-                      : 'text-fg-muted',
+                'rounded-2xl p-2.5 transition-all',
+                status === 'active' &&
+                  isScanning &&
+                  'bg-info/15 shadow-[0_0_18px_rgba(59,130,246,0.35)] ring-1 ring-info/50',
+                status === 'active' &&
+                  !isScanning &&
+                  'bg-bullish/15 shadow-[0_0_18px_rgba(14,203,129,0.35)] ring-1 ring-bullish/50',
+                status === 'done' && 'bg-bullish/8',
+                status === 'pending' && 'bg-black',
               )}
             >
-              {String(i + 1).padStart(2, '0')}
-              {status === 'active' && ' · ACT'}
+              <div
+                className={cn(
+                  'text-[9px] font-semibold tracking-wider',
+                  status === 'active' && isScanning
+                    ? 'text-info'
+                    : status === 'active'
+                      ? 'text-bullish'
+                      : status === 'done'
+                        ? 'text-bullish/70'
+                        : 'text-fg-muted',
+                )}
+              >
+                {String(i + 1).padStart(2, '0')}
+                {status === 'active' && ' · ACT'}
+              </div>
+              <div className="mt-0.5 text-xs font-semibold text-fg">
+                {s.label}
+              </div>
+              <div
+                className={cn(
+                  'mt-0.5 text-xs font-bold tabular-nums',
+                  status === 'active' && isScanning
+                    ? 'text-info'
+                    : status === 'active'
+                      ? 'text-bullish'
+                      : status === 'done'
+                        ? 'text-bullish/70'
+                        : 'text-fg-disabled',
+                )}
+              >
+                {isScanning && i === 0
+                  ? 'live'
+                  : s.durationMs > 0
+                    ? `${s.durationMs}ms`
+                    : '—'}
+              </div>
             </div>
-            <div className="text-xs font-semibold text-fg mt-0.5">{s.label}</div>
-            <div
-              className={cn(
-                'text-xs font-bold tabular-nums mt-0.5',
-                status === 'active' && isScanning
-                  ? 'text-info'
-                  : status === 'active'
-                    ? 'text-bullish'
-                    : status === 'done'
-                      ? 'text-bullish/70'
-                      : 'text-fg-disabled',
-              )}
-            >
-              {isScanning && i === 0
-                ? 'live'
-                : s.durationMs > 0
-                  ? `${s.durationMs}ms`
-                  : '—'}
-            </div>
-          </div>
           );
         })}
         {/* Budget summary / scan-counter card */}
         {isScanning ? (
-          <div className="rounded-2xl p-2.5 bg-info/15 ring-1 ring-info/40">
+          <div className="rounded-2xl bg-info/15 p-2.5 ring-1 ring-info/40">
             <div className="text-[9px] font-semibold tracking-wider text-info">
               SCANS
             </div>
-            <div className="text-xs font-bold tabular-nums mt-0.5 text-fg">
+            <div className="mt-0.5 text-xs font-bold tabular-nums text-fg">
               3,247
             </div>
-            <div className="text-2xs uppercase tracking-wider mt-0.5 text-info/80">
+            <div className="mt-0.5 text-2xs uppercase tracking-wider text-info/80">
               Since deploy
             </div>
           </div>
@@ -2135,7 +2155,7 @@ function ExecutionPipeline({
             </div>
             <div
               className={cn(
-                'text-xs font-bold tabular-nums mt-0.5',
+                'mt-0.5 text-xs font-bold tabular-nums',
                 underBudget ? 'text-warning' : 'text-bearish',
               )}
             >
@@ -2143,7 +2163,7 @@ function ExecutionPipeline({
             </div>
             <div
               className={cn(
-                'text-2xs uppercase tracking-wider mt-0.5',
+                'mt-0.5 text-2xs uppercase tracking-wider',
                 underBudget ? 'text-warning/80' : 'text-bearish/80',
               )}
             >
@@ -2168,13 +2188,7 @@ function timeAgo(ts: number): string {
   return `${Math.floor(diff / 86_400_000)}d`;
 }
 
-function RecentFills({
-  fills,
-  phase,
-}: {
-  fills: Fill[];
-  phase: BotPhase;
-}) {
+function RecentFills({ fills, phase }: { fills: Fill[]; phase: BotPhase }) {
   if (phase === 'just-deployed' || fills.length === 0) {
     return (
       <EmptyStateCard
@@ -2202,7 +2216,7 @@ function RecentFills({
       title={
         <span className="inline-flex items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded border border-bearish/30 bg-bearish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-bearish">
-            <span className="h-1.5 w-1.5 rounded-full bg-bearish animate-pulse" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bearish" />
             LIVE
           </span>
           <span>Recent Fills</span>
@@ -2211,7 +2225,7 @@ function RecentFills({
       rightSlot={
         <span
           className={cn(
-            'text-2xs uppercase tracking-wider tabular-nums normal-case',
+            'text-2xs uppercase normal-case tabular-nums tracking-wider',
             lastHrPositive ? 'text-bullish' : 'text-bearish',
           )}
         >
@@ -2243,10 +2257,10 @@ function RecentFills({
                   f.status === 'OPEN' && 'border-l-2 border-l-bearish',
                 )}
               >
-                <td className="px-3 py-2.5 text-fg-muted text-2xs uppercase tabular-nums">
+                <td className="px-3 py-2.5 text-2xs uppercase tabular-nums text-fg-muted">
                   {f.status === 'OPEN' ? (
                     <span className="inline-flex items-center gap-1 text-warning">
-                      <span className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" />
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning" />
                       Pending
                     </span>
                   ) : (
@@ -2262,15 +2276,14 @@ function RecentFills({
                   >
                     {f.side}
                   </span>{' '}
-                  <span className="text-fg font-semibold">{f.pair}</span>{' '}
+                  <span className="font-semibold text-fg">{f.pair}</span>{' '}
                   <span className="text-fg-muted">· 5m</span>
                 </td>
-                <td className="px-3 py-2.5 text-fg-muted text-2xs tabular-nums">
-                  {new Date(f.openedAt)
-                    .toLocaleTimeString(undefined, {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}{' '}
+                <td className="px-3 py-2.5 text-2xs tabular-nums text-fg-muted">
+                  {new Date(f.openedAt).toLocaleTimeString(undefined, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}{' '}
                   · {f.entryPrice.toLocaleString()}
                   {f.exitPrice ? (
                     <>
@@ -2296,8 +2309,7 @@ function RecentFills({
                           f.pnl >= 0 ? 'text-bullish' : 'text-bearish',
                         )}
                       >
-                        {f.pnl >= 0 ? '+' : ''}
-                        ${f.pnl.toFixed(2)}
+                        {f.pnl >= 0 ? '+' : ''}${f.pnl.toFixed(2)}
                       </span>{' '}
                       <span
                         className={cn(
@@ -2315,7 +2327,7 @@ function RecentFills({
           })}
         </tbody>
       </table>
-      <div className="px-5 pb-4 pt-2 text-center text-2xs uppercase tracking-wider text-fg-muted hover:text-brand transition-colors cursor-pointer">
+      <div className="cursor-pointer px-5 pb-4 pt-2 text-center text-2xs uppercase tracking-wider text-fg-muted transition-colors hover:text-brand">
         View all {fills.length} trades →
       </div>
     </SectionCard>
@@ -2392,7 +2404,7 @@ function OBRow({
           background: barGradient,
         }}
       />
-      <span className="text-2xs text-fg-muted text-right tabular-nums">
+      <span className="text-right text-2xs tabular-nums text-fg-muted">
         {level ? level.sz.toFixed(3) : ''}
       </span>
     </div>
@@ -2425,26 +2437,32 @@ function MidPriceDisplay({
   return (
     <div
       ref={ref}
-      className="text-base font-bold text-fg tabular-nums origin-center"
+      className="origin-center text-base font-bold tabular-nums text-fg"
     >
       {Number.isFinite(mid)
         ? mid.toLocaleString(undefined, { maximumFractionDigits: 2 })
         : '—'}
-      <div className="mt-0.5 text-2xs text-warning tabular-nums font-normal">
+      <div className="mt-0.5 text-2xs font-normal tabular-nums text-warning">
         ${spread.toFixed(2)} · {spreadPct.toFixed(3)}%
       </div>
     </div>
   );
 }
 
-function OrderBookL2({ book, coin }: { book: HLOrderBook | null; coin: string }) {
+function OrderBookL2({
+  book,
+  coin,
+}: {
+  book: HLOrderBook | null;
+  coin: string;
+}) {
   if (!book || book.levels[0].length === 0 || book.levels[1].length === 0) {
     return (
       <SectionCard
         title={
           <span className="inline-flex items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded border border-bullish/30 bg-bullish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-bullish">
-              <span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
               L2
             </span>
             <span>Order Book · {coin}</span>
@@ -2485,16 +2503,14 @@ function OrderBookL2({ book, coin }: { book: HLOrderBook | null; coin: string })
       title={
         <span className="inline-flex items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded border border-bullish/30 bg-bullish/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-bullish">
-            <span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
             L2
           </span>
           <span>Order Book · {coin}</span>
         </span>
       }
       rightSlot={
-        <span className="text-2xs text-fg-muted normal-case">
-          Updates 1s
-        </span>
+        <span className="text-2xs normal-case text-fg-muted">Updates 1s</span>
       }
     >
       <div className="grid grid-cols-[1fr_auto_1fr]">
@@ -2514,14 +2530,12 @@ function OrderBookL2({ book, coin }: { book: HLOrderBook | null; coin: string })
         </div>
 
         {/* Spread / mid strip */}
-        <div className="bg-black/40 px-4 py-3 flex flex-col items-center justify-center min-w-[140px] mx-2 my-2 rounded-2xl">
-          <div className="text-2xs uppercase tracking-wider text-fg-muted">Spread</div>
+        <div className="mx-2 my-2 flex min-w-[140px] flex-col items-center justify-center rounded-2xl bg-black/40 px-4 py-3">
+          <div className="text-2xs uppercase tracking-wider text-fg-muted">
+            Spread
+          </div>
           <div className="mt-1">
-            <MidPriceDisplay
-              mid={mid}
-              spread={spread}
-              spreadPct={spreadPct}
-            />
+            <MidPriceDisplay mid={mid} spread={spread} spreadPct={spreadPct} />
           </div>
           <div className="mt-2 text-[9px] uppercase tracking-wider text-fg-disabled">
             Mid Price
@@ -2582,14 +2596,46 @@ const BUBBLE_SPAWN_DIRS = 14;
 // Single-glyph token icons — Unicode symbols where the coin has a
 // recognisable mark, otherwise the first letter is used as a fallback.
 const COIN_ICONS: Record<string, string> = {
-  BTC: '₿', ETH: 'Ξ', SOL: '◎', DOGE: 'Ð', ADA: '₳',
-  XRP: '✕', BNB: '⬣', AVAX: '▲', DOT: '●', LINK: '⬡',
-  ATOM: '⚛', LTC: 'Ł', SUI: '◆', TAO: 'τ', NEAR: '◐',
-  ICP: '∞', TRX: '✦', INJ: '⟡', SEI: '◈', TIA: '✧',
-  ARB: '◇', OP: '◯', PEPE: '🐸', WIF: '🐶', BONK: '🐕',
-  SHIB: 'Ѕ', JUP: 'J', WLD: 'W', PYTH: 'P', RNDR: 'R',
-  AAVE: 'A', FET: 'F', ONDO: 'O', ORDI: 'O', JTO: 'J',
-  LDO: 'L', UNI: 'U', MATIC: 'M', APT: 'A', TON: 'T',
+  BTC: '₿',
+  ETH: 'Ξ',
+  SOL: '◎',
+  DOGE: 'Ð',
+  ADA: '₳',
+  XRP: '✕',
+  BNB: '⬣',
+  AVAX: '▲',
+  DOT: '●',
+  LINK: '⬡',
+  ATOM: '⚛',
+  LTC: 'Ł',
+  SUI: '◆',
+  TAO: 'τ',
+  NEAR: '◐',
+  ICP: '∞',
+  TRX: '✦',
+  INJ: '⟡',
+  SEI: '◈',
+  TIA: '✧',
+  ARB: '◇',
+  OP: '◯',
+  PEPE: '🐸',
+  WIF: '🐶',
+  BONK: '🐕',
+  SHIB: 'Ѕ',
+  JUP: 'J',
+  WLD: 'W',
+  PYTH: 'P',
+  RNDR: 'R',
+  AAVE: 'A',
+  FET: 'F',
+  ONDO: 'O',
+  ORDI: 'O',
+  JTO: 'J',
+  LDO: 'L',
+  UNI: 'U',
+  MATIC: 'M',
+  APT: 'A',
+  TON: 'T',
 };
 function getCoinIcon(sym: string): string {
   return COIN_ICONS[sym] ?? sym.charAt(0);
@@ -2703,38 +2749,38 @@ interface PhysBubble {
   vol: number;
   x: number;
   y: number;
-  r: number;          // currently rendered radius (driven by lifecycle)
-  targetR: number;    // resting radius once ALIVE
+  r: number; // currently rendered radius (driven by lifecycle)
+  targetR: number; // resting radius once ALIVE
   vx: number;
   vy: number;
   mass: number;
   squashAmount: number;
   squashVel: number;
   squashAxis: number;
-  phase: number;      // per-bubble random phase for blob wobble
+  phase: number; // per-bubble random phase for blob wobble
   state: BubbleLifecycle;
-  stateT: number;     // performance.now() when current state began
+  stateT: number; // performance.now() when current state began
   floatXdir?: number; // per-bubble drift direction during dying-float
   fragsEmitted?: boolean; // reserved for future fragment FX
 }
 
 const PHYS = {
-  thermal: 0.12,       // Brownian noise amplitude — higher = more lively drift
-  centerPull: 0.0004,  // soft gravity toward canvas centre
-  damping: 0.988,      // velocity drain per frame — slightly less drag
-  restitution: 0.45,   // energy kept on bubble–bubble collision
+  thermal: 0.12, // Brownian noise amplitude — higher = more lively drift
+  centerPull: 0.0004, // soft gravity toward canvas centre
+  damping: 0.988, // velocity drain per frame — slightly less drag
+  restitution: 0.45, // energy kept on bubble–bubble collision
   wallRestitution: 0.55,
-  minSpeed: 0.08,      // velocity floor — keeps bubbles always drifting
+  minSpeed: 0.08, // velocity floor — keeps bubbles always drifting
 } as const;
 
 const JELLY = {
-  springK: 0.20,       // restoring stiffness toward round shape
-  springDamp: 0.50,    // squash velocity drain — decays in ~5 frames
-  squashGain: 0.0006,  // collision → squash multiplier
-  maxSquash: 0.025,    // max deformation (2.5 % of radius)
+  springK: 0.2, // restoring stiffness toward round shape
+  springDamp: 0.5, // squash velocity drain — decays in ~5 frames
+  squashGain: 0.0006, // collision → squash multiplier
+  maxSquash: 0.025, // max deformation (2.5 % of radius)
   wallSquashGain: 0.0005,
-  perimAmp: 0.014,     // blob breathing amplitude
-  perimVerts: 16,      // vertices for the organic outline
+  perimAmp: 0.014, // blob breathing amplitude
+  perimVerts: 16, // vertices for the organic outline
 } as const;
 
 function bRand(lo: number, hi: number) {
@@ -2751,7 +2797,8 @@ function applySquashForce(b: PhysBubble, amount: number, axis: number) {
 }
 
 function stepPhysics(bubbles: PhysBubble[], W: number, H: number) {
-  const cx = W / 2, cy = H / 2;
+  const cx = W / 2,
+    cy = H / 2;
 
   // 1. Forces + Euler integration
   for (const b of bubbles) {
@@ -2799,26 +2846,44 @@ function stepPhysics(bubbles: PhysBubble[], W: number, H: number) {
   // 3. Pairwise elastic collisions
   for (let i = 0; i < bubbles.length; i++) {
     for (let j = i + 1; j < bubbles.length; j++) {
-      const a = bubbles[i], bub = bubbles[j];
-      const dx = bub.x - a.x, dy = bub.y - a.y;
+      const a = bubbles[i],
+        bub = bubbles[j];
+      const dx = bub.x - a.x,
+        dy = bub.y - a.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       const minD = a.r + bub.r + 2;
       if (dist < minD && dist > 0.01) {
         const overlap = (minD - dist) / 2;
-        const nx = dx / dist, ny = dy / dist;
-        a.x -= nx * overlap; a.y -= ny * overlap;
-        bub.x += nx * overlap; bub.y += ny * overlap;
-        const dvx = bub.vx - a.vx, dvy = bub.vy - a.vy;
+        const nx = dx / dist,
+          ny = dy / dist;
+        a.x -= nx * overlap;
+        a.y -= ny * overlap;
+        bub.x += nx * overlap;
+        bub.y += ny * overlap;
+        const dvx = bub.vx - a.vx,
+          dvy = bub.vy - a.vy;
         const vn = dvx * nx + dvy * ny;
         if (vn < 0) {
-          const ma = a.mass, mb = bub.mass;
-          const imp = -(1 + PHYS.restitution) * vn / (1 / ma + 1 / mb);
-          const ix = imp * nx, iy = imp * ny;
-          a.vx -= ix / ma; a.vy -= iy / ma;
-          bub.vx += ix / mb; bub.vy += iy / mb;
+          const ma = a.mass,
+            mb = bub.mass;
+          const imp = (-(1 + PHYS.restitution) * vn) / (1 / ma + 1 / mb);
+          const ix = imp * nx,
+            iy = imp * ny;
+          a.vx -= ix / ma;
+          a.vy -= iy / ma;
+          bub.vx += ix / mb;
+          bub.vy += iy / mb;
           const cAxis = Math.atan2(ny, nx);
-          applySquashForce(a, Math.abs(imp) * JELLY.squashGain / Math.sqrt(ma), cAxis);
-          applySquashForce(bub, Math.abs(imp) * JELLY.squashGain / Math.sqrt(mb), cAxis);
+          applySquashForce(
+            a,
+            (Math.abs(imp) * JELLY.squashGain) / Math.sqrt(ma),
+            cAxis,
+          );
+          applySquashForce(
+            bub,
+            (Math.abs(imp) * JELLY.squashGain) / Math.sqrt(mb),
+            cAxis,
+          );
         }
       }
     }
@@ -2863,9 +2928,13 @@ function cardinalClosed(pts: [number, number][], tension = 0.5): string {
 
 // Organic blob path: multi-frequency sine wobble + jelly squash deformation
 function makeBlobPath(
-  px: number, py: number, r: number,
-  squash: number, squashAxis: number,
-  t: number, phase: number,
+  px: number,
+  py: number,
+  r: number,
+  squash: number,
+  squashAxis: number,
+  t: number,
+  phase: number,
 ): string {
   const N = JELLY.perimVerts;
   const A = JELLY.perimAmp;
@@ -2874,7 +2943,7 @@ function makeBlobPath(
     const ang = (i / N) * Math.PI * 2;
     const off =
       A * Math.sin(t * 0.6 + i * 0.5 + phase) * 0.55 +
-      A * Math.sin(t * 1.0 + i * 0.9 + phase * 1.3) * 0.30 +
+      A * Math.sin(t * 1.0 + i * 0.9 + phase * 1.3) * 0.3 +
       A * Math.sin(t * 0.35 + i * 0.3 + phase * 0.7) * 0.18;
     // squash: compress along squashAxis, expand perpendicular
     const relAng = ang - squashAxis;
@@ -2888,10 +2957,22 @@ function makeBlobPath(
 // Imperative SVG helpers — avoids React re-render overhead at 60fps
 const SVGNS = 'http://www.w3.org/2000/svg';
 
-function svgEl(tag: 'circle', attrs: Record<string, string | number>): SVGCircleElement;
-function svgEl(tag: 'path', attrs: Record<string, string | number>): SVGPathElement;
-function svgEl(tag: 'text', attrs: Record<string, string | number>): SVGTextElement;
-function svgEl(tag: string, attrs: Record<string, string | number>): SVGElement {
+function svgEl(
+  tag: 'circle',
+  attrs: Record<string, string | number>,
+): SVGCircleElement;
+function svgEl(
+  tag: 'path',
+  attrs: Record<string, string | number>,
+): SVGPathElement;
+function svgEl(
+  tag: 'text',
+  attrs: Record<string, string | number>,
+): SVGTextElement;
+function svgEl(
+  tag: string,
+  attrs: Record<string, string | number>,
+): SVGElement {
   const el = document.createElementNS(SVGNS, tag);
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
   return el;
@@ -2938,24 +3019,46 @@ function spawnBubbleDOM(
   if (onHover) {
     g.addEventListener('mouseenter', () => {
       const rect = g.getBoundingClientRect();
-      onHover({ id: b.id, pct: b.pct, vol: b.vol, x: rect.left + rect.width / 2, y: rect.top - 8 });
+      onHover({
+        id: b.id,
+        pct: b.pct,
+        vol: b.vol,
+        x: rect.left + rect.width / 2,
+        y: rect.top - 8,
+      });
     });
     g.addEventListener('mouseleave', () => onHover(null));
   }
 
-  const halo = svgEl('circle', { cx: b.x, cy: b.y, r: b.r * 1.35, fill: `url(#hlHalo-${variant})` });
+  const halo = svgEl('circle', {
+    cx: b.x,
+    cy: b.y,
+    r: b.r * 1.35,
+    fill: `url(#hlHalo-${variant})`,
+  });
   // Birth ring — expanding stroke that fades during BIRTH state.
   const ringStroke = b.pct >= 0 ? '#7CFFCB' : '#FFAFB7';
   const birthRing = svgEl('circle', {
-    cx: b.x, cy: b.y, r: b.r,
+    cx: b.x,
+    cy: b.y,
+    r: b.r,
     fill: 'none',
     stroke: ringStroke,
     'stroke-width': 1.5,
     opacity: 0,
     'pointer-events': 'none',
   });
-  const rim = svgEl('circle', { cx: b.x, cy: b.y, r: b.r, fill: 'none', stroke: 'url(#hlRim)', 'stroke-width': 1.2, opacity: 0.4 });
-  const strokeColor = b.pct >= 0 ? 'rgba(14,203,129,0.55)' : 'rgba(246,70,93,0.55)';
+  const rim = svgEl('circle', {
+    cx: b.x,
+    cy: b.y,
+    r: b.r,
+    fill: 'none',
+    stroke: 'url(#hlRim)',
+    'stroke-width': 1.2,
+    opacity: 0.4,
+  });
+  const strokeColor =
+    b.pct >= 0 ? 'rgba(14,203,129,0.55)' : 'rgba(246,70,93,0.55)';
   const body = svgEl('path', {
     d: makeBlobPath(b.x, b.y, b.r, 0, 0, t, b.phase),
     fill: `url(#hlBody-${variant})`,
@@ -2963,7 +3066,15 @@ function spawnBubbleDOM(
     'stroke-width': 0.8,
   });
   const hl = svgEl('path', {
-    d: makeBlobPath(b.x - b.r * 0.15, b.y - b.r * 0.2, b.r * 0.7, 0, 0, t, b.phase + 1),
+    d: makeBlobPath(
+      b.x - b.r * 0.15,
+      b.y - b.r * 0.2,
+      b.r * 0.7,
+      0,
+      0,
+      t,
+      b.phase + 1,
+    ),
     fill: 'url(#hlHighlight)',
     'pointer-events': 'none',
   });
@@ -2974,7 +3085,8 @@ function spawnBubbleDOM(
   const pctFont = Math.max(9, Math.min(baseR * 0.24, 12));
 
   const iconEl = svgEl('text', {
-    x: b.x, y: b.y - baseR * 0.30,
+    x: b.x,
+    y: b.y - baseR * 0.3,
     'font-family': 'Inter, sans-serif',
     'font-weight': 700,
     'font-size': iconFont,
@@ -2986,7 +3098,8 @@ function spawnBubbleDOM(
   iconEl.textContent = getCoinIcon(sym);
 
   const symEl = svgEl('text', {
-    x: b.x, y: b.y + baseR * 0.10,
+    x: b.x,
+    y: b.y + baseR * 0.1,
     'font-family': 'Inter, sans-serif',
     'font-weight': 700,
     'font-size': symFont,
@@ -2999,7 +3112,8 @@ function spawnBubbleDOM(
   symEl.textContent = sym;
 
   const pctEl = svgEl('text', {
-    x: b.x, y: b.y + baseR * 0.42,
+    x: b.x,
+    y: b.y + baseR * 0.42,
     'font-family': 'JetBrains Mono, monospace',
     'font-weight': 600,
     'font-size': pctFont,
@@ -3019,7 +3133,18 @@ function spawnBubbleDOM(
   g.appendChild(symEl);
   g.appendChild(pctEl);
 
-  return { g, halo, rim, body, hl, birthRing, icon: iconEl, sym: symEl, pct: pctEl, baseR };
+  return {
+    g,
+    halo,
+    rim,
+    body,
+    hl,
+    birthRing,
+    icon: iconEl,
+    sym: symEl,
+    pct: pctEl,
+    baseR,
+  };
 }
 
 // ── Component ──────────────────────────────────────────────────────────
@@ -3061,7 +3186,11 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
 
     // Mark stale bubbles as dying (they remain in physRef until DEAD).
     for (const b of physRef.current) {
-      if (!incomingIds.has(b.id) && !b.state.startsWith('dying') && b.state !== 'dead') {
+      if (
+        !incomingIds.has(b.id) &&
+        !b.state.startsWith('dying') &&
+        b.state !== 'dead'
+      ) {
         // Coin-flip between float-up and shrink-out for visual variety.
         b.state = Math.random() < 0.65 ? 'dying-float' : 'dying-shrink';
         b.stateT = now;
@@ -3119,8 +3248,7 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
       const cyC = BUBBLE_CANVAS_H / 2;
       // Spawn radius — past the corner of the canvas so the bubble is
       // fully off-screen regardless of which side it comes from.
-      const spawnDist =
-        Math.hypot(BUBBLE_CANVAS_W, BUBBLE_CANVAS_H) / 2 + 40;
+      const spawnDist = Math.hypot(BUBBLE_CANVAS_W, BUBBLE_CANVAS_H) / 2 + 40;
       const sx = cxC + Math.cos(angle) * spawnDist;
       const sy = cyC + Math.sin(angle) * spawnDist;
       // Velocity points back toward the centre (with target jitter so
@@ -3132,21 +3260,28 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
       const dlen = Math.sqrt(dxc * dxc + dyc * dyc) || 1;
       const speed = bRand(1.2, 1.8);
       const delay =
-        idx * BUBBLE_SPAWN_STAGGER_MS +
-        Math.random() * BUBBLE_SPAWN_JITTER_MS;
+        idx * BUBBLE_SPAWN_STAGGER_MS + Math.random() * BUBBLE_SPAWN_JITTER_MS;
       const b: PhysBubble = {
-        id: p.name, pct: p.pct, vol: p.vol,
-        x: sx, y: sy,
-        r: 0, targetR: p.r,
+        id: p.name,
+        pct: p.pct,
+        vol: p.vol,
+        x: sx,
+        y: sy,
+        r: 0,
+        targetR: p.r,
         vx: (dxc / dlen) * speed,
         vy: (dyc / dlen) * speed,
         mass: p.r * p.r,
-        squashAmount: 0, squashVel: 0, squashAxis: 0,
+        squashAmount: 0,
+        squashVel: 0,
+        squashAxis: 0,
         phase: Math.random() * Math.PI * 2,
         state: 'birth',
         stateT: now + delay, // future timestamp = pre-birth (hidden)
       };
-      const dom = spawnBubbleDOM(b, tRef.current, (info) => setTooltipRef.current(info));
+      const dom = spawnBubbleDOM(b, tRef.current, (info) =>
+        setTooltipRef.current(info),
+      );
       // Hide immediately so pre-birth bubbles aren't drawn at the corner.
       dom.g.style.opacity = '0';
       domCacheRef.current.set(p.name, dom);
@@ -3249,7 +3384,10 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
           renderOpacity.set(b.id, 1 - eased);
           const yOff = -eased * 60;
           const xOff = eased * 12 * (b.floatXdir ?? 1);
-          renderExtraTrans.set(b.id, `translate(${xOff.toFixed(1)},${yOff.toFixed(1)})`);
+          renderExtraTrans.set(
+            b.id,
+            `translate(${xOff.toFixed(1)},${yOff.toFixed(1)})`,
+          );
           if (p >= 1) b.state = 'dead';
         }
       }
@@ -3284,7 +3422,8 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
       // most of the journey before ALIVE physics takes over.
       // Pre-birth (future stateT) bubbles are skipped — they sit at
       // the corner until their scheduled birth moment.
-      const cx = BUBBLE_CANVAS_W / 2, cy = BUBBLE_CANVAS_H / 2;
+      const cx = BUBBLE_CANVAS_W / 2,
+        cy = BUBBLE_CANVAS_H / 2;
       for (const b of live) {
         if (b.state === 'birth' && now >= b.stateT) {
           b.vx += (cx - b.x) * 0.004;
@@ -3324,21 +3463,30 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
         dom.rim.setAttribute('cy', by);
         dom.rim.setAttribute('r', b.r.toFixed(1));
 
-        dom.body.setAttribute('d',
+        dom.body.setAttribute(
+          'd',
           makeBlobPath(b.x, b.y, b.r, b.squashAmount, b.squashAxis, t, b.phase),
         );
-        dom.hl.setAttribute('d',
-          makeBlobPath(b.x - b.r * 0.15, b.y - b.r * 0.2, b.r * 0.7,
-            b.squashAmount * 0.5, b.squashAxis, t * 0.8, b.phase + 1),
+        dom.hl.setAttribute(
+          'd',
+          makeBlobPath(
+            b.x - b.r * 0.15,
+            b.y - b.r * 0.2,
+            b.r * 0.7,
+            b.squashAmount * 0.5,
+            b.squashAxis,
+            t * 0.8,
+            b.phase + 1,
+          ),
         );
 
         // Three label rows positioned proportionally to baseR so they
         // hold their layout while the bubble breathes/squashes.
         const lr = dom.baseR;
         dom.icon.setAttribute('x', bx);
-        dom.icon.setAttribute('y', (b.y - lr * 0.30).toFixed(1));
+        dom.icon.setAttribute('y', (b.y - lr * 0.3).toFixed(1));
         dom.sym.setAttribute('x', bx);
-        dom.sym.setAttribute('y', (b.y + lr * 0.10).toFixed(1));
+        dom.sym.setAttribute('y', (b.y + lr * 0.1).toFixed(1));
         dom.pct.setAttribute('x', bx);
         dom.pct.setAttribute('y', (b.y + lr * 0.42).toFixed(1));
       }
@@ -3352,11 +3500,11 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
   const isLoading = tf !== '24H' && tfPctMap === null && topCoins.length > 0;
 
   return (
-    <section className="rounded-3xl card-coin98 p-4 sticky top-3">
+    <section className="card-coin98 sticky top-3 rounded-3xl p-4">
       <header className="mb-3 flex items-center justify-between text-2xs uppercase tracking-wider text-fg-muted">
         <span className="font-semibold">Hyperliquid Markets</span>
         <span className="inline-flex items-center gap-1 normal-case tracking-normal text-bullish">
-          <span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" />
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
           Live
         </span>
       </header>
@@ -3377,7 +3525,7 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
               'flex-1 rounded-full py-1 text-2xs font-medium tracking-wider transition-colors',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
               t === tf
-                ? 'bg-brand text-black font-semibold shadow-[0_0_10px_rgba(240,185,11,0.35)]'
+                ? 'bg-brand font-semibold text-black shadow-[0_0_10px_rgba(240,185,11,0.35)]'
                 : 'text-fg-muted hover:text-fg',
             )}
           >
@@ -3390,7 +3538,8 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
         className="relative overflow-hidden rounded-2xl"
         style={{
           height: BUBBLE_CANVAS_H,
-          background: 'radial-gradient(ellipse at center, rgba(14, 203, 129, 0.04), transparent 70%)',
+          background:
+            'radial-gradient(ellipse at center, rgba(14, 203, 129, 0.04), transparent 70%)',
         }}
       >
         {ctxs.length === 0 && (
@@ -3400,7 +3549,7 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
         )}
         {/* Loading overlay for multi-TF fetches */}
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 text-2xs text-fg-muted">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 text-2xs text-fg-muted">
             Loading {tf} data…
           </div>
         )}
@@ -3459,7 +3608,7 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
               transform: 'translate(-50%, -100%)',
               zIndex: 50,
             }}
-            className="pointer-events-none rounded-2xl card-coin98 px-3 py-2 text-xs shadow-2xl"
+            className="card-coin98 pointer-events-none rounded-2xl px-3 py-2 text-xs shadow-2xl"
           >
             <div className="font-bold text-fg">{tooltip.id}</div>
             <div
@@ -3486,33 +3635,36 @@ function GainersLosersBubble({ ctxs }: { ctxs: HLAssetCtx[] }) {
       <div className="mt-3 grid grid-cols-2 gap-2 pt-3 text-2xs uppercase tracking-wider text-fg-muted">
         <div>
           Winners
-          <b className="block normal-case tracking-normal mt-0.5 text-xs text-bullish font-semibold tabular-nums">
+          <b className="mt-0.5 block text-xs font-semibold normal-case tabular-nums tracking-normal text-bullish">
             {stats.winners} pairs
           </b>
         </div>
         <div>
           Losers
-          <b className="block normal-case tracking-normal mt-0.5 text-xs text-bearish font-semibold tabular-nums">
+          <b className="mt-0.5 block text-xs font-semibold normal-case tabular-nums tracking-normal text-bearish">
             {stats.losers} pairs
           </b>
         </div>
         <div>
           Best
-          <b className="block normal-case tracking-normal mt-0.5 text-xs text-bullish font-semibold tabular-nums">
-            {stats.bestCoin ? `${stats.bestCoin} +${stats.bestPct.toFixed(1)}%` : '—'}
+          <b className="mt-0.5 block text-xs font-semibold normal-case tabular-nums tracking-normal text-bullish">
+            {stats.bestCoin
+              ? `${stats.bestCoin} +${stats.bestPct.toFixed(1)}%`
+              : '—'}
           </b>
         </div>
         <div>
           Worst
-          <b className="block normal-case tracking-normal mt-0.5 text-xs text-bearish font-semibold tabular-nums">
-            {stats.worstCoin ? `${stats.worstCoin} ${stats.worstPct.toFixed(1)}%` : '—'}
+          <b className="mt-0.5 block text-xs font-semibold normal-case tabular-nums tracking-normal text-bearish">
+            {stats.worstCoin
+              ? `${stats.worstCoin} ${stats.worstPct.toFixed(1)}%`
+              : '—'}
           </b>
         </div>
       </div>
     </section>
   );
 }
-
 
 // ──────────────────────────────────────────────────────────────────────
 // Main page
@@ -3539,14 +3691,13 @@ function DevControls() {
   }, []);
   if (!open) return null;
   const dispatch = (offsetMs: number | null) => {
-    const value =
-      offsetMs == null ? null : Date.now() - offsetMs;
+    const value = offsetMs == null ? null : Date.now() - offsetMs;
     window.dispatchEvent(
       new CustomEvent('bot-monitoring:set-deployed', { detail: value }),
     );
   };
   return (
-    <div className="fixed bottom-4 right-4 z-50 rounded-2xl card-coin98 ring-1 ring-warning/40 p-3 shadow-2xl">
+    <div className="card-coin98 fixed bottom-4 right-4 z-50 rounded-2xl p-3 shadow-2xl ring-1 ring-warning/40">
       <div className="mb-2 text-2xs font-semibold uppercase tracking-wider text-warning">
         Dev controls
       </div>
@@ -3634,7 +3785,7 @@ export function BotMonitoringPage() {
 
         {/* Subtle dot-grid texture matching Builder */}
         <DotGridSpotlight
-          className="fixed pointer-events-none z-0"
+          className="pointer-events-none fixed z-0"
           style={{
             top: 'var(--layout-header, 56px)',
             left: 'var(--layout-left-panel, 320px)',
@@ -3669,7 +3820,7 @@ export function BotMonitoringPage() {
           </div>
         </main>
 
-        <aside className="relative z-10 w-[280px] flex-shrink-0 bg-black overflow-y-auto">
+        <aside className="relative z-10 w-[280px] flex-shrink-0 overflow-y-auto bg-black">
           <div className="p-3">
             <GainersLosersBubble ctxs={markets?.ctxs ?? []} />
           </div>

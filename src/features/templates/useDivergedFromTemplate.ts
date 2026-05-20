@@ -48,8 +48,7 @@ export function useDivergedFromTemplate(): DivergedResult {
       directionForm: builderState.directionForm,
       closeMethod: builderState.closeMethod,
     };
-    const diverged =
-      JSON.stringify(current) !== JSON.stringify(template.state);
+    const diverged = JSON.stringify(current) !== JSON.stringify(template.state);
     return { diverged, hasAppliedTemplate: true };
   }, [appliedId, builderState]);
 }

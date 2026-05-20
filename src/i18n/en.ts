@@ -30,7 +30,7 @@ export const strings = {
       pitch:
         "I'm your AI co-pilot — soon I'll be able to build trading bots from just a conversation.",
       comingSoon:
-        "**Coming soon.** For now, pick a template or build manually with the step cards.",
+        '**Coming soon.** For now, pick a template or build manually with the step cards.',
     },
     progress: {
       empty: 'Set up your bot to get started',
@@ -137,7 +137,8 @@ export const strings = {
     gallery: {
       title: 'Bot Templates',
       description: 'Pick a starter bot — fields fill instantly.',
-      empty: 'No templates match this filter. Try clearing one of the chips above.',
+      empty:
+        'No templates match this filter. Try clearing one of the chips above.',
       cardCypheusHint: 'Instant setup',
       cardUseLabel: 'Use',
       cardUseAria: (name: string) => `Use ${name}`,
@@ -194,8 +195,7 @@ export const strings = {
     apply: {
       // Toast + chat copy used by snap-apply path.
       loadedToast: (name: string) => `Applied "${name}"`,
-      loadedChat: (name: string) =>
-        `Loaded "${name}". Ready to export.`,
+      loadedChat: (name: string) => `Loaded "${name}". Ready to export.`,
     },
 
     openPhaseAria: (label: string) => `Open ${label} phase`,
@@ -252,8 +252,7 @@ export const strings = {
     botConfig: {
       botName:
         'Display name for your bot. Also used as the generated Python bot file name on the backend.',
-      pair:
-        'Trading pair the bot will trade, e.g. BTC-USDC. Must exist on Hyperliquid.',
+      pair: 'Trading pair the bot will trade, e.g. BTC-USDC. Must exist on Hyperliquid.',
       timeframe:
         'Candle interval the bot analyses and trades on. Shorter timeframes produce more signals but more noise.',
       tradingMode:

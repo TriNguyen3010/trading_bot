@@ -3,7 +3,11 @@ import { Sparkles, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { strings } from '@/i18n/en';
-import type { BotTemplate, TemplateDifficulty, TemplateRisk } from '@/templates';
+import type {
+  BotTemplate,
+  TemplateDifficulty,
+  TemplateRisk,
+} from '@/templates';
 
 const DIFFICULTY_TONE: Record<TemplateDifficulty, string> = {
   beginner: 'text-bullish',
@@ -39,7 +43,11 @@ export interface TemplateCardProps {
  * without going through the modal. Shift+click on Use skips the Cypheus
  * animation (per plan D2).
  */
-export function TemplateCard({ template, onUse, onPreview }: TemplateCardProps) {
+export function TemplateCard({
+  template,
+  onUse,
+  onPreview,
+}: TemplateCardProps) {
   const handleBodyClick = () => {
     if (onPreview) onPreview(template);
   };
@@ -56,10 +64,12 @@ export function TemplateCard({ template, onUse, onPreview }: TemplateCardProps) 
         }
       }}
       aria-label={
-        onPreview ? strings.templates.gallery.cardPreviewAria(template.name) : undefined
+        onPreview
+          ? strings.templates.gallery.cardPreviewAria(template.name)
+          : undefined
       }
       className={cn(
-        'group flex flex-col gap-3 rounded-xl glass-card glass-card-hover p-5',
+        'glass-card glass-card-hover group flex flex-col gap-3 rounded-xl p-5',
         'hover:border-brand/60',
         onPreview &&
           'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
@@ -85,9 +95,7 @@ export function TemplateCard({ template, onUse, onPreview }: TemplateCardProps) 
 
       <div>
         <h3 className="text-md font-semibold text-fg">{template.name}</h3>
-        <p className="mt-1 text-sm text-fg-secondary">
-          {template.description}
-        </p>
+        <p className="mt-1 text-sm text-fg-secondary">{template.description}</p>
       </div>
 
       {template.tags.length > 0 && (

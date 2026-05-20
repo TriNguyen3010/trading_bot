@@ -50,13 +50,15 @@ export function AppliedTemplateBadge() {
         )}
       >
         <BookOpen className="h-3 w-3 text-brand" aria-hidden="true" />
-        <span className="text-fg-muted">{strings.templates.appliedBadge.prefix}</span>
+        <span className="text-fg-muted">
+          {strings.templates.appliedBadge.prefix}
+        </span>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               type="button"
               onClick={handleNameClick}
-              className="font-medium text-fg hover:text-brand focus-visible:outline-none focus-visible:underline"
+              className="font-medium text-fg hover:text-brand focus-visible:underline focus-visible:outline-none"
             >
               {template.name}
             </button>

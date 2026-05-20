@@ -9,10 +9,10 @@ export const cypheusDefault: BotTemplate = {
   id: 'cypheus-default',
   name: 'Bollinger Breakout — BTC/USDC 5m',
   description:
-    'Cypheus\'s starter bot: BTC/USDC scalping with RSI<30 entry on 5m.',
+    "Cypheus's starter bot: BTC/USDC scalping with RSI<30 entry on 5m.",
   longDescription:
-    "A balanced demo strategy. Goes long when RSI dips below 30 (oversold) and " +
-    "candle volume is rising. Exits via two-tier take-profit (5% / 10%) and a " +
+    'A balanced demo strategy. Goes long when RSI dips below 30 (oversold) and ' +
+    'candle volume is rising. Exits via two-tier take-profit (5% / 10%) and a ' +
     "−3% stop-loss. Cypheus's recommended starting point.",
   tags: ['btc', 'futures', 'breakout', 'rsi'],
   difficulty: 'intermediate',

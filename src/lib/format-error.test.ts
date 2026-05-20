@@ -6,7 +6,11 @@ describe('formatBackendError', () => {
   it('formats ValidationError as field.path: msg per line', () => {
     const err = new ValidationError([
       { loc: ['body', 'bot_name'], msg: 'Field required', type: 'missing' },
-      { loc: ['body', 'stake_amount'], msg: 'must be > 0', type: 'value_error' },
+      {
+        loc: ['body', 'stake_amount'],
+        msg: 'must be > 0',
+        type: 'value_error',
+      },
     ]);
     expect(formatBackendError(err)).toBe(
       'body.bot_name: Field required\nbody.stake_amount: must be > 0',

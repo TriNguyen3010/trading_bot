@@ -10,7 +10,8 @@ export function formatBackendError(err: unknown): string {
     // Body từ BE thường là JSON `{detail: "..."}` hoặc text. Cố parse JSON trước.
     try {
       const parsed = JSON.parse(err.body) as { detail?: unknown };
-      if (typeof parsed.detail === 'string') return `${err.status}: ${parsed.detail}`;
+      if (typeof parsed.detail === 'string')
+        return `${err.status}: ${parsed.detail}`;
       if (Array.isArray(parsed.detail))
         return `${err.status}:\n${parsed.detail.map(String).join('\n')}`;
       return `${err.status}: ${err.body || err.message}`;

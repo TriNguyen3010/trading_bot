@@ -123,7 +123,11 @@ export function HeaderToolbar() {
             </span>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-10 rounded-full px-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-10 rounded-full px-3"
+                >
                   <User className="h-3.5 w-3.5" />
                   <span className="max-w-[120px] truncate font-mono text-xs tabular-nums">
                     {shortenAddress(user?.wallet_address)}

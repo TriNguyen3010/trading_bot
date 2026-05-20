@@ -1,10 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { GroupConditionCard } from './GroupConditionCard';
-import type {
-  ConditionGroupNode,
-  ConditionRule,
-} from '@/types/builder.types';
+import type { ConditionGroupNode, ConditionRule } from '@/types/builder.types';
 
 function rule(id: string, left = 'candle.close'): ConditionRule {
   return {
@@ -125,7 +122,9 @@ describe('GroupConditionCard', () => {
         onChange={() => {}}
       />,
     );
-    expect(screen.queryByLabelText(/Remove Group condition/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/Remove Group condition/),
+    ).not.toBeInTheDocument();
 
     const onRemove = vi.fn();
     rerender(

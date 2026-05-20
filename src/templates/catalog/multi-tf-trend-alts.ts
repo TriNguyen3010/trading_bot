@@ -16,10 +16,10 @@ export const multiTfTrendAlts: BotTemplate = {
   description:
     'Long-period MA + RSI on the 4h chart with a 1d informative timeframe.',
   longDescription:
-    "Built for swing-trading altcoins on the 4h. The 200-MA + 1d informative " +
-    "context filters out chop, and only buys when both RSI and price are above " +
-    "the longer-term trend. Two-tier TP plus a trailing stop captures most of " +
-    "the move once it gets going.",
+    'Built for swing-trading altcoins on the 4h. The 200-MA + 1d informative ' +
+    'context filters out chop, and only buys when both RSI and price are above ' +
+    'the longer-term trend. Two-tier TP plus a trailing stop captures most of ' +
+    'the move once it gets going.',
   tags: ['sol', 'altcoin', 'trend', 'multi-timeframe', 'futures', 'advanced'],
   difficulty: 'advanced',
   riskLevel: 'balanced',

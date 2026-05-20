@@ -25,14 +25,13 @@
    * symmetric fade-in / fade-out and the rest of the ring transparent.
    * The card uses the mask-composite ring technique so we never create
    * a second outline outside the card's own border-radius. */
-  background:
-    conic-gradient(
-      from var(--outer-glow-angle),
-      transparent 0deg,
-      var(--brand-primary) 60deg,
-      var(--brand-primary) 168deg,
-      transparent 600deg
-    );
+  background: conic-gradient(
+    from var(--outer-glow-angle),
+    transparent 0deg,
+    var(--brand-primary) 60deg,
+    var(--brand-primary) 168deg,
+    transparent 600deg
+  );
   mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -58,7 +57,6 @@
   }
 
   .highlighted {
-    box-shadow:
-      0 0 24px rgba(240, 185, 11, 0.28);
+    box-shadow: 0 0 24px rgba(240, 185, 11, 0.28);
   }
 }

@@ -122,9 +122,13 @@ export const useBuilderStore = create<BuilderStore>()(
 
       setDrawerTab: (tab) => set({ drawerTab: tab }),
 
-      setDrawerWidth: (width) => set({
-        drawerWidth: Math.max(MIN_DRAWER_WIDTH, Math.min(MAX_DRAWER_WIDTH, width)),
-      }),
+      setDrawerWidth: (width) =>
+        set({
+          drawerWidth: Math.max(
+            MIN_DRAWER_WIDTH,
+            Math.min(MAX_DRAWER_WIDTH, width),
+          ),
+        }),
 
       patchBotConfig: (patch) =>
         set((s) => ({

@@ -92,10 +92,7 @@ describe('ConditionTreeBuilder', () => {
     const onChange = vi.fn();
     render(
       <ConditionTreeBuilder
-        tree={tree(
-          [gnode('g1', [rule('a')]), gnode('g2', [rule('b')])],
-          'AND',
-        )}
+        tree={tree([gnode('g1', [rule('a')]), gnode('g2', [rule('b')])], 'AND')}
         indicators={[]}
         candlestickChannels={['close']}
         onChange={onChange}

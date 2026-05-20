@@ -17,7 +17,11 @@ export interface ConditionRowProps {
   onRemove: () => void;
 }
 
-const ALL_OPS: { value: ConditionOp; label: string; rightType: 'value' | 'none' }[] = [
+const ALL_OPS: {
+  value: ConditionOp;
+  label: string;
+  rightType: 'value' | 'none';
+}[] = [
   { value: '>', label: '>', rightType: 'value' },
   { value: '<', label: '<', rightType: 'value' },
   { value: '>=', label: '≥', rightType: 'value' },
@@ -136,14 +140,17 @@ export function ConditionRow({
                   right_number: t === 'number' ? (row.right_number ?? 0) : null,
                   right_indicator:
                     t === 'indicator'
-                      ? row.right_indicator ?? indicatorChoices[0] ?? null
+                      ? (row.right_indicator ?? indicatorChoices[0] ?? null)
                       : null,
                 });
               }}
               className="min-w-0 flex-1"
             >
               <option value="number">Number</option>
-              <option value="indicator" disabled={indicatorChoices.length === 0}>
+              <option
+                value="indicator"
+                disabled={indicatorChoices.length === 0}
+              >
                 Indicator
               </option>
             </Select>

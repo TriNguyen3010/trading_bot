@@ -34,7 +34,9 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     try {
       parsed = JSON.parse(raw);
     } catch (e) {
-      setError(`Invalid JSON: ${e instanceof Error ? e.message : 'parse error'}`);
+      setError(
+        `Invalid JSON: ${e instanceof Error ? e.message : 'parse error'}`,
+      );
       return;
     }
     // Validate against the BE-shape schema. The 3 FE-only round-trip
@@ -57,7 +59,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       const bundle: UnifiedBundle = {
         ...result.data,
         order_type: raw.order_type as UnifiedBundle['order_type'],
-        limit_offset_pct: raw.limit_offset_pct as UnifiedBundle['limit_offset_pct'],
+        limit_offset_pct:
+          raw.limit_offset_pct as UnifiedBundle['limit_offset_pct'],
         close_method_type:
           raw.close_method_type as UnifiedBundle['close_method_type'],
       };

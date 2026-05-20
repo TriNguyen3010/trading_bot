@@ -71,12 +71,46 @@ export const strategyTypeSchema = z.enum([
 ]);
 export const fiatDisplayCurrencySchema = z.enum([
   // 33 fiat
-  'AUD', 'BRL', 'CAD', 'CHF', 'CLP', 'CNY', 'CZK', 'DKK', 'EUR',
-  'GBP', 'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'JPY', 'KRW', 'MXN',
-  'MYR', 'NOK', 'NZD', 'PHP', 'PKR', 'PLN', 'RUB', 'UAH', 'SEK',
-  'SGD', 'THB', 'TRY', 'TWD', 'ZAR', 'USD',
+  'AUD',
+  'BRL',
+  'CAD',
+  'CHF',
+  'CLP',
+  'CNY',
+  'CZK',
+  'DKK',
+  'EUR',
+  'GBP',
+  'HKD',
+  'HUF',
+  'IDR',
+  'ILS',
+  'INR',
+  'JPY',
+  'KRW',
+  'MXN',
+  'MYR',
+  'NOK',
+  'NZD',
+  'PHP',
+  'PKR',
+  'PLN',
+  'RUB',
+  'UAH',
+  'SEK',
+  'SGD',
+  'THB',
+  'TRY',
+  'TWD',
+  'ZAR',
+  'USD',
   // 6 crypto
-  'BTC', 'ETH', 'XRP', 'LTC', 'BCH', 'BNB',
+  'BTC',
+  'ETH',
+  'XRP',
+  'LTC',
+  'BCH',
+  'BNB',
 ]);
 
 /* -------------------------------------------------------------------------- */
@@ -84,7 +118,9 @@ export const fiatDisplayCurrencySchema = z.enum([
 /* -------------------------------------------------------------------------- */
 
 const notificationLevelSchema = z.enum(['on', 'off', 'silent']);
-const optionalNotificationSchema = notificationLevelSchema.nullable().optional();
+const optionalNotificationSchema = notificationLevelSchema
+  .nullable()
+  .optional();
 
 export const telegramNotificationSettingsSchema = z.object({
   status: optionalNotificationSchema,
@@ -225,11 +261,7 @@ export const conditionOpSchema = z.enum([
   'is_going_down',
 ]);
 
-export const conditionRightTypeSchema = z.enum([
-  'indicator',
-  'number',
-  'none',
-]);
+export const conditionRightTypeSchema = z.enum(['indicator', 'number', 'none']);
 
 // `lookback` required (BE always emits; FE always sets). Avoid `.default(0)`
 // to keep the recursive `ConditionListItem` union's input/output aligned.
@@ -372,7 +404,10 @@ export const customExitConfigSchema = z.object({
   max_duration_value: z.number().default(72),
   max_duration_unit: z.enum(['hours', 'days', 'candles']).default('hours'),
   time_window_enabled: z.boolean().default(false),
-  time_start: z.string().regex(HHMM_RE, 'Format must be HH:MM').default('23:00'),
+  time_start: z
+    .string()
+    .regex(HHMM_RE, 'Format must be HH:MM')
+    .default('23:00'),
   time_end: z.string().regex(HHMM_RE, 'Format must be HH:MM').default('23:59'),
   partial_enabled: z.boolean().default(false),
   partial_levels: z.array(customExitPartialLevelSchema).default([]),
@@ -513,12 +548,7 @@ const baseUnifiedBotStrategyCreateSchema = z.object({
   stoploss: z.number().lt(0).nullable().optional(),
   trailing_stop: z.boolean().nullable().optional(),
   trailing_stop_positive: z.number().min(0).max(1).nullable().optional(),
-  trailing_stop_positive_offset: z
-    .number()
-    .min(0)
-    .max(1)
-    .nullable()
-    .optional(),
+  trailing_stop_positive_offset: z.number().min(0).max(1).nullable().optional(),
   trailing_only_offset_is_reached: z.boolean().nullable().optional(),
   minimal_roi: z.record(z.number()).nullable().optional(),
   use_exit_signal: z.boolean().nullable().optional(),
@@ -564,7 +594,8 @@ export const unifiedBotStrategyCreateSchema =
       ctx.addIssue({
         code: 'custom',
         path: ['margin_mode'],
-        message: 'margin_mode is required when trading_mode is futures or margin.',
+        message:
+          'margin_mode is required when trading_mode is futures or margin.',
       });
     }
     // (T-2) can_short=true requires futures.
@@ -625,7 +656,9 @@ export type UnifiedBotStrategyCreate = z.infer<
 export type UnifiedBotStrategyUpdate = z.infer<
   typeof unifiedBotStrategyUpdateSchema
 >;
-export type StrategyConfigurations = z.infer<typeof strategyConfigurationsSchema>;
+export type StrategyConfigurations = z.infer<
+  typeof strategyConfigurationsSchema
+>;
 export type SignalsBlock = z.infer<typeof signalsBlockSchema>;
 export type ConditionItem = z.infer<typeof conditionItemSchema>;
 export type IndicatorItem = z.infer<typeof indicatorItemSchema>;

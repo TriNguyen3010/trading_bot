@@ -30,9 +30,8 @@ describe('wallet.provider', () => {
   describe('detectCoin98', () => {
     it('returns window.coin98.provider when present', () => {
       const p = fakeProvider();
-      (
-        window as unknown as { coin98: { provider: EthereumProvider } }
-      ).coin98 = { provider: p };
+      (window as unknown as { coin98: { provider: EthereumProvider } }).coin98 =
+        { provider: p };
       expect(detectCoin98()).toBe(p);
     });
 

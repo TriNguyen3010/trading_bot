@@ -1,11 +1,19 @@
 import type {
-  BotMeta, Fill, PerformanceSnapshot, EquityPoint, DailyPnL, ExecutionCycle, FillStatus, TimeRange
+  BotMeta,
+  Fill,
+  PerformanceSnapshot,
+  EquityPoint,
+  DailyPnL,
+  ExecutionCycle,
+  FillStatus,
+  TimeRange,
 } from './types';
 
 // Deterministic RNG (mulberry32)
 function mulberry32(seed: number) {
-  return function() {
-    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
     let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
@@ -25,7 +33,11 @@ function dailySeed(botId: string): number {
 
 const BTC_BASE = 67_000;
 
-export function generateMockFills(botId: string, deployedAt: number, now: number): Fill[] {
+export function generateMockFills(
+  botId: string,
+  deployedAt: number,
+  now: number,
+): Fill[] {
   if (now - deployedAt < 3_600_000) return []; // <1h since deploy → no fills yet
 
   const rng = mulberry32(dailySeed(botId));
@@ -37,7 +49,8 @@ export function generateMockFills(botId: string, deployedAt: number, now: number
   const cycleId = 1000;
 
   for (let i = 0; i < targetCount; i++) {
-    const openedAt = deployedAt + Math.floor((i / targetCount) * (now - deployedAt));
+    const openedAt =
+      deployedAt + Math.floor((i / targetCount) * (now - deployedAt));
     const durationMs = 5 * 60_000 + Math.floor(rng() * 60 * 60_000);
     const closedAt = openedAt + durationMs;
     const isOpen = i === targetCount - 1 && rng() > 0.5;
@@ -45,8 +58,13 @@ export function generateMockFills(botId: string, deployedAt: number, now: number
     cumPrice = Math.max(50_000, Math.min(80_000, cumPrice + drift));
     const entryPrice = Number(cumPrice.toFixed(2));
     const moveBps = (rng() - 0.45) * 30;
-    const exitPrice = isOpen ? null : Number((entryPrice * (1 + moveBps / 1000)).toFixed(2));
-    const pnl = exitPrice == null ? 0 : Number(((exitPrice - entryPrice) * 0.05).toFixed(2));
+    const exitPrice = isOpen
+      ? null
+      : Number((entryPrice * (1 + moveBps / 1000)).toFixed(2));
+    const pnl =
+      exitPrice == null
+        ? 0
+        : Number(((exitPrice - entryPrice) * 0.05).toFixed(2));
     let status: FillStatus;
     if (isOpen) status = 'OPEN';
     else if (pnl > 100) status = 'TP2';
@@ -70,13 +88,17 @@ export function generateMockFills(botId: string, deployedAt: number, now: number
   return fills;
 }
 
-export function generateSnapshot(fills: Fill[], now: number): PerformanceSnapshot {
-  const closed = fills.filter(f => f.closedAt !== null);
-  const open = fills.filter(f => f.closedAt === null);
-  const wins = closed.filter(f => f.pnl > 0);
-  const losses = closed.filter(f => f.pnl < 0);
-  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
-  const todayFills = closed.filter(f => f.closedAt! >= todayStart.getTime());
+export function generateSnapshot(
+  fills: Fill[],
+  now: number,
+): PerformanceSnapshot {
+  const closed = fills.filter((f) => f.closedAt !== null);
+  const open = fills.filter((f) => f.closedAt === null);
+  const wins = closed.filter((f) => f.pnl > 0);
+  const losses = closed.filter((f) => f.pnl < 0);
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const todayFills = closed.filter((f) => f.closedAt! >= todayStart.getTime());
   const todayPnL = todayFills.reduce((s, f) => s + f.pnl, 0);
   const totalPnL = closed.reduce((s, f) => s + f.pnl, 0);
 
@@ -87,7 +109,7 @@ export function generateSnapshot(fills: Fill[], now: number): PerformanceSnapsho
   }
 
   const byDay = new Map<string, number>();
-  closed.forEach(f => {
+  closed.forEach((f) => {
     const d = new Date(f.closedAt!).toISOString().slice(0, 10);
     byDay.set(d, (byDay.get(d) ?? 0) + f.pnl);
   });
@@ -96,7 +118,8 @@ export function generateSnapshot(fills: Fill[], now: number): PerformanceSnapsho
   return {
     totalPnL: Number(totalPnL.toFixed(2)),
     todayPnL: Number(todayPnL.toFixed(2)),
-    todayPnLPct: totalPnL > 0 ? Number(((todayPnL / totalPnL) * 100).toFixed(2)) : 0,
+    todayPnLPct:
+      totalPnL > 0 ? Number(((todayPnL / totalPnL) * 100).toFixed(2)) : 0,
     totalPct: Number(((totalPnL / 10_000) * 100).toFixed(2)),
     winRate: closed.length > 0 ? wins.length / closed.length : 0,
     totalTrades: closed.length,
@@ -111,29 +134,45 @@ export function generateSnapshot(fills: Fill[], now: number): PerformanceSnapsho
   };
 }
 
-export function generateEquityCurve(fills: Fill[], range: TimeRange, now: number): EquityPoint[] {
-  const closed = fills.filter(f => f.closedAt !== null).sort((a, b) => a.closedAt! - b.closedAt!);
+export function generateEquityCurve(
+  fills: Fill[],
+  range: TimeRange,
+  now: number,
+): EquityPoint[] {
+  const closed = fills
+    .filter((f) => f.closedAt !== null)
+    .sort((a, b) => a.closedAt! - b.closedAt!);
   let cum = 10_000;
   const points: EquityPoint[] = [];
-  closed.forEach(f => {
+  closed.forEach((f) => {
     cum += f.pnl;
     points.push({ t: f.closedAt!, equity: Number(cum.toFixed(2)) });
   });
-  const cutoff = range === 'all' ? 0
-    : range === '30D' ? now - 30 * 86_400_000
-    : range === '7D' ? now - 7 * 86_400_000
-    : now - 86_400_000;
-  return points.filter(p => p.t >= cutoff);
+  const cutoff =
+    range === 'all'
+      ? 0
+      : range === '30D'
+        ? now - 30 * 86_400_000
+        : range === '7D'
+          ? now - 7 * 86_400_000
+          : now - 86_400_000;
+  return points.filter((p) => p.t >= cutoff);
 }
 
-export function generateDailyPnL(fills: Fill[], days: number, now: number): DailyPnL[] {
+export function generateDailyPnL(
+  fills: Fill[],
+  days: number,
+  now: number,
+): DailyPnL[] {
   const result: DailyPnL[] = [];
   const dayMs = 86_400_000;
-  const closed = fills.filter(f => f.closedAt !== null);
+  const closed = fills.filter((f) => f.closedAt !== null);
   for (let i = days - 1; i >= 0; i--) {
     const dayStart = Math.floor((now - i * dayMs) / dayMs) * dayMs;
     const dayEnd = dayStart + dayMs;
-    const dayFills = closed.filter(f => f.closedAt! >= dayStart && f.closedAt! < dayEnd);
+    const dayFills = closed.filter(
+      (f) => f.closedAt! >= dayStart && f.closedAt! < dayEnd,
+    );
     result.push({
       date: new Date(dayStart).toISOString().slice(0, 10),
       pnl: Number(dayFills.reduce((s, f) => s + f.pnl, 0).toFixed(2)),
@@ -149,12 +188,23 @@ export function generateCycle(botId: string, now: number): ExecutionCycle {
   const STAGE_MS = 250;
   const rng = mulberry32(stringHash(botId) + Math.floor(now / STAGE_MS));
   const tick = Math.floor((now / STAGE_MS) % 6);
-  const stages = (['scan', 'detect', 'validate', 'size', 'fill', 'settle'] as const).map((id, idx) => ({
-    id, label: id[0].toUpperCase() + id.slice(1),
-    durationMs: idx === tick ? Math.floor(100 + rng() * 1000)
-              : idx < tick ? Math.floor(100 + rng() * 400)
-              : 0,
-    status: idx === tick ? 'active' as const : idx < tick ? 'done' as const : 'pending' as const,
+  const stages = (
+    ['scan', 'detect', 'validate', 'size', 'fill', 'settle'] as const
+  ).map((id, idx) => ({
+    id,
+    label: id[0].toUpperCase() + id.slice(1),
+    durationMs:
+      idx === tick
+        ? Math.floor(100 + rng() * 1000)
+        : idx < tick
+          ? Math.floor(100 + rng() * 400)
+          : 0,
+    status:
+      idx === tick
+        ? ('active' as const)
+        : idx < tick
+          ? ('done' as const)
+          : ('pending' as const),
   }));
   const elapsedMs = stages.reduce((s, st) => s + st.durationMs, 0);
   return {
@@ -229,8 +279,16 @@ export interface BotMonitoringApi {
   listBots(): Promise<BotMeta[]>;
   getFills(id: string, deployedAt: number): Promise<Fill[]>;
   getSnapshot(id: string, deployedAt: number): Promise<PerformanceSnapshot>;
-  getEquityCurve(id: string, deployedAt: number, range: TimeRange): Promise<EquityPoint[]>;
-  getDailyPnL(id: string, deployedAt: number, days: number): Promise<DailyPnL[]>;
+  getEquityCurve(
+    id: string,
+    deployedAt: number,
+    range: TimeRange,
+  ): Promise<EquityPoint[]>;
+  getDailyPnL(
+    id: string,
+    deployedAt: number,
+    days: number,
+  ): Promise<DailyPnL[]>;
   getCycle(id: string): Promise<ExecutionCycle>;
 }
 
@@ -241,7 +299,9 @@ export const botApi: BotMonitoringApi = {
   async listBots() {
     return MOCK_BOT_IDS.map((id) => resolveMeta(id));
   },
-  async getFills(id, deployedAt) { return generateMockFills(id, deployedAt, Date.now()); },
+  async getFills(id, deployedAt) {
+    return generateMockFills(id, deployedAt, Date.now());
+  },
   async getSnapshot(id, deployedAt) {
     const fills = generateMockFills(id, deployedAt, Date.now());
     return generateSnapshot(fills, Date.now());
@@ -254,5 +314,7 @@ export const botApi: BotMonitoringApi = {
     const fills = generateMockFills(id, deployedAt, Date.now());
     return generateDailyPnL(fills, days, Date.now());
   },
-  async getCycle(id) { return generateCycle(id, Date.now()); },
+  async getCycle(id) {
+    return generateCycle(id, Date.now());
+  },
 };

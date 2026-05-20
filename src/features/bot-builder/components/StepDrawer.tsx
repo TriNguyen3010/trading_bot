@@ -129,7 +129,8 @@ export function StepDrawer({
 
   // Wizard state — meaningful in manual (legacy tabs) mode.
   const setupComplete = useMemo(
-    () => (activeStepId ? isStepSetupComplete(activeStepId, builderState) : false),
+    () =>
+      activeStepId ? isStepSetupComplete(activeStepId, builderState) : false,
     [activeStepId, builderState],
   );
 
@@ -276,7 +277,11 @@ export function StepDrawer({
                     transition={{ duration: 0.15 }}
                   >
                     {drawerTab === 'setup' ? (
-                      <TabsContent value="setup" forceMount className="space-y-5">
+                      <TabsContent
+                        value="setup"
+                        forceMount
+                        className="space-y-5"
+                      >
                         {content?.setup ?? null}
                       </TabsContent>
                     ) : (

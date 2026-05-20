@@ -16,10 +16,10 @@ export const scalpingBtc1m: BotTemplate = {
   description:
     '1m timeframe, 20x leverage. RSI<25 + close above MA-20 — fast in, faster out.',
   longDescription:
-    "Aggressive 1-minute scalp. Enters on deep RSI oversold (<25) BUT only when " +
-    "price is still above the short MA-20 — meaning the dip is a correction inside " +
-    "a healthy uptrend, not a top. Tight 0.5% / 1% TP and a hair-trigger 0.3% SL. " +
-    "20x leverage. Not for the faint of heart.",
+    'Aggressive 1-minute scalp. Enters on deep RSI oversold (<25) BUT only when ' +
+    'price is still above the short MA-20 — meaning the dip is a correction inside ' +
+    'a healthy uptrend, not a top. Tight 0.5% / 1% TP and a hair-trigger 0.3% SL. ' +
+    '20x leverage. Not for the faint of heart.',
   tags: ['btc', 'scalping', '1m', 'high-leverage', 'futures', 'advanced'],
   difficulty: 'advanced',
   riskLevel: 'aggressive',

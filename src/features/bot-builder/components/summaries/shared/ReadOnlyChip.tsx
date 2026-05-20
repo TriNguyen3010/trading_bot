@@ -18,18 +18,12 @@ export interface ReadOnlyChipProps {
 }
 
 const TONE_CLASSES: Record<ChipTone, string> = {
-  neutral:
-    'border-border bg-surface-hover text-fg-secondary',
-  brand:
-    'border-brand/40 bg-brand-subtle text-fg',
-  bullish:
-    'border-bullish/40 bg-bullish-subtle text-bullish',
-  bearish:
-    'border-bearish/40 bg-bearish-subtle text-bearish',
-  warning:
-    'border-warning/40 bg-warning/10 text-warning',
-  info:
-    'border-info/40 bg-info/10 text-info',
+  neutral: 'border-border bg-surface-hover text-fg-secondary',
+  brand: 'border-brand/40 bg-brand-subtle text-fg',
+  bullish: 'border-bullish/40 bg-bullish-subtle text-bullish',
+  bearish: 'border-bearish/40 bg-bearish-subtle text-bearish',
+  warning: 'border-warning/40 bg-warning/10 text-warning',
+  info: 'border-info/40 bg-info/10 text-info',
 };
 
 /**
@@ -59,7 +53,9 @@ export function ReadOnlyChip({
         className,
       )}
     >
-      {icon ? <span className="flex h-3 w-3 items-center justify-center">{icon}</span> : null}
+      {icon ? (
+        <span className="flex h-3 w-3 items-center justify-center">{icon}</span>
+      ) : null}
       <span>{children}</span>
     </span>
   );

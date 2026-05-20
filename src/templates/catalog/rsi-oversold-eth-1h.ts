@@ -16,11 +16,11 @@ export const rsiOversoldEth1h: BotTemplate = {
   description:
     'Buys ETH when RSI dips below 30 on the 1h chart. No leverage, simple TP/SL.',
   longDescription:
-    "A classic mean-reversion play. The 1h timeframe smooths out noise " +
-    "and the RSI<30 threshold filters for genuine oversold dips. Single " +
-    "3% take-profit closes the whole position; a tight 2% stop-loss caps " +
-    "the downside. Suited to a beginner who wants to feel the basic flow " +
-    "before turning on leverage.",
+    'A classic mean-reversion play. The 1h timeframe smooths out noise ' +
+    'and the RSI<30 threshold filters for genuine oversold dips. Single ' +
+    '3% take-profit closes the whole position; a tight 2% stop-loss caps ' +
+    'the downside. Suited to a beginner who wants to feel the basic flow ' +
+    'before turning on leverage.',
   tags: ['eth', 'mean-reversion', 'rsi', 'futures', 'beginner'],
   difficulty: 'beginner',
   riskLevel: 'conservative',

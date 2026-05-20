@@ -16,12 +16,7 @@ describe('phase card interactions', () => {
 
   it('shows the Cypheus hello avatar on idle Phase 1', () => {
     const { container } = render(
-      <StepCard
-        stepId="bot-config"
-        index={1}
-        icon={Bot}
-        title="Bot Basics"
-      />,
+      <StepCard stepId="bot-config" index={1} icon={Bot} title="Bot Basics" />,
     );
 
     expect(container.querySelector('video')?.getAttribute('src')).toBe(
@@ -35,12 +30,7 @@ describe('phase card interactions', () => {
     store.setStepStatus('bot-config', 'configured');
 
     render(
-      <StepCard
-        stepId="bot-config"
-        index={1}
-        icon={Bot}
-        title="Bot Basics"
-      />,
+      <StepCard stepId="bot-config" index={1} icon={Bot} title="Bot Basics" />,
     );
 
     fireEvent.click(screen.getByText('BTC-USDC'));

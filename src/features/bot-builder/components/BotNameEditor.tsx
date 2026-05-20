@@ -64,7 +64,9 @@ export function BotNameEditor() {
       className="group inline-flex items-center gap-2 truncate rounded-md px-1 text-md font-semibold text-fg transition-colors hover:bg-black/30"
       aria-label="Edit bot name"
     >
-      <span className="truncate">{botName || strings.header.botNamePlaceholder}</span>
+      <span className="truncate">
+        {botName || strings.header.botNamePlaceholder}
+      </span>
       <Pencil className="h-3.5 w-3.5 shrink-0 text-fg-muted opacity-0 transition-opacity group-hover:opacity-100" />
     </button>
   );

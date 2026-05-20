@@ -24,8 +24,17 @@ export function DrawerProgressIndicator({
   setupComplete,
   justUnlocked,
 }: Props) {
-  const setupState = setupComplete ? 'done' : activeTab === 'setup' ? 'active' : 'pending';
-  const configState = setupComplete && activeTab === 'configure' ? 'active' : setupComplete ? 'pending' : 'locked';
+  const setupState = setupComplete
+    ? 'done'
+    : activeTab === 'setup'
+      ? 'active'
+      : 'pending';
+  const configState =
+    setupComplete && activeTab === 'configure'
+      ? 'active'
+      : setupComplete
+        ? 'pending'
+        : 'locked';
 
   return (
     <div
@@ -72,13 +81,7 @@ export function DrawerProgressIndicator({
 
 type DotState = 'pending' | 'active' | 'done' | 'locked';
 
-function Dot({
-  state,
-  highlight,
-}: {
-  state: DotState;
-  highlight?: boolean;
-}) {
+function Dot({ state, highlight }: { state: DotState; highlight?: boolean }) {
   return (
     <span
       className={cn(
@@ -88,7 +91,7 @@ function Dot({
           'border-brand bg-transparent text-brand shadow-[0_0_6px_1px_var(--brand-primary)]',
         state === 'pending' && 'border-border bg-transparent text-fg-muted',
         state === 'locked' && 'border-border-subtle bg-surface text-fg-muted',
-        highlight && 'motion-safe:animate-pulse ring-2 ring-brand/60',
+        highlight && 'ring-2 ring-brand/60 motion-safe:animate-pulse',
       )}
       aria-hidden="true"
     >

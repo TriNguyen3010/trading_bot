@@ -12,11 +12,7 @@
  *   'candle.close'   → 'candle close'
  *   anything else    → raw id + push gap
  */
-import type {
-  SummaryBlockId,
-  SummaryInline,
-  TranslationGap,
-} from '../types';
+import type { SummaryBlockId, SummaryInline, TranslationGap } from '../types';
 import { t } from '../types';
 
 interface TranslateOpts {

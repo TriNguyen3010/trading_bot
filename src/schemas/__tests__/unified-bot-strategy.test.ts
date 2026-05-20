@@ -85,9 +85,9 @@ describe('unifiedBotStrategyCreateSchema — failure cases', () => {
     const result = unifiedBotStrategyCreateSchema.safeParse(withoutBotName);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues.some((i) => i.path.join('.') === 'bot_name')).toBe(
-        true,
-      );
+      expect(
+        result.error.issues.some((i) => i.path.join('.') === 'bot_name'),
+      ).toBe(true);
     }
   });
 
@@ -276,9 +276,9 @@ describe('strategyConfigurationsSchema — cross-field rules', () => {
     const result = strategyConfigurationsSchema.safeParse(bad);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(
-        result.error.issues.some((i) => i.path[0] === 'roi_steps'),
-      ).toBe(true);
+      expect(result.error.issues.some((i) => i.path[0] === 'roi_steps')).toBe(
+        true,
+      );
     }
   });
 

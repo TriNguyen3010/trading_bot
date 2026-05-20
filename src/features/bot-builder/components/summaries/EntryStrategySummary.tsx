@@ -22,9 +22,13 @@ export function EntryStrategySummary() {
   const conditions = allRules(entryConditions);
 
   const isEmpty =
-    candlestick.length === 0 && indicators.length === 0 && conditions.length === 0;
+    candlestick.length === 0 &&
+    indicators.length === 0 &&
+    conditions.length === 0;
   if (isEmpty) {
-    return <span className="text-xs italic text-fg-muted">No entry rules yet</span>;
+    return (
+      <span className="text-xs italic text-fg-muted">No entry rules yet</span>
+    );
   }
 
   const inlineConditions = conditions.slice(0, MAX_INLINE_CONDITIONS);
@@ -34,7 +38,7 @@ export function EntryStrategySummary() {
     <div className="flex flex-col gap-2">
       {/* Rule code block — hero of the strategy card (mockup B) */}
       {conditions.length > 0 ? (
-        <div className="rounded-md border border-border-subtle border-l-2 border-l-brand bg-black/30 px-3 py-2">
+        <div className="rounded-md border border-l-2 border-border-subtle border-l-brand bg-black/30 px-3 py-2">
           <div className="mb-1 flex items-center justify-between gap-2">
             <span className="text-2xs uppercase tracking-wide text-fg-muted">
               Entry rule
@@ -48,7 +52,11 @@ export function EntryStrategySummary() {
             {inlineConditions.map((rule, idx) => (
               <ConditionPreview
                 key={rule.id}
-                row={{ ...rule, operator: idx > 0 ? entryConditions.groupConnector : undefined }}
+                row={{
+                  ...rule,
+                  operator:
+                    idx > 0 ? entryConditions.groupConnector : undefined,
+                }}
                 showOperator={idx > 0}
               />
             ))}
@@ -61,7 +69,9 @@ export function EntryStrategySummary() {
 
       {/* Candle channel chips */}
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-2xs uppercase tracking-wide text-fg-muted">Candle</span>
+        <span className="text-2xs uppercase tracking-wide text-fg-muted">
+          Candle
+        </span>
         {CANDLE_CHANNELS.map(({ key, label }) => {
           const on = candlestick.includes(key);
           return (
@@ -69,7 +79,7 @@ export function EntryStrategySummary() {
               key={key}
               title={`${label} channel ${on ? 'enabled' : 'disabled'}`}
               className={cn(
-                'inline-flex h-5 items-center rounded-full border px-1.5 text-2xs font-medium leading-none pointer-events-none select-none',
+                'pointer-events-none inline-flex h-5 select-none items-center rounded-full border px-1.5 text-2xs font-medium leading-none',
                 on
                   ? 'border-brand/40 bg-brand-subtle text-fg'
                   : 'border-border bg-canvas text-fg-disabled opacity-60',
@@ -88,7 +98,11 @@ export function EntryStrategySummary() {
             Indicators
           </span>
           {indicators.map((ind) => (
-            <ReadOnlyChip key={ind.id} tone="brand" title={`${ind.name} • ${indicatorOutputId(ind)}`}>
+            <ReadOnlyChip
+              key={ind.id}
+              tone="brand"
+              title={`${ind.name} • ${indicatorOutputId(ind)}`}
+            >
               {indicatorOutputId(ind)}
             </ReadOnlyChip>
           ))}

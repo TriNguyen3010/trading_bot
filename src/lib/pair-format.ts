@@ -35,7 +35,8 @@ export function uiPairToJson(
 ): string {
   const parts = parseUiPair(uiPair);
   if (!parts) return uiPair; // pass through if malformed; caller validates
-  if (market === 'futures') return `${parts.base}/${parts.quote}:${parts.quote}`;
+  if (market === 'futures')
+    return `${parts.base}/${parts.quote}:${parts.quote}`;
   return `${parts.base}/${parts.quote}`;
 }
 

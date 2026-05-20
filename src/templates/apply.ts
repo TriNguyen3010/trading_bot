@@ -63,10 +63,7 @@ export async function applyTemplate(
 /*  Internals                                                                  */
 /* -------------------------------------------------------------------------- */
 
-function snapApply(
-  template: BotTemplate,
-  snap: TemplateStateSnapshot,
-): void {
+function snapApply(template: BotTemplate, snap: TemplateStateSnapshot): void {
   const builder = useBuilderStore.getState();
   builder.resetAll();
   builder.setBotName(snap.botName);

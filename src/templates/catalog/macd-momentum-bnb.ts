@@ -15,10 +15,10 @@ export const macdMomentumBnb: BotTemplate = {
   description:
     'Long when MACD line is positive — riding the momentum wave on BNB.',
   longDescription:
-    "MACD positive = bulls in control. We enter long when the 12/26/9 MACD line " +
-    "is above zero on the 30-minute chart. 10x leverage punches harder PnL but " +
-    "the 3% stop-loss kicks fast if the wave breaks. Best on BNB which moves a " +
-    "lot but rarely violently.",
+    'MACD positive = bulls in control. We enter long when the 12/26/9 MACD line ' +
+    'is above zero on the 30-minute chart. 10x leverage punches harder PnL but ' +
+    'the 3% stop-loss kicks fast if the wave breaks. Best on BNB which moves a ' +
+    'lot but rarely violently.',
   tags: ['bnb', 'momentum', 'macd', 'futures'],
   difficulty: 'intermediate',
   riskLevel: 'aggressive',

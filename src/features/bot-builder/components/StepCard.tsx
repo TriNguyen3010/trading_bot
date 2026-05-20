@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, CircleDashed, AlertTriangle, ArrowRight, type LucideIcon } from 'lucide-react';
+import {
+  Check,
+  CircleDashed,
+  AlertTriangle,
+  ArrowRight,
+  type LucideIcon,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
@@ -18,7 +24,10 @@ import styles from './StepCard.module.css';
 
 // All 4 statuses share the brand hue — differentiated by opacity + icon
 // shape + glow/ring. See Spec/Phase 1/card_yellow_stages_plan.md.
-const statusIcon: Record<StepStatus, { icon: LucideIcon; tone: string; label: string }> = {
+const statusIcon: Record<
+  StepStatus,
+  { icon: LucideIcon; tone: string; label: string }
+> = {
   pending: {
     icon: CircleDashed,
     tone: 'text-brand/40',
@@ -51,12 +60,7 @@ export interface StepCardProps {
   title: React.ReactNode;
 }
 
-export function StepCard({
-  stepId,
-  index,
-  icon: Icon,
-  title,
-}: StepCardProps) {
+export function StepCard({ stepId, index, icon: Icon, title }: StepCardProps) {
   const status = useBuilderStore((s) => s.stepStatus[stepId]);
   const openStep = useBuilderStore((s) => s.openStep);
   const setOpenStep = useBuilderStore((s) => s.setOpenStep);
@@ -97,14 +101,14 @@ export function StepCard({
       onClick={handleClick}
       aria-pressed={isOpen}
       className={cn(
-        'group relative flex w-full flex-col items-stretch rounded-3xl glass-card text-left',
+        'glass-card group relative flex w-full flex-col items-stretch rounded-3xl text-left',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-black',
         // 3-state frame ring:
         //   normal   — ring-1 white/15  (default)
         //   anchor   — CSS module outer onboarding glow (fresh Phase 1 prompt)
         //   selected — ring-2 brand      (drawer is open)
         isOpen
-          ? 'overflow-hidden ring-2 ring-brand shadow-[0_0_32px_rgba(240,185,11,0.48)]'
+          ? 'overflow-hidden shadow-[0_0_32px_rgba(240,185,11,0.48)] ring-2 ring-brand'
           : isStep1Idle
             ? 'overflow-hidden'
             : 'overflow-hidden ring-1 ring-white/15',
@@ -130,13 +134,11 @@ export function StepCard({
         >
           <Icon className="h-4 w-4" />
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-2xs uppercase tracking-wide text-fg-muted">
             <span>Phase {index}</span>
           </div>
-          <div className="min-w-0 text-md font-semibold text-fg">
-            {title}
-          </div>
+          <div className="min-w-0 text-md font-semibold text-fg">{title}</div>
         </div>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
@@ -189,7 +191,8 @@ export function StepCard({
       <Tooltip>
         <TooltipTrigger asChild>{cardButton}</TooltipTrigger>
         <TooltipContent side="left" className="max-w-xs">
-          <span className="font-medium text-danger">Issue:</span> {stepIssue.message}
+          <span className="font-medium text-danger">Issue:</span>{' '}
+          {stepIssue.message}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

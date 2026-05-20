@@ -25,12 +25,7 @@ export function translateRisk(c: BotConfigForm): TranslateRiskResult {
 
   // ── Trading mode ──────────────────────────────────────────────
   if (c.tradingMode === 'live') {
-    lines.push(
-      line(
-        t('Live trading', 'bearish'),
-        t(' — using real funds.'),
-      ),
-    );
+    lines.push(line(t('Live trading', 'bearish'), t(' — using real funds.')));
   } else {
     lines.push(
       line(
@@ -58,13 +53,9 @@ export function translateRisk(c: BotConfigForm): TranslateRiskResult {
 
   // ── Leverage / market ────────────────────────────────────────
   if (c.marketType === 'spot') {
-    lines.push(
-      line(t('Spot trading — no leverage, no liquidation risk.')),
-    );
+    lines.push(line(t('Spot trading — no leverage, no liquidation risk.')));
   } else if (c.leverage <= 1) {
-    lines.push(
-      line(t(`No leverage (1×), ${c.marginMode}-margin futures.`)),
-    );
+    lines.push(line(t(`No leverage (1×), ${c.marginMode}-margin futures.`)));
   } else if (c.leverage >= HIGH_LEVERAGE_THRESHOLD) {
     lines.push(
       line(
@@ -77,9 +68,7 @@ export function translateRisk(c: BotConfigForm): TranslateRiskResult {
       warning = `${c.leverage}× leverage on live capital — losses can exceed your stake.`;
     }
   } else {
-    lines.push(
-      line(t(`Leverage ${c.leverage}× ${c.marginMode}-margin.`)),
-    );
+    lines.push(line(t(`Leverage ${c.leverage}× ${c.marginMode}-margin.`)));
   }
 
   return { lines, warning };

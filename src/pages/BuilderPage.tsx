@@ -81,7 +81,7 @@ export function BuilderPage() {
       <div className="flex flex-1 overflow-hidden">
         <CypheusPanel />
         <DotGridSpotlight
-          className="fixed pointer-events-none z-0"
+          className="pointer-events-none fixed z-0"
           style={{
             top: 'var(--layout-header)',
             left: 'var(--layout-left-panel)',
@@ -103,14 +103,13 @@ export function BuilderPage() {
               className="relative z-10 min-h-full px-6 py-10"
               style={{
                 paddingBottom: 'calc(var(--dock-height, 0px) + 2.5rem)',
-                transition: 'padding-bottom 250ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                transition:
+                  'padding-bottom 250ms cubic-bezier(0.2, 0.8, 0.2, 1)',
               }}
             >
               {allPending ? (
                 <div className="mx-auto mb-8 flex max-w-[var(--layout-step-list)] flex-col items-center gap-3 text-fg-muted">
-                  <p className="text-sm">
-                    {strings.templates.emptyState.hint}
-                  </p>
+                  <p className="text-sm">{strings.templates.emptyState.hint}</p>
                   <Button
                     variant="primary"
                     size="sm"

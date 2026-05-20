@@ -1,11 +1,10 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-export interface NumberInputProps
-  extends Omit<
-    React.InputHTMLAttributes<HTMLInputElement>,
-    'type' | 'onChange' | 'value' | 'defaultValue'
-  > {
+export interface NumberInputProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'onChange' | 'value' | 'defaultValue'
+> {
   value?: number | null;
   defaultValue?: number;
   onValueChange?: (value: number | null) => void;
@@ -43,7 +42,7 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
             if (Number.isFinite(num)) onValueChange?.(num);
           }}
           className={cn(
-            'flex h-11 w-full rounded-2xl bg-black/40 pl-4 text-sm text-fg font-tabular',
+            'font-tabular flex h-11 w-full rounded-2xl bg-black/40 pl-4 text-sm text-fg',
             suffix ? 'pr-14 text-right' : 'pr-4',
             'transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
             'disabled:cursor-not-allowed disabled:opacity-60',

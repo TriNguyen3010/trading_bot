@@ -6,6 +6,5 @@ export type BotConfigOut = components['schemas']['BotConfigOut'];
 
 export const botApi = {
   list: () => http<BotOut[]>('GET', '/bot/list'),
-  getConfig: (id: number) =>
-    http<BotConfigOut>('GET', `/bot/${id}/config`),
+  getConfig: (id: number) => http<BotConfigOut>('GET', `/bot/${id}/config`),
 };

@@ -34,29 +34,31 @@ function PanelHarness({ panelHeight = 600 }: { panelHeight?: number }) {
 
 describe('DrawerProgressGlow', () => {
   it('renders the line and glow elements', () => {
-    const { container } = render(
-      <PanelHarness />,
-    );
-    expect(container.querySelector('.drawer-progress-line')).toBeInTheDocument();
-    expect(container.querySelector('.drawer-progress-glow')).toBeInTheDocument();
+    const { container } = render(<PanelHarness />);
+    expect(
+      container.querySelector('.drawer-progress-line'),
+    ).toBeInTheDocument();
+    expect(
+      container.querySelector('.drawer-progress-glow'),
+    ).toBeInTheDocument();
   });
 
   it('marks both elements aria-hidden', () => {
-    const { container } = render(
-      <PanelHarness />,
-    );
+    const { container } = render(<PanelHarness />);
     expect(
-      container.querySelector('.drawer-progress-line')?.getAttribute('aria-hidden'),
+      container
+        .querySelector('.drawer-progress-line')
+        ?.getAttribute('aria-hidden'),
     ).toBe('true');
     expect(
-      container.querySelector('.drawer-progress-glow')?.getAttribute('aria-hidden'),
+      container
+        .querySelector('.drawer-progress-glow')
+        ?.getAttribute('aria-hidden'),
     ).toBe('true');
   });
 
   it('parks the glow at the top inset when content does not overflow', () => {
-    const { getByTestId, container } = render(
-      <PanelHarness />,
-    );
+    const { getByTestId, container } = render(<PanelHarness />);
     // Stamp metrics on the scroll node, then dispatch a scroll event so
     // the component re-evaluates.
     const scroll = getByTestId('scroll');
@@ -68,7 +70,9 @@ describe('DrawerProgressGlow', () => {
     // Both line and glow remain visible — the glow doubles as a status
     // pointer that sits at the top when there's nothing to scroll.
     expect(
-      container.querySelector('.drawer-progress-line')?.getAttribute('data-visible'),
+      container
+        .querySelector('.drawer-progress-line')
+        ?.getAttribute('data-visible'),
     ).toBe('true');
     const glow = container.querySelector<HTMLElement>('.drawer-progress-glow');
     expect(glow?.getAttribute('data-visible')).toBe('true');
@@ -77,9 +81,7 @@ describe('DrawerProgressGlow', () => {
   });
 
   it('sets data-visible="true" when content overflows', () => {
-    const { getByTestId, container } = render(
-      <PanelHarness />,
-    );
+    const { getByTestId, container } = render(<PanelHarness />);
     const scroll = getByTestId('scroll');
     stampScrollMetrics(scroll, 1200, 400);
     act(() => {
@@ -87,10 +89,14 @@ describe('DrawerProgressGlow', () => {
     });
 
     expect(
-      container.querySelector('.drawer-progress-line')?.getAttribute('data-visible'),
+      container
+        .querySelector('.drawer-progress-line')
+        ?.getAttribute('data-visible'),
     ).toBe('true');
     expect(
-      container.querySelector('.drawer-progress-glow')?.getAttribute('data-visible'),
+      container
+        .querySelector('.drawer-progress-glow')
+        ?.getAttribute('data-visible'),
     ).toBe('true');
   });
 
@@ -104,12 +110,20 @@ describe('DrawerProgressGlow', () => {
     // Panel = 600px, glow height = 160px (per .drawer-progress-glow CSS).
     // jsdom doesn't apply stylesheets, so glow.clientHeight defaults to
     // 0. We need to stamp it too.
-    const glow = container.querySelector('.drawer-progress-glow') as HTMLElement;
-    Object.defineProperty(glow, 'clientHeight', { configurable: true, value: 160 });
+    const glow = container.querySelector(
+      '.drawer-progress-glow',
+    ) as HTMLElement;
+    Object.defineProperty(glow, 'clientHeight', {
+      configurable: true,
+      value: 160,
+    });
 
     // Also stamp panel.clientHeight (the offsetParent) — jsdom gives 0.
     const panel = getByTestId('panel');
-    Object.defineProperty(panel, 'clientHeight', { configurable: true, value: 600 });
+    Object.defineProperty(panel, 'clientHeight', {
+      configurable: true,
+      value: 600,
+    });
 
     // Scroll to 50%: scrollTop = 0.5 * (1200 - 400) = 400.
     scroll.scrollTop = 400;

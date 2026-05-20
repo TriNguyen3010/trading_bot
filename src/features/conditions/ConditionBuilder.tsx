@@ -72,7 +72,10 @@ export function ConditionBuilder({
 
   const addRow = () => {
     const isFirst = group.conditions.length === 0;
-    onChange({ ...group, conditions: [...group.conditions, makeDefaultRow(isFirst)] });
+    onChange({
+      ...group,
+      conditions: [...group.conditions, makeDefaultRow(isFirst)],
+    });
   };
 
   // Auto-add a default row on mount when the group is empty and the
@@ -101,7 +104,8 @@ export function ConditionBuilder({
       <div className="mb-3 flex items-center justify-between">
         <h4 className="text-sm font-medium text-fg-secondary">{label}</h4>
         <span className="text-2xs uppercase tracking-wide text-fg-muted">
-          {group.conditions.length} rule{group.conditions.length === 1 ? '' : 's'}
+          {group.conditions.length} rule
+          {group.conditions.length === 1 ? '' : 's'}
         </span>
       </div>
 

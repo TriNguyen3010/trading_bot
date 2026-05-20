@@ -45,9 +45,7 @@ export const botPayloadSchema = z.object({
   /* MVP-only fields not in the original payload — backend negotiation TBD. */
   order_type: z.enum(['market', 'limit']).optional(),
   limit_offset_pct: z.number().nullable().optional(),
-  close_method_type: z
-    .enum(['manual', 'tp_sl', 'indicator', 'roi'])
-    .optional(),
+  close_method_type: z.enum(['manual', 'tp_sl', 'indicator', 'roi']).optional(),
 });
 
 export type BotPayload = z.infer<typeof botPayloadSchema>;

@@ -20,7 +20,12 @@ export interface MetaAndAssetCtxs {
 
 export interface HyperliquidApi {
   getMetaAndAssetCtxs(): Promise<MetaAndAssetCtxs>;
-  getCandleSnapshot(coin: string, interval: '1m' | '5m' | '15m' | '1h' | '1d', startTime: number, endTime: number): Promise<HLCandle[]>;
+  getCandleSnapshot(
+    coin: string,
+    interval: '1m' | '5m' | '15m' | '1h' | '1d',
+    startTime: number,
+    endTime: number,
+  ): Promise<HLCandle[]>;
   getL2Book(coin: string): Promise<HLOrderBook>;
 }
 

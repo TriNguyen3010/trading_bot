@@ -38,9 +38,9 @@ const DOT_RADIUS = 2;
 // `drawImage` + globalAlpha then keeps render cost flat. The 2-pass
 // bake produces a much smoother fall-off than a single shadowBlur,
 // matching the lush feel of the flower's plus-dot glow.
-const DIM_DOT_SPRITE_SIZE = 36;        // logical (CSS) px sprite canvas
-const DIM_DOT_OUTER_BLUR = 18;         // wide soft halo
-const DIM_DOT_INNER_BLUR = 6;          // tight core glow
+const DIM_DOT_SPRITE_SIZE = 36; // logical (CSS) px sprite canvas
+const DIM_DOT_OUTER_BLUR = 18; // wide soft halo
+const DIM_DOT_INNER_BLUR = 6; // tight core glow
 
 // Color palette.
 const COLOR = [255, 210, 80] as const;
@@ -65,7 +65,7 @@ const LERP = 0.18;
 // "session" with two random grid positions for A and B and a random
 // 3-segment perpendicular path connecting them.
 interface BeaconConfig {
-  phase: number;  // rotation phase offset (radians)
+  phase: number; // rotation phase offset (radians)
 }
 const BEACON_A_PHASE = 0;
 const BEACON_B_PHASE = Math.PI;
@@ -78,22 +78,22 @@ const BEACON_ROTATION_MS = 3200;
 // Plus dot rendering. Glow is per-dot via shadowBlur only — no
 // atmospheric outer halo behind. The halo dot-field corona (handled in
 // the main dot loop) provides ambient corona instead.
-const BEACON_PLUS_CARDINAL_RADIUS = 4;     // diameter 8 (at scale 1)
-const BEACON_PLUS_CENTER_RADIUS = 5;       // diameter 10 (nhuỵ)
+const BEACON_PLUS_CARDINAL_RADIUS = 4; // diameter 8 (at scale 1)
+const BEACON_PLUS_CENTER_RADIUS = 5; // diameter 10 (nhuỵ)
 // Both cardinals and the centre render in 3 passes (outer bloom + crisp
 // core + inner highlight). Cardinals stay slightly bigger / blurrier
 // than the centre — keeps them "rực" — but both share the soft fuzzy
 // glow profile from the reference.
-const BEACON_CENTER_SHADOW_BLUR = 32;       // up from 24
-const BEACON_CARDINAL_SHADOW_BLUR = 38;     // up from 32
+const BEACON_CENTER_SHADOW_BLUR = 32; // up from 24
+const BEACON_CARDINAL_SHADOW_BLUR = 38; // up from 32
 // Outer bloom — wide soft atmospheric halo via shadowBlur only (no
 // extra fill layer). Drawn behind the core, gives the smooth gaussian
 // fall-off seen in the reference.
-const PLUS_OUTER_BLOOM_BLUR_BONUS = 12;     // outer pass blur = core blur + this
+const PLUS_OUTER_BLOOM_BLUR_BONUS = 12; // outer pass blur = core blur + this
 const PLUS_OUTER_BLOOM_FILL_ALPHA = 0.4;
 const PLUS_OUTER_BLOOM_SHADOW_ALPHA = 0.55;
 // Inner highlight — tight near-white spot stacked on top.
-const PLUS_HIGHLIGHT_SCALE = 0.55;          // highlight radius = core × this
+const PLUS_HIGHLIGHT_SCALE = 0.55; // highlight radius = core × this
 const PLUS_HIGHLIGHT_BLUR = 14;
 const PLUS_HIGHLIGHT_COLOR = [255, 245, 180] as const; // near-white yellow
 // Plus dot intensity: centre stays bright, cardinals rotate. Idle
@@ -111,10 +111,10 @@ const HALO_FIELD_STRENGTH = 0.55;
 // of the 4 cardinal scales — corona dim when most petals are inhaling,
 // bright when most are exhaling.
 const CARDINAL_BREATHE_MS = 1500;
-const CARDINAL_SCALE_MIN = 0.5;            // radius × 0.5 = 2 (diameter 4)
-const CARDINAL_SCALE_MAX = 1.0;            // radius × 1.0 = 4 (diameter 8)
-const HALO_BREATHE_LOW = 0.7;              // halo strength multiplier when avg cardinal at min
-const HALO_BREATHE_HIGH = 1.3;             // halo strength multiplier when avg cardinal at max
+const CARDINAL_SCALE_MIN = 0.5; // radius × 0.5 = 2 (diameter 4)
+const CARDINAL_SCALE_MAX = 1.0; // radius × 1.0 = 4 (diameter 8)
+const HALO_BREATHE_LOW = 0.7; // halo strength multiplier when avg cardinal at min
+const HALO_BREATHE_HIGH = 1.3; // halo strength multiplier when avg cardinal at max
 
 // Connecting beam — 3 perpendicular segments. Lifecycle per session:
 //   1. Spawn A → fade in (BEACON_FADE_IN_MS)
@@ -267,7 +267,7 @@ function plusSlotName(
 interface BeaconState {
   x: number;
   y: number;
-  rotPhase: number;          // 0..1, 0=top active, 0.25=right, 0.5=bottom, 0.75=left
+  rotPhase: number; // 0..1, 0=top active, 0.25=right, 0.5=bottom, 0.75=left
   centerIntensity: number;
   cardinals: { top: number; right: number; bottom: number; left: number };
   /** Highest intensity across centre + cardinals — used as overall glow factor. */
@@ -299,7 +299,7 @@ function computeBeaconState(
   cardPhases: CardinalPhases,
 ): BeaconState {
   const rotPhase =
-    (((now / BEACON_ROTATION_MS) + cfg.phase / (Math.PI * 2)) % 1 + 1) % 1;
+    (((now / BEACON_ROTATION_MS + cfg.phase / (Math.PI * 2)) % 1) + 1) % 1;
   const slot = Math.floor(rotPhase * 4);
   const slotP = (rotPhase * 4) % 1;
   const cards = [
@@ -309,7 +309,8 @@ function computeBeaconState(
     CARD_BASE_INTENSITY,
   ];
   cards[slot] = 1.0;
-  cards[(slot + 1) % 4] = CARD_BASE_INTENSITY + (1.0 - CARD_BASE_INTENSITY) * slotP;
+  cards[(slot + 1) % 4] =
+    CARD_BASE_INTENSITY + (1.0 - CARD_BASE_INTENSITY) * slotP;
   const breatheRot = 0.08 * Math.sin((now / BEACON_ROTATION_MS) * Math.PI * 2);
   const centerI = CENTER_INTENSITY + breatheRot;
   const visibleAlpha = Math.max(
@@ -336,8 +337,7 @@ function computeBeaconState(
       cardinalScales.left) /
     4;
   const norm =
-    (avgScale - CARDINAL_SCALE_MIN) /
-    (CARDINAL_SCALE_MAX - CARDINAL_SCALE_MIN); // 0..1
+    (avgScale - CARDINAL_SCALE_MIN) / (CARDINAL_SCALE_MAX - CARDINAL_SCALE_MIN); // 0..1
   const haloBreathe =
     HALO_BREATHE_LOW + (HALO_BREATHE_HIGH - HALO_BREATHE_LOW) * norm;
 
@@ -346,7 +346,12 @@ function computeBeaconState(
     y,
     rotPhase,
     centerIntensity: centerI,
-    cardinals: { top: cards[0], right: cards[1], bottom: cards[2], left: cards[3] },
+    cardinals: {
+      top: cards[0],
+      right: cards[1],
+      bottom: cards[2],
+      left: cards[3],
+    },
     peak: Math.max(centerI, cards[0], cards[1], cards[2], cards[3]),
     visibleAlpha,
     memberAlphas,
@@ -358,11 +363,16 @@ function computeBeaconState(
 /** Map a slot name to the corresponding intensity from a BeaconState. */
 function slotIntensity(slot: PlusSlot, bs: BeaconState): number {
   switch (slot) {
-    case 'center': return bs.centerIntensity;
-    case 'top': return bs.cardinals.top;
-    case 'right': return bs.cardinals.right;
-    case 'bottom': return bs.cardinals.bottom;
-    case 'left': return bs.cardinals.left;
+    case 'center':
+      return bs.centerIntensity;
+    case 'top':
+      return bs.cardinals.top;
+    case 'right':
+      return bs.cardinals.right;
+    case 'bottom':
+      return bs.cardinals.bottom;
+    case 'left':
+      return bs.cardinals.left;
   }
 }
 
@@ -425,14 +435,14 @@ interface BeamSession {
   pathPoints: PathPoint[];
   totalLen: number;
   // Absolute performance.now() timestamps for each milestone.
-  tA_in: number;          // A spawn moment (slowest member starts fading later via offset)
-  tB_in: number;          // B spawn moment
-  tDraw_start: number;    // beam begins drawing (after every member of both is visible + grace)
-  tDraw_end: number;      // beam fully drawn (head reached B)
-  tFade_end: number;      // beam fully consumed from A side
-  tBeacon_out: number;    // beacons start fading out (= tFade_end)
-  tBeacon_end: number;    // beacons fully gone
-  tNext: number;          // next session spawns
+  tA_in: number; // A spawn moment (slowest member starts fading later via offset)
+  tB_in: number; // B spawn moment
+  tDraw_start: number; // beam begins drawing (after every member of both is visible + grace)
+  tDraw_end: number; // beam fully drawn (head reached B)
+  tFade_end: number; // beam fully consumed from A side
+  tBeacon_out: number; // beacons start fading out (= tFade_end)
+  tBeacon_end: number; // beacons fully gone
+  tNext: number; // next session spawns
   // Per-member fade-in offsets (each in [0, MEMBER_SPAWN_WINDOW_MS]).
   // Each plus member starts its own fade-in at tA_in/tB_in + offset.
   offsetsA: MemberMap<number>;
@@ -532,8 +542,7 @@ function generateBeamSession(
   }
   const type: 'H-V-H' | 'V-H-V' = Math.random() < 0.5 ? 'H-V-H' : 'V-H-V';
   const midFrac =
-    BEAM_MID_FRAC_MIN +
-    Math.random() * (BEAM_MID_FRAC_MAX - BEAM_MID_FRAC_MIN);
+    BEAM_MID_FRAC_MIN + Math.random() * (BEAM_MID_FRAC_MAX - BEAM_MID_FRAC_MIN);
   const pathPoints = buildPerpendicularPath(a, b, type, midFrac);
   const totalLen = pathTotalLength(pathPoints);
 
@@ -559,10 +568,20 @@ function generateBeamSession(
   const tNext = tBeacon_end + idleGap;
 
   return {
-    a, b, pathPoints, totalLen,
-    tA_in, tB_in, tDraw_start, tDraw_end, tFade_end,
-    tBeacon_out, tBeacon_end, tNext,
-    offsetsA, offsetsB,
+    a,
+    b,
+    pathPoints,
+    totalLen,
+    tA_in,
+    tB_in,
+    tDraw_start,
+    tDraw_end,
+    tFade_end,
+    tBeacon_out,
+    tBeacon_end,
+    tNext,
+    offsetsA,
+    offsetsB,
     cardPhasesA: randomCardinalPhases(),
     cardPhasesB: randomCardinalPhases(),
   };
@@ -605,9 +624,9 @@ function memberAlphasFor(
 
 interface BeamSubVisibility {
   active: boolean;
-  fromLen: number;     // start of visible region along path
-  toLen: number;       // end of visible region
-  drawing: boolean;    // true while head is still travelling
+  fromLen: number; // start of visible region along path
+  toLen: number; // end of visible region
+  drawing: boolean; // true while head is still travelling
 }
 
 /** Where on the path is the beam currently visible. */
@@ -1010,15 +1029,13 @@ export function DotGridSpotlight({
           if (memberA <= 0) continue;
           const i = slotIntensity(slot, bs);
           const eff = i * memberA;
-          const bestEff =
-            plusBest ? plusBest.intensity * plusBest.visibleAlpha : -1;
+          const bestEff = plusBest
+            ? plusBest.intensity * plusBest.visibleAlpha
+            : -1;
           if (eff > bestEff) {
             // Centre doesn't breathe; cardinals use the scale matching
             // their own slot (each runs an independent timer).
-            const scale =
-              slot === 'center'
-                ? 1
-                : bs.cardinalScales[slot];
+            const scale = slot === 'center' ? 1 : bs.cardinalScales[slot];
             plusBest = {
               slot,
               intensity: i,

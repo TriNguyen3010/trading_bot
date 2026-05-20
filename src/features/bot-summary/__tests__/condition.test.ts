@@ -36,24 +36,30 @@ function group(...conditions: ConditionRow[]): ConditionGroup {
 describe('condition translator — single condition', () => {
   it('binary number: RSI < 30', () => {
     const gaps: TranslationGap[] = [];
-    const lines = translateConditionGroup(group(row({ op: '<', right_number: 30 })), {
-      verb: 'Buys long when',
-      emptyPhrase: 'no entry',
-      section: 'entry',
-      gaps,
-    });
+    const lines = translateConditionGroup(
+      group(row({ op: '<', right_number: 30 })),
+      {
+        verb: 'Buys long when',
+        emptyPhrase: 'no entry',
+        section: 'entry',
+        gaps,
+      },
+    );
     expect(flatten(lines)).toBe('Buys long when RSI(14) is below 30.');
     expect(gaps).toHaveLength(0);
   });
 
   it('binary number with > op', () => {
     const gaps: TranslationGap[] = [];
-    const lines = translateConditionGroup(group(row({ op: '>', right_number: 70 })), {
-      verb: 'Sells short when',
-      emptyPhrase: '',
-      section: 'entry',
-      gaps,
-    });
+    const lines = translateConditionGroup(
+      group(row({ op: '>', right_number: 70 })),
+      {
+        verb: 'Sells short when',
+        emptyPhrase: '',
+        section: 'entry',
+        gaps,
+      },
+    );
     expect(flatten(lines)).toBe('Sells short when RSI(14) is above 70.');
   });
 
@@ -110,9 +116,7 @@ describe('condition translator — single condition', () => {
       ),
       { verb: 'Sells short when', emptyPhrase: '', section: 'entry', gaps },
     );
-    expect(flatten(lines)).toBe(
-      'Sells short when candle close is falling.',
-    );
+    expect(flatten(lines)).toBe('Sells short when candle close is falling.');
   });
 
   it('null right_number on number type → gap + warning marker', () => {
@@ -168,7 +172,9 @@ describe('condition translator — group dispatch', () => {
     const text = flatten(lines);
     expect(text).toContain('Buys long when all of these are true:');
     expect(text).toContain('• RSI(14) is below 30');
-    expect(text).toContain('• candle close is above the 50-period moving average');
+    expect(text).toContain(
+      '• candle close is above the 50-period moving average',
+    );
   });
 
   it('two OR conditions → "any of these is true" prefix', () => {

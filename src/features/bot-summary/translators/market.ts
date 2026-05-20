@@ -54,8 +54,7 @@ export function translateMarket(
     return [line(t(`Pair "${c.pair}" not in BASE-QUOTE format.`, 'warning'))];
   }
 
-  const marketLabel =
-    c.marketType === 'futures' ? 'perpetual futures' : 'spot';
+  const marketLabel = c.marketType === 'futures' ? 'perpetual futures' : 'spot';
   const tfLabel = TIMEFRAME_LABEL[c.timeframe] ?? `${c.timeframe} candles`;
 
   return [

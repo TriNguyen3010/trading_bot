@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  cleanup,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MyBotsDialog } from './MyBotsDialog';
 import { useMyBotsDialogStore } from './my-bots-dialog.store';
@@ -13,9 +19,10 @@ vi.mock('./bot.api', () => ({
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>(
-    'react-router-dom',
-  );
+  const actual =
+    await vi.importActual<typeof import('react-router-dom')>(
+      'react-router-dom',
+    );
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
@@ -62,10 +69,21 @@ describe('MyBotsDialog', () => {
 
   it('renders bot cards when list resolves', async () => {
     mockList.mockResolvedValueOnce([
-      { id: 80, bot_name: 'Tribot', status: 'stopped', strategy_name: 'TriStrategy', desired_status: null, error_message: null },
+      {
+        id: 80,
+        bot_name: 'Tribot',
+        status: 'stopped',
+        strategy_name: 'TriStrategy',
+        desired_status: null,
+        error_message: null,
+      },
     ]);
     mockGetConfig.mockResolvedValueOnce({
-      config: { dry_run: true, timeframe: '5m', exchange: { pair_whitelist: ['BTC/USDT:USDT'] } },
+      config: {
+        dry_run: true,
+        timeframe: '5m',
+        exchange: { pair_whitelist: ['BTC/USDT:USDT'] },
+      },
     });
 
     openDialog();
@@ -81,10 +99,21 @@ describe('MyBotsDialog', () => {
 
   it('renders em-dash placeholders for fields BE does not expose', async () => {
     mockList.mockResolvedValueOnce([
-      { id: 1, bot_name: 'X', status: 'stopped', strategy_name: 'S', desired_status: null, error_message: null },
+      {
+        id: 1,
+        bot_name: 'X',
+        status: 'stopped',
+        strategy_name: 'S',
+        desired_status: null,
+        error_message: null,
+      },
     ]);
     mockGetConfig.mockResolvedValueOnce({
-      config: { dry_run: true, timeframe: '5m', exchange: { pair_whitelist: ['BTC/USDT:USDT'] } },
+      config: {
+        dry_run: true,
+        timeframe: '5m',
+        exchange: { pair_whitelist: ['BTC/USDT:USDT'] },
+      },
     });
 
     openDialog();
@@ -105,10 +134,21 @@ describe('MyBotsDialog', () => {
 
   it('navigates to /bots/{id} when a card is clicked', async () => {
     mockList.mockResolvedValueOnce([
-      { id: 80, bot_name: 'Tribot', status: 'stopped', strategy_name: 'S', desired_status: null, error_message: null },
+      {
+        id: 80,
+        bot_name: 'Tribot',
+        status: 'stopped',
+        strategy_name: 'S',
+        desired_status: null,
+        error_message: null,
+      },
     ]);
     mockGetConfig.mockResolvedValueOnce({
-      config: { dry_run: true, timeframe: '5m', exchange: { pair_whitelist: ['BTC/USDT:USDT'] } },
+      config: {
+        dry_run: true,
+        timeframe: '5m',
+        exchange: { pair_whitelist: ['BTC/USDT:USDT'] },
+      },
     });
 
     openDialog();
@@ -139,7 +179,14 @@ describe('MyBotsDialog', () => {
 
   it('keeps showing the card when per-bot config fetch fails', async () => {
     mockList.mockResolvedValueOnce([
-      { id: 80, bot_name: 'Tribot', status: 'stopped', strategy_name: 'S', desired_status: null, error_message: null },
+      {
+        id: 80,
+        bot_name: 'Tribot',
+        status: 'stopped',
+        strategy_name: 'S',
+        desired_status: null,
+        error_message: null,
+      },
     ]);
     mockGetConfig.mockRejectedValueOnce(new Error('config down'));
 

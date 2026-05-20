@@ -58,13 +58,16 @@ export function StrategyNarrativeSummary() {
     strategy.candlestick.find((c) => c === 'close') ??
     strategy.candlestick[0] ??
     null;
-  const candleText = candleSource ? (CANDLE_LABEL[candleSource] ?? candleSource) : 'the candle';
+  const candleText = candleSource
+    ? (CANDLE_LABEL[candleSource] ?? candleSource)
+    : 'the candle';
 
   // First entry condition as headline trigger; mention extras as a count.
   // Issue #1 & #2 — use conditionToString() which handles OP_LABEL + right_type='none'
   const firstCond = conditions[0];
   const moreCount = Math.max(0, conditions.length - 1);
-  const logicWord = strategy.entryConditions.groupConnector === 'OR' ? 'or' : 'and';
+  const logicWord =
+    strategy.entryConditions.groupConnector === 'OR' ? 'or' : 'and';
 
   const triggerText = firstCond ? conditionToString(firstCond) : 'no rule yet';
 
@@ -76,8 +79,7 @@ export function StrategyNarrativeSummary() {
 
   return (
     <p className="text-sm leading-relaxed text-fg-secondary">
-      When{' '}
-      <span className="font-mono font-medium text-fg">{triggerText}</span>
+      When <span className="font-mono font-medium text-fg">{triggerText}</span>
       {moreCount > 0 ? (
         <span className="text-fg-muted">
           {' '}
@@ -85,8 +87,8 @@ export function StrategyNarrativeSummary() {
         </span>
       ) : null}{' '}
       on <span className="font-medium text-fg">{candleText}</span> of a{' '}
-      <span className="font-mono font-medium text-fg">{timeframe}</span>{' '}
-      candle, enter a{' '}
+      <span className="font-mono font-medium text-fg">{timeframe}</span> candle,
+      enter a{' '}
       <span
         className={
           isLong ? 'font-semibold text-bullish' : 'font-semibold text-bearish'
@@ -126,8 +128,8 @@ function renderExitNarrative(closeMethod: CloseMethodForm) {
   if (type === 'manual') {
     return (
       <span>
-        Close trades <span className="font-medium text-fg">manually</span> —
-        bot won&apos;t auto-exit.
+        Close trades <span className="font-medium text-fg">manually</span> — bot
+        won&apos;t auto-exit.
       </span>
     );
   }
@@ -182,20 +184,12 @@ function renderExitNarrative(closeMethod: CloseMethodForm) {
 
     // TP only
     if (tpEnabled && !slEnabled) {
-      return (
-        <>
-          {tpNode} — no stop loss.
-        </>
-      );
+      return <>{tpNode} — no stop loss.</>;
     }
 
     // SL only
     if (!tpEnabled && slEnabled) {
-      return (
-        <>
-          Hold until {slNode} — no take profit target.
-        </>
-      );
+      return <>Hold until {slNode} — no take profit target.</>;
     }
 
     // Neither

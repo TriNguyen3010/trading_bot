@@ -50,7 +50,9 @@ function StatusBadge({ row }: { row: BotRow }) {
 
 function ModeBadge({ config }: { config: FreqtradeConfig | null }) {
   if (config == null) {
-    return <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-fg-muted/15" />;
+    return (
+      <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-fg-muted/15" />
+    );
   }
   const live = config.dry_run === false;
   return (
@@ -90,18 +92,18 @@ function BotCard({ row, onClick }: { row: BotRow; onClick: () => void }) {
         }
       }}
       className={cn(
-        'flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 cursor-pointer',
-        'transition-all hover:border-border-default hover:bg-surface-hover',
+        'flex cursor-pointer flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4',
+        'hover:border-border-default transition-all hover:bg-surface-hover',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
           <div className="flex-shrink-0 rounded-lg bg-brand/10 p-1.5">
             <BarChart2 className="h-4 w-4 text-brand" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-fg truncate">{name}</p>
+            <p className="truncate text-sm font-semibold text-fg">{name}</p>
             <p className="text-xs text-fg-muted">
               {pair == null ? (
                 <span className="inline-block h-3 w-16 animate-pulse rounded bg-fg-muted/15" />
@@ -125,15 +127,21 @@ function BotCard({ row, onClick }: { row: BotRow; onClick: () => void }) {
 
       <div className="grid grid-cols-3 gap-2 rounded-lg border border-border-subtle bg-canvas px-3 py-2">
         <div className="flex flex-col gap-0.5">
-          <span className="text-2xs uppercase tracking-wider text-fg-muted">Today</span>
+          <span className="text-2xs uppercase tracking-wider text-fg-muted">
+            Today
+          </span>
           <Placeholder />
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-2xs uppercase tracking-wider text-fg-muted">Win</span>
+          <span className="text-2xs uppercase tracking-wider text-fg-muted">
+            Win
+          </span>
           <Placeholder />
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-2xs uppercase tracking-wider text-fg-muted">Trades</span>
+          <span className="text-2xs uppercase tracking-wider text-fg-muted">
+            Trades
+          </span>
           <Placeholder />
         </div>
       </div>
@@ -159,7 +167,7 @@ function EmptyState({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   return (
     <div className="flex items-center justify-center py-10">
-      <div className="rounded-xl border border-border-subtle bg-surface p-10 flex flex-col items-center gap-4 text-center max-w-sm">
+      <div className="flex max-w-sm flex-col items-center gap-4 rounded-xl border border-border-subtle bg-surface p-10 text-center">
         <div className="rounded-full bg-brand/10 p-4">
           <BarChart2 className="h-8 w-8 text-brand" />
         </div>
@@ -204,7 +212,11 @@ export function MyBotsDialog() {
         bots.map(async (b): Promise<BotRow> => {
           try {
             const res = await botApi.getConfig(b.id);
-            return { meta: b, config: res.config as FreqtradeConfig, configError: false };
+            return {
+              meta: b,
+              config: res.config as FreqtradeConfig,
+              configError: false,
+            };
           } catch {
             return { meta: b, config: null, configError: true };
           }
@@ -238,8 +250,14 @@ export function MyBotsDialog() {
 
         {error ? (
           <div className="flex flex-col gap-3 rounded-lg border border-danger/40 bg-bearish-subtle p-4">
-            <pre className="whitespace-pre-wrap font-mono text-xs text-bearish">{error}</pre>
-            <Button variant="secondary" onClick={fetchBots} className="self-start">
+            <pre className="whitespace-pre-wrap font-mono text-xs text-bearish">
+              {error}
+            </pre>
+            <Button
+              variant="secondary"
+              onClick={fetchBots}
+              className="self-start"
+            >
               Retry
             </Button>
           </div>
@@ -252,9 +270,13 @@ export function MyBotsDialog() {
         ) : rows.length === 0 ? (
           <EmptyState onClose={() => setOpen(false)} />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 max-h-[60vh] overflow-y-auto">
+          <div className="grid max-h-[60vh] grid-cols-1 gap-4 overflow-y-auto sm:grid-cols-2">
             {rows.map((r) => (
-              <BotCard key={r.meta.id} row={r} onClick={() => handleCardClick(r.meta.id)} />
+              <BotCard
+                key={r.meta.id}
+                row={r}
+                onClick={() => handleCardClick(r.meta.id)}
+              />
             ))}
           </div>
         )}

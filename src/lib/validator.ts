@@ -22,7 +22,10 @@ export function validateBuilder(state: BuilderState): BuilderIssue[] {
   // Bot config -------------------------------------------------------------
   const c = state.botConfig;
   if (!c.pair.trim()) {
-    issues.push({ stepId: 'bot-config', message: 'Pick a pair (e.g. BTC-USDC).' });
+    issues.push({
+      stepId: 'bot-config',
+      message: 'Pick a pair (e.g. BTC-USDC).',
+    });
   } else if (!parseUiPair(c.pair)) {
     issues.push({
       stepId: 'bot-config',
@@ -100,7 +103,8 @@ export function validateBuilder(state: BuilderState): BuilderIssue[] {
     if (!cm.tpEnabled && !cm.slEnabled) {
       issues.push({
         stepId: 'close-method',
-        message: 'Enable take profit or stop loss (or pick a different method).',
+        message:
+          'Enable take profit or stop loss (or pick a different method).',
       });
     }
     if (cm.tpEnabled && cm.tpLevels.length === 0) {

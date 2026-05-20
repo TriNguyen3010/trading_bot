@@ -53,11 +53,7 @@ export function BotConfigSetup() {
       {/* Bot name is the first thing users name — same store value as
        *  the header inline-edit affordance, just surfaced as a proper
        *  form field. */}
-      <FormField
-        label="Bot name"
-        required
-        help={HELP.botName}
-      >
+      <FormField label="Bot name" required help={HELP.botName}>
         <Input
           value={botName}
           onChange={(e) => setBotName(e.target.value)}
@@ -68,11 +64,7 @@ export function BotConfigSetup() {
       {/* Pair + Timeframe sit on one row to compress the form. */}
       <div className="grid grid-cols-2 gap-4">
         <div data-cy-anchor="bot-config:pair">
-          <FormField
-            label="Pair"
-            required
-            help={HELP.pair}
-          >
+          <FormField label="Pair" required help={HELP.pair}>
             <Input
               list="pair-suggestions"
               placeholder="BTC-USDC"
@@ -116,10 +108,7 @@ export function BotConfigSetup() {
       </FormField>
 
       <div data-cy-anchor="bot-config:leverage">
-        <FormField
-          label="Leverage"
-          help={HELP.leverage}
-        >
+        <FormField label="Leverage" help={HELP.leverage}>
           <div className="flex items-center gap-3">
             <Slider
               className="min-w-0 flex-1"
@@ -260,9 +249,7 @@ export function BotConfigConfigure() {
         <FormField label="Stake amount" help={HELP.stakeAmount}>
           <NumberInput
             value={config.stakeAmount}
-            onValueChange={(v) =>
-              patch({ stakeAmount: Math.max(0, v ?? 0) })
-            }
+            onValueChange={(v) => patch({ stakeAmount: Math.max(0, v ?? 0) })}
             min={0}
             step={1}
             suffix={config.stakeCurrency}
@@ -276,9 +263,7 @@ export function BotConfigConfigure() {
         <FormField label="Dry-run wallet" help={HELP.dryRunWallet}>
           <NumberInput
             value={config.dryRunWallet}
-            onValueChange={(v) =>
-              patch({ dryRunWallet: Math.max(0, v ?? 0) })
-            }
+            onValueChange={(v) => patch({ dryRunWallet: Math.max(0, v ?? 0) })}
             min={0}
             step={100}
             suffix={config.stakeCurrency}

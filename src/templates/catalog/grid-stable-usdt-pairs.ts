@@ -17,10 +17,10 @@ export const gridStableUsdtPairs: BotTemplate = {
   description:
     'Stablecoin grid. Limit buys with a small offset, time-decaying ROI exit.',
   longDescription:
-    "Grid bots farm tiny spreads on highly stable pairs. We use a limit order " +
-    "0.05% below market to catch micro-dips, then exit via the ROI table — 0.5% " +
-    "target immediately, falling to break-even after 2 hours. 1× leverage on " +
-    "futures to mimic spot grid behaviour. Boring is the feature, not the bug.",
+    'Grid bots farm tiny spreads on highly stable pairs. We use a limit order ' +
+    '0.05% below market to catch micro-dips, then exit via the ROI table — 0.5% ' +
+    'target immediately, falling to break-even after 2 hours. 1× leverage on ' +
+    'futures to mimic spot grid behaviour. Boring is the feature, not the bug.',
   tags: ['stable', 'grid', 'roi', 'beginner'],
   difficulty: 'beginner',
   riskLevel: 'conservative',

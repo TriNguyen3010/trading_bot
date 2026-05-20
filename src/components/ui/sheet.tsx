@@ -24,8 +24,9 @@ export const SheetOverlay = React.forwardRef<
 ));
 SheetOverlay.displayName = 'SheetOverlay';
 
-export interface SheetContentProps
-  extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
+export interface SheetContentProps extends React.ComponentPropsWithoutRef<
+  typeof DialogPrimitive.Content
+> {
   /** Sheet width — defaults to 720px (matches MVP spec). */
   width?: number;
   /** When false the close (×) button in the header is hidden. */
@@ -55,30 +56,30 @@ export const SheetContent = React.forwardRef<
     },
     ref,
   ) => (
-  <SheetPortal>
-    {!hideOverlay ? <SheetOverlay className={overlayClassName} /> : null}
-    <DialogPrimitive.Content
-      ref={ref}
-      style={{ width }}
-      className={cn(
-        'card-coin98 fixed inset-y-0 right-0 z-50 flex flex-col rounded-l-3xl shadow-2xl',
-        'data-[state=open]:animate-slide-in-right',
-        'data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      {!hideCloseButton ? (
-        <DialogPrimitive.Close
-          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-fg-secondary transition-colors hover:bg-black/40 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-          aria-label="Close drawer"
-        >
-          <X className="h-4 w-4" />
-        </DialogPrimitive.Close>
-      ) : null}
-    </DialogPrimitive.Content>
-  </SheetPortal>
+    <SheetPortal>
+      {!hideOverlay ? <SheetOverlay className={overlayClassName} /> : null}
+      <DialogPrimitive.Content
+        ref={ref}
+        style={{ width }}
+        className={cn(
+          'card-coin98 fixed inset-y-0 right-0 z-50 flex flex-col rounded-l-3xl shadow-2xl',
+          'data-[state=open]:animate-slide-in-right',
+          'data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right',
+          className,
+        )}
+        {...props}
+      >
+        {children}
+        {!hideCloseButton ? (
+          <DialogPrimitive.Close
+            className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-fg-secondary transition-colors hover:bg-black/40 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            aria-label="Close drawer"
+          >
+            <X className="h-4 w-4" />
+          </DialogPrimitive.Close>
+        ) : null}
+      </DialogPrimitive.Content>
+    </SheetPortal>
   ),
 );
 SheetContent.displayName = 'SheetContent';
@@ -88,10 +89,7 @@ export const SheetHeader = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn(
-      'flex flex-col gap-1 px-6 pt-5 pb-4',
-      className,
-    )}
+    className={cn('flex flex-col gap-1 px-6 pb-4 pt-5', className)}
     {...props}
   />
 );
@@ -127,10 +125,7 @@ export const SheetBody = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn(
-      'flex-1 overflow-y-auto px-6 py-5 scrollbar-thin',
-      className,
-    )}
+    className={cn('scrollbar-thin flex-1 overflow-y-auto px-6 py-5', className)}
     {...props}
   />
 ));
@@ -141,10 +136,7 @@ export const SheetFooter = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn(
-      'flex items-center justify-end gap-3 px-6 py-4',
-      className,
-    )}
+    className={cn('flex items-center justify-end gap-3 px-6 py-4', className)}
     {...props}
   />
 );

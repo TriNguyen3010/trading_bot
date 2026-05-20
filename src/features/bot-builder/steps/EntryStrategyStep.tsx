@@ -15,10 +15,7 @@ export function EntryStrategySetup() {
 
   return (
     <>
-      <FormField
-        label="Strategy name"
-        help={HELP.strategyName}
-      >
+      <FormField label="Strategy name" help={HELP.strategyName}>
         <Input
           value={strategy.name}
           onChange={(e) => patch({ name: e.target.value })}
@@ -27,10 +24,7 @@ export function EntryStrategySetup() {
       </FormField>
 
       {strategy.indicators.length > 0 ? (
-        <FormField
-          label="Indicators"
-          help={HELP.indicators}
-        >
+        <FormField label="Indicators" help={HELP.indicators}>
           <div className="flex flex-wrap items-center gap-2">
             {strategy.indicators.map((ind) => (
               <IndicatorChip

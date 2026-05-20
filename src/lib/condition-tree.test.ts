@@ -11,10 +11,7 @@ import type {
   ConditionRule,
   ConditionTree,
 } from '@/types/builder.types';
-import type {
-  ConditionListItem,
-  SignalGroup,
-} from '@/schemas/strategy.schema';
+import type { ConditionListItem, SignalGroup } from '@/schemas/strategy.schema';
 
 // Factories ------------------------------------------------------------------
 

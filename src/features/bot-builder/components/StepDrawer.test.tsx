@@ -71,7 +71,9 @@ describe('StepDrawer integration', () => {
     useBuilderStore.getState().setOpenStep('bot-config');
     render(<StepDrawer {...baseProps} />);
     expect(await screen.findByText('Cancel')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /skip & save/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /skip & save/i }),
+    ).toBeInTheDocument();
     const cont = screen.getByRole('button', { name: /continue/i });
     expect(cont).not.toBeDisabled();
   });
@@ -96,7 +98,9 @@ describe('StepDrawer integration', () => {
       />,
     );
     // Composite body shown.
-    expect(await screen.findByTestId('composite-bot-config')).toBeInTheDocument();
+    expect(
+      await screen.findByTestId('composite-bot-config'),
+    ).toBeInTheDocument();
     // Title without the "Step 1: " prefix.
     expect(screen.getByText(/^Bot Basics$/)).toBeInTheDocument();
     expect(screen.queryByText(/^Step 1:/)).toBeNull();

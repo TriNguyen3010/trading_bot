@@ -5,10 +5,7 @@ import type {
   ConditionRule,
   ConditionTree,
 } from '@/types/builder.types';
-import type {
-  ConditionListItem,
-  SignalGroup,
-} from '@/schemas/strategy.schema';
+import type { ConditionListItem, SignalGroup } from '@/schemas/strategy.schema';
 
 // ────────────────────────────────────────────────────────────────────────────
 // BE list items can be plain conditions OR nested `{type:'group', ...}` groups.
@@ -20,7 +17,12 @@ type BEGroupItem = Extract<ConditionListItem, { type: 'group' }>;
 type BEPlainItem = Exclude<ConditionListItem, { type: 'group' }>;
 
 function isBEGroupItem(item: ConditionListItem): item is BEGroupItem {
-  return typeof item === 'object' && item !== null && 'type' in item && item.type === 'group';
+  return (
+    typeof item === 'object' &&
+    item !== null &&
+    'type' in item &&
+    item.type === 'group'
+  );
 }
 
 let idSeq = 0;
@@ -161,7 +163,7 @@ export function deserializeBEToTree(group: SignalGroup): ConditionTree {
 
   items.forEach((item, idx) => {
     const itemOp: 'AND' | 'OR' | undefined =
-      idx === 0 ? undefined : (item as BEPlainItem).operator ?? 'AND';
+      idx === 0 ? undefined : ((item as BEPlainItem).operator ?? 'AND');
 
     if (isBEGroupItem(item)) {
       flushBuffer();

@@ -74,7 +74,7 @@ export function TemplatesDialog() {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-brand-subtle text-brand">
               <Sparkles className="h-5 w-5" />

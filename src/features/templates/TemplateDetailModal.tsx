@@ -58,7 +58,7 @@ export function TemplateDetailModal({ onUse }: TemplateDetailModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && closeDetail()}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
         {template && <DetailBody template={template} />}
         <DialogFooter>
           <Button variant="ghost" onClick={closeDetail}>
@@ -192,7 +192,9 @@ function ParamHighlights({ template }: { template: BotTemplate }) {
 function closeMethodLabel(close: BotTemplate['state']['closeMethod']): string {
   switch (close.type) {
     case 'tp_sl': {
-      const tps = close.tpEnabled ? `${close.tpLevels.length} TP${close.tpLevels.length === 1 ? '' : 's'}` : '';
+      const tps = close.tpEnabled
+        ? `${close.tpLevels.length} TP${close.tpLevels.length === 1 ? '' : 's'}`
+        : '';
       const sl = close.slEnabled ? `SL ${close.slValue}%` : '';
       return [tps, sl].filter(Boolean).join(' · ') || 'TP/SL';
     }

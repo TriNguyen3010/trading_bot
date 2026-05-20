@@ -10,7 +10,10 @@ export function TpSlForm() {
   const close = useBuilderStore((s) => s.closeMethod);
   const patch = useBuilderStore((s) => s.patchCloseMethod);
 
-  const totalClose = close.tpLevels.reduce((sum, l) => sum + (l.amount || 0), 0);
+  const totalClose = close.tpLevels.reduce(
+    (sum, l) => sum + (l.amount || 0),
+    0,
+  );
   const overflow = totalClose > 100;
 
   const updateLevel = (idx: number, p: Partial<TpLevel>) => {
@@ -19,7 +22,10 @@ export function TpSlForm() {
     });
   };
   const addLevel = () => {
-    const nextProfit = close.tpLevels.length === 0 ? 5 : (close.tpLevels.at(-1)!.profit ?? 5) + 5;
+    const nextProfit =
+      close.tpLevels.length === 0
+        ? 5
+        : (close.tpLevels.at(-1)!.profit ?? 5) + 5;
     patch({
       tpLevels: [...close.tpLevels, { profit: nextProfit, amount: 50 }],
     });
@@ -70,7 +76,9 @@ export function TpSlForm() {
                       <NumberInput
                         value={lvl.amount}
                         onValueChange={(v) =>
-                          updateLevel(idx, { amount: Math.max(0, Math.min(100, v ?? 0)) })
+                          updateLevel(idx, {
+                            amount: Math.max(0, Math.min(100, v ?? 0)),
+                          })
                         }
                         min={0}
                         max={100}

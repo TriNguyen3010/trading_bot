@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  generateEventNarrations,
-  bootstrapNarrative,
-} from '../cypheusEvents';
+import { generateEventNarrations, bootstrapNarrative } from '../cypheusEvents';
 import type { Fill, PerformanceSnapshot } from '../types';
 
 const baseSnap: PerformanceSnapshot = {
@@ -206,10 +203,7 @@ describe('cypheusEvents · bootstrapNarrative', () => {
   });
 
   it('emits streak milestone for active streaks', () => {
-    const msgs = bootstrapNarrative(
-      { ...baseSnap, winStreak: 12 },
-      [],
-    );
+    const msgs = bootstrapNarrative({ ...baseSnap, winStreak: 12 }, []);
     expect(msgs.some((m) => m.type === 'streak-milestone')).toBe(true);
   });
 

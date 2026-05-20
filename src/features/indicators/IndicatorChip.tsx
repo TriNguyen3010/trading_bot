@@ -9,10 +9,7 @@ import { NumberInput } from '@/components/ui/number-input';
 import { Select } from '@/components/ui/select';
 import { FormField } from '@/components/ui/form-field';
 import { cn } from '@/lib/utils';
-import {
-  INDICATOR_REGISTRY,
-  indicatorOutputId,
-} from './indicator-registry';
+import { INDICATOR_REGISTRY, indicatorOutputId } from './indicator-registry';
 import type { IndicatorItem } from '@/types/builder.types';
 
 export interface IndicatorChipProps {
@@ -21,7 +18,11 @@ export interface IndicatorChipProps {
   onRemove: () => void;
 }
 
-export function IndicatorChip({ item, onChange, onRemove }: IndicatorChipProps) {
+export function IndicatorChip({
+  item,
+  onChange,
+  onRemove,
+}: IndicatorChipProps) {
   const def = INDICATOR_REGISTRY[item.name];
   const [open, setOpen] = useState(false);
 
@@ -39,7 +40,10 @@ export function IndicatorChip({ item, onChange, onRemove }: IndicatorChipProps) 
   const setParam = (key: string, value: number | string | null) => {
     onChange({
       ...item,
-      parameters: { ...item.parameters, [key]: value ?? def.parameters.find((p) => p.key === key)?.default ?? 0 },
+      parameters: {
+        ...item.parameters,
+        [key]: value ?? def.parameters.find((p) => p.key === key)?.default ?? 0,
+      },
     });
   };
 
@@ -47,9 +51,11 @@ export function IndicatorChip({ item, onChange, onRemove }: IndicatorChipProps) 
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <div className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border border-brand bg-brand-subtle pl-3 pr-1 py-1 text-sm',
-      )}>
+      <div
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-full border border-brand bg-brand-subtle py-1 pl-3 pr-1 text-sm',
+        )}
+      >
         <span className="font-medium text-fg">{summary}</span>
         <PopoverTrigger asChild>
           <button
@@ -81,7 +87,11 @@ export function IndicatorChip({ item, onChange, onRemove }: IndicatorChipProps) 
               return (
                 <FormField key={p.key} label={p.label}>
                   <NumberInput
-                    value={typeof current === 'number' ? current : Number(current ?? p.default)}
+                    value={
+                      typeof current === 'number'
+                        ? current
+                        : Number(current ?? p.default)
+                    }
                     onValueChange={(v) => setParam(p.key, v)}
                     min={p.min}
                     max={p.max}

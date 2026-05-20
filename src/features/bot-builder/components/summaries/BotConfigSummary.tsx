@@ -45,7 +45,9 @@ export function BotConfigSummary() {
         </span>{' '}
         leverage in{' '}
         <span
-          className={isLive ? 'font-medium text-bearish' : 'font-medium text-bullish'}
+          className={
+            isLive ? 'font-medium text-bearish' : 'font-medium text-bullish'
+          }
         >
           {isLive ? 'Live' : 'Dry-run'}
         </span>{' '}
@@ -69,7 +71,9 @@ export function BotConfigSummary() {
         </span>
         <ReadOnlyChip
           tone={isLive ? 'bearish' : 'bullish'}
-          title={isLive ? 'Live trading — real money' : 'Dry-run — paper trading'}
+          title={
+            isLive ? 'Live trading — real money' : 'Dry-run — paper trading'
+          }
         >
           {isLive ? 'Live' : 'Dry-run'}
         </ReadOnlyChip>
@@ -95,7 +99,11 @@ export function BotConfigSummary() {
 }
 
 function Stat({
-  label, value, unit, warn, warnIcon,
+  label,
+  value,
+  unit,
+  warn,
+  warnIcon,
 }: {
   label: string;
   value: string;
@@ -112,9 +120,13 @@ function Stat({
             : 'font-mono text-sm font-semibold text-fg'
         }
       >
-        {warnIcon ? <AlertTriangle className="h-3 w-3" aria-hidden="true" /> : null}
+        {warnIcon ? (
+          <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+        ) : null}
         {value}
-        {unit ? <span className="ml-1 text-xs font-medium text-fg-muted">{unit}</span> : null}
+        {unit ? (
+          <span className="ml-1 text-xs font-medium text-fg-muted">{unit}</span>
+        ) : null}
       </span>
       <span className="text-2xs font-semibold uppercase tracking-wide text-fg-muted">
         {label}
@@ -124,5 +136,5 @@ function Stat({
 }
 
 function Divider() {
-  return <span aria-hidden="true" className="h-6 w-px bg-border-default" />;
+  return <span aria-hidden="true" className="bg-border-default h-6 w-px" />;
 }

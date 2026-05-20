@@ -33,13 +33,7 @@ export type SummaryBlockId =
 export interface SummaryBlock {
   id: SummaryBlockId;
   /** lucide-react icon name. Resolved to a component in BotSummaryCard. */
-  icon:
-    | 'MapPin'
-    | 'Shield'
-    | 'TrendingUp'
-    | 'Target'
-    | 'LogOut'
-    | 'Bell';
+  icon: 'MapPin' | 'Shield' | 'TrendingUp' | 'Target' | 'LogOut' | 'Bell';
   title: string;
   /** Empty array means the section is not applicable yet — renderer
    * decides whether to render an "—" placeholder or hide the block. */

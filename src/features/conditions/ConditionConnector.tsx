@@ -14,7 +14,10 @@ export interface ConditionConnectorProps {
  * Sized to be visually unobtrusive — should not dominate the row
  * spacing.
  */
-export function ConditionConnector({ operator, onChange }: ConditionConnectorProps) {
+export function ConditionConnector({
+  operator,
+  onChange,
+}: ConditionConnectorProps) {
   const handle = (next: 'AND' | 'OR') => {
     if (next === operator) return;
     onChange(next);

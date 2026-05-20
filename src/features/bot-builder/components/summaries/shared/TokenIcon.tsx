@@ -47,10 +47,7 @@ export function TokenIcon({ symbol, size = 'sm', className }: TokenIconProps) {
   const glyph = TOKEN_GLYPH[upper] ?? upper.charAt(0) ?? '?';
   const tone = TOKEN_TONE[upper] ?? FALLBACK_TONE;
 
-  const sizing =
-    size === 'md'
-      ? 'h-7 w-7 text-sm'
-      : 'h-5 w-5 text-2xs';
+  const sizing = size === 'md' ? 'h-7 w-7 text-sm' : 'h-5 w-5 text-2xs';
 
   return (
     <span

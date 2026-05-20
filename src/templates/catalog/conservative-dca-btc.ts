@@ -17,10 +17,10 @@ export const conservativeDcaBtc: BotTemplate = {
     'Buys BTC dips on the 1h chart. Tiny TP, very wide SL — accumulate-then-hold.',
   longDescription:
     "Conservative dollar-cost-averaging. RSI<40 picks up dips that aren't quite " +
-    "panic-level oversold. 1.5% take-profit sells partial gains; the deep -10% " +
-    "stop-loss only triggers in a real crash, not on noise. Futures with 1× " +
-    "leverage to mimic spot exposure on Hyperliquid — minimal liquidation risk " +
-    "at this leverage but funding rates still apply.",
+    'panic-level oversold. 1.5% take-profit sells partial gains; the deep -10% ' +
+    'stop-loss only triggers in a real crash, not on noise. Futures with 1× ' +
+    'leverage to mimic spot exposure on Hyperliquid — minimal liquidation risk ' +
+    'at this leverage but funding rates still apply.',
   tags: ['btc', 'dca', 'beginner'],
   difficulty: 'beginner',
   riskLevel: 'conservative',

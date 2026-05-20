@@ -1,8 +1,5 @@
 import type { BotPayload } from '@/schemas/bot.schema';
-import type {
-  SignalGroup,
-  StrategyPayload,
-} from '@/schemas/strategy.schema';
+import type { SignalGroup, StrategyPayload } from '@/schemas/strategy.schema';
 import type {
   BuilderState,
   CloseMethodForm,

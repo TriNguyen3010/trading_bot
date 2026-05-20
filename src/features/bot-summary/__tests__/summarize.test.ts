@@ -31,10 +31,14 @@ function toBuilderState(template: BotTemplate): BuilderState {
 /** Render a SummaryBlock[] as a flat human-readable string for
  * snapshot stability — ordering matters, but tone class doesn't
  * (covered separately in unit tests). */
-function renderBlocks(blocks: ReturnType<typeof summarizeBot>['blocks']): string {
+function renderBlocks(
+  blocks: ReturnType<typeof summarizeBot>['blocks'],
+): string {
   return blocks
     .map((b) => {
-      const header = b.warning ? `## ${b.title} ⚠ ${b.warning}` : `## ${b.title}`;
+      const header = b.warning
+        ? `## ${b.title} ⚠ ${b.warning}`
+        : `## ${b.title}`;
       const body = b.lines
         .map((line) => line.map((i) => i.text).join(''))
         .join('\n');
@@ -116,7 +120,7 @@ describe('summarizeBot — edge cases', () => {
     expect(market?.lines[0][0].text).toBe('Pair not set yet.');
     // Entry block surfaces the no-conditions phrase.
     const entry = result.blocks.find((b) => b.id === 'entry');
-    expect(entry?.lines[0][0].text).toContain("No entry conditions");
+    expect(entry?.lines[0][0].text).toContain('No entry conditions');
     // Translator emits a tp-empty gap because tpEnabled=true but no
     // levels.
     expect(result.gaps.some((g) => g.field === 'tpLevels')).toBe(true);

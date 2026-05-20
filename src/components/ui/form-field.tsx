@@ -61,7 +61,10 @@ export function FormField({
                   <HelpCircle className="h-3.5 w-3.5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+              <TooltipContent
+                side="top"
+                className="max-w-xs text-xs leading-snug"
+              >
                 {help}
               </TooltipContent>
             </Tooltip>

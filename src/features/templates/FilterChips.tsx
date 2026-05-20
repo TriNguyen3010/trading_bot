@@ -67,7 +67,8 @@ export function FilterChips({
     [pool, filter],
   );
 
-  const set = (patch: Partial<TemplateFilter>) => onChange({ ...filter, ...patch });
+  const set = (patch: Partial<TemplateFilter>) =>
+    onChange({ ...filter, ...patch });
 
   return (
     <div className="space-y-3">
@@ -80,9 +81,7 @@ export function FilterChips({
               key={d}
               selected={isSelected}
               disabled={!isSelected && !reachable}
-              onClick={() =>
-                set({ difficulty: isSelected ? undefined : d })
-              }
+              onClick={() => set({ difficulty: isSelected ? undefined : d })}
             >
               {TITLE_CASE[d]}
             </Chip>
@@ -143,4 +142,3 @@ function Row({
     </div>
   );
 }
-

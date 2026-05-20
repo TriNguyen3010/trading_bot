@@ -112,46 +112,46 @@ export function CloseMethodSetup() {
           onValueChange={handleTabChange}
           className="flex flex-col gap-4"
         >
-        <TabsList
-          className="grid w-full gap-0"
-          style={{
-            gridTemplateColumns: `repeat(${visibleMethods.length}, minmax(0, 1fr))`,
-          }}
-        >
-          {visibleMethods.map((m) => (
-            <TabsTrigger
-              key={m.value}
-              value={m.value}
-              className="relative justify-center"
-            >
-              {m.label}
-              {m.advanced ? (
-                <span
-                  aria-hidden
-                  className="ml-1.5 inline-flex items-center rounded-full bg-brand px-1.5 py-px text-[8px] font-bold uppercase tracking-wider text-fg-inverse"
-                >
-                  {strings.closeMethod.newBadge}
-                </span>
-              ) : null}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+          <TabsList
+            className="grid w-full gap-0"
+            style={{
+              gridTemplateColumns: `repeat(${visibleMethods.length}, minmax(0, 1fr))`,
+            }}
+          >
+            {visibleMethods.map((m) => (
+              <TabsTrigger
+                key={m.value}
+                value={m.value}
+                className="relative justify-center"
+              >
+                {m.label}
+                {m.advanced ? (
+                  <span
+                    aria-hidden
+                    className="ml-1.5 inline-flex items-center rounded-full bg-brand px-1.5 py-px text-[8px] font-bold uppercase tracking-wider text-fg-inverse"
+                  >
+                    {strings.closeMethod.newBadge}
+                  </span>
+                ) : null}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {/* The Manual panel renders nothing — no configuration needed. */}
-        <TabsContent value="manual" />
-        <TabsContent value="tp_sl">
-          <TpSlForm />
-        </TabsContent>
-        <TabsContent value="roi">
-          <RoiStepsForm />
-        </TabsContent>
-        {/* Indicator content stays mounted only when Advanced is on, so
-            its useState/store wiring doesn't drift while hidden. */}
-        {showAdvanced ? (
-          <TabsContent value="indicator">
-            <IndicatorExitForm />
+          {/* The Manual panel renders nothing — no configuration needed. */}
+          <TabsContent value="manual" />
+          <TabsContent value="tp_sl">
+            <TpSlForm />
           </TabsContent>
-        ) : null}
+          <TabsContent value="roi">
+            <RoiStepsForm />
+          </TabsContent>
+          {/* Indicator content stays mounted only when Advanced is on, so
+            its useState/store wiring doesn't drift while hidden. */}
+          {showAdvanced ? (
+            <TabsContent value="indicator">
+              <IndicatorExitForm />
+            </TabsContent>
+          ) : null}
         </Tabs>
       </FormField>
     </div>

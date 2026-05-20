@@ -32,11 +32,7 @@ import { configuredPhaseCount } from '@/lib/phase-helpers';
 import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { strings } from '@/i18n/en';
 import { summarizeBot } from './summarize';
-import type {
-  SummaryBlock,
-  SummaryInline,
-  SummaryLine,
-} from './types';
+import type { SummaryBlock, SummaryInline, SummaryLine } from './types';
 
 /** Map of icon-name strings emitted by the translator → Lucide components.
  * Kept here so the translator stays React-free. */
@@ -85,7 +81,7 @@ export function BotSummaryCard() {
         // `glass-card` handles bg/border/shadow + transition; we add a
         // brand-tinted ring on top so the card still reads as
         // "summary" rather than blending into a step card.
-        'w-full rounded-xl glass-card ring-1 ring-brand/15',
+        'glass-card w-full rounded-xl ring-1 ring-brand/15',
       )}
     >
       <header className="flex items-center gap-2 border-b border-border-subtle px-5 py-3">
@@ -149,7 +145,7 @@ function SummaryBlockRow({ block }: { block: SummaryBlock }) {
             title={block.warning}
           >
             <AlertTriangle className="h-2.5 w-2.5" aria-hidden="true" />
-            <span className="truncate max-w-[16rem]">{block.warning}</span>
+            <span className="max-w-[16rem] truncate">{block.warning}</span>
           </span>
         )}
       </div>
@@ -167,7 +163,7 @@ function SummaryBlockRow({ block }: { block: SummaryBlock }) {
           className={cn(
             'mt-1.5 inline-flex items-center gap-1 text-2xs font-medium text-brand',
             'transition-colors duration-fast hover:text-brand-hover',
-            'focus-visible:outline-none focus-visible:underline',
+            'focus-visible:underline focus-visible:outline-none',
           )}
           aria-expanded={open}
         >
@@ -204,9 +200,9 @@ function Inline({ inline }: { inline: SummaryInline }) {
   return (
     <span
       className={cn(
-        inline.tone === 'bullish' && 'text-bullish font-medium',
-        inline.tone === 'bearish' && 'text-bearish font-medium',
-        inline.tone === 'warning' && 'text-brand font-medium',
+        inline.tone === 'bullish' && 'font-medium text-bullish',
+        inline.tone === 'bearish' && 'font-medium text-bearish',
+        inline.tone === 'warning' && 'font-medium text-brand',
       )}
     >
       {inline.text}
@@ -218,7 +214,11 @@ function Inline({ inline }: { inline: SummaryInline }) {
 /*  Gap footer                                                                 */
 /* -------------------------------------------------------------------------- */
 
-function GapFooter({ gaps }: { gaps: ReturnType<typeof summarizeBot>['gaps'] }) {
+function GapFooter({
+  gaps,
+}: {
+  gaps: ReturnType<typeof summarizeBot>['gaps'];
+}) {
   return (
     <footer
       role="alert"

@@ -186,9 +186,7 @@ export function translateConditionGroup(
       opts.section,
       opts.gaps,
     );
-    return [
-      line(t(`${opts.verb} `), ...inlines, t('.')),
-    ];
+    return [line(t(`${opts.verb} `), ...inlines, t('.'))];
   }
 
   // Multi-condition. The first row never has `operator`; rows 1..n-1 do.

@@ -197,7 +197,9 @@ export const INDICATOR_REGISTRY: Record<string, IndicatorDefinition> = {
   },
 };
 
-export function indicatorDefaultParams(name: string): Record<string, number | string> {
+export function indicatorDefaultParams(
+  name: string,
+): Record<string, number | string> {
   const def = INDICATOR_REGISTRY[name];
   if (!def) return {};
   return Object.fromEntries(def.parameters.map((p) => [p.key, p.default]));

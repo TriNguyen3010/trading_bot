@@ -15,10 +15,10 @@ export const breakoutBtc15m: BotTemplate = {
   description:
     'Goes long when RSI signals momentum AND price clears the 50-period SMA.',
   longDescription:
-    "Classic breakout pattern. RSI above 60 means real buying pressure (not " +
-    "just bouncing off oversold), and the candle closing above MA-50 confirms " +
-    "the larger trend has flipped. Two-tier TP captures the breakout move " +
-    "in halves; 5x leverage keeps risk in check while still punching meaningful PnL.",
+    'Classic breakout pattern. RSI above 60 means real buying pressure (not ' +
+    'just bouncing off oversold), and the candle closing above MA-50 confirms ' +
+    'the larger trend has flipped. Two-tier TP captures the breakout move ' +
+    'in halves; 5x leverage keeps risk in check while still punching meaningful PnL.',
   tags: ['btc', 'breakout', 'momentum', 'rsi', 'ma'],
   difficulty: 'intermediate',
   riskLevel: 'balanced',

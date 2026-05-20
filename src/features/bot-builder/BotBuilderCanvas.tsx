@@ -10,10 +10,7 @@ import { StrategyDrawerContent } from './components/StrategyDrawerContent';
 import { BotConfigDrawerContent } from './components/BotConfigDrawerContent';
 import { AddStrategyButton } from './components/AddStrategyButton';
 import { BotSummaryCard } from '@/features/bot-summary/BotSummaryCard';
-import {
-  BotConfigSetup,
-  BotConfigConfigure,
-} from './steps/BotConfigStep';
+import { BotConfigSetup, BotConfigConfigure } from './steps/BotConfigStep';
 import { EntryStrategySetup } from './steps/EntryStrategyStep';
 import { DirectionSetup } from './steps/DirectionStep';
 import {
@@ -122,7 +119,9 @@ export function BotBuilderCanvas() {
 
   /** Legacy 4-step Save (used only when openStep === 'bot-config' — Phase 1
    * still uses the wizard with Setup/Configure tabs). */
-  const handleLegacySave = (_mode: 'save' | 'skip-save' | 'save-and-finish') => {
+  const handleLegacySave = (
+    _mode: 'save' | 'skip-save' | 'save-and-finish',
+  ) => {
     if (!openStep) return;
     setStepStatus(openStep, 'configured');
     closeManualDrawer();
@@ -184,8 +183,7 @@ export function BotBuilderCanvas() {
   // summary collapses to single-column.
   const summaryHidden = useLayoutPrefsStore((s) => s.botSummaryHidden);
   const configuredPhases = configuredPhaseCount(builderState);
-  const showSummaryBeside =
-    configuredPhases > 0 && !summaryHidden;
+  const showSummaryBeside = configuredPhases > 0 && !summaryHidden;
   const showSummaryModeToggle = configuredPhases > 0;
 
   // Phase cards block — extracted so we can render it inside either
@@ -248,9 +246,9 @@ export function BotBuilderCanvas() {
             // identity is unchanged; summary takes whatever's left up to
             // ~480px. Stacks vertically below the `lg` breakpoint so on
             // narrower viewports cards remain readable.
-            'max-w-[1080px] grid grid-cols-1 gap-6 items-start lg:grid-cols-[minmax(280px,480px)_var(--layout-step-list)]'
+            'grid max-w-[1080px] grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(280px,480px)_var(--layout-step-list)]'
           : // Single column centred — current behaviour for pristine state.
-            'flex flex-col max-w-[var(--layout-step-list)]',
+            'flex max-w-[var(--layout-step-list)] flex-col',
       )}
     >
       {showSummaryBeside && (
@@ -266,9 +264,7 @@ export function BotBuilderCanvas() {
         </aside>
       )}
 
-      <div>
-        {phaseCardsBlock}
-      </div>
+      <div>{phaseCardsBlock}</div>
 
       <StepDrawer
         contentByStep={CONTENT_BY_STEP}

@@ -101,21 +101,13 @@ function translateTpSl(
       rawValue: '[]',
       reason: 'Take-profit enabled but no levels defined',
     });
-    lines.push(
-      line(
-        t('Take-profit enabled but no levels set.', 'warning'),
-      ),
-    );
+    lines.push(line(t('Take-profit enabled but no levels set.', 'warning')));
   }
 
   // Stop-loss
   if (slActive) {
     lines.push(
-      line(
-        t('Stop loss at '),
-        t(`${close.slValue}%`, 'bearish'),
-        t('.'),
-      ),
+      line(t('Stop loss at '), t(`${close.slValue}%`, 'bearish'), t('.')),
     );
   }
 
@@ -170,12 +162,7 @@ function translateRoi(roiSteps: RoiStep[]): TranslateExitResult {
   if (roiSteps.length === 0) {
     return {
       lines: [
-        line(
-          t(
-            'Time-based ROI exit — no steps defined yet.',
-            'warning',
-          ),
-        ),
+        line(t('Time-based ROI exit — no steps defined yet.', 'warning')),
       ],
       warning: 'ROI exit method picked but no steps configured.',
     };
@@ -183,7 +170,8 @@ function translateRoi(roiSteps: RoiStep[]): TranslateExitResult {
 
   const sorted = [...roiSteps].sort((a, b) => a.minutes - b.minutes);
   const stepDescs = sorted.map((s) => {
-    const time = s.minutes === 0 ? 'immediately' : `after ${humanMinutes(s.minutes)}`;
+    const time =
+      s.minutes === 0 ? 'immediately' : `after ${humanMinutes(s.minutes)}`;
     if (s.roi === 0) return `break-even ${time}`;
     // ROI is a ratio (0.005 = 0.5%). Show as percentage.
     const pct = (s.roi * 100).toFixed(s.roi < 0.01 && s.roi > 0 ? 2 : 1);
@@ -191,9 +179,7 @@ function translateRoi(roiSteps: RoiStep[]): TranslateExitResult {
   });
 
   return {
-    lines: [
-      line(t(`Time-based ROI: ${stepDescs.join(', ')}.`)),
-    ],
+    lines: [line(t(`Time-based ROI: ${stepDescs.join(', ')}.`))],
   };
 }
 
@@ -220,12 +206,7 @@ function translateIndicatorExit(
   if (ruleCount(close.exitConditions) === 0) {
     return {
       lines: [
-        line(
-          t(
-            'Indicator-based exit — no conditions defined yet.',
-            'warning',
-          ),
-        ),
+        line(t('Indicator-based exit — no conditions defined yet.', 'warning')),
       ],
       warning: 'Indicator exit picked but no conditions configured.',
     };
@@ -234,11 +215,14 @@ function translateIndicatorExit(
   // Reuse the entry condition translator. Verb depends on direction:
   // long position → "Sells when …"; short position → "Buys to cover when …".
   const verb = direction === 'long' ? 'Sells when' : 'Covers when';
-  const lines = translateConditionGroup(flattenTreeToLegacy(close.exitConditions), {
-    verb,
-    emptyPhrase: 'Indicator-based exit (no conditions defined yet).',
-    section: 'exit',
-    gaps,
-  });
+  const lines = translateConditionGroup(
+    flattenTreeToLegacy(close.exitConditions),
+    {
+      verb,
+      emptyPhrase: 'Indicator-based exit (no conditions defined yet).',
+      section: 'exit',
+      gaps,
+    },
+  );
   return { lines };
 }

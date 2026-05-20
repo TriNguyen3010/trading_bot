@@ -1,5 +1,10 @@
 import {
-  Hand, Target, LineChart, Clock, AlertTriangle, type LucideIcon,
+  Hand,
+  Target,
+  LineChart,
+  Clock,
+  AlertTriangle,
+  type LucideIcon,
 } from 'lucide-react';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { allRules } from '@/lib/condition-tree';
@@ -20,8 +25,14 @@ const METHOD_META: Record<
 export function CloseMethodSummary() {
   const closeMethod = useBuilderStore((s) => s.closeMethod);
   const {
-    type, tpEnabled, tpLevels, slEnabled, slValue, trailingEnabled,
-    roiSteps, exitConditions,
+    type,
+    tpEnabled,
+    tpLevels,
+    slEnabled,
+    slValue,
+    trailingEnabled,
+    roiSteps,
+    exitConditions,
   } = closeMethod;
 
   const meta = METHOD_META[type];
@@ -64,7 +75,9 @@ export function CloseMethodSummary() {
           <div className="flex flex-col gap-0.5 bg-black/30 px-3 py-2">
             <span className="flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-bullish">
               Take profit
-              {tpOver100 ? <AlertTriangle className="h-2.5 w-2.5" aria-hidden="true" /> : null}
+              {tpOver100 ? (
+                <AlertTriangle className="h-2.5 w-2.5" aria-hidden="true" />
+              ) : null}
             </span>
             <span className="font-mono text-sm font-semibold text-fg">
               {tpEnabled && tpLevels[0] ? `+${tpLevels[0].profit}%` : 'off'}
@@ -84,7 +97,11 @@ export function CloseMethodSummary() {
               {slEnabled ? `${slValue}%` : 'off'}
             </span>
             <span className="text-2xs text-fg-muted">
-              {slEnabled ? (trailingEnabled ? 'trailing' : 'hard stop') : 'disabled'}
+              {slEnabled
+                ? trailingEnabled
+                  ? 'trailing'
+                  : 'hard stop'
+                : 'disabled'}
             </span>
           </div>
         </div>
@@ -93,7 +110,9 @@ export function CloseMethodSummary() {
       {/* ROI preview */}
       {type === 'roi' && roiSteps.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1.5 pl-1">
-          <span className="text-2xs uppercase tracking-wide text-fg-muted">Schedule</span>
+          <span className="text-2xs uppercase tracking-wide text-fg-muted">
+            Schedule
+          </span>
           {roiSteps.slice(0, 3).map((step, idx) => (
             <span
               key={idx}
@@ -104,7 +123,9 @@ export function CloseMethodSummary() {
             </span>
           ))}
           {roiSteps.length > 3 ? (
-            <span className="text-2xs text-fg-muted">+{roiSteps.length - 3} more</span>
+            <span className="text-2xs text-fg-muted">
+              +{roiSteps.length - 3} more
+            </span>
           ) : null}
         </div>
       ) : null}

@@ -121,7 +121,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         </DialogHeader>
 
         {issues.length > 0 ? (
-          <div className="border-danger/40 rounded-lg border bg-bearish-subtle p-4">
+          <div className="rounded-lg border border-danger/40 bg-bearish-subtle p-4">
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-bearish">
               <ShieldAlert className="h-4 w-4" />
               Fix {issues.length} issue{issues.length === 1 ? '' : 's'} before
@@ -139,14 +139,14 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         ) : null}
 
         {parseError ? (
-          <div className="border-danger/40 rounded-lg border bg-bearish-subtle p-4 text-xs text-bearish">
+          <div className="rounded-lg border border-danger/40 bg-bearish-subtle p-4 text-xs text-bearish">
             <p className="mb-1 font-semibold">Schema validation failed:</p>
             <pre className="whitespace-pre-wrap font-mono">{parseError}</pre>
           </div>
         ) : null}
 
         {submitError ? (
-          <div className="border-danger/40 rounded-lg border bg-bearish-subtle p-4 text-xs text-bearish">
+          <div className="rounded-lg border border-danger/40 bg-bearish-subtle p-4 text-xs text-bearish">
             <p className="mb-1 font-semibold">Backend validation error:</p>
             <pre className="whitespace-pre-wrap font-mono">{submitError}</pre>
           </div>

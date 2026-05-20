@@ -45,9 +45,9 @@ export function DrawerResizeHandle({ currentWidth, onResize }: Props) {
       className={cn(
         'absolute -left-1 top-0 z-10 h-full w-2 cursor-col-resize',
         'before:absolute before:inset-y-0 before:left-1 before:w-px before:bg-border',
-        'hover:before:bg-brand hover:before:w-0.5',
-        'focus-visible:before:bg-brand focus-visible:outline-none',
-        dragging && 'before:bg-brand before:w-0.5',
+        'hover:before:w-0.5 hover:before:bg-brand',
+        'focus-visible:outline-none focus-visible:before:bg-brand',
+        dragging && 'before:w-0.5 before:bg-brand',
       )}
     />
   );

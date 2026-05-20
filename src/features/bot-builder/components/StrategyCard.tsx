@@ -11,10 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { validateBuilder, type BuilderIssue } from '@/lib/validator';
-import {
-  STRATEGY_SUB_STEPS,
-  derivePhaseStatus,
-} from '@/lib/phase-helpers';
+import { STRATEGY_SUB_STEPS, derivePhaseStatus } from '@/lib/phase-helpers';
 import { strings } from '@/i18n/en';
 import {
   Tooltip,
@@ -124,13 +121,13 @@ export function StrategyCard() {
         // Variant C — unified shell with StepCard (rounded-3xl + glow when
         // selected) while keeping the square `Layers` icon below to carry
         // the "composite stack" semantics that distinguish this from Phase 1.
-        'group relative flex w-full flex-col items-stretch overflow-hidden rounded-3xl glass-card text-left',
+        'glass-card group relative flex w-full flex-col items-stretch overflow-hidden rounded-3xl text-left',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-black',
         // 2-state frame ring (matches StepCard):
         //   normal   — ring-1 white/15
         //   selected — ring-2 brand
         isOpen
-          ? 'ring-2 ring-brand shadow-[0_0_24px_rgba(240,185,11,0.3)]'
+          ? 'shadow-[0_0_24px_rgba(240,185,11,0.3)] ring-2 ring-brand'
           : 'ring-1 ring-white/15',
         visualStatus === 'configured' && !isOpen && 'bg-brand-subtle/20',
       )}
@@ -151,7 +148,7 @@ export function StrategyCard() {
         >
           <Layers className="h-4 w-4" />
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-2xs uppercase tracking-wide text-fg-muted">
             <span>Phase 2</span>
           </div>
@@ -191,9 +188,7 @@ export function StrategyCard() {
           is in a "show me what's set" state. Each StepCardSummary
           subscribes to its own slice so this isn't expensive. */}
       {(visualStatus === 'configured' || visualStatus === 'error') && (
-        <div
-          className="w-full space-y-3 border-t border-border-subtle px-5 py-3"
-        >
+        <div className="w-full space-y-3 border-t border-border-subtle px-5 py-3">
           {summaryMode === 'narrative' ? (
             <StrategyNarrativeSummary />
           ) : (

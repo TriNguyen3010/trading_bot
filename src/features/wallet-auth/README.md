@@ -20,18 +20,18 @@ Trading Bot uses **defer-auth UX**: Landing (`/`) is public; clicking `Build a b
 
 ## File layout
 
-| File | Responsibility |
-|---|---|
-| `wallet.types.ts` | Types: `WalletCredentials`, `NonceResponse`, `AuthUser`, `WalletStatus`, `EthereumProvider` (EIP-1193 minimal shape) |
-| `wallet.provider.ts` | Coin98 detection + EIP-1193 RPC. Exports `detectCoin98`, `requestAccounts`, `personalSign`, `UserRejectedError`, `NoProviderError` |
-| `wallet.api.ts` | BE client. `getNonce(address)`, `getStatus()`, `disconnect()` — all via `@/lib/http` |
-| `wallet.store.ts` | Zustand store + actions. Exports `useWalletStore`, `useIsWalletConnected`, `useWalletAddress` |
-| `useWalletEvents.ts` | Hook listening to `accountsChanged` + `disconnect` events |
-| `ProtectedRoute.tsx` | Route guard — redirects to `/` when no creds |
-| `ConnectWalletPanel.tsx` | Modal body — state-driven UI for each `status` |
-| `ConnectWalletModal.tsx` | Radix Dialog wrapper, success toast, post-success action runner |
-| `RequireWalletProvider.tsx` | Global context — exposes `requireWalletThen` + `openConnect` |
-| `WalletChip.tsx` | Header pill — `Connect wallet` / truncated address / `DEV bypass` |
+| File                        | Responsibility                                                                                                                     |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `wallet.types.ts`           | Types: `WalletCredentials`, `NonceResponse`, `AuthUser`, `WalletStatus`, `EthereumProvider` (EIP-1193 minimal shape)               |
+| `wallet.provider.ts`        | Coin98 detection + EIP-1193 RPC. Exports `detectCoin98`, `requestAccounts`, `personalSign`, `UserRejectedError`, `NoProviderError` |
+| `wallet.api.ts`             | BE client. `getNonce(address)`, `getStatus()`, `disconnect()` — all via `@/lib/http`                                               |
+| `wallet.store.ts`           | Zustand store + actions. Exports `useWalletStore`, `useIsWalletConnected`, `useWalletAddress`                                      |
+| `useWalletEvents.ts`        | Hook listening to `accountsChanged` + `disconnect` events                                                                          |
+| `ProtectedRoute.tsx`        | Route guard — redirects to `/` when no creds                                                                                       |
+| `ConnectWalletPanel.tsx`    | Modal body — state-driven UI for each `status`                                                                                     |
+| `ConnectWalletModal.tsx`    | Radix Dialog wrapper, success toast, post-success action runner                                                                    |
+| `RequireWalletProvider.tsx` | Global context — exposes `requireWalletThen` + `openConnect`                                                                       |
+| `WalletChip.tsx`            | Header pill — `Connect wallet` / truncated address / `DEV bypass`                                                                  |
 
 ---
 
@@ -45,15 +45,16 @@ Set `VITE_BYPASS_AUTH=true` in `.env.local` to skip auth for offline dev (workin
 
 53 tests across this folder + `lib/http.test.ts`:
 
-| File | Count |
-|---|---|
-| `wallet.provider.test.ts` | 11 |
-| `wallet.api.test.ts` | 3 |
-| `wallet.store.test.ts` | 18 (includes partial-hydrate + `disconnect` event regressions) |
-| `useWalletEvents.test.ts` | 8 (includes `disconnect` event handler regression) |
-| `lib/http.test.ts` | 15 |
+| File                      | Count                                                          |
+| ------------------------- | -------------------------------------------------------------- |
+| `wallet.provider.test.ts` | 11                                                             |
+| `wallet.api.test.ts`      | 3                                                              |
+| `wallet.store.test.ts`    | 18 (includes partial-hydrate + `disconnect` event regressions) |
+| `useWalletEvents.test.ts` | 8 (includes `disconnect` event handler regression)             |
+| `lib/http.test.ts`        | 15                                                             |
 
 Run wallet-auth only:
+
 ```bash
 pnpm vitest run src/features/wallet-auth src/lib/http.test.ts
 ```

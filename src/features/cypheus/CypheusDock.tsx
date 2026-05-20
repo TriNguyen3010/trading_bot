@@ -152,7 +152,7 @@ export function CypheusDock() {
                 : undefined
             }
           >
-            <span className="text-sm font-medium text-fg-secondary whitespace-nowrap">
+            <span className="whitespace-nowrap text-sm font-medium text-fg-secondary">
               {statusText}
             </span>
             <div className="h-12 w-12 flex-shrink-0">

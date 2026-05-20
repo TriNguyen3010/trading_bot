@@ -37,16 +37,24 @@ describe('CypheusPanel', () => {
     expect(screen.getByText(/Hi, I'm Cypheus/i)).toBeInTheDocument();
     expect(screen.getByText(/AI co-pilot/i)).toBeInTheDocument();
 
-    expect(screen.queryByPlaceholderText(/Tell Cypheus/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /JSON/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Create new bot/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText(/Tell Cypheus/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /JSON/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Create new bot/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('renders a "Coming Soon" pill next to the panel title when expanded', () => {
     useLayoutPrefsStore.getState().setLeftPanelCollapsed(false);
     render(<CypheusPanel />);
 
-    const pill = screen.getByText(/Coming Soon/i, { selector: '[data-pill="coming-soon"]' });
+    const pill = screen.getByText(/Coming Soon/i, {
+      selector: '[data-pill="coming-soon"]',
+    });
     expect(pill).toBeInTheDocument();
   });
 
@@ -61,7 +69,9 @@ describe('CypheusPanel', () => {
       screen.getByRole('button', { name: /Show Cypheus panel \(1 unread\)/i }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/Coming Soon/i, { selector: '[data-pill="coming-soon"]' }),
+      screen.queryByText(/Coming Soon/i, {
+        selector: '[data-pill="coming-soon"]',
+      }),
     ).toBeNull();
   });
 });

@@ -56,16 +56,16 @@ export function ToggleGroup<T extends string>({
             className={cn(
               'flex-1 rounded-xl px-4 py-2 text-sm font-medium transition-[color,border-color] duration-fast',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
-              !isActive && 'text-fg-secondary hover:text-fg hover:bg-white/5',
+              !isActive && 'text-fg-secondary hover:bg-white/5 hover:text-fg',
               isActive &&
                 tone === 'brand' &&
-                'bg-[rgba(240,185,11,0.75)] text-black font-semibold shadow-[0_0_10px_rgba(240,185,11,0.22)]',
+                'bg-[rgba(240,185,11,0.75)] font-semibold text-black shadow-[0_0_10px_rgba(240,185,11,0.22)]',
               isActive &&
                 tone === 'bullish' &&
-                'bg-bullish text-black font-semibold shadow-[0_0_14px_rgba(14,203,129,0.4)]',
+                'bg-bullish font-semibold text-black shadow-[0_0_14px_rgba(14,203,129,0.4)]',
               isActive &&
                 tone === 'bearish' &&
-                'bg-bearish text-white font-semibold shadow-[0_0_14px_rgba(246,70,93,0.4)]',
+                'bg-bearish font-semibold text-white shadow-[0_0_14px_rgba(246,70,93,0.4)]',
             )}
           >
             <div>{opt.label}</div>

@@ -6,7 +6,11 @@
  * converts BuilderState into the backend payload schema.
  */
 
-export type StepId = 'bot-config' | 'entry-strategy' | 'direction' | 'close-method';
+export type StepId =
+  | 'bot-config'
+  | 'entry-strategy'
+  | 'direction'
+  | 'close-method';
 
 export type StepStatus = 'pending' | 'editing' | 'configured' | 'error';
 

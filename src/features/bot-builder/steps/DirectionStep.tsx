@@ -14,11 +14,7 @@ export function DirectionSetup() {
 
   return (
     <>
-      <FormField
-        label="Direction"
-        required
-        help={HELP.direction}
-      >
+      <FormField label="Direction" required help={HELP.direction}>
         <ToggleGroup<Direction>
           value={form.direction}
           onChange={(v) => patch({ direction: v })}
@@ -49,11 +45,7 @@ export function DirectionSetup() {
         />
       </FormField>
 
-      <FormField
-        label="Order type"
-        required
-        help={HELP.orderType}
-      >
+      <FormField label="Order type" required help={HELP.orderType}>
         <ToggleGroup<OrderType>
           value={form.orderType}
           onChange={(v) => patch({ orderType: v })}
@@ -67,10 +59,7 @@ export function DirectionSetup() {
       </FormField>
 
       {form.orderType === 'limit' && (
-        <FormField
-          label="Limit offset"
-          help={HELP.limitOffset}
-        >
+        <FormField label="Limit offset" help={HELP.limitOffset}>
           <NumberInput
             value={form.limitOffsetPct}
             onValueChange={(v) => patch({ limitOffsetPct: v })}

@@ -48,12 +48,16 @@ export function summarizeBot(state: BuilderState): SummarizeResult {
     id: 'entry',
     icon: 'TrendingUp',
     title: 'Entry',
-    lines: translateConditionGroup(flattenTreeToLegacy(state.strategy.entryConditions), {
-      verb: entryVerb,
-      emptyPhrase: "No entry conditions defined yet — bot won't enter trades.",
-      section: 'entry',
-      gaps,
-    }),
+    lines: translateConditionGroup(
+      flattenTreeToLegacy(state.strategy.entryConditions),
+      {
+        verb: entryVerb,
+        emptyPhrase:
+          "No entry conditions defined yet — bot won't enter trades.",
+        section: 'entry',
+        gaps,
+      },
+    ),
   };
 
   // ── Action ────────────────────────────────────────────────────
