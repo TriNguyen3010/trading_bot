@@ -27,6 +27,10 @@ interface MockBot {
   sharpe?: number;
   errorMsg?: string;
   sparkline?: number[];
+  /** Marks hardcoded demo data so it's distinguishable from real BE bots
+   * once the bot-list endpoint is wired. Renders a small "DEMO" pill in
+   * the bot card header. */
+  isDemo?: boolean;
 }
 
 const MOCK_BOTS: MockBot[] = [
@@ -45,6 +49,7 @@ const MOCK_BOTS: MockBot[] = [
     winRate: 78,
     sharpe: 2.14,
     sparkline: [42, 40, 32, 36, 24, 18, 8, 4],
+    isDemo: true,
   },
   {
     id: 2,
@@ -60,21 +65,7 @@ const MOCK_BOTS: MockBot[] = [
     winRate: 75,
     sharpe: 1.42,
     sparkline: [35, 32, 28, 30, 24, 26, 18, 15],
-  },
-  {
-    id: 3,
-    name: 'BB Mean Revert',
-    pair: 'BTC-USDC',
-    timeframe: '15m',
-    uptime: '2d 4h',
-    mode: 'LIVE',
-    pnl: '+$481.70',
-    pnlPct: '+4.81%',
-    pnlDirection: 'up',
-    trades: 14,
-    winRate: 71,
-    sharpe: 1.78,
-    sparkline: [80, 72, 65, 58, 52, 44, 30, 18],
+    isDemo: true,
   },
   {
     id: 4,
@@ -87,29 +78,20 @@ const MOCK_BOTS: MockBot[] = [
     pnlPct: '-0.12%',
     pnlDirection: 'down',
     errorMsg: 'Hyperliquid rejected the last order signature.',
-  },
-  {
-    id: 5,
-    name: 'EMA Cross Short',
-    pair: 'DOGE-USDC',
-    timeframe: '15m',
-    uptime: 'paused 1d ago',
-    mode: 'PAUSED',
-    pnl: '$0.00',
-    pnlPct: '+0.00%',
-    pnlDirection: 'flat',
+    isDemo: true,
   },
 ];
 
 const PORTFOLIO_STATS = {
-  pnl30d: '+$734.20',
-  pnl30dPct: '+5.6%',
-  activeBots: '5',
-  totalBots: '8',
-  capitalDeployed: '$3,420',
+  pnl30d: '+$240.20',
+  pnl30dPct: '+2.4%',
+  activeBots: '2',
+  totalBots: '3',
+  pausedBots: '0',
+  capitalDeployed: '$1,840',
   capitalPairs: '3 pairs',
-  tradesToday: '12',
-  tradesNet: '+$23.10',
+  tradesToday: '7',
+  tradesNet: '+$15.40',
 };
 
 export function DashboardPage() {
@@ -192,6 +174,13 @@ export function DashboardPage() {
                 </span>
                 <span className="text-border-strong">·</span>
                 <span>Updated 12s ago</span>
+                <span className="text-border-strong">·</span>
+                <span
+                  className="rounded-sm border border-dashed border-fg-muted/40 px-1.5 py-0.5 text-fg-muted"
+                  title="Hardcoded demo data — not from your wallet"
+                >
+                  Demo
+                </span>
               </div>
 
               <div
@@ -217,7 +206,7 @@ export function DashboardPage() {
                 <span className="text-border-strong">·</span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="font-semibold tabular-nums text-fg-muted">
-                    3
+                    {PORTFOLIO_STATS.pausedBots}
                   </span>
                   <span className="text-fg-muted">paused</span>
                 </span>
@@ -390,6 +379,14 @@ function BotCard({ bot, onClick }: BotCardProps) {
             {bot.badge && (
               <span className="rounded-sm bg-bullish-subtle px-1.5 py-0.5 text-2xs font-bold text-bullish">
                 {bot.badge}
+              </span>
+            )}
+            {bot.isDemo && (
+              <span
+                className="rounded-sm border border-dashed border-fg-muted/40 px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wider text-fg-muted"
+                title="Hardcoded demo data — not from your wallet"
+              >
+                Demo
               </span>
             )}
           </div>
