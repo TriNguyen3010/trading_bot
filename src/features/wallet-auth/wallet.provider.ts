@@ -68,6 +68,34 @@ export async function requestAccounts(
   }
 }
 
+/**
+ * Ask the wallet to open its account picker so the user can switch to a
+ * different account without having to manually open the extension first.
+ *
+ * Implements EIP-2255 `wallet_requestPermissions` with the `eth_accounts`
+ * permission. MetaMask, Rabby, and most modern wallets respond by showing
+ * the account-selection UI. Wallets that don't support EIP-2255 throw
+ * `4200` (unsupported method) or similar — we surface that as a normal
+ * rejection so the caller can fall back to the regular reconnect flow.
+ *
+ * 4001 (user rejected) is still surfaced as `UserRejectedError` so the
+ * caller can short-circuit cleanly.
+ */
+export async function requestAccountPicker(
+  provider: EthereumProvider,
+): Promise<void> {
+  if (!provider) throw new NoProviderError();
+  try {
+    await provider.request({
+      method: 'wallet_requestPermissions',
+      params: [{ eth_accounts: {} }],
+    });
+  } catch (err) {
+    if (isUserReject(err)) throw new UserRejectedError();
+    throw err;
+  }
+}
+
 export async function personalSign(
   provider: EthereumProvider,
   message: string,

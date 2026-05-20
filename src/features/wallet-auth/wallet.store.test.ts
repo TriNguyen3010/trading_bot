@@ -18,6 +18,7 @@ vi.mock('./wallet.provider', async () => {
     ...actual,
     detectCoin98: vi.fn(),
     requestAccounts: vi.fn(),
+    requestAccountPicker: vi.fn(),
     personalSign: vi.fn(),
   };
 });
@@ -26,6 +27,7 @@ import { walletApi } from './wallet.api';
 import {
   detectCoin98,
   requestAccounts,
+  requestAccountPicker,
   personalSign,
   UserRejectedError,
 } from './wallet.provider';
@@ -344,6 +346,115 @@ describe('wallet.store', () => {
 
       expect(sessionStorage.getItem('trading_bot_wallet_auth')).toBeNull();
       expect(useWalletStore.getState().address).toBeNull();
+    });
+  });
+
+  describe('switchAccount', () => {
+    function seedConnected(addr: string) {
+      sessionStorage.setItem(
+        'trading_bot_wallet_auth',
+        JSON.stringify({ address: addr, nonce: 'n-old', signature: 'sig-old' }),
+      );
+      useWalletStore.setState({
+        address: addr,
+        nonce: 'n-old',
+        signature: 'sig-old',
+        user: {
+          id: 1,
+          email: null,
+          wallet_address: addr,
+          is_active: true,
+          is_admin: false,
+        },
+        status: 'ready',
+        error: null,
+        signingMessage: null,
+      });
+    }
+
+    it('happy path: shows picker → disconnects old → reconnects with new address', async () => {
+      seedConnected('0xold');
+      vi.mocked(detectCoin98).mockReturnValue(fakeProvider);
+      vi.mocked(requestAccountPicker).mockResolvedValueOnce();
+      vi.mocked(walletApi.disconnect).mockResolvedValueOnce({ status: 'ok' });
+      // connect() chain — user has picked 0xnew in the picker, so
+      // eth_requestAccounts now returns it.
+      vi.mocked(requestAccounts).mockResolvedValueOnce(['0xnew']);
+      vi.mocked(walletApi.getNonce).mockResolvedValueOnce({
+        nonce: 'n-new',
+        message: 'sign me',
+      });
+      vi.mocked(personalSign).mockResolvedValueOnce('sig-new');
+      vi.mocked(walletApi.getStatus).mockResolvedValueOnce({
+        id: 2,
+        email: null,
+        wallet_address: '0xnew',
+        is_active: true,
+        is_admin: false,
+      });
+
+      await useWalletStore.getState().switchAccount();
+
+      expect(requestAccountPicker).toHaveBeenCalledWith(fakeProvider);
+      expect(walletApi.disconnect).toHaveBeenCalled();
+      const s = useWalletStore.getState();
+      expect(s.address).toBe('0xnew');
+      expect(s.nonce).toBe('n-new');
+      expect(s.signature).toBe('sig-new');
+      expect(s.status).toBe('ready');
+    });
+
+    it('user cancels picker → bails without touching the existing session', async () => {
+      seedConnected('0xold');
+      vi.mocked(detectCoin98).mockReturnValue(fakeProvider);
+      vi.mocked(requestAccountPicker).mockRejectedValueOnce(
+        new UserRejectedError(),
+      );
+
+      await useWalletStore.getState().switchAccount();
+
+      expect(walletApi.disconnect).not.toHaveBeenCalled();
+      expect(requestAccounts).not.toHaveBeenCalled();
+      const s = useWalletStore.getState();
+      expect(s.address).toBe('0xold');
+      expect(s.status).toBe('ready');
+    });
+
+    it('picker unsupported by wallet → still disconnects + reconnects (graceful fallback)', async () => {
+      seedConnected('0xold');
+      vi.mocked(detectCoin98).mockReturnValue(fakeProvider);
+      vi.mocked(requestAccountPicker).mockRejectedValueOnce(
+        Object.assign(new Error('Method not supported'), { code: 4200 }),
+      );
+      vi.mocked(walletApi.disconnect).mockResolvedValueOnce({ status: 'ok' });
+      vi.mocked(requestAccounts).mockResolvedValueOnce(['0xnew']);
+      vi.mocked(walletApi.getNonce).mockResolvedValueOnce({
+        nonce: 'n2',
+        message: 'sign me',
+      });
+      vi.mocked(personalSign).mockResolvedValueOnce('sig2');
+      vi.mocked(walletApi.getStatus).mockResolvedValueOnce({
+        id: 3,
+        email: null,
+        wallet_address: '0xnew',
+        is_active: true,
+        is_admin: false,
+      });
+
+      await useWalletStore.getState().switchAccount();
+
+      expect(walletApi.disconnect).toHaveBeenCalled();
+      expect(useWalletStore.getState().address).toBe('0xnew');
+    });
+
+    it('no provider → status="no-c98"', async () => {
+      seedConnected('0xold');
+      vi.mocked(detectCoin98).mockReturnValue(null);
+
+      await useWalletStore.getState().switchAccount();
+
+      expect(requestAccountPicker).not.toHaveBeenCalled();
+      expect(useWalletStore.getState().status).toBe('no-c98');
     });
   });
 

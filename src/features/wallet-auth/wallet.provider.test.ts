@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   detectCoin98,
   requestAccounts,
+  requestAccountPicker,
   personalSign,
   UserRejectedError,
   NoProviderError,
@@ -89,6 +90,37 @@ describe('wallet.provider', () => {
       const p = fakeProvider();
       vi.mocked(p.request).mockRejectedValueOnce(new Error('boom'));
       await expect(requestAccounts(p)).rejects.toThrow('boom');
+    });
+  });
+
+  describe('requestAccountPicker', () => {
+    it('calls wallet_requestPermissions with eth_accounts', async () => {
+      const p = fakeProvider();
+      vi.mocked(p.request).mockResolvedValueOnce([
+        { parentCapability: 'eth_accounts' },
+      ]);
+      await requestAccountPicker(p);
+      expect(p.request).toHaveBeenCalledWith({
+        method: 'wallet_requestPermissions',
+        params: [{ eth_accounts: {} }],
+      });
+    });
+
+    it('throws UserRejectedError on error code 4001', async () => {
+      const p = fakeProvider();
+      vi.mocked(p.request).mockRejectedValueOnce({ code: 4001 });
+      await expect(requestAccountPicker(p)).rejects.toBeInstanceOf(
+        UserRejectedError,
+      );
+    });
+
+    it('rethrows unsupported-method errors so the caller can fall back', async () => {
+      const p = fakeProvider();
+      const unsupported = Object.assign(new Error('Method not found'), {
+        code: 4200,
+      });
+      vi.mocked(p.request).mockRejectedValueOnce(unsupported);
+      await expect(requestAccountPicker(p)).rejects.toBe(unsupported);
     });
   });
 

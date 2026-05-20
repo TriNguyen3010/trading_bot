@@ -1,9 +1,11 @@
 import { create } from 'zustand';
+import { toast } from 'sonner';
 import { walletApi } from './wallet.api';
 import {
   detectCoin98,
   NoProviderError,
   personalSign,
+  requestAccountPicker,
   requestAccounts,
   UserRejectedError,
 } from './wallet.provider';
@@ -28,6 +30,12 @@ interface WalletState {
   // Actions
   hydrate: () => void;
   connect: () => Promise<void>;
+  /** Ask the wallet to open its account picker (EIP-2255), then clear
+   * the current session and reconnect — so the address that comes back
+   * from `eth_requestAccounts` is whatever the user just picked. Falls
+   * back to a plain reconnect when the wallet does not support
+   * `wallet_requestPermissions`. */
+  switchAccount: () => Promise<void>;
   disconnect: () => Promise<void>;
   loadUser: () => Promise<void>;
   reset: () => void;
@@ -163,6 +171,64 @@ export const useWalletStore = create<WalletState>()((set) => ({
         error: readableError(err),
         signingMessage: null,
       });
+    }
+  },
+
+  switchAccount: async () => {
+    const provider = detectCoin98();
+    if (!provider) {
+      set({ status: 'no-c98' });
+      return;
+    }
+
+    // Step 1: ask the wallet to show its account picker. If the wallet
+    // doesn't support EIP-2255, swallow the error and continue — the
+    // disconnect+reconnect below still gives the user a chance to switch
+    // accounts manually in the extension.
+    //
+    // 4001 (user cancelled the picker) → bail without touching the
+    // current session. The user is still signed in with the old address;
+    // no harm done.
+    try {
+      await requestAccountPicker(provider);
+    } catch (err) {
+      if (err instanceof UserRejectedError) {
+        return;
+      }
+      // Unsupported method / other RPC errors — keep going.
+    }
+
+    // Step 2: tear down the old session (BE drops the old nonce) then
+    // run the regular connect flow against whatever account the picker
+    // left selected.
+    try {
+      await walletApi.disconnect();
+    } catch {
+      /* nonce will auto-expire ≤24h */
+    }
+    clearStorage();
+    set({
+      address: null,
+      nonce: null,
+      signature: null,
+      user: null,
+      status: 'idle',
+      error: null,
+      signingMessage: null,
+    });
+
+    await useWalletStore.getState().connect();
+
+    // Surface a toast since this flow runs outside the ConnectWalletModal
+    // (which is where the regular "Đã kết nối" toast fires). Read state
+    // synchronously — connect() has already settled by the time await
+    // resolves.
+    const final = useWalletStore.getState();
+    if (final.status === 'ready' && final.address) {
+      const shortAddr = `${final.address.slice(0, 6)}…${final.address.slice(-4)}`;
+      toast.success(`Đã chuyển sang ${shortAddr}`);
+    } else if (final.status === 'error' && final.error) {
+      toast.error(final.error);
     }
   },
 
