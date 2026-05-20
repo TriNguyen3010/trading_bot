@@ -66,7 +66,7 @@ export function ConnectWalletModal({
         onOpenChange(next);
       }}
     >
-      <DialogContent className="max-w-[440px] border-border bg-base p-0">
+      <DialogContent className="max-w-[440px] border border-white/[0.08] bg-white/[0.05] p-0 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-[100px]">
         <DialogTitle className="sr-only">Connect Coin98 Wallet</DialogTitle>
         <DialogDescription className="sr-only">
           Authorize Trading Bot with your Coin98 wallet to continue.

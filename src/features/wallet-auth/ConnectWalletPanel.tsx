@@ -32,9 +32,7 @@ export function ConnectWalletPanel({ onCancel }: ConnectWalletPanelProps) {
   const connect = useWalletStore((s) => s.connect);
 
   const busy =
-    status === 'detecting' ||
-    status === 'connecting' ||
-    status === 'signing';
+    status === 'detecting' || status === 'connecting' || status === 'signing';
 
   const buttonLabel = (() => {
     switch (status) {
@@ -72,14 +70,10 @@ export function ConnectWalletPanel({ onCancel }: ConnectWalletPanelProps) {
       {(status === 'detecting' ||
         status === 'connecting' ||
         status === 'signing') && (
-        <ol className="flex flex-col gap-2 rounded-lg border border-border-subtle bg-base/60 p-3 text-[12px]">
+        <ol className="flex flex-col gap-2 rounded-lg border border-white/[0.06] bg-black/30 p-3 text-[12px]">
           <StepRow
             label="Tìm ví Coin98"
-            state={
-              status === 'detecting'
-                ? 'active'
-                : 'done'
-            }
+            state={status === 'detecting' ? 'active' : 'done'}
           />
           <StepRow
             label={
@@ -205,9 +199,7 @@ function StepRow({ label, state }: StepRowProps) {
         }
       >
         {state === 'done' && <CheckCircle2 className="h-3 w-3" />}
-        {state === 'active' && (
-          <Loader2 className="h-3 w-3 animate-spin" />
-        )}
+        {state === 'active' && <Loader2 className="h-3 w-3 animate-spin" />}
       </span>
       <span
         className={
