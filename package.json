@@ -15,7 +15,8 @@
     "gen:api": "openapi-typescript Data/openapi.json -o src/types/api.d.ts",
     "gen:api:watch": "openapi-typescript Data/openapi.json -o src/types/api.d.ts --watch",
     "validate:sample:create": "node scripts/validate-sample.mjs Data/payload_bot_strategy_create.json --schema=UnifiedBotStrategyCreate",
-    "validate:sample:update": "node scripts/validate-sample.mjs Data/payload_bot_strategy_update.json --schema=UnifiedBotStrategyUpdate"
+    "validate:sample:update": "node scripts/validate-sample.mjs Data/payload_bot_strategy_update.json --schema=UnifiedBotStrategyUpdate",
+    "prepare": "husky"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -62,7 +63,9 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.16",
     "globals": "^15.14.0",
+    "husky": "^9.1.7",
     "jsdom": "^25.0.1",
+    "lint-staged": "^17.0.5",
     "openapi-typescript": "^7.13.0",
     "postcss": "^8.4.49",
     "prettier": "^3.4.2",
@@ -72,6 +75,9 @@
     "typescript-eslint": "^8.19.0",
     "vite": "^6.0.7",
     "vitest": "^2.1.8"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,css,md,json}": "prettier --write"
   },
   "packageManager": "pnpm@10.28.2",
   "pnpm": {
