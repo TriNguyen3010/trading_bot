@@ -36,7 +36,7 @@ export function AppHeader() {
 
   return (
     <header className="relative z-20 flex h-[var(--layout-header,56px)] flex-shrink-0 items-center px-3 pt-2">
-      <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3 rounded-full card-coin98 px-3 py-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
+      <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between gap-3 rounded-full border border-white/[0.08] bg-white/[0.05] py-3 pl-4 pr-3 shadow-[0_8px_24px_rgba(0,0,0,0.15)] backdrop-blur-[100px]">
         {/* Left cluster — brand identity + primary nav */}
         <div className="flex items-center gap-1 pl-1">
           <button
@@ -71,7 +71,7 @@ export function AppHeader() {
               href="https://docs.coin98.com"
               target="_blank"
               rel="noreferrer"
-              className="rounded-full px-3 py-1.5 text-sm font-medium text-fg-secondary transition-colors hover:text-fg"
+              className="flex h-10 items-center rounded-full px-3 text-sm font-medium text-fg-secondary transition-colors hover:text-fg"
             >
               Docs
             </a>
@@ -100,7 +100,7 @@ function NavLink({ label, active, onClick }: NavLinkProps) {
       size="sm"
       onClick={onClick}
       className={cn(
-        'rounded-full px-3 text-sm font-medium',
+        'h-10 rounded-full px-3 text-sm font-medium',
         active
           ? 'text-fg hover:bg-surface-hover'
           : 'text-fg-secondary hover:bg-surface-hover hover:text-fg',

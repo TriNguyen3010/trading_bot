@@ -42,7 +42,7 @@ export function CreateNewBotButton() {
         variant="secondary"
         size="sm"
         onClick={() => setOpen(true)}
-        className="rounded-full px-3"
+        className="h-10 rounded-full px-3"
       >
         <RotateCcw className="h-3.5 w-3.5" />
         {strings.cypheus.createNewBot}
