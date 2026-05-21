@@ -1,0 +1,3248 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1440" />
+    <title>Backtest + Drytest · Product Walkthrough</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ----- DESIGN TOKENS (sync với src/styles/tokens.css của app) ----- */
+      :root {
+        --bg-canvas: #0a0a0b;
+        --bg-base: #0b0e11;
+        --bg-surface: #14181f;
+        --bg-surface-hover: #1f1f23;
+        --bg-elevated: #1e2329;
+        --bg-input: #181c22;
+        --border-subtle: #1e2329;
+        --border-default: #2b3139;
+        --border-strong: #474d57;
+        --text-primary: #eaecef;
+        --text-secondary: #b7bdc6;
+        --text-muted: #848e9c;
+        --text-disabled: #5e6673;
+        --text-inverse: #0b0e11;
+        --brand: #f0b90b;
+        --brand-hover: #fcd535;
+        --brand-active: #d9a400;
+        --brand-subtle: rgba(240, 185, 11, 0.1);
+        --brand-glow: rgba(240, 185, 11, 0.35);
+        --bullish: #0ecb81;
+        --bullish-subtle: rgba(14, 203, 129, 0.12);
+        --bearish: #f6465d;
+        --bearish-subtle: rgba(246, 70, 93, 0.12);
+        --pro-purple: #7c3aed;
+        --pro-purple-subtle: rgba(124, 58, 237, 0.14);
+        --max-blue: #0ea5e9;
+        --max-blue-subtle: rgba(14, 165, 233, 0.14);
+        --annotation: #f59e0b;
+        --annotation-glow: rgba(245, 158, 11, 0.35);
+
+        --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.4);
+        --shadow-strong:
+          0 12px 48px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.3);
+        --shadow-modal: 0 32px 80px rgba(0, 0, 0, 0.7);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg-canvas);
+        color: var(--text-primary);
+        font-family:
+          'Inter',
+          -apple-system,
+          system-ui,
+          sans-serif;
+        font-feature-settings: 'cv11', 'ss01';
+        font-size: 15px;
+        line-height: 1.55;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .mono {
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      /* ----- TOP NAV ----- */
+      .topnav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(10, 10, 11, 0.85);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .topnav-inner {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 16px 48px;
+        display: flex;
+        align-items: center;
+        gap: 32px;
+      }
+      .topnav-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .topnav-brand img {
+        width: 28px;
+        height: 28px;
+      }
+      .topnav-brand .sub {
+        color: var(--text-muted);
+        font-weight: 400;
+        font-size: 13px;
+        margin-left: 8px;
+        border-left: 1px solid var(--border-default);
+        padding-left: 12px;
+      }
+      .topnav-links {
+        display: flex;
+        gap: 4px;
+        margin-left: auto;
+        font-size: 13px;
+      }
+      .topnav-links a {
+        padding: 6px 12px;
+        border-radius: 6px;
+        color: var(--text-secondary);
+        transition: all 0.15s;
+      }
+      .topnav-links a:hover {
+        background: var(--bg-surface);
+        color: var(--text-primary);
+      }
+      .topnav-meta {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      /* ----- HERO (section 1) ----- */
+      .hero {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 120px 48px 80px;
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 80px;
+        align-items: end;
+      }
+      .hero-eyebrow {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--brand);
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .hero-eyebrow::before {
+        content: '';
+        width: 32px;
+        height: 2px;
+        background: var(--brand);
+      }
+      .hero h1 {
+        font-size: 76px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.03em;
+        margin: 0 0 28px;
+      }
+      .hero h1 .accent {
+        color: var(--brand);
+      }
+      .hero .lede {
+        font-size: 21px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+        max-width: 580px;
+        margin-bottom: 36px;
+      }
+      .hero-meta {
+        display: flex;
+        gap: 32px;
+        font-size: 13px;
+        color: var(--text-muted);
+        padding-top: 28px;
+        border-top: 1px solid var(--border-subtle);
+        max-width: 580px;
+      }
+      .hero-meta div {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .hero-meta strong {
+        color: var(--text-primary);
+        font-size: 24px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .hero-right {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .hero-toc {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 20px;
+      }
+      .hero-toc .label {
+        font-size: 11px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-bottom: 14px;
+      }
+      .hero-toc ol {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: section;
+      }
+      .hero-toc li {
+        counter-increment: section;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--border-subtle);
+        font-size: 14px;
+        color: var(--text-secondary);
+        display: flex;
+        gap: 12px;
+        align-items: baseline;
+      }
+      .hero-toc li:last-child {
+        border-bottom: 0;
+      }
+      .hero-toc li::before {
+        content: '0' counter(section);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+      .hero-toc li:hover {
+        color: var(--text-primary);
+      }
+
+      /* ----- SECTION SHELL ----- */
+      .section {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 80px 48px;
+        border-top: 1px solid var(--border-subtle);
+      }
+      .section-header {
+        margin-bottom: 56px;
+        max-width: 720px;
+      }
+      .section-eyebrow {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .section-eyebrow .num {
+        background: var(--brand-subtle);
+        color: var(--brand);
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .section h2 {
+        font-size: 44px;
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        margin: 0 0 18px;
+      }
+      .section .desc {
+        font-size: 17px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+      }
+
+      /* ----- MOCKUP + ANNOTATION SYSTEM ----- */
+      .mockup-stage {
+        position: relative;
+        background:
+          radial-gradient(
+            ellipse at top,
+            rgba(240, 185, 11, 0.04),
+            transparent 60%
+          ),
+          var(--bg-base);
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        padding: 80px 60px;
+        overflow: hidden;
+      }
+      .mockup-stage::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(
+            rgba(255, 255, 255, 0.015) 1px,
+            transparent 1px
+          ),
+          linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.015) 1px,
+            transparent 1px
+          );
+        background-size: 40px 40px;
+        pointer-events: none;
+      }
+      .mockup-container {
+        position: relative;
+        margin: 0 auto;
+      }
+
+      /* Builder canvas faux background (sits behind modal) */
+      .builder-bg {
+        position: absolute;
+        inset: 0;
+        opacity: 0.15;
+        pointer-events: none;
+        background: var(--bg-base);
+        border-radius: 12px;
+        padding: 24px;
+      }
+
+      /* Annotation pill that points to a part of the mockup */
+      .annotation {
+        position: absolute;
+        background: var(--annotation);
+        color: #1a1100;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        box-shadow:
+          0 0 0 4px rgba(245, 158, 11, 0.18),
+          0 8px 24px rgba(0, 0, 0, 0.4);
+        z-index: 10;
+        font-family: 'Inter', sans-serif;
+      }
+      .annotation::before {
+        content: '';
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: var(--annotation);
+        transform: rotate(45deg);
+        z-index: -1;
+      }
+      .annotation.left::before {
+        right: -4px;
+        top: 50%;
+        margin-top: -6px;
+      }
+      .annotation.right::before {
+        left: -4px;
+        top: 50%;
+        margin-top: -6px;
+      }
+      .annotation.up::before {
+        bottom: -4px;
+        left: 50%;
+        margin-left: -6px;
+      }
+      .annotation.down::before {
+        top: -4px;
+        left: 50%;
+        margin-left: -6px;
+      }
+
+      .annotation-line {
+        position: absolute;
+        background: var(--annotation);
+        z-index: 9;
+      }
+      .annotation-line.horizontal {
+        height: 1.5px;
+      }
+      .annotation-line.vertical {
+        width: 1.5px;
+      }
+      .annotation-line::after {
+        content: '';
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: var(--annotation);
+        border-radius: 50%;
+      }
+      .annotation-line.horizontal::after {
+        right: -4px;
+        top: -3px;
+      }
+      .annotation-line.vertical::after {
+        bottom: -4px;
+        left: -3px;
+      }
+
+      /* Stage caption below mockup */
+      .stage-caption {
+        margin-top: 40px;
+        padding: 24px 28px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-left: 3px solid var(--annotation);
+        border-radius: 8px;
+        max-width: 780px;
+      }
+      .stage-caption .label {
+        font-size: 11px;
+        color: var(--annotation);
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+      .stage-caption p {
+        margin: 0;
+        font-size: 15px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+      }
+      .stage-caption strong {
+        color: var(--text-primary);
+      }
+
+      /* ============================================================ */
+      /*  SECTION 2 MOCKUP — Backtest Config Modal (FREE tier)        */
+      /* ============================================================ */
+      .modal-free {
+        position: relative;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-default);
+        border-radius: 14px;
+        box-shadow: var(--shadow-modal);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 880px;
+        margin: 0 auto;
+        overflow: hidden;
+      }
+      .modal-header {
+        grid-column: 1 / -1;
+        padding: 20px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .modal-title-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .modal-title {
+        font-size: 19px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .tier-badge {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        padding: 3px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+      }
+      .tier-badge.free {
+        background: var(--bg-surface-hover);
+        color: var(--text-muted);
+      }
+      .tier-badge.pro {
+        background: var(--pro-purple-subtle);
+        color: #a78bfa;
+      }
+      .tier-badge.max {
+        background: var(--max-blue-subtle);
+        color: #38bdf8;
+      }
+      .modal-close {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        color: var(--text-muted);
+        cursor: pointer;
+      }
+      .modal-close:hover {
+        background: var(--bg-surface-hover);
+        color: var(--text-primary);
+      }
+
+      .modal-left {
+        padding: 24px 28px 28px;
+      }
+      .modal-right {
+        padding: 28px 28px 28px;
+        background: linear-gradient(
+          180deg,
+          rgba(240, 185, 11, 0.06),
+          rgba(240, 185, 11, 0)
+        );
+        border-left: 1px solid var(--border-subtle);
+        position: relative;
+      }
+
+      .field-label {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+      }
+
+      /* Date chip row */
+      .chip-row {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 22px;
+        flex-wrap: wrap;
+      }
+      .chip {
+        font-size: 12px;
+        padding: 7px 14px;
+        border-radius: 999px;
+        font-weight: 500;
+        font-family: 'JetBrains Mono', monospace;
+        cursor: pointer;
+        transition: all 0.15s;
+        position: relative;
+      }
+      .chip.disabled {
+        background: var(--bg-surface-hover);
+        color: var(--text-disabled);
+        cursor: not-allowed;
+      }
+      .chip.disabled::after {
+        content: 'PRO';
+        position: absolute;
+        top: -7px;
+        right: -8px;
+        background: var(--pro-purple);
+        color: #fff;
+        font-size: 8px;
+        font-weight: 700;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-family: 'Inter', sans-serif;
+        letter-spacing: 0.05em;
+      }
+      .chip.active {
+        background: var(--brand);
+        color: #1a1100;
+      }
+      .chip.idle {
+        background: var(--bg-surface-hover);
+        color: var(--text-secondary);
+      }
+      .chip.idle:hover {
+        background: var(--bg-surface-active);
+      }
+
+      /* Date input row */
+      .date-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 22px;
+      }
+      .date-input {
+        background: var(--bg-input);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .date-input .date-label {
+        font-size: 11px;
+        color: var(--text-muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .date-input .date-value {
+        font-size: 14px;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--text-primary);
+      }
+      .date-input svg {
+        margin-right: 4px;
+        color: var(--text-muted);
+      }
+
+      .free-note {
+        font-size: 12px;
+        color: var(--text-muted);
+        padding: 10px 14px;
+        background: rgba(245, 158, 11, 0.08);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        border-radius: 8px;
+        margin-bottom: 22px;
+        line-height: 1.5;
+      }
+      .free-note strong {
+        color: var(--annotation);
+      }
+
+      .select {
+        background: var(--bg-input);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 11px 14px;
+        font-size: 14px;
+        color: var(--text-primary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 26px;
+        cursor: pointer;
+      }
+      .select .caret {
+        color: var(--text-muted);
+      }
+
+      .btn {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 12px 18px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .btn-primary {
+        background: var(--brand);
+        color: #1a1100;
+      }
+      .btn-primary:hover {
+        background: var(--brand-hover);
+      }
+      .btn-secondary {
+        background: var(--bg-surface-hover);
+        color: var(--text-primary);
+        border-color: var(--border-default);
+      }
+      .btn-secondary:hover {
+        background: var(--bg-surface-active);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-secondary);
+      }
+      .btn-ghost:hover {
+        background: var(--bg-surface);
+      }
+      .btn-block {
+        width: 100%;
+      }
+
+      /* Right side — Upgrade pitch */
+      .upgrade-trophy {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, var(--brand) 0%, #a87a00 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 18px;
+        box-shadow: 0 8px 24px rgba(240, 185, 11, 0.3);
+      }
+      .upgrade-trophy svg {
+        width: 28px;
+        height: 28px;
+        color: #1a1100;
+      }
+      .upgrade-title {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin-bottom: 8px;
+      }
+      .upgrade-sub {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+        line-height: 1.55;
+      }
+      .tier-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+      .tier-card {
+        background: var(--bg-base);
+        border: 1px solid var(--border-default);
+        border-radius: 10px;
+        padding: 14px 12px;
+        text-align: left;
+        position: relative;
+      }
+      .tier-card.popular {
+        border-color: var(--brand);
+        background: linear-gradient(
+          180deg,
+          rgba(240, 185, 11, 0.08),
+          rgba(240, 185, 11, 0)
+        );
+      }
+      .tier-card .popular-tag {
+        position: absolute;
+        top: -8px;
+        right: 10px;
+        background: var(--brand);
+        color: #1a1100;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        padding: 2px 7px;
+        border-radius: 4px;
+      }
+      .tier-card .name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      .tier-card .price {
+        font-size: 22px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--text-primary);
+        margin-top: 6px;
+      }
+      .tier-card .price .per {
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--text-muted);
+        font-family: 'Inter', sans-serif;
+      }
+
+      .feature-list {
+        margin: 0 0 22px;
+        padding: 0;
+        list-style: none;
+        font-size: 12.5px;
+      }
+      .feature-list li {
+        padding: 6px 0;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .feature-list li::before {
+        content: '✓';
+        color: var(--brand);
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      /* ============================================================ */
+      /*  SECTION 6 — Tier comparison table                            */
+      /* ============================================================ */
+      .pricing-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 1fr 1fr;
+        gap: 0;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .pricing-header {
+        padding: 32px 28px;
+        border-bottom: 1px solid var(--border-default);
+        position: relative;
+      }
+      .pricing-header.first-col {
+        background: var(--bg-base);
+      }
+      .pricing-header.popular {
+        background: linear-gradient(
+          180deg,
+          rgba(240, 185, 11, 0.08),
+          rgba(240, 185, 11, 0)
+        );
+      }
+      .pricing-header .ph-name {
+        font-size: 13px;
+        color: var(--text-muted);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .pricing-header .popular-pill {
+        background: var(--brand);
+        color: #1a1100;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        padding: 3px 8px;
+        border-radius: 4px;
+      }
+      .pricing-header .ph-price {
+        font-size: 44px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        line-height: 1;
+        letter-spacing: -0.02em;
+      }
+      .pricing-header .ph-price .per {
+        font-size: 14px;
+        color: var(--text-muted);
+        font-family: 'Inter', sans-serif;
+        font-weight: 400;
+      }
+      .pricing-header .ph-tagline {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 12px;
+        line-height: 1.4;
+      }
+      .pricing-header .ph-cta {
+        margin-top: 20px;
+      }
+
+      .pricing-cell {
+        padding: 16px 28px;
+        border-bottom: 1px solid var(--border-subtle);
+        font-size: 14px;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .pricing-cell.label {
+        background: var(--bg-base);
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+      .pricing-cell .em {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      .pricing-cell .meh {
+        color: var(--text-disabled);
+      }
+      .pricing-row-label {
+        background: var(--bg-elevated);
+        padding: 14px 28px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--brand);
+        grid-column: 1 / -1;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .check-dot {
+        display: inline-flex;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 11px;
+      }
+      .check-dot.yes {
+        background: var(--bullish-subtle);
+        color: var(--bullish);
+      }
+      .check-dot.no {
+        background: var(--bg-surface-hover);
+        color: var(--text-disabled);
+      }
+
+      .pricing-footnote {
+        padding: 24px 28px;
+        font-size: 13px;
+        color: var(--text-muted);
+        grid-column: 1 / -1;
+        background: var(--bg-base);
+        border-top: 1px solid var(--border-subtle);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .pricing-footnote .yearly {
+        color: var(--text-primary);
+      }
+      .pricing-footnote .yearly strong {
+        color: var(--brand);
+      }
+
+      /* ============================================================ */
+      /*  SECTION 3 MOCKUP — Backtest Config Modal (PRO tier)         */
+      /* ============================================================ */
+      .modal-pro {
+        position: relative;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-default);
+        border-radius: 14px;
+        box-shadow: var(--shadow-modal);
+        width: 460px;
+        margin: 0 auto;
+        overflow: hidden;
+      }
+      .modal-pro .modal-header {
+        grid-column: unset;
+      }
+      .modal-pro .modal-left {
+        padding: 24px 28px 24px;
+      }
+
+      /* ============================================================ */
+      /*  SECTION 4 MOCKUP — Backtest Result View                     */
+      /* ============================================================ */
+      .result-shell {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-default);
+        border-radius: 14px;
+        box-shadow: var(--shadow-modal);
+        width: 1080px;
+        margin: 0 auto;
+        overflow: hidden;
+      }
+      .result-header {
+        padding: 18px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .result-title {
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .result-title .muted {
+        color: var(--text-muted);
+        font-weight: 400;
+      }
+
+      .kpi-bar {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 1px;
+        background: var(--border-subtle);
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .kpi-cell {
+        background: var(--bg-surface);
+        padding: 18px 22px;
+      }
+      .kpi-label {
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+      .kpi-value {
+        font-size: 24px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        line-height: 1;
+        letter-spacing: -0.01em;
+      }
+      .kpi-delta {
+        font-size: 11px;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--bullish);
+        margin-left: 6px;
+      }
+      .kpi-delta.down {
+        color: var(--bearish);
+      }
+
+      /* Chart area */
+      .chart-area {
+        display: grid;
+        grid-template-columns: 44px 1fr 60px;
+        gap: 0;
+        background: #0a0c10;
+        position: relative;
+        overflow: hidden;
+      }
+      .chart-toolbar {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 16px 0;
+        align-items: center;
+        border-right: 1px solid var(--border-subtle);
+      }
+      .chart-tool {
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        border-radius: 4px;
+      }
+      .chart-tool:hover {
+        background: var(--bg-surface-hover);
+        color: var(--text-primary);
+      }
+      .chart-canvas {
+        position: relative;
+        height: 360px;
+        padding: 16px 12px;
+      }
+      .chart-info {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        color: var(--text-muted);
+        z-index: 2;
+      }
+      .chart-info .pair {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 12px;
+        margin-right: 8px;
+      }
+      .chart-info .ohlc span {
+        margin-right: 10px;
+      }
+      .chart-info .ohlc .up {
+        color: var(--bullish);
+      }
+      .chart-info .ohlc .down {
+        color: var(--bearish);
+      }
+      .chart-axis {
+        background: var(--bg-base);
+        border-left: 1px solid var(--border-subtle);
+        padding: 16px 8px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: var(--text-muted);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .candles {
+        position: absolute;
+        inset: 30px 0 70px 0;
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        padding: 0 4px;
+      }
+      .candle {
+        flex: 1;
+        background: var(--bullish);
+        min-height: 4px;
+        position: relative;
+        max-width: 11px;
+      }
+      .candle.down {
+        background: var(--bearish);
+      }
+      .candle .wick {
+        position: absolute;
+        left: 50%;
+        width: 1px;
+        background: inherit;
+        margin-left: -0.5px;
+      }
+      .trade-dots {
+        position: absolute;
+        inset: 30px 0 70px 0;
+        pointer-events: none;
+      }
+      .trade-dot {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 2px solid var(--bg-base);
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 0 2px currentColor;
+      }
+      .trade-dot.entry {
+        background: var(--bullish);
+        color: rgba(14, 203, 129, 0.4);
+      }
+      .trade-dot.exit {
+        background: var(--bearish);
+        color: rgba(246, 70, 93, 0.4);
+      }
+
+      /* Volume mini bar */
+      .volume-bars {
+        position: absolute;
+        bottom: 0;
+        left: 4px;
+        right: 4px;
+        height: 60px;
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        opacity: 0.5;
+      }
+      .volume-bars > div {
+        flex: 1;
+        background: var(--bullish);
+        max-width: 11px;
+        min-height: 2px;
+      }
+      .volume-bars > div.down {
+        background: var(--bearish);
+      }
+
+      /* Trade tooltip */
+      .trade-tooltip {
+        position: absolute;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-strong);
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-size: 12px;
+        z-index: 5;
+        box-shadow: var(--shadow-strong);
+        min-width: 200px;
+      }
+      .tt-pair {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .tt-direction {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        padding: 2px 6px;
+        border-radius: 3px;
+        background: var(--bearish-subtle);
+        color: var(--bearish);
+      }
+      .tt-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+      }
+      .tt-row .label {
+        color: var(--text-muted);
+        font-family: 'Inter', sans-serif;
+      }
+      .tt-row.profit .value {
+        color: var(--bullish);
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      /* Result tabs + stats */
+      .result-tabs {
+        display: flex;
+        gap: 0;
+        padding: 0 24px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--bg-surface);
+        align-items: center;
+        justify-content: space-between;
+      }
+      .tabs-left {
+        display: flex;
+      }
+      .result-tab {
+        font-size: 13px;
+        padding: 12px 16px;
+        color: var(--text-muted);
+        cursor: pointer;
+        position: relative;
+      }
+      .result-tab.active {
+        color: var(--text-primary);
+      }
+      .result-tab.active::after {
+        content: '';
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        bottom: -1px;
+        height: 2px;
+        background: var(--brand);
+      }
+      .compare-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        padding: 6px 12px;
+        background: var(--brand-subtle);
+        color: var(--brand);
+        border-radius: 6px;
+        font-weight: 600;
+      }
+      .pro-pill {
+        font-size: 9px;
+        background: var(--pro-purple);
+        color: #fff;
+        padding: 2px 5px;
+        border-radius: 3px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+      }
+      .export-btn {
+        font-size: 12px;
+        padding: 6px 12px;
+        color: var(--brand);
+        background: transparent;
+        border: 1px solid var(--brand);
+        border-radius: 6px;
+        font-weight: 500;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        padding: 18px 24px 24px;
+        gap: 14px 32px;
+      }
+      .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 4px 0;
+        font-size: 13px;
+      }
+      .stat-item .stat-label {
+        color: var(--text-muted);
+      }
+      .stat-item .stat-value {
+        color: var(--text-primary);
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 500;
+      }
+
+      /* ============================================================ */
+      /*  SECTION 5 MOCKUP — Drytest dashboard                        */
+      /* ============================================================ */
+      .drytest-shell {
+        background: var(--bg-base);
+        border: 1px solid var(--border-default);
+        border-radius: 14px;
+        padding: 28px;
+        width: 1080px;
+        margin: 0 auto;
+      }
+      .drytest-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .drytest-title-group h3 {
+        margin: 0 0 4px;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .drytest-title-group .sub {
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+
+      .quota-bar {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .quota-text {
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+      .quota-text strong {
+        color: var(--text-primary);
+      }
+      .quota-progress {
+        flex: 1;
+        height: 6px;
+        background: var(--bg-surface-active);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .quota-fill {
+        height: 100%;
+        background: var(--brand);
+        border-radius: 999px;
+        width: 33%;
+      }
+      .quota-cta {
+        font-size: 12px;
+        color: var(--brand);
+        font-weight: 600;
+      }
+
+      .drytest-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+      .drytest-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 18px;
+        position: relative;
+      }
+      .drytest-card.running {
+        border-left: 3px solid var(--bullish);
+      }
+      .drytest-card.paused {
+        border-left: 3px solid var(--annotation);
+      }
+      .drytest-card.finished {
+        border-left: 3px solid var(--text-disabled);
+        opacity: 0.85;
+      }
+      .dt-status {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .dt-status.running {
+        color: var(--bullish);
+      }
+      .dt-status.paused {
+        color: var(--annotation);
+      }
+      .dt-status.finished {
+        color: var(--text-muted);
+      }
+      .dt-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+      .dt-dot.static {
+        animation: none;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+      .dt-strat {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        letter-spacing: -0.005em;
+      }
+      .dt-pair {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-family: 'JetBrains Mono', monospace;
+        margin-bottom: 18px;
+      }
+      .dt-pnl-label {
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+      }
+      .dt-pnl {
+        font-size: 28px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        margin-bottom: 4px;
+      }
+      .dt-pnl.up {
+        color: var(--bullish);
+      }
+      .dt-pnl.down {
+        color: var(--bearish);
+      }
+      .dt-pnl-pct {
+        font-size: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--text-muted);
+        margin-bottom: 14px;
+      }
+      .dt-sparkline {
+        height: 36px;
+        margin: 0 -6px 14px;
+        padding: 0 6px;
+      }
+      .dt-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--text-muted);
+        padding-top: 12px;
+        border-top: 1px solid var(--border-subtle);
+      }
+      .dt-meta .countdown {
+        color: var(--annotation);
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .dt-empty {
+        background: transparent;
+        border: 1.5px dashed var(--border-strong);
+        border-radius: 12px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        min-height: 240px;
+        cursor: pointer;
+      }
+      .dt-empty:hover {
+        border-color: var(--brand);
+      }
+      .dt-empty-icon {
+        width: 44px;
+        height: 44px;
+        background: var(--brand-subtle);
+        color: var(--brand);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+        font-size: 22px;
+        font-weight: 300;
+      }
+      .dt-empty-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+      }
+      .dt-empty-sub {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      /* ============================================================ */
+      /*  SECTION 7 MOCKUP — 6 Revenue streams                        */
+      /* ============================================================ */
+      .streams-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .stream-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        padding: 24px;
+        position: relative;
+        overflow: hidden;
+      }
+      .stream-card.star {
+        background:
+          linear-gradient(
+            180deg,
+            rgba(240, 185, 11, 0.06),
+            transparent 60%
+          ),
+          var(--bg-surface);
+        border-color: var(--brand-subtle);
+      }
+      .stream-card.star::before {
+        content: '★';
+        position: absolute;
+        top: 14px;
+        right: 16px;
+        color: var(--brand);
+        font-size: 18px;
+      }
+      .stream-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: var(--bg-elevated);
+        color: var(--brand);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 18px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 16px;
+        font-weight: 700;
+      }
+      .stream-card.star .stream-icon {
+        background: var(--brand);
+        color: #1a1100;
+      }
+      .stream-name {
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin-bottom: 6px;
+      }
+      .stream-tag {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        padding: 3px 7px;
+        border-radius: 4px;
+        background: var(--bg-elevated);
+        color: var(--text-secondary);
+        margin-bottom: 14px;
+      }
+      .stream-tag.mvp {
+        background: var(--bullish-subtle);
+        color: var(--bullish);
+      }
+      .stream-tag.phase3 {
+        background: var(--pro-purple-subtle);
+        color: #a78bfa;
+      }
+      .stream-tag.phase2 {
+        background: var(--max-blue-subtle);
+        color: #38bdf8;
+      }
+      .stream-desc {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.55;
+        margin-bottom: 16px;
+      }
+      .stream-metric {
+        padding-top: 14px;
+        border-top: 1px solid var(--border-subtle);
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .stream-metric .label {
+        font-size: 11px;
+        color: var(--text-muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .stream-metric .value {
+        font-size: 15px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--text-primary);
+      }
+      .stream-metric .value .em {
+        color: var(--brand);
+      }
+
+      /* ============================================================ */
+      /*  SECTION 8 MOCKUP — Roadmap timeline                         */
+      /* ============================================================ */
+      .roadmap {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .phase {
+        padding: 28px 26px 24px;
+        border-right: 1px solid var(--border-subtle);
+        position: relative;
+      }
+      .phase:last-child {
+        border-right: 0;
+      }
+      .phase.active {
+        background: linear-gradient(
+          180deg,
+          rgba(240, 185, 11, 0.06),
+          rgba(240, 185, 11, 0)
+        );
+      }
+      .phase-marker {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .phase-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--border-strong);
+      }
+      .phase.active .phase-dot {
+        background: var(--brand);
+        box-shadow: 0 0 0 4px rgba(240, 185, 11, 0.2);
+      }
+      .phase-meta {
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+      .phase-meta .pillar {
+        color: var(--brand);
+      }
+      .phase-title {
+        font-size: 19px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin-bottom: 6px;
+      }
+      .phase-period {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-family: 'JetBrains Mono', monospace;
+        margin-bottom: 18px;
+      }
+      .phase-section {
+        margin-bottom: 18px;
+      }
+      .phase-section h4 {
+        margin: 0 0 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+      .phase-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+      .phase-list li {
+        padding: 4px 0;
+        padding-left: 16px;
+        position: relative;
+      }
+      .phase-list li::before {
+        content: '─';
+        position: absolute;
+        left: 0;
+        color: var(--text-muted);
+      }
+      .phase-list li.active::before {
+        content: '●';
+        color: var(--brand);
+      }
+      .phase-list li.future::before {
+        content: '○';
+        color: var(--border-strong);
+      }
+      .phase-bottom {
+        padding-top: 14px;
+        border-top: 1px solid var(--border-subtle);
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .phase-bottom .lbl {
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+      .phase-bottom .val {
+        font-size: 16px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--brand);
+      }
+
+      /* Placeholder banner for sections still to be built */
+      .placeholder-banner {
+        background: var(--bg-surface);
+        border: 1px dashed var(--border-strong);
+        border-radius: 12px;
+        padding: 48px 32px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+      .placeholder-banner .label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--annotation);
+        margin-bottom: 12px;
+      }
+      .placeholder-banner h3 {
+        margin: 0 0 8px;
+        color: var(--text-primary);
+        font-size: 18px;
+      }
+
+      /* Footer */
+      .pgfooter {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 60px 48px 80px;
+        border-top: 1px solid var(--border-subtle);
+        font-size: 13px;
+        color: var(--text-muted);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- ====== TOP NAV ====== -->
+    <nav class="topnav">
+      <div class="topnav-inner">
+        <div class="topnav-brand">
+          <img src="../../../public/logo.png" alt="Coin98" />
+          <span>Trading Bot</span>
+          <span class="sub">Backtest + Drytest · Walkthrough</span>
+        </div>
+        <div class="topnav-links">
+          <a href="#s2">Backtest Free</a>
+          <a href="#s3">Backtest Pro</a>
+          <a href="#s4">Result</a>
+          <a href="#s5">Drytest</a>
+          <a href="#s6">Pricing</a>
+          <a href="#s7">Streams</a>
+        </div>
+        <div class="topnav-meta">v0.1 · 2026-05-21</div>
+      </div>
+    </nav>
+
+    <!-- ====== SECTION 1 · HERO ====== -->
+    <header class="hero">
+      <div>
+        <div class="hero-eyebrow">Internal product walkthrough</div>
+        <h1>
+          Backtest và Drytest,<br />
+          gọi tên thành <span class="accent">engine doanh thu</span>.
+        </h1>
+        <p class="lede">
+          Mỗi UI surface trong demo này là một
+          <strong style="color: var(--text-primary)"
+            >điểm thu tiền hoặc điểm tạo niềm tin</strong
+          >. Annotation màu cam chỉ rõ chỗ nào convert user free → paid, chỗ nào
+          là moat dài hạn.
+        </p>
+        <div class="hero-meta">
+          <div>
+            <span>Surface trong demo</span><strong>8 màn hình</strong>
+          </div>
+          <div><span>Stream doanh thu</span><strong>6</strong></div>
+          <div><span>Mục tiêu 6 tháng</span><strong>$5–15K MRR</strong></div>
+        </div>
+      </div>
+      <aside class="hero-right">
+        <div class="hero-toc">
+          <div class="label">Mục lục</div>
+          <ol>
+            <li>Hero · Mục đích demo</li>
+            <li>Backtest config · FREE</li>
+            <li>Backtest config · PRO</li>
+            <li>Backtest result · Chart + 15 metric</li>
+            <li>Drytest dashboard · NEW</li>
+            <li>Pricing comparison</li>
+            <li>6 doanh thu streams</li>
+            <li>Roadmap · 3 phase</li>
+          </ol>
+        </div>
+      </aside>
+    </header>
+
+    <!-- ====== SECTION 2 · BACKTEST FREE MODAL ====== -->
+    <section class="section" id="s2">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <span class="num">02</span>
+          <span>Free tier · entry point</span>
+        </div>
+        <h2>Free user vào → thấy ngay đường lên Pro.</h2>
+        <p class="desc">
+          Modal Backtest cho Free user. 4 chip date dài bị khoá, sidebar phải
+          luôn show 2 tier upgrade. User không thấy paywall toàn screen — chỉ
+          thấy "có thêm gì khi pay" trong cùng context. Friction thấp,
+          conversion driver mạnh.
+        </p>
+      </div>
+
+      <div class="mockup-stage">
+        <div class="mockup-container" style="width: 880px">
+          <!-- The modal itself -->
+          <div class="modal-free">
+            <div class="modal-header">
+              <div class="modal-title-group">
+                <span class="modal-title">Backtest</span>
+                <span class="tier-badge free">Free</span>
+              </div>
+              <div class="modal-close">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="modal-left">
+              <div class="field-label">Select a range of time</div>
+              <div class="chip-row">
+                <span class="chip idle">7d</span>
+                <span class="chip active">14d</span>
+                <span class="chip disabled">30d</span>
+                <span class="chip disabled">60d</span>
+                <span class="chip disabled">90d</span>
+                <span class="chip disabled">120d</span>
+                <span class="chip disabled">1Y</span>
+                <span class="chip idle">Custom</span>
+              </div>
+
+              <div class="date-row">
+                <div class="date-input">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                  </svg>
+                  <div>
+                    <div class="date-label">Start date</div>
+                    <div class="date-value">15 / 05 / 2026</div>
+                  </div>
+                </div>
+                <div class="date-input">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                  </svg>
+                  <div>
+                    <div class="date-label">End date</div>
+                    <div class="date-value">21 / 05 / 2026</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="free-note">
+                FREE plan: chỉ dùng được <strong>7 ngày</strong> gần nhất.
+                <a href="#" style="color: var(--brand); font-weight: 600"
+                  >Upgrade</a
+                >
+                để unlock dài hơn.
+              </div>
+
+              <div class="field-label">Select strategy</div>
+              <div class="select">
+                <span>Strategies Big Long</span>
+                <span class="caret">▾</span>
+              </div>
+
+              <button class="btn btn-secondary btn-block">Start backtest</button>
+            </div>
+
+            <div class="modal-right">
+              <div class="upgrade-trophy">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M6 9H4.5a2.5 2.5 0 010-5H6m12 5h1.5a2.5 2.5 0 000-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0012 0V2z"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    fill="none"
+                  />
+                </svg>
+              </div>
+              <div class="upgrade-title">Unlock powerful backtesting</div>
+              <div class="upgrade-sub">
+                Access longer history, deeper insights, và analytics chuẩn cho
+                strategy validation.
+              </div>
+
+              <div class="tier-cards">
+                <div class="tier-card popular">
+                  <span class="popular-tag">POPULAR</span>
+                  <div class="name">Pro</div>
+                  <div class="price">$9<span class="per"> / month</span></div>
+                </div>
+                <div class="tier-card">
+                  <div class="name">Max</div>
+                  <div class="price">$15<span class="per"> / month</span></div>
+                </div>
+              </div>
+
+              <ul class="feature-list">
+                <li>Up to 365 days of historical data</li>
+                <li>Full advanced analytics &amp; trade breakdown</li>
+                <li>Unlimited backtest runs per month</li>
+              </ul>
+
+              <button class="btn btn-primary btn-block">Upgrade</button>
+            </div>
+          </div>
+
+          <!-- Annotations -->
+          <div
+            class="annotation right"
+            style="left: -240px; top: 138px; width: 200px; text-align: center"
+          >
+            ① Date chip ≥30d bị khoá
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="left: -32px; top: 152px; width: 32px"
+          ></div>
+
+          <div
+            class="annotation right"
+            style="left: -240px; top: 280px; width: 200px; text-align: center"
+          >
+            ② Free note dẫn dắt mềm
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="left: -32px; top: 294px; width: 32px"
+          ></div>
+
+          <div
+            class="annotation left"
+            style="
+              right: -270px;
+              top: 100px;
+              width: 230px;
+              text-align: center;
+            "
+          >
+            ③ Upgrade pitch nằm cùng modal
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="right: -32px; top: 130px; width: 32px"
+          ></div>
+
+          <div
+            class="annotation left"
+            style="
+              right: -270px;
+              top: 360px;
+              width: 230px;
+              text-align: center;
+            "
+          >
+            ④ CTA chính = Upgrade (yellow)
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="right: -32px; top: 460px; width: 32px"
+          ></div>
+        </div>
+      </div>
+
+      <div class="stage-caption">
+        <div class="label">Vì sao layout này hiệu quả</div>
+        <p>
+          User free vẫn run được backtest 7d (
+          <strong>không bị block hoàn toàn</strong> → giảm churn), nhưng mọi UI
+          element còn lại đều "kể chuyện Pro": 4 chip khoá có badge PRO nhỏ, note
+          vàng nhắc upgrade, và <strong>sidebar Upgrade chiếm 50% modal</strong>.
+          Conversion friction thấp — user click "Upgrade" hoặc "Start backtest"
+          ngay tại đây, không cần chuyển page.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====== SECTIONS 3-5 · placeholders ====== -->
+    <section class="section" id="s3">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <span class="num">03</span><span>Pro tier · unlocked</span>
+        </div>
+        <h2>Pro user → friction biến mất, focus chạy test.</h2>
+        <p class="desc">
+          Cùng modal Backtest sau khi user upgrade. Badge đổi tím
+          <span style="color: #a78bfa; font-weight: 600">PRO</span>, tất cả chip
+          date unlock, sidebar upgrade biến mất → toàn modal dành cho config.
+          Không còn vật cản giữa user và "Start backtest" yellow CTA.
+        </p>
+      </div>
+
+      <div class="mockup-stage">
+        <div class="mockup-container" style="width: 460px">
+          <div class="modal-pro">
+            <div class="modal-header">
+              <div class="modal-title-group">
+                <span class="modal-title">Backtest</span>
+                <span class="tier-badge pro">★ PRO</span>
+              </div>
+              <div class="modal-close">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="modal-left">
+              <div class="field-label">Select a range of time</div>
+              <div class="chip-row">
+                <span class="chip idle">7d</span>
+                <span class="chip idle">14d</span>
+                <span class="chip active">30d</span>
+                <span class="chip idle">60d</span>
+                <span class="chip idle">90d</span>
+                <span class="chip idle">120d</span>
+                <span class="chip idle">1Y</span>
+                <span class="chip idle">Custom</span>
+              </div>
+
+              <div class="date-row">
+                <div class="date-input">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                  </svg>
+                  <div>
+                    <div class="date-label">Start date</div>
+                    <div class="date-value">21 / 04 / 2026</div>
+                  </div>
+                </div>
+                <div class="date-input">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                  </svg>
+                  <div>
+                    <div class="date-label">End date</div>
+                    <div class="date-value">21 / 05 / 2026</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field-label">Select strategy</div>
+              <div class="select">
+                <span>Strategies Big Long</span>
+                <span class="caret">▾</span>
+              </div>
+
+              <button class="btn btn-primary btn-block">Start backtest</button>
+            </div>
+          </div>
+
+          <div
+            class="annotation right"
+            style="left: -240px; top: 16px; width: 200px; text-align: center"
+          >
+            ① Badge tím = Pro
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="left: -32px; top: 30px; width: 32px"
+          ></div>
+
+          <div
+            class="annotation right"
+            style="left: -240px; top: 138px; width: 200px; text-align: center"
+          >
+            ② Chip 7d→1Y unlock hết
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="left: -32px; top: 152px; width: 32px"
+          ></div>
+
+          <div
+            class="annotation left"
+            style="
+              right: -270px;
+              top: 380px;
+              width: 230px;
+              text-align: center;
+            "
+          >
+            ③ CTA yellow + single CTA
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="right: -32px; top: 410px; width: 32px"
+          ></div>
+        </div>
+      </div>
+
+      <div class="stage-caption">
+        <div class="label">Vì sao layout này hiệu quả</div>
+        <p>
+          So với Free modal (880px, 2 cột), Pro modal
+          <strong>chỉ rộng 460px</strong> — chiếm ít space, mở nhanh, đóng nhanh.
+          User Pro chạy backtest 5-10 lần/ngày để tweak param —
+          <strong>UX phải nhẹ và liền mạch</strong>. Sidebar upgrade biến mất
+          hoàn toàn = không re-pitch user đã trả tiền (anti-pattern thường gặp).
+        </p>
+      </div>
+    </section>
+
+    <section class="section" id="s4">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <span class="num">04</span
+          ><span>Backtest result · Pro feature gate</span>
+        </div>
+        <h2>32 trade · 98% winrate · +$18,765.</h2>
+        <p class="desc">
+          Output của 1 backtest. KPI bar 5 metric, chart với entry/exit markers,
+          tooltip per-trade khi hover, tabs Overview/List of trades, stats grid
+          15 chỉ số. Em đề xuất thêm
+          <strong style="color: var(--brand)">Compare with previous run</strong>
+          (Pro-only) — khi user tweak param chạy lại, muốn so sánh
+          side-by-side → upgrade driver mạnh.
+        </p>
+      </div>
+
+      <div class="mockup-stage">
+        <div class="mockup-container" style="width: 1080px">
+          <div class="result-shell">
+            <div class="result-header">
+              <div class="result-title">
+                Backtest
+                <span class="muted">— Strategies Big Long · BTC/USDC</span>
+              </div>
+              <div class="modal-close">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="kpi-bar">
+              <div class="kpi-cell">
+                <div class="kpi-label">Total Trades</div>
+                <div class="kpi-value">32</div>
+              </div>
+              <div class="kpi-cell">
+                <div class="kpi-label">Win Rate</div>
+                <div class="kpi-value">98<span class="mono" style="font-size:16px;color:var(--text-muted)">%</span></div>
+              </div>
+              <div class="kpi-cell">
+                <div class="kpi-label">PnL</div>
+                <div class="kpi-value" style="color: var(--bullish)">
+                  +$18,765<span class="kpi-delta">+10.5%</span>
+                </div>
+              </div>
+              <div class="kpi-cell">
+                <div class="kpi-label">Volume</div>
+                <div class="kpi-value">$124,124.89</div>
+              </div>
+              <div class="kpi-cell">
+                <div class="kpi-label">Max Drawdown</div>
+                <div class="kpi-value">2<span class="mono" style="font-size:16px;color:var(--text-muted)">%</span></div>
+              </div>
+            </div>
+
+            <div class="chart-area">
+              <div class="chart-toolbar">
+                <span class="chart-tool" title="Pointer">↖</span>
+                <span class="chart-tool" title="Trend line">/</span>
+                <span class="chart-tool" title="Horizontal">─</span>
+                <span class="chart-tool" title="Rectangle">▢</span>
+                <span class="chart-tool" title="Fibonacci">𝑭</span>
+                <span class="chart-tool" title="Text">A</span>
+                <span class="chart-tool" title="Magnet">🧲</span>
+                <span class="chart-tool" title="Settings">⚙</span>
+              </div>
+              <div class="chart-canvas">
+                <div class="chart-info">
+                  <span class="pair">BTC/USDC · 1h · Hyperliquid</span>
+                  <span class="ohlc">
+                    <span>O <span class="up">36,492.10</span></span>
+                    <span>H <span class="up">37,201.50</span></span>
+                    <span>L <span class="down">36,210.20</span></span>
+                    <span>C <span class="up">36,945.80</span></span>
+                  </span>
+                </div>
+                <div class="candles" id="candles"></div>
+                <div class="volume-bars" id="vol"></div>
+                <div class="trade-dots">
+                  <span class="trade-dot entry" style="left: 8%; top: 78%"></span>
+                  <span class="trade-dot exit" style="left: 14%; top: 38%"></span>
+                  <span class="trade-dot entry" style="left: 22%; top: 62%"></span>
+                  <span class="trade-dot exit" style="left: 28%; top: 28%"></span>
+                  <span class="trade-dot entry" style="left: 36%; top: 70%"></span>
+                  <span class="trade-dot exit" style="left: 45%; top: 22%"></span>
+                  <span class="trade-dot entry" style="left: 52%; top: 56%"></span>
+                  <span class="trade-dot exit" style="left: 62%; top: 18%"></span>
+                  <span class="trade-dot entry" style="left: 70%; top: 48%"></span>
+                  <span class="trade-dot exit" style="left: 78%; top: 14%"></span>
+                  <span class="trade-dot entry" style="left: 86%; top: 32%"></span>
+                  <span class="trade-dot exit" style="left: 92%; top: 8%"></span>
+                </div>
+                <!-- Trade tooltip floating -->
+                <div class="trade-tooltip" style="left: 38%; top: 30%">
+                  <div class="tt-pair">
+                    <span style="font-weight: 600">BTC/USDC</span>
+                    <span class="tt-direction">SHORT</span>
+                  </div>
+                  <div class="tt-row profit">
+                    <span class="label">PnL</span>
+                    <span class="value">+$10,141.60</span>
+                  </div>
+                  <div class="tt-row">
+                    <span class="label">Return</span>
+                    <span class="value" style="color: var(--bullish)">+18.6%</span>
+                  </div>
+                  <div class="tt-row">
+                    <span class="label">Avg. Sell</span>
+                    <span class="value">$36,510.10</span>
+                  </div>
+                  <div class="tt-row">
+                    <span class="label">Avg. Buy</span>
+                    <span class="value">$30,773.50</span>
+                  </div>
+                  <div class="tt-row">
+                    <span class="label">Reason</span>
+                    <span class="value" style="color: var(--annotation)">ROI hit</span>
+                  </div>
+                </div>
+              </div>
+              <div class="chart-axis">
+                <div>37,500</div>
+                <div>37,000</div>
+                <div>36,500</div>
+                <div>36,000</div>
+                <div>35,500</div>
+                <div>35,000</div>
+                <div>34,500</div>
+                <div>34,000</div>
+              </div>
+            </div>
+
+            <div class="result-tabs">
+              <div class="tabs-left">
+                <div class="result-tab active">Overview</div>
+                <div class="result-tab">List of trades</div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center">
+                <span class="compare-cta">
+                  ↔ Compare with previous run
+                  <span class="pro-pill">PRO</span>
+                </span>
+                <span class="export-btn">↓ Export logs</span>
+              </div>
+            </div>
+
+            <div class="stats-grid">
+              <div class="stat-item">
+                <span class="stat-label">Avg trade</span>
+                <span class="stat-value">$1,150</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Avg trade size</span>
+                <span class="stat-value">$124</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Max drawdown</span>
+                <span class="stat-value">2.7%</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Trades closed</span>
+                <span class="stat-value">32</span>
+              </div>
+
+              <div class="stat-item">
+                <span class="stat-label">Max trade</span>
+                <span class="stat-value" style="color: var(--bullish)">+$9,910</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Min trade</span>
+                <span class="stat-value" style="color: var(--bearish)">-$132.50</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Max trading DD</span>
+                <span class="stat-value">5.4%</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Avg holding time</span>
+                <span class="stat-value">16h 4m</span>
+              </div>
+
+              <div class="stat-item">
+                <span class="stat-label">Sharpe</span>
+                <span class="stat-value">1.96</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Sortino</span>
+                <span class="stat-value">2.41</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Std deviation</span>
+                <span class="stat-value">19%</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Avg trade duration</span>
+                <span class="stat-value">24h 14m</span>
+              </div>
+
+              <div class="stat-item">
+                <span class="stat-label">Profit factor</span>
+                <span class="stat-value">3.82</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Calmar ratio</span>
+                <span class="stat-value">1.18</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Max trade duration</span>
+                <span class="stat-value">3d 7h</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Total fees</span>
+                <span class="stat-value">$85.47</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="annotation left"
+            style="
+              right: -250px;
+              top: 150px;
+              width: 210px;
+              text-align: center;
+            "
+          >
+            ① Trade tooltip có "Reason for exit"
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="right: -32px; top: 180px; width: 32px"
+          ></div>
+
+          <div
+            class="annotation left"
+            style="
+              right: -250px;
+              top: 530px;
+              width: 210px;
+              text-align: center;
+            "
+          >
+            ② Compare = Pro feature gate
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="right: -32px; top: 545px; width: 32px"
+          ></div>
+
+          <div
+            class="annotation right"
+            style="left: -240px; top: 90px; width: 200px; text-align: center"
+          >
+            ③ 5 KPI quan trọng nhất top
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="left: -32px; top: 110px; width: 32px"
+          ></div>
+
+          <div
+            class="annotation right"
+            style="left: -240px; top: 590px; width: 200px; text-align: center"
+          >
+            ④ 16 chỉ số chi tiết bottom
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="left: -32px; top: 620px; width: 32px"
+          ></div>
+        </div>
+      </div>
+
+      <div class="stage-caption">
+        <div class="label">Vì sao layout này hiệu quả</div>
+        <p>
+          Top → bottom flow theo "what trader needs": 5 KPI tổng quan, chart với
+          trade markers + tooltip-on-hover (em bổ sung
+          <strong>Reason for exit</strong> ở tooltip — user học từ đó), tabs
+          Overview/List, 16 stat chi tiết bottom. "Compare with previous run" là
+          <strong style="color: var(--brand)">conversion hook chính</strong> ở
+          result view — user tweak param chạy lại thì 99% muốn so sánh
+          side-by-side → upgrade.
+        </p>
+      </div>
+    </section>
+
+    <script>
+      // Generate fake candle data so chart looks alive
+      (function () {
+        const c = document.getElementById('candles');
+        const v = document.getElementById('vol');
+        if (!c || !v) return;
+        const seed = [
+          [48, 60, 30],
+          [55, 70, 42],
+          [50, 65, 38],
+          [62, 78, 48],
+          [58, 72, 44],
+          [70, 85, 55],
+          [66, 80, 52],
+          [76, 90, 60],
+          [72, 85, 58],
+          [82, 95, 65],
+          [78, 90, 62],
+          [88, 100, 72],
+          [84, 96, 68],
+          [92, 105, 74],
+          [86, 98, 70],
+          [95, 110, 78],
+          [88, 100, 72],
+          [98, 112, 82],
+          [92, 104, 75],
+          [102, 116, 86],
+          [96, 108, 80],
+          [108, 120, 90],
+          [102, 114, 84],
+          [114, 126, 96],
+          [108, 120, 90],
+          [120, 132, 100],
+          [114, 124, 95],
+          [126, 138, 105],
+          [120, 130, 100],
+          [132, 144, 110],
+          [126, 136, 104],
+          [138, 150, 116],
+          [132, 142, 110],
+          [144, 156, 122],
+          [138, 148, 116],
+          [150, 162, 128],
+          [144, 154, 122],
+          [156, 168, 134],
+          [150, 160, 128],
+          [162, 174, 140],
+          [156, 166, 134],
+          [168, 180, 146],
+          [162, 172, 140],
+          [174, 186, 152],
+          [168, 178, 146],
+          [180, 192, 158],
+          [174, 184, 152],
+          [186, 198, 164],
+          [180, 190, 158],
+          [192, 204, 170],
+          [186, 196, 164],
+          [198, 210, 176],
+          [192, 202, 170],
+          [204, 216, 182],
+          [198, 208, 176],
+          [210, 222, 188],
+          [204, 214, 182],
+          [216, 228, 194],
+          [210, 220, 188],
+          [222, 234, 200],
+        ];
+        seed.forEach((s, i) => {
+          const [bodyTop, high, low] = s;
+          const isUp = i % 3 !== 0;
+          const candle = document.createElement('div');
+          candle.className = 'candle' + (isUp ? '' : ' down');
+          candle.style.height = bodyTop * 1.2 + 'px';
+          const wick = document.createElement('div');
+          wick.className = 'wick';
+          wick.style.bottom = '-' + Math.abs(low - bodyTop) + 'px';
+          wick.style.height = high - bodyTop + Math.abs(low - bodyTop) + 'px';
+          candle.appendChild(wick);
+          c.appendChild(candle);
+
+          const volBar = document.createElement('div');
+          volBar.className = isUp ? '' : 'down';
+          volBar.style.height = 12 + (i % 7) * 4 + 'px';
+          v.appendChild(volBar);
+        });
+      })();
+    </script>
+
+    <section class="section" id="s5">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <span class="num">05</span><span>Drytest dashboard · NEW</span>
+        </div>
+        <h2>Live paper trading — quota = upgrade trigger.</h2>
+        <p class="desc">
+          Concept mới em đề xuất (chưa có Figma). Tách bạch khỏi Live bot dashboard
+          để tránh nhầm lẫn paper P&amp;L với real money. Quota
+          <strong>1 of 3 used</strong>
+          luôn hiện trên top → tăng visual urgency cho upgrade. Free auto-stop
+          sau 7 ngày — countdown đẩy user upgrade.
+        </p>
+      </div>
+
+      <div class="mockup-stage">
+        <div class="mockup-container" style="width: 1080px">
+          <div class="drytest-shell">
+            <div class="drytest-top">
+              <div class="drytest-title-group">
+                <h3>Drytest · Live paper trading</h3>
+                <div class="sub">
+                  Validate strategy với live market feed — không tốn vốn thật.
+                </div>
+              </div>
+              <button class="btn btn-primary">+ Start new drytest</button>
+            </div>
+
+            <div class="quota-bar">
+              <span class="quota-text">
+                <strong>1 of 3</strong> drytest đang chạy ·
+                <span style="color: var(--text-muted)">Pro plan</span>
+              </span>
+              <div class="quota-progress">
+                <div class="quota-fill"></div>
+              </div>
+              <a href="#" class="quota-cta">Upgrade Max → 10 concurrent ↗</a>
+            </div>
+
+            <div class="drytest-grid">
+              <!-- Running drytest -->
+              <div class="drytest-card running">
+                <div class="dt-status running">
+                  <span class="dt-dot"></span> Running
+                </div>
+                <div class="dt-strat">Strategies Big Long</div>
+                <div class="dt-pair">BTC / USDC · 1h · Hyperliquid</div>
+
+                <div class="dt-pnl-label">PnL (paper)</div>
+                <div class="dt-pnl up">+$245.30</div>
+                <div class="dt-pnl-pct">+2.45% · 12 trades closed</div>
+
+                <svg
+                  class="dt-sparkline"
+                  viewBox="0 0 200 40"
+                  preserveAspectRatio="none"
+                >
+                  <path
+                    d="M0 32 L20 28 L40 30 L60 22 L80 24 L100 18 L120 14 L140 16 L160 10 L180 12 L200 6"
+                    stroke="var(--bullish)"
+                    fill="none"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M0 32 L20 28 L40 30 L60 22 L80 24 L100 18 L120 14 L140 16 L160 10 L180 12 L200 6 L200 40 L0 40 Z"
+                    fill="var(--bullish-subtle)"
+                  />
+                </svg>
+
+                <div class="dt-meta">
+                  <span>3d 14h elapsed</span>
+                  <span class="countdown">Auto-stop in 3d 10h</span>
+                </div>
+              </div>
+
+              <!-- Paused drytest -->
+              <div class="drytest-card paused">
+                <div class="dt-status paused">
+                  <span class="dt-dot static"></span> Paused
+                </div>
+                <div class="dt-strat">RSI Reversal v2</div>
+                <div class="dt-pair">ETH / USDC · 15m · Hyperliquid</div>
+
+                <div class="dt-pnl-label">PnL (paper)</div>
+                <div class="dt-pnl down">-$38.20</div>
+                <div class="dt-pnl-pct">-0.38% · 4 trades closed</div>
+
+                <svg
+                  class="dt-sparkline"
+                  viewBox="0 0 200 40"
+                  preserveAspectRatio="none"
+                >
+                  <path
+                    d="M0 18 L20 16 L40 22 L60 20 L80 26 L100 24 L120 30 L140 28 L160 32 L180 30 L200 34"
+                    stroke="var(--bearish)"
+                    fill="none"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M0 18 L20 16 L40 22 L60 20 L80 26 L100 24 L120 30 L140 28 L160 32 L180 30 L200 34 L200 40 L0 40 Z"
+                    fill="var(--bearish-subtle)"
+                  />
+                </svg>
+
+                <div class="dt-meta">
+                  <span>1d 8h elapsed</span>
+                  <span style="color: var(--text-muted)">Paused by user</span>
+                </div>
+              </div>
+
+              <!-- Finished drytest -->
+              <div class="drytest-card finished">
+                <div class="dt-status finished">
+                  <span class="dt-dot static"></span> Finished · 30d
+                </div>
+                <div class="dt-strat">DCA + TP Ladder</div>
+                <div class="dt-pair">SOL / USDC · 1h · Hyperliquid</div>
+
+                <div class="dt-pnl-label">Final PnL (paper)</div>
+                <div class="dt-pnl up">+$1,824.50</div>
+                <div class="dt-pnl-pct">+18.24% · 47 trades · WR 72%</div>
+
+                <svg
+                  class="dt-sparkline"
+                  viewBox="0 0 200 40"
+                  preserveAspectRatio="none"
+                >
+                  <path
+                    d="M0 30 L20 32 L40 28 L60 30 L80 24 L100 22 L120 18 L140 20 L160 14 L180 10 L200 4"
+                    stroke="var(--bullish)"
+                    fill="none"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M0 30 L20 32 L40 28 L60 30 L80 24 L100 22 L120 18 L140 20 L160 14 L180 10 L200 4 L200 40 L0 40 Z"
+                    fill="var(--bullish-subtle)"
+                  />
+                </svg>
+
+                <div class="dt-meta">
+                  <span style="color: var(--brand); font-weight: 600">
+                    ✓ Eligible for Verified badge
+                  </span>
+                  <span style="color: var(--text-muted)">→</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="annotation right"
+            style="left: -240px; top: 88px; width: 200px; text-align: center"
+          >
+            ① Quota = upgrade trigger
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="left: -32px; top: 110px; width: 32px"
+          ></div>
+
+          <div
+            class="annotation right"
+            style="left: -240px; top: 220px; width: 200px; text-align: center"
+          >
+            ② Status border-left màu
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="left: -32px; top: 240px; width: 32px"
+          ></div>
+
+          <div
+            class="annotation left"
+            style="
+              right: -270px;
+              top: 380px;
+              width: 230px;
+              text-align: center;
+            "
+          >
+            ③ Countdown 7d = pressure
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="right: -32px; top: 410px; width: 32px"
+          ></div>
+
+          <div
+            class="annotation left"
+            style="
+              right: -270px;
+              top: 460px;
+              width: 230px;
+              text-align: center;
+            "
+          >
+            ④ "Verified eligible" → monetize hook
+          </div>
+          <div
+            class="annotation-line horizontal"
+            style="right: -32px; top: 510px; width: 32px"
+          ></div>
+        </div>
+      </div>
+
+      <div class="stage-caption">
+        <div class="label">Vì sao Drytest tách riêng khỏi Live bot</div>
+        <p>
+          Paper P&amp;L (drytest) khác hẳn real P&amp;L (live bot) — gộp chung
+          dashboard sẽ confuse user. Em propose dashboard riêng với
+          <strong>3 ý đồ monetize</strong>: (1) Quota indicator
+          <em>"1 of 3"</em> → upgrade từ Pro → Max,
+          (2) Countdown auto-stop 7d cho Free → upgrade khi user muốn validate
+          dài, (3)
+          <strong style="color: var(--brand)">"Verified eligible" badge</strong>
+          khi drytest đạt 30d + criteria → mở đường vào marketplace stream sau
+          này.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====== SECTION 6 · TIER COMPARISON ====== -->
+    <section class="section" id="s6">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <span class="num">06</span><span>Pricing comparison</span>
+        </div>
+        <h2>Free / Pro / Max + Pay-per-run.</h2>
+        <p class="desc">
+          3 tier subscription + 1 lựa chọn one-shot cho user không commit. Mỗi
+          row là 1 lý do upgrade. Pricing aggressive — Pro $9 cheaper than 3Commas
+          $19 và Cryptohopper $19.
+        </p>
+      </div>
+
+      <div class="pricing-grid">
+        <div class="pricing-header first-col">
+          <div class="ph-name">FEATURES</div>
+          <div style="font-size: 24px; font-weight: 700; line-height: 1.2">
+            So sánh chi tiết theo từng surface
+          </div>
+          <div class="ph-tagline">
+            Free luôn miễn phí, không trial 7 ngày như đối thủ.
+          </div>
+        </div>
+
+        <div class="pricing-header">
+          <div class="ph-name">
+            FREE
+            <span class="tier-badge free" style="font-size: 9px"
+              >Always</span
+            >
+          </div>
+          <div class="ph-price">$0<span class="per"> / forever</span></div>
+          <div class="ph-tagline">Thử nghiệm strategy, không cam kết.</div>
+          <div class="ph-cta">
+            <button class="btn btn-secondary btn-block">Đang dùng</button>
+          </div>
+        </div>
+
+        <div class="pricing-header popular">
+          <div class="ph-name">
+            PRO <span class="popular-pill">POPULAR</span>
+          </div>
+          <div class="ph-price">$9<span class="per"> / month</span></div>
+          <div class="ph-tagline">
+            Retail trader có vốn, dùng 1-3 bot live.
+          </div>
+          <div class="ph-cta">
+            <button class="btn btn-primary btn-block">Upgrade</button>
+          </div>
+        </div>
+
+        <div class="pricing-header">
+          <div class="ph-name">MAX</div>
+          <div class="ph-price">$15<span class="per"> / month</span></div>
+          <div class="ph-tagline">Power user, API, multi-exchange.</div>
+          <div class="ph-cta">
+            <button class="btn btn-secondary btn-block">Get Max</button>
+          </div>
+        </div>
+
+        <div class="pricing-row-label">BACKTEST</div>
+        <div class="pricing-cell label">Lịch sử data</div>
+        <div class="pricing-cell"><span class="em">7</span> ngày</div>
+        <div class="pricing-cell"><span class="em">365</span> ngày</div>
+        <div class="pricing-cell">
+          <span class="em">365</span> ngày + tick data
+        </div>
+
+        <div class="pricing-cell label">Số lần run / tháng</div>
+        <div class="pricing-cell"><span class="em">5</span></div>
+        <div class="pricing-cell">Unlimited</div>
+        <div class="pricing-cell">Unlimited</div>
+
+        <div class="pricing-cell label">Parallel runs</div>
+        <div class="pricing-cell"><span class="meh">Sequential</span></div>
+        <div class="pricing-cell"><span class="em">3</span> song song</div>
+        <div class="pricing-cell"><span class="em">10</span> song song</div>
+
+        <div class="pricing-cell label">Compare runs side-by-side</div>
+        <div class="pricing-cell">
+          <span class="check-dot no">×</span>
+        </div>
+        <div class="pricing-cell">
+          <span class="check-dot yes">✓</span> 2 runs
+        </div>
+        <div class="pricing-cell">
+          <span class="check-dot yes">✓</span> 5 runs + A/B
+        </div>
+
+        <div class="pricing-row-label">DRYTEST</div>
+        <div class="pricing-cell label">Drytest concurrent</div>
+        <div class="pricing-cell"><span class="em">1</span></div>
+        <div class="pricing-cell"><span class="em">3</span></div>
+        <div class="pricing-cell"><span class="em">10</span></div>
+
+        <div class="pricing-cell label">Duration cap</div>
+        <div class="pricing-cell">
+          <span class="em">7</span> ngày (auto-stop)
+        </div>
+        <div class="pricing-cell">Unlimited</div>
+        <div class="pricing-cell">Unlimited + WebSocket feed</div>
+
+        <div class="pricing-cell label">Telegram alerts</div>
+        <div class="pricing-cell">Basic 1/day</div>
+        <div class="pricing-cell">Custom</div>
+        <div class="pricing-cell">Custom webhook (Discord, Slack)</div>
+
+        <div class="pricing-row-label">LIVE BOT</div>
+        <div class="pricing-cell label">Số bot live đồng thời</div>
+        <div class="pricing-cell">
+          <span class="check-dot no">×</span>
+        </div>
+        <div class="pricing-cell"><span class="em">1</span></div>
+        <div class="pricing-cell"><span class="em">5</span></div>
+
+        <div class="pricing-cell label">Multi-exchange</div>
+        <div class="pricing-cell">
+          <span class="check-dot no">×</span>
+        </div>
+        <div class="pricing-cell">Hyperliquid</div>
+        <div class="pricing-cell">
+          <span class="em">All</span> (BE-ready)
+        </div>
+
+        <div class="pricing-row-label">EXTRAS</div>
+        <div class="pricing-cell label">Cypheus AI suggestions</div>
+        <div class="pricing-cell">
+          <span class="check-dot no">×</span>
+        </div>
+        <div class="pricing-cell"><span class="em">5</span> / month</div>
+        <div class="pricing-cell">Unlimited</div>
+
+        <div class="pricing-cell label">API access</div>
+        <div class="pricing-cell">
+          <span class="check-dot no">×</span>
+        </div>
+        <div class="pricing-cell">
+          <span class="check-dot no">×</span>
+        </div>
+        <div class="pricing-cell">
+          <span class="check-dot yes">✓</span> Read + Write
+        </div>
+
+        <div class="pricing-cell label">Priority support</div>
+        <div class="pricing-cell">Community</div>
+        <div class="pricing-cell">Email</div>
+        <div class="pricing-cell">&lt; 4h response</div>
+
+        <div class="pricing-footnote">
+          <div class="yearly">
+            Yearly plan giảm 20-22% · Pro
+            <strong>$84/year</strong> · Max <strong>$144/year</strong>
+          </div>
+          <div>
+            One-shot 1Y backtest:
+            <span class="em mono" style="color: var(--text-primary)">$1</span>
+            / run (không cần subscription)
+          </div>
+        </div>
+      </div>
+
+      <div class="stage-caption" style="margin-top: 32px">
+        <div class="label">Vì sao tier này</div>
+        <p>
+          Em đề xuất pricing aggressive — Pro $9 thấp hơn entry tier của 3Commas
+          ($19), Cryptohopper ($19), Bitsgap ($24). Coin98 audience VN/SEA price-
+          sensitive hơn → volume play (cần 1k+ paid để bằng 200 user ở comp giá
+          cao). Free không trial 7 ngày — luôn miễn phí, hạ rào cản tâm lý "đăng
+          ký thử".
+          <strong
+            >Mỗi row trong bảng là 1 reason-to-upgrade cụ thể, không phải
+            buzzword</strong
+          >.
+        </p>
+      </div>
+    </section>
+
+    <!-- ====== SECTIONS 7-8 · placeholders ====== -->
+    <section class="section" id="s7">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <span class="num">07</span><span>Revenue streams</span>
+        </div>
+        <h2>6 streams — subscription chỉ là 1 trong số đó.</h2>
+        <p class="desc">
+          Marketplace là biggest bet dài hạn (network effect, marginal cost ~0).
+          Backtest + Drytest stack được build trước là vì
+          <strong style="color: var(--brand)">5 trong 6 stream</strong> đều
+          dùng output backtest/drytest làm trust signal.
+        </p>
+      </div>
+
+      <div class="streams-grid">
+        <!-- Stream 1: Subscription -->
+        <div class="stream-card">
+          <div class="stream-icon">$</div>
+          <div class="stream-name">Subscription</div>
+          <div class="stream-tag mvp">CORE · MVP</div>
+          <p class="stream-desc">
+            Free / Pro $9 / Max $15 tier. Foundation cho mọi stream khác.
+            Conversion Free → Pro target ≥ 5%.
+          </p>
+          <div class="stream-metric">
+            <span class="label">6mo target</span>
+            <span class="value"><span class="em">$5–15K</span> MRR</span>
+          </div>
+        </div>
+
+        <!-- Stream 2: Marketplace -->
+        <div class="stream-card star">
+          <div class="stream-icon">M</div>
+          <div class="stream-name">Strategy Marketplace</div>
+          <div class="stream-tag phase3">HIGHEST POTENTIAL · PHASE 3</div>
+          <p class="stream-desc">
+            User publish strategy → set price hoặc PnL share. Platform
+            commission 20-30%. Backtest result làm social proof.
+          </p>
+          <div class="stream-metric">
+            <span class="label">Commission</span>
+            <span class="value"><span class="em">20–30%</span> per tx</span>
+          </div>
+        </div>
+
+        <!-- Stream 3: Verified PnL badge -->
+        <div class="stream-card">
+          <div class="stream-icon">✓</div>
+          <div class="stream-name">Verified PnL Badge</div>
+          <div class="stream-tag phase2">PHASE 2</div>
+          <p class="stream-desc">
+            Strategy drytest ≥ 30d + đạt threshold → đeo badge. Trả $5/m/strategy
+            giữ badge. Marketplace boost ranking.
+          </p>
+          <div class="stream-metric">
+            <span class="label">Per strategy</span>
+            <span class="value"><span class="em">$5</span> / month</span>
+          </div>
+        </div>
+
+        <!-- Stream 4: Performance fee tier -->
+        <div class="stream-card">
+          <div class="stream-icon">%</div>
+          <div class="stream-name">Performance Fee Tier</div>
+          <div class="stream-tag phase3">PHASE 3</div>
+          <p class="stream-desc">
+            $0 subscription + 10-15% PnL share. Targeting power user
+            ($1k+ vốn). Aligned incentive — không lãi không trả.
+          </p>
+          <div class="stream-metric">
+            <span class="label">Share</span>
+            <span class="value"><span class="em">10–15%</span> of PnL</span>
+          </div>
+        </div>
+
+        <!-- Stream 5: Cypheus AI optimization -->
+        <div class="stream-card">
+          <div class="stream-icon">AI</div>
+          <div class="stream-name">Cypheus AI</div>
+          <div class="stream-tag phase2">PHASE 2</div>
+          <p class="stream-desc">
+            "Cypheus phát hiện 3 param tốt hơn — chạy backtest xem?"
+            $0.50/suggestion hoặc Pro unlimited. Tận dụng AI đã có.
+          </p>
+          <div class="stream-metric">
+            <span class="label">One-shot</span>
+            <span class="value"><span class="em">$0.50</span> / hint</span>
+          </div>
+        </div>
+
+        <!-- Stream 6: B2B BaaS -->
+        <div class="stream-card">
+          <div class="stream-icon">API</div>
+          <div class="stream-name">B2B Backtest-as-a-Service</div>
+          <div class="stream-tag phase3">NICHE · PHASE 3</div>
+          <p class="stream-desc">
+            API access cho fund nhỏ / quant trader chạy batch backtest. Niche
+            nhưng margin cao.
+          </p>
+          <div class="stream-metric">
+            <span class="label">Enterprise</span>
+            <span class="value"><span class="em">$99–499</span> / month</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage-caption" style="margin-top: 28px">
+        <div class="label">Tại sao Backtest + Drytest là tâm điểm</div>
+        <p>
+          <strong>5 trong 6 stream đều cần Backtest/Drytest hoạt động tốt</strong>:
+          Subscription cần backtest đẹp để convert Free → Pro · Marketplace cần
+          backtest result làm social proof · Verified badge cần drytest 30d ·
+          Cypheus AI cần backtest để test suggestion · BaaS bán chính backtest
+          engine. Build stack này tốt = unlock 5 stream cùng lúc.
+        </p>
+      </div>
+    </section>
+
+    <section class="section" id="s8">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <span class="num">08</span><span>Roadmap · 9 tháng</span>
+        </div>
+        <h2>3 phase — mỗi phase mở thêm 1-2 stream.</h2>
+        <p class="desc">
+          Phase 1 ship foundation (subscription duy nhất). Phase 2 mở Verified
+          badge + Cypheus AI bằng cách reuse drytest data đã có. Phase 3 mới
+          launch marketplace + performance fee — đó là khi ecosystem đủ user để
+          network effect hoạt động.
+        </p>
+      </div>
+
+      <div class="roadmap">
+        <div class="phase active">
+          <div class="phase-marker">
+            <span class="phase-dot"></span>
+            <span class="phase-meta">
+              <span class="pillar">PHASE 1</span> · MVP · Đang triển khai
+            </span>
+          </div>
+          <div class="phase-title">Foundation</div>
+          <div class="phase-period">Q2 2026 · 3 tháng tới</div>
+
+          <div class="phase-section">
+            <h4>Ship</h4>
+            <ul class="phase-list">
+              <li class="active">Backtest config + result (Free/Pro/Max gate)</li>
+              <li class="active">Drytest dashboard riêng (NEW)</li>
+              <li class="active">Pricing page + Stripe checkout</li>
+              <li class="active">Pay-per-run $1 cho user Free</li>
+            </ul>
+          </div>
+
+          <div class="phase-section">
+            <h4>Streams active</h4>
+            <ul class="phase-list">
+              <li class="active">Subscription</li>
+            </ul>
+          </div>
+
+          <div class="phase-bottom">
+            <span class="lbl">Revenue target</span>
+            <span class="val">$3K MRR</span>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-marker">
+            <span class="phase-dot"></span>
+            <span class="phase-meta">PHASE 2 · Validation + Intelligence</span>
+          </div>
+          <div class="phase-title">Verify + Optimize</div>
+          <div class="phase-period">Q3 2026 · 3-6 tháng</div>
+
+          <div class="phase-section">
+            <h4>Ship</h4>
+            <ul class="phase-list">
+              <li>Verified PnL badge mechanic + monthly fee</li>
+              <li>Cypheus AI suggestion engine (real, không scripted)</li>
+              <li>Compare runs side-by-side (Pro feature)</li>
+              <li>Yearly plan + promo codes</li>
+            </ul>
+          </div>
+
+          <div class="phase-section">
+            <h4>Streams active</h4>
+            <ul class="phase-list">
+              <li>Subscription</li>
+              <li>Verified PnL badge</li>
+              <li>Cypheus AI</li>
+            </ul>
+          </div>
+
+          <div class="phase-bottom">
+            <span class="lbl">Revenue target</span>
+            <span class="val">$10K MRR</span>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-marker">
+            <span class="phase-dot"></span>
+            <span class="phase-meta">PHASE 3 · Network effects + B2B</span>
+          </div>
+          <div class="phase-title">Marketplace + Fund</div>
+          <div class="phase-period">Q4 2026 · 6-9 tháng</div>
+
+          <div class="phase-section">
+            <h4>Ship</h4>
+            <ul class="phase-list">
+              <li class="future">Strategy marketplace (publish + buy)</li>
+              <li class="future">Performance fee tier (KYC + PnL share)</li>
+              <li class="future">B2B BaaS API + rate limit tier</li>
+              <li class="future">Multi-exchange: Binance + Bybit</li>
+            </ul>
+          </div>
+
+          <div class="phase-section">
+            <h4>Streams active</h4>
+            <ul class="phase-list">
+              <li>Subscription</li>
+              <li>Verified PnL badge</li>
+              <li>Cypheus AI</li>
+              <li class="future">Marketplace commission</li>
+              <li class="future">Performance fee</li>
+              <li class="future">B2B BaaS</li>
+            </ul>
+          </div>
+
+          <div class="phase-bottom">
+            <span class="lbl">Revenue target</span>
+            <span class="val">$25K+ MRR</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage-caption" style="margin-top: 28px">
+        <div class="label">Khoá nào unlock khoá kia</div>
+        <p>
+          Marketplace KHÔNG launch ở Phase 1 vì cần lượng user critical mass
+          (≥1k Pro user) làm seller pool. Verified badge cần drytest 30d data
+          từ Pro user — chỉ có sau khi Pro user dùng app vài tháng. Performance
+          fee cần KYC infrastructure + compliance review — phase 3 mới đáng đầu
+          tư. <strong>Roadmap này respect dependency thật, không stuff
+          features vào MVP để show off</strong>.
+        </p>
+      </div>
+    </section>
+
+    <footer class="pgfooter">
+      <div>
+        Spec đầy đủ:
+        <a
+          href="../../../docs/superpowers/specs/2026-05-21-backtest-drytest-business-model-design.md"
+          style="color: var(--brand); font-weight: 500"
+          >2026-05-21-backtest-drytest-business-model-design.md</a
+        >
+      </div>
+      <div class="mono">
+        Coin98 Trading Bot · Internal preview · 2026-05-21
+      </div>
+    </footer>
+  </body>
+</html>
