@@ -12,15 +12,15 @@
 
 ### 0.1. Backend đã confirm
 
-| Hạng mục | Giá trị |
-|----------|---------|
-| **Base URL (dev)** | `https://tradingbot.ne.com:8502` |
-| **Login endpoint** | `POST /user/login` — body `{ email, password }` → response `{ access_token, token_type: "bearer" }` |
-| **User info endpoint** | `GET /user/status` (cần Bearer token) → response `UserOut { id, email, is_active, is_admin }` |
-| **Submit bot endpoint** | `POST /bot-strategy/create` — body `UnifiedBotStrategyCreate` → status `201` + body `BotStrategyOut { bot: { id, ... }, strategy: { id, bot_id, ... } }`. **Note:** Endpoint atomic `/bot-strategy/create` là chính thức theo `Data/openapi.json` + `Data/API_SPEC.md`. Tài liệu `tradingbot_doc.md` (Mar 2026) còn ghi `/bot/create` + `/strategy/create` riêng — đã outdated, BE refactor sang atomic rồi. Đừng dùng legacy. |
-| **`/user/token`** | Không dùng — BE confirm chỉ dùng `/user/login` (chat 11/5/26 14:00 với BE Tuấn Nguyễn) |
-| **Refresh token** | Không có → khi 401 thì force logout |
-| **Account test** | `trinm@coin98.finance` / `Coin98@123` |
+| Hạng mục                | Giá trị                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Base URL (dev)**      | `https://tradingbot.ne.com:8502`                                                                                                                                                                                                                                                                                                                                                                                              |
+| **Login endpoint**      | `POST /user/login` — body `{ email, password }` → response `{ access_token, token_type: "bearer" }`                                                                                                                                                                                                                                                                                                                           |
+| **User info endpoint**  | `GET /user/status` (cần Bearer token) → response `UserOut { id, email, is_active, is_admin }`                                                                                                                                                                                                                                                                                                                                 |
+| **Submit bot endpoint** | `POST /bot-strategy/create` — body `UnifiedBotStrategyCreate` → status `201` + body `BotStrategyOut { bot: { id, ... }, strategy: { id, bot_id, ... } }`. **Note:** Endpoint atomic `/bot-strategy/create` là chính thức theo `BE/openapi.json` + `BE/API_SPEC.md`. Tài liệu `BE/tradingbot_doc.md` (Mar 2026) còn ghi `/bot/create` + `/strategy/create` riêng — đã outdated, BE refactor sang atomic rồi. Đừng dùng legacy. |
+| **`/user/token`**       | Không dùng — BE confirm chỉ dùng `/user/login` (chat 11/5/26 14:00 với BE Tuấn Nguyễn)                                                                                                                                                                                                                                                                                                                                        |
+| **Refresh token**       | Không có → khi 401 thì force logout                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Account test**        | `trinm@coin98.finance` / `Coin98@123`                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ### 0.2. Giới hạn & quyết định
 
@@ -47,11 +47,11 @@
 
 3 phase, làm tuần tự. Mỗi phase mở 1 PR riêng để dễ review/revert.
 
-| Phase | Tên | Output | Thời gian |
-|-------|-----|--------|-----------|
-| **Phase 1** | Auth foundation | Login page chạy được, ProtectedRoute hoạt động, axios/fetch wrapper xử lý 401 | ~3-4h |
-| **Phase 2** | Submit lên BE | Nút Submit trong ExportDialog gọi BE thật, redirect đúng, handle 422 | ~2-3h |
-| **Phase 3** | Polish & QA | Logout button, UX edge cases, unit test, smoke test end-to-end | ~2h |
+| Phase       | Tên             | Output                                                                        | Thời gian |
+| ----------- | --------------- | ----------------------------------------------------------------------------- | --------- |
+| **Phase 1** | Auth foundation | Login page chạy được, ProtectedRoute hoạt động, axios/fetch wrapper xử lý 401 | ~3-4h     |
+| **Phase 2** | Submit lên BE   | Nút Submit trong ExportDialog gọi BE thật, redirect đúng, handle 422          | ~2-3h     |
+| **Phase 3** | Polish & QA     | Logout button, UX edge cases, unit test, smoke test end-to-end                | ~2h       |
 
 **Tổng:** ~1 ngày làm việc.
 
@@ -102,19 +102,24 @@ src/
 **File:** `.gitignore` (sửa)
 
 Thay 2 dòng:
+
 ```
 .env
 .env.*
 !.env.example
 ```
+
 bằng:
+
 ```
 .env.local
 .env.*.local
 ```
+
 → Cho phép commit `.env.development` và `.env.production`, chỉ ignore `.env.local` (override cá nhân của từng dev).
 
 **File:** `.env.example` (mới — để document biến)
+
 ```env
 # Base URL của BE. Ở dev = "/api" (qua Vite proxy, bypass CORS).
 # Ở production = full URL của BE (BE phải whitelist CORS domain FE).
@@ -122,6 +127,7 @@ VITE_API_BASE_URL=/api
 ```
 
 **File:** `.env.development` (mới — commit vào repo)
+
 ```env
 # Vite dev server proxy chặn request /api/* và forward sang BE.
 # Xem vite.config.ts > server.proxy.
@@ -129,18 +135,21 @@ VITE_API_BASE_URL=/api
 ```
 
 **File:** `.env.production` (mới — commit vào repo)
+
 ```env
 # Production gọi thẳng BE. BE phải mở CORS allow origin của Vercel domain.
 VITE_API_BASE_URL=https://tradingbot.ne.com:8502
 ```
 
 **File:** `.env.local` (không commit — Tri tự tạo nếu cần override)
+
 ```env
 # Optional: override khi cần test BE local hoặc URL khác
 # VITE_API_BASE_URL=http://localhost:8000
 ```
 
 **File:** `vite.config.ts` (sửa)
+
 ```ts
 server: {
   port: 5173,
@@ -160,12 +169,14 @@ server: {
 → Lúc dev, FE gọi `/api/user/login` → Vite forward sang `https://tradingbot.ne.com:8502/user/login`. Không cần BE config CORS ở dev.
 
 **`http.ts` clean — không cần if/else môi trường:**
+
 ```ts
 const baseURL = import.meta.env.VITE_API_BASE_URL; // "/api" ở dev, full URL ở prod
-const url = `${baseURL}${path}`;                   // vd "/api/user/login"
+const url = `${baseURL}${path}`; // vd "/api/user/login"
 ```
 
 **Acceptance:**
+
 - `pnpm dev` chạy ok, không có lỗi terminal.
 - Mở DevTools Network tab khi đang dev → request gửi đến `http://127.0.0.1:5173/api/...`, KHÔNG phải `https://tradingbot.ne.com:8502/...`.
 - Response status đúng (không phải lỗi CORS).
@@ -177,6 +188,7 @@ const url = `${baseURL}${path}`;                   // vd "/api/user/login"
 **File:** `src/lib/http.ts` (mới)
 
 Yêu cầu:
+
 - Function `http<T>(method, path, body?)` trả về `Promise<T>`.
 - Tự đọc token từ `auth.store` → gắn header `Authorization: Bearer <token>`.
 - Base URL: `import.meta.env.VITE_API_BASE_URL` cho mọi môi trường — không cần if/else. Vite tự load env theo mode (`/api` ở dev, URL thật ở prod). Xem Task 1.1.
@@ -191,6 +203,7 @@ Yêu cầu:
 #### Task 1.3. Auth types & API
 
 **File:** `src/features/auth/auth.types.ts` (mới)
+
 ```ts
 export interface LoginRequest {
   email: string;
@@ -211,9 +224,11 @@ export interface AuthUser {
 ```
 
 **File:** `src/features/auth/auth.api.ts` (mới)
+
 ```ts
 export const authApi = {
-  login: (body: LoginRequest) => http<TokenResponse>('POST', '/user/login', body),
+  login: (body: LoginRequest) =>
+    http<TokenResponse>('POST', '/user/login', body),
   getStatus: () => http<AuthUser>('GET', '/user/status'),
 };
 ```
@@ -227,6 +242,7 @@ export const authApi = {
 **File:** `src/features/auth/auth.store.ts` (mới)
 
 Yêu cầu:
+
 - Zustand với `persist` middleware (lưu `localStorage`).
 - State: `token: string | null`, `user: AuthUser | null`.
 - Actions: `login(email, password)`, `logout()`, `loadUserFromToken()`.
@@ -242,6 +258,7 @@ Yêu cầu:
 **File:** `src/features/auth/LoginPage.tsx` (mới)
 
 UI:
+
 - Form 2 field: email, password. Dùng `react-hook-form` + Zod schema (`z.object({ email: z.string().email(), password: z.string().min(1) })`).
 - Reuse `Input`, `Button`, `FormField` từ `src/components/ui/`.
 - Style giống design hiện tại (dark theme, brand color #F0B90B yellow).
@@ -253,6 +270,7 @@ UI:
 - Footer note: "Chưa có tài khoản? Liên hệ admin." (vì bỏ Register).
 
 **Acceptance:**
+
 - Login với `trinm@coin98.finance / Coin98@123` thành công → redirect `/builder`.
 - Login sai → toast "Email hoặc mật khẩu không đúng".
 
@@ -261,6 +279,7 @@ UI:
 #### Task 1.6. Protected route
 
 **File:** `src/features/auth/ProtectedRoute.tsx` (mới)
+
 ```tsx
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => !!s.token);
@@ -270,6 +289,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 ```
 
 **File:** `src/routes.tsx` (sửa)
+
 ```tsx
 import { ProtectedRoute } from '@/features/auth/ProtectedRoute';
 import { LoginPage } from '@/features/auth/LoginPage';
@@ -277,14 +297,36 @@ import { LoginPage } from '@/features/auth/LoginPage';
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/', element: <Navigate to="/builder" replace /> },
-  { path: '/builder', element: <ProtectedRoute><BuilderPage /></ProtectedRoute> },
-  { path: '/bots', element: <ProtectedRoute><BotsListPage /></ProtectedRoute> },
-  { path: '/bots/:id', element: <ProtectedRoute><BotMonitoringPage /></ProtectedRoute> },
+  {
+    path: '/builder',
+    element: (
+      <ProtectedRoute>
+        <BuilderPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/bots',
+    element: (
+      <ProtectedRoute>
+        <BotsListPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/bots/:id',
+    element: (
+      <ProtectedRoute>
+        <BotMonitoringPage />
+      </ProtectedRoute>
+    ),
+  },
   { path: '*', element: <Navigate to="/builder" replace /> },
 ]);
 ```
 
 **Acceptance:**
+
 - Truy cập `/builder` khi chưa login → redirect `/login`.
 - Sau login → vào được `/builder`.
 
@@ -308,6 +350,7 @@ export const router = createBrowserRouter([
 ### 3.1. Mục tiêu
 
 Thay đổi nút Export hiện tại (chỉ download file) thành nút Submit thật:
+
 - User config xong bot → bấm "Submit"
 - FE gọi `POST /bot-strategy/create`
 - Success → toast + redirect `/bots/{response.bot.id}`
@@ -333,6 +376,7 @@ src/
 #### Task 2.1. API client
 
 **File:** `src/features/bot-builder/bot-strategy.api.ts` (mới)
+
 ```ts
 import type { CreatePayload, Schemas } from '@/types/api-helpers';
 import { http } from '@/lib/http';
@@ -354,6 +398,7 @@ export const botStrategyApi = {
 **File:** `src/features/export-import/ExportDialog.tsx` (sửa)
 
 Thay đổi UI:
+
 - Giữ nguyên: section preview JSON, copy JSON, download JSON (giữ làm option phụ cho debug).
 - **Thêm CTA chính**: nút "Submit to Backend" (primary, yellow brand color).
 - Disable khi `issues.length > 0` (validate fail) hoặc `submitting === true`.
@@ -371,6 +416,7 @@ Thay đổi UI:
   5. Finally: `setSubmitting(false)`
 
 **Acceptance:**
+
 - Submit thành công → redirect `/bots/:id` đúng
 - Submit lỗi 422 → field error hiển thị rõ trong dialog
 - Submit lỗi 500 → toast "Lỗi server, vui lòng thử lại"
@@ -406,6 +452,7 @@ Hoàn thiện UX, đảm bảo không có edge case lỗi, viết test.
 **File:** `src/features/bot-builder/components/HeaderToolbar.tsx` (sửa)
 
 Thêm vào góc phải header:
+
 - Avatar tròn + email user (lấy từ `auth.store`)
 - Dropdown menu (Radix `DropdownMenu`): "Đăng xuất"
 - Click Đăng xuất → `auth.store.logout()` → redirect `/login`
@@ -425,11 +472,13 @@ Thêm vào góc phải header:
 #### Task 3.3. Unit tests
 
 **File:** `src/features/auth/auth.store.test.ts` (mới)
+
 - Test login happy path (mock `authApi`)
 - Test logout clear state
 - Test persist (mock localStorage)
 
 **File:** `src/lib/http.test.ts` (mới)
+
 - Test 401 trigger logout
 - Test 422 throw ValidationError
 - Test success path return body

@@ -327,7 +327,7 @@ void indicatorOutputId;
 /* -------------------------------------------------------------------------- */
 /*  Unified payload builder (UnifiedBotStrategyCreate)                        */
 /*                                                                             */
-/*  New entry point per Data/IMPLEMENTATION_PLAN.md Step 3. Produces the      */
+/*  New entry point per BE/IMPLEMENTATION_PLAN.md Step 3. Produces the        */
 /*  flat unified payload that the BE wants for POST /bot-strategy/create.    */
 /*  The legacy `buildBundle()` above is kept while the Export/Import UI is   */
 /*  still on the old shape; once it migrates this becomes the only           */

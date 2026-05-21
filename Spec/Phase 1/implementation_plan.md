@@ -9,7 +9,7 @@
   - `Spec/trading_bot_spec.md` – feature spec (gì cần có)
   - `Spec/ux_design_spec.md` – **UI/UX spec (quan trọng nhất cho MVP)**
   - `Spec/design_guideline.md` – **Design system, tokens, brand, illustration, motion**
-  - `Data/payload_create_bot.json`, `Data/payload_create_strategy.json` – output format
+  - `BE/payload_create_bot.json`, `BE/payload_create_strategy.json` – output format
 
 ---
 

@@ -48,6 +48,7 @@ Test file count delta: +3 new test files, +1 test added to existing, +0 deleted 
 Pure refactor. No behavior change. Lands first so subsequent tasks can import from a clean path.
 
 **Files:**
+
 - Create: `src/lib/format-error.ts`
 - Create: `src/lib/format-error.test.ts`
 - Modify: `src/features/export-import/ExportDialog.tsx`
@@ -65,7 +66,11 @@ describe('formatBackendError', () => {
   it('formats ValidationError as field.path: msg per line', () => {
     const err = new ValidationError([
       { loc: ['body', 'bot_name'], msg: 'Field required', type: 'missing' },
-      { loc: ['body', 'stake_amount'], msg: 'must be > 0', type: 'value_error' },
+      {
+        loc: ['body', 'stake_amount'],
+        msg: 'must be > 0',
+        type: 'value_error',
+      },
     ]);
     expect(formatBackendError(err)).toBe(
       'body.bot_name: Field required\nbody.stake_amount: must be > 0',
@@ -140,7 +145,8 @@ export function formatBackendError(err: unknown): string {
     // Body từ BE thường là JSON `{detail: "..."}` hoặc text. Cố parse JSON trước.
     try {
       const parsed = JSON.parse(err.body) as { detail?: unknown };
-      if (typeof parsed.detail === 'string') return `${err.status}: ${parsed.detail}`;
+      if (typeof parsed.detail === 'string')
+        return `${err.status}: ${parsed.detail}`;
       if (Array.isArray(parsed.detail))
         return `${err.status}:\n${parsed.detail.map(String).join('\n')}`;
       return `${err.status}: ${err.body || err.message}`;
@@ -167,6 +173,7 @@ In `src/features/export-import/ExportDialog.tsx`:
 Replace the import block (around line 24) and remove the inline function (lines 27-49).
 
 Find:
+
 ```ts
 import { HttpError, ValidationError } from '@/lib/http';
 import type { CreatePayload } from '@/types/api-helpers';
@@ -181,7 +188,8 @@ function formatBackendError(err: unknown): string {
     // Body từ BE thường là JSON `{detail: "..."}` hoặc text. Cố parse JSON trước.
     try {
       const parsed = JSON.parse(err.body) as { detail?: unknown };
-      if (typeof parsed.detail === 'string') return `${err.status}: ${parsed.detail}`;
+      if (typeof parsed.detail === 'string')
+        return `${err.status}: ${parsed.detail}`;
       if (Array.isArray(parsed.detail))
         return `${err.status}:\n${parsed.detail.map(String).join('\n')}`;
       return `${err.status}: ${err.body || err.message}`;
@@ -197,6 +205,7 @@ function formatBackendError(err: unknown): string {
 ```
 
 Replace with:
+
 ```ts
 import { ValidationError } from '@/lib/http';
 import type { CreatePayload } from '@/types/api-helpers';
@@ -233,6 +242,7 @@ EOF
 Stops `http.ts` from firing a global error toast for `/bot/list` and `/bot/{id}/config` failures. The dialog renders error UX locally.
 
 **Files:**
+
 - Modify: `src/lib/http.ts:68` (the `SILENT_TOAST_PREFIXES` constant)
 - Modify: `src/lib/http.test.ts` (add one test)
 
@@ -241,23 +251,23 @@ Stops `http.ts` from firing a global error toast for `/bot/list` and `/bot/{id}/
 Add to `src/lib/http.test.ts` inside the existing `describe('http wrapper', ...)`, after the `'does NOT toast on 5xx for /user/login'` test:
 
 ```ts
-  it('does NOT toast on 5xx for /bot/* paths (MyBotsDialog handles it)', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      statusText: 'Internal Server Error',
-      text: async () => 'boom',
-    });
-
-    try {
-      await http('GET', '/bot/list');
-      expect.unreachable('should have thrown');
-    } catch (err) {
-      expect(err).toBeInstanceOf(HttpError);
-      expect((err as HttpError).status).toBe(500);
-    }
-    expect(toast.error).not.toHaveBeenCalled();
+it('does NOT toast on 5xx for /bot/* paths (MyBotsDialog handles it)', async () => {
+  mockFetch.mockResolvedValueOnce({
+    ok: false,
+    status: 500,
+    statusText: 'Internal Server Error',
+    text: async () => 'boom',
   });
+
+  try {
+    await http('GET', '/bot/list');
+    expect.unreachable('should have thrown');
+  } catch (err) {
+    expect(err).toBeInstanceOf(HttpError);
+    expect((err as HttpError).status).toBe(500);
+  }
+  expect(toast.error).not.toHaveBeenCalled();
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -268,11 +278,13 @@ Expected: FAIL — `toast.error` IS called because `/bot/list` is not in `SILENT
 - [ ] **Step 3: Add the prefix**
 
 In `src/lib/http.ts`, find:
+
 ```ts
 const SILENT_TOAST_PREFIXES = ['/bot-strategy/'];
 ```
 
 Replace with:
+
 ```ts
 const SILENT_TOAST_PREFIXES = ['/bot-strategy/', '/bot/'];
 ```
@@ -310,6 +322,7 @@ EOF
 Thin wrapper around two HTTP endpoints. No dedicated unit tests — `http()` is already tested, this file is just a type-safe call site.
 
 **Files:**
+
 - Create: `src/features/bot-monitoring/bot.api.ts`
 
 - [ ] **Step 1: Create the file**
@@ -325,15 +338,14 @@ export type BotConfigOut = components['schemas']['BotConfigOut'];
 
 export const botApi = {
   list: () => http<BotOut[]>('GET', '/bot/list'),
-  getConfig: (id: number) =>
-    http<BotConfigOut>('GET', `/bot/${id}/config`),
+  getConfig: (id: number) => http<BotConfigOut>('GET', `/bot/${id}/config`),
 };
 ```
 
 - [ ] **Step 2: Run typecheck**
 
 Run: `pnpm typecheck`
-Expected: clean. If `components['schemas']['BotOut']` is not found, the OpenAPI types file may need regeneration — but `Data/openapi.json` already contains the schema, so types should already be in `src/types/api.d.ts`. Verify by running `grep -c 'BotOut\|BotConfigOut' src/types/api.d.ts` — both must appear.
+Expected: clean. If `components['schemas']['BotOut']` is not found, the OpenAPI types file may need regeneration — but `BE/openapi.json` already contains the schema, so types should already be in `src/types/api.d.ts`. Verify by running `grep -c 'BotOut\|BotConfigOut' src/types/api.d.ts` — both must appear.
 
 - [ ] **Step 3: Commit**
 
@@ -357,6 +369,7 @@ EOF
 Zustand store that toggles the dialog. Mirrors `useExportDialogStore`.
 
 **Files:**
+
 - Create: `src/features/bot-monitoring/my-bots-dialog.store.ts`
 - Create: `src/features/bot-monitoring/my-bots-dialog.store.test.ts`
 
@@ -440,6 +453,7 @@ EOF
 The biggest task. Implements: fetch on open, skeleton, list, empty, error states, per-card config enrichment, click-to-navigate.
 
 **Files:**
+
 - Create: `src/features/bot-monitoring/MyBotsDialog.tsx`
 - Create: `src/features/bot-monitoring/MyBotsDialog.test.tsx`
 
@@ -449,7 +463,13 @@ Create `src/features/bot-monitoring/MyBotsDialog.test.tsx`:
 
 ```tsx
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  cleanup,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MyBotsDialog } from './MyBotsDialog';
 import { useMyBotsDialogStore } from './my-bots-dialog.store';
@@ -463,9 +483,10 @@ vi.mock('./bot.api', () => ({
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>(
-    'react-router-dom',
-  );
+  const actual =
+    await vi.importActual<typeof import('react-router-dom')>(
+      'react-router-dom',
+    );
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
@@ -512,10 +533,21 @@ describe('MyBotsDialog', () => {
 
   it('renders bot cards when list resolves', async () => {
     mockList.mockResolvedValueOnce([
-      { id: 80, bot_name: 'Tribot', status: 'stopped', strategy_name: 'TriStrategy', desired_status: null, error_message: null },
+      {
+        id: 80,
+        bot_name: 'Tribot',
+        status: 'stopped',
+        strategy_name: 'TriStrategy',
+        desired_status: null,
+        error_message: null,
+      },
     ]);
     mockGetConfig.mockResolvedValueOnce({
-      config: { dry_run: true, timeframe: '5m', exchange: { pair_whitelist: ['BTC/USDT:USDT'] } },
+      config: {
+        dry_run: true,
+        timeframe: '5m',
+        exchange: { pair_whitelist: ['BTC/USDT:USDT'] },
+      },
     });
 
     openDialog();
@@ -531,10 +563,21 @@ describe('MyBotsDialog', () => {
 
   it('renders em-dash placeholders for fields BE does not expose', async () => {
     mockList.mockResolvedValueOnce([
-      { id: 1, bot_name: 'X', status: 'stopped', strategy_name: 'S', desired_status: null, error_message: null },
+      {
+        id: 1,
+        bot_name: 'X',
+        status: 'stopped',
+        strategy_name: 'S',
+        desired_status: null,
+        error_message: null,
+      },
     ]);
     mockGetConfig.mockResolvedValueOnce({
-      config: { dry_run: true, timeframe: '5m', exchange: { pair_whitelist: ['BTC/USDT:USDT'] } },
+      config: {
+        dry_run: true,
+        timeframe: '5m',
+        exchange: { pair_whitelist: ['BTC/USDT:USDT'] },
+      },
     });
 
     openDialog();
@@ -555,10 +598,21 @@ describe('MyBotsDialog', () => {
 
   it('navigates to /bots/{id} when a card is clicked', async () => {
     mockList.mockResolvedValueOnce([
-      { id: 80, bot_name: 'Tribot', status: 'stopped', strategy_name: 'S', desired_status: null, error_message: null },
+      {
+        id: 80,
+        bot_name: 'Tribot',
+        status: 'stopped',
+        strategy_name: 'S',
+        desired_status: null,
+        error_message: null,
+      },
     ]);
     mockGetConfig.mockResolvedValueOnce({
-      config: { dry_run: true, timeframe: '5m', exchange: { pair_whitelist: ['BTC/USDT:USDT'] } },
+      config: {
+        dry_run: true,
+        timeframe: '5m',
+        exchange: { pair_whitelist: ['BTC/USDT:USDT'] },
+      },
     });
 
     openDialog();
@@ -589,7 +643,14 @@ describe('MyBotsDialog', () => {
 
   it('keeps showing the card when per-bot config fetch fails', async () => {
     mockList.mockResolvedValueOnce([
-      { id: 80, bot_name: 'Tribot', status: 'stopped', strategy_name: 'S', desired_status: null, error_message: null },
+      {
+        id: 80,
+        bot_name: 'Tribot',
+        status: 'stopped',
+        strategy_name: 'S',
+        desired_status: null,
+        error_message: null,
+      },
     ]);
     mockGetConfig.mockRejectedValueOnce(new Error('config down'));
 
@@ -667,7 +728,9 @@ function StatusBadge({ row }: { row: BotRow }) {
 
 function ModeBadge({ config }: { config: FreqtradeConfig | null }) {
   if (config == null) {
-    return <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-fg-muted/15" />;
+    return (
+      <span className="inline-block h-4 w-14 animate-pulse rounded-full bg-fg-muted/15" />
+    );
   }
   const live = config.dry_run === false;
   return (
@@ -683,7 +746,9 @@ function ModeBadge({ config }: { config: FreqtradeConfig | null }) {
 }
 
 function Placeholder() {
-  return <span className="text-sm font-semibold tabular-nums text-fg-muted">—</span>;
+  return (
+    <span className="text-sm font-semibold tabular-nums text-fg-muted">—</span>
+  );
 }
 
 function BotCard({ row, onClick }: { row: BotRow; onClick: () => void }) {
@@ -705,18 +770,18 @@ function BotCard({ row, onClick }: { row: BotRow; onClick: () => void }) {
         }
       }}
       className={cn(
-        'flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 cursor-pointer',
-        'transition-all hover:border-border-default hover:bg-surface-hover',
+        'flex cursor-pointer flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4',
+        'hover:border-border-default transition-all hover:bg-surface-hover',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
           <div className="flex-shrink-0 rounded-lg bg-brand/10 p-1.5">
             <BarChart2 className="h-4 w-4 text-brand" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-fg truncate">{name}</p>
+            <p className="truncate text-sm font-semibold text-fg">{name}</p>
             <p className="text-xs text-fg-muted">
               {pair == null ? (
                 <span className="inline-block h-3 w-16 animate-pulse rounded bg-fg-muted/15" />
@@ -740,15 +805,21 @@ function BotCard({ row, onClick }: { row: BotRow; onClick: () => void }) {
 
       <div className="grid grid-cols-3 gap-2 rounded-lg border border-border-subtle bg-canvas px-3 py-2">
         <div className="flex flex-col gap-0.5">
-          <span className="text-2xs uppercase tracking-wider text-fg-muted">Today</span>
+          <span className="text-2xs uppercase tracking-wider text-fg-muted">
+            Today
+          </span>
           <Placeholder />
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-2xs uppercase tracking-wider text-fg-muted">Win</span>
+          <span className="text-2xs uppercase tracking-wider text-fg-muted">
+            Win
+          </span>
           <Placeholder />
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-2xs uppercase tracking-wider text-fg-muted">Trades</span>
+          <span className="text-2xs uppercase tracking-wider text-fg-muted">
+            Trades
+          </span>
           <Placeholder />
         </div>
       </div>
@@ -774,7 +845,7 @@ function EmptyState({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   return (
     <div className="flex items-center justify-center py-10">
-      <div className="rounded-xl border border-border-subtle bg-surface p-10 flex flex-col items-center gap-4 text-center max-w-sm">
+      <div className="flex max-w-sm flex-col items-center gap-4 rounded-xl border border-border-subtle bg-surface p-10 text-center">
         <div className="rounded-full bg-brand/10 p-4">
           <BarChart2 className="h-8 w-8 text-brand" />
         </div>
@@ -819,7 +890,11 @@ export function MyBotsDialog() {
         bots.map(async (b): Promise<BotRow> => {
           try {
             const res = await botApi.getConfig(b.id);
-            return { meta: b, config: res.config as FreqtradeConfig, configError: false };
+            return {
+              meta: b,
+              config: res.config as FreqtradeConfig,
+              configError: false,
+            };
           } catch {
             return { meta: b, config: null, configError: true };
           }
@@ -853,8 +928,14 @@ export function MyBotsDialog() {
 
         {error ? (
           <div className="flex flex-col gap-3 rounded-lg border border-danger/40 bg-bearish-subtle p-4">
-            <pre className="whitespace-pre-wrap font-mono text-xs text-bearish">{error}</pre>
-            <Button variant="secondary" onClick={fetchBots} className="self-start">
+            <pre className="whitespace-pre-wrap font-mono text-xs text-bearish">
+              {error}
+            </pre>
+            <Button
+              variant="secondary"
+              onClick={fetchBots}
+              className="self-start"
+            >
               Retry
             </Button>
           </div>
@@ -867,9 +948,13 @@ export function MyBotsDialog() {
         ) : rows.length === 0 ? (
           <EmptyState onClose={() => setOpen(false)} />
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 max-h-[60vh] overflow-y-auto">
+          <div className="grid max-h-[60vh] grid-cols-1 gap-4 overflow-y-auto sm:grid-cols-2">
             {rows.map((r) => (
-              <BotCard key={r.meta.id} row={r} onClick={() => handleCardClick(r.meta.id)} />
+              <BotCard
+                key={r.meta.id}
+                row={r}
+                onClick={() => handleCardClick(r.meta.id)}
+              />
             ))}
           </div>
         )}
@@ -913,12 +998,14 @@ EOF
 Replace the hard-coded Monitor button with a "My Bots" button that opens the new dialog. Mount the dialog at the toolbar's render root.
 
 **Files:**
+
 - Modify: `src/features/bot-builder/components/HeaderToolbar.tsx`
 
 - [ ] **Step 1: Read the current Monitor button block + dialog mount points**
 
 Run: `grep -n "bots/bot-1\|setExportOpen\|ExportDialog\|TemplatesDialog" src/features/bot-builder/components/HeaderToolbar.tsx`
 Expected output includes:
+
 - Line ~276: `onClick={() => navigate('/bots/bot-1')}` (Monitor button)
 - Line ~336: `<ExportDialog open={exportOpen} onOpenChange={setExportOpen} />`
 
@@ -934,6 +1021,7 @@ import { useExportDialogStore } from '@/features/export-import/export-dialog.sto
 ```
 
 Add immediately after:
+
 ```ts
 import { MyBotsDialog } from '@/features/bot-monitoring/MyBotsDialog';
 import { useMyBotsDialogStore } from '@/features/bot-monitoring/my-bots-dialog.store';
@@ -942,12 +1030,14 @@ import { useMyBotsDialogStore } from '@/features/bot-monitoring/my-bots-dialog.s
 - [ ] **Step 3: Wire the store accessor**
 
 Find the `useExportDialogStore` usage block (around line 56-57):
+
 ```ts
 const exportOpen = useExportDialogStore((s) => s.open);
 const setExportOpen = useExportDialogStore((s) => s.setOpen);
 ```
 
 Add immediately after:
+
 ```ts
 const setMyBotsOpen = useMyBotsDialogStore((s) => s.setOpen);
 ```
@@ -957,55 +1047,57 @@ const setMyBotsOpen = useMyBotsDialogStore((s) => s.setOpen);
 In `src/features/bot-builder/components/HeaderToolbar.tsx`, find lines 269-289 — the full Tooltip wrapping the Monitor button:
 
 ```tsx
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={!canExport}
-                  onClick={() => navigate('/bots/bot-1')}
-                  className="rounded-full px-3"
-                >
-                  <Activity className="h-3.5 w-3.5" />
-                  Monitor
-                </Button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              {canExport
-                ? 'View live monitoring dashboard'
-                : 'Fix issues before monitoring'}
-            </TooltipContent>
-          </Tooltip>
+<Tooltip>
+  <TooltipTrigger asChild>
+    <span>
+      <Button
+        variant="secondary"
+        size="sm"
+        disabled={!canExport}
+        onClick={() => navigate('/bots/bot-1')}
+        className="rounded-full px-3"
+      >
+        <Activity className="h-3.5 w-3.5" />
+        Monitor
+      </Button>
+    </span>
+  </TooltipTrigger>
+  <TooltipContent>
+    {canExport
+      ? 'View live monitoring dashboard'
+      : 'Fix issues before monitoring'}
+  </TooltipContent>
+</Tooltip>
 ```
 
 Replace verbatim with:
 
 ```tsx
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setMyBotsOpen(true)}
-                className="rounded-full px-3"
-              >
-                <List className="h-3.5 w-3.5" />
-                My Bots
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Browse and monitor all your bots.</TooltipContent>
-          </Tooltip>
+<Tooltip>
+  <TooltipTrigger asChild>
+    <Button
+      variant="secondary"
+      size="sm"
+      onClick={() => setMyBotsOpen(true)}
+      className="rounded-full px-3"
+    >
+      <List className="h-3.5 w-3.5" />
+      My Bots
+    </Button>
+  </TooltipTrigger>
+  <TooltipContent>Browse and monitor all your bots.</TooltipContent>
+</Tooltip>
 ```
 
 Notes on intentional differences from the old block:
+
 - No `disabled={!canExport}` — listing bots in your account is independent of the builder's validity.
 - No wrapping `<span>` — the span was a Radix workaround for disabled `<Button>` inside `<TooltipTrigger>`. Not needed without `disabled`.
 
 - [ ] **Step 4b: Update lucide-react imports**
 
 Find the import block at the top of the file:
+
 ```ts
 import {
   Activity,
@@ -1041,6 +1133,7 @@ import {
 - [ ] **Step 5: Mount the dialog next to ExportDialog**
 
 At line ~336-337 the file currently has:
+
 ```tsx
       <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
@@ -1048,6 +1141,7 @@ At line ~336-337 the file currently has:
 ```
 
 Add `<MyBotsDialog />` right after the two existing dialogs:
+
 ```tsx
       <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
@@ -1065,10 +1159,13 @@ Expected: clean (only the pre-existing `button.tsx` warning).
 - [ ] **Step 7: Smoke-check in browser preview**
 
 Run the dev server:
+
 ```bash
 pnpm dev
 ```
+
 Open http://127.0.0.1:5173/login, log in with `trinm@coin98.finance / Coin98@123`, then on `/builder`:
+
 1. The old "Monitor" button is gone.
 2. A new "My Bots" button is visible in the toolbar.
 3. Click it → dialog opens → after ~1s, shows the bots (Tribottestaaa appears with status "stopped").
@@ -1103,6 +1200,7 @@ EOF
 The page is no longer reachable. Clean up.
 
 **Files:**
+
 - Modify: `src/routes.tsx`
 - Delete: `src/features/bot-monitoring/BotsListPage.tsx`
 
@@ -1114,12 +1212,15 @@ Expected: matches in only `src/routes.tsx` (import + JSX). If anything else refe
 - [ ] **Step 2: Remove the route**
 
 Open `src/routes.tsx`. Find:
+
 ```ts
 import { BotsListPage } from './features/bot-monitoring/BotsListPage';
 ```
+
 Delete that line.
 
 Then find the `/bots` route block:
+
 ```ts
 {
   path: '/bots',
@@ -1130,6 +1231,7 @@ Then find the `/bots` route block:
   ),
 },
 ```
+
 Delete the entire object (including the trailing comma).
 
 Keep `/bots/:id` route untouched.
@@ -1188,6 +1290,7 @@ Run: `pnpm dev`
 - [ ] **Step 3: Verify Network tab**
 
 In DevTools → Network → Fetch/XHR:
+
 - 1× `GET /api/bot/list` → 200, list of bots.
 - N× `GET /api/bot/{id}/config` → 200 each (where N = number of bots).
 - No 4xx/5xx unless a bot config truly fails (in which case the card shows `?` for pair/timeframe).
@@ -1195,6 +1298,7 @@ In DevTools → Network → Fetch/XHR:
 - [ ] **Step 4: Toast check**
 
 If any `/bot/*` request fails (force it by stopping BE or hand-editing a request), confirm:
+
 - NO global toast fires.
 - The dialog shows an inline error region (for list fail) OR keeps the card with `?` (for config fail).
 
@@ -1213,6 +1317,7 @@ After the last task is committed, Tri (or the implementer) should file these as 
 3. **Expose `created_at`** on `BotOut` (covered by #1 if Tuấn agrees). Powers the "Running 12d 4h" uptime placeholder.
 
 When each ticket ships, FE work is:
+
 - (#1) Drop the `Promise.all(getConfig)` block in `MyBotsDialog.tsx`. Read pair/timeframe/dry_run directly from the list response.
 - (#2 + #3) Plug values into the existing card placeholders. Remove the `Placeholder` component.
 
@@ -1221,6 +1326,7 @@ When each ticket ships, FE work is:
 ## Out of scope (do NOT do in this plan)
 
 These appear tempting but belong to future iterations:
+
 - Wire `BotMonitoringPage` to real BE data.
 - Add Start/Stop buttons to bot cards.
 - Add `DELETE /bot/{id}` from the dialog.

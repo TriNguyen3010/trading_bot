@@ -196,7 +196,7 @@ sequenceDiagram
    end
 ```
 
-*Trading Bot Sequence Diagram - Mermaid Editor*
+_Trading Bot Sequence Diagram - Mermaid Editor_
 
 Quy trình làm việc của người dùng trên nền tảng tuân theo chu kỳ từ thiết lập đến thực thi và giám sát:
 
@@ -248,60 +248,60 @@ Hệ thống sử dụng PostgreSQL với SQLAlchemy ORM. Dưới đây là chi 
 
 ### 4.1. Bảng Users (Người dùng)
 
-| Trường | Kiểu dữ liệu | Mô tả |
-|---|---|---|
-| id | Integer (PK) | Định danh duy nhất của người dùng. |
-| email | String (Unique) | Địa chỉ email dùng để đăng nhập. |
-| hashed_password | String | Mật khẩu đã được mã hóa (Bcrypt). |
-| is_active | Boolean | Trạng thái tài khoản (True: đang hoạt động). |
-| is_admin | Boolean | Quyền quản trị viên. |
-| created_at | DateTime | Thời điểm tạo tài khoản. |
+| Trường          | Kiểu dữ liệu    | Mô tả                                        |
+| --------------- | --------------- | -------------------------------------------- |
+| id              | Integer (PK)    | Định danh duy nhất của người dùng.           |
+| email           | String (Unique) | Địa chỉ email dùng để đăng nhập.             |
+| hashed_password | String          | Mật khẩu đã được mã hóa (Bcrypt).            |
+| is_active       | Boolean         | Trạng thái tài khoản (True: đang hoạt động). |
+| is_admin        | Boolean         | Quyền quản trị viên.                         |
+| created_at      | DateTime        | Thời điểm tạo tài khoản.                     |
 
 ### 4.2. Bảng Exchange_Credentials (Thông tin sàn)
 
-| Trường | Kiểu dữ liệu | Mô tả |
-|---|---|---|
-| id | Integer (PK) | Định danh duy nhất. |
-| user_id | Integer (FK) | Liên kết tới bảng Users. |
-| exchange_name | String | Tên sàn (ví dụ: binance, kraken). |
-| api_key | String (Encrypted) | API Key đã được mã hóa đối xứng. |
-| api_secret | String (Encrypted) | API Secret đã được mã hóa đối xứng. |
+| Trường        | Kiểu dữ liệu       | Mô tả                               |
+| ------------- | ------------------ | ----------------------------------- |
+| id            | Integer (PK)       | Định danh duy nhất.                 |
+| user_id       | Integer (FK)       | Liên kết tới bảng Users.            |
+| exchange_name | String             | Tên sàn (ví dụ: binance, kraken).   |
+| api_key       | String (Encrypted) | API Key đã được mã hóa đối xứng.    |
+| api_secret    | String (Encrypted) | API Secret đã được mã hóa đối xứng. |
 
 ### 4.3. Bảng Bot_Instances (Thực thể Bot)
 
-| Trường | Kiểu dữ liệu | Mô tả |
-|---|---|---|
-| id | Integer (PK) | Định danh duy nhất của bot. |
-| user_id | Integer (FK) | Chủ sở hữu bot. |
-| bot_name | String | Tên định danh của bot. |
-| strategy_name | String | Tên chiến lược đang được gắn với bot. |
-| status | String (Enum) | Trạng thái: running, stopped, error. |
-| config_override | JSONB | **Source of Truth:** Lưu trữ toàn bộ tham số cấu hình bot (pairs, timeframe, stake_amount, stoploss, v.v.). Dữ liệu này dùng để sinh file config.json khi chạy. |
-| last_run_at | DateTime | Lần cuối cùng bot được khởi chạy. |
+| Trường          | Kiểu dữ liệu  | Mô tả                                                                                                                                                           |
+| --------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id              | Integer (PK)  | Định danh duy nhất của bot.                                                                                                                                     |
+| user_id         | Integer (FK)  | Chủ sở hữu bot.                                                                                                                                                 |
+| bot_name        | String        | Tên định danh của bot.                                                                                                                                          |
+| strategy_name   | String        | Tên chiến lược đang được gắn với bot.                                                                                                                           |
+| status          | String (Enum) | Trạng thái: running, stopped, error.                                                                                                                            |
+| config_override | JSONB         | **Source of Truth:** Lưu trữ toàn bộ tham số cấu hình bot (pairs, timeframe, stake_amount, stoploss, v.v.). Dữ liệu này dùng để sinh file config.json khi chạy. |
+| last_run_at     | DateTime      | Lần cuối cùng bot được khởi chạy.                                                                                                                               |
 
 ### 4.4. Bảng Strategies (Chiến lược)
 
-| Trường | Kiểu dữ liệu | Mô tả |
-|---|---|---|
-| id | Integer (PK) | Định danh duy nhất. |
-| user_id | Integer (FK) | Người tạo chiến lược. |
-| bot_id | Integer (FK) | Liên kết tới bot đang sử dụng chiến lược này. |
-| name | String | Tên lớp (Class name) của chiến lược. |
-| description | Text | Mô tả chi tiết. |
-| configurations | JSONB | **Source of Truth:** Chứa logic chi tiết (indicators, entry/exit signals). Dùng để sinh mã nguồn .py tự động. |
-| strategy_type | String | Loại: statistical, ai_powered. |
+| Trường         | Kiểu dữ liệu | Mô tả                                                                                                         |
+| -------------- | ------------ | ------------------------------------------------------------------------------------------------------------- |
+| id             | Integer (PK) | Định danh duy nhất.                                                                                           |
+| user_id        | Integer (FK) | Người tạo chiến lược.                                                                                         |
+| bot_id         | Integer (FK) | Liên kết tới bot đang sử dụng chiến lược này.                                                                 |
+| name           | String       | Tên lớp (Class name) của chiến lược.                                                                          |
+| description    | Text         | Mô tả chi tiết.                                                                                               |
+| configurations | JSONB        | **Source of Truth:** Chứa logic chi tiết (indicators, entry/exit signals). Dùng để sinh mã nguồn .py tự động. |
+| strategy_type  | String       | Loại: statistical, ai_powered.                                                                                |
 
 ### 4.5. Bảng Backtest_History (Lịch sử kiểm thử)
 
-| Trường | Kiểu dữ liệu | Mô tả |
-|---|---|---|
-| id | Integer (PK) | Định danh duy nhất. |
-| user_id | Integer (FK) | Người thực hiện backtest. |
-| bot_id | Integer (FK) | Bot được dùng để chạy backtest. |
-| status | String | Trạng thái: running, completed, failed. |
-| trade_count | Integer | Tổng số lệnh đã thực hiện trong backtest. |
-| total_profit | Float | Tổng lợi nhuận (tỉ lệ phần trăm). |
-| result_file_path | String | Đường dẫn lưu tệp kết quả chi tiết (JSON/ZIP) trong Storage (S3/Local). |
+| Trường           | Kiểu dữ liệu | Mô tả                                                                   |
+| ---------------- | ------------ | ----------------------------------------------------------------------- |
+| id               | Integer (PK) | Định danh duy nhất.                                                     |
+| user_id          | Integer (FK) | Người thực hiện backtest.                                               |
+| bot_id           | Integer (FK) | Bot được dùng để chạy backtest.                                         |
+| status           | String       | Trạng thái: running, completed, failed.                                 |
+| trade_count      | Integer      | Tổng số lệnh đã thực hiện trong backtest.                               |
+| total_profit     | Float        | Tổng lợi nhuận (tỉ lệ phần trăm).                                       |
+| result_file_path | String       | Đường dẫn lưu tệp kết quả chi tiết (JSON/ZIP) trong Storage (S3/Local). |
 
 ---
 

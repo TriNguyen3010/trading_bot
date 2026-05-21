@@ -765,7 +765,7 @@ PRs. All quality gates clean throughout.
 
 - **2-phase UI redesign** (`two_phase_ui_plan.md`): ✅ merged. Templates
   build on top — snapshot dùng existing `BuilderState` shape.
-- **API spec integration** (`Data/IMPLEMENTATION_PLAN.md` Step 1+2+3):
+- **API spec integration** (`BE/IMPLEMENTATION_PLAN.md` Step 1+2+3):
   ✅ merged. Templates pass through existing schema + serializer.
 - **Wallet integration** (`wallet_integration_plan.md`, chưa viết): độc
   lập. Phase 3 community templates sẽ cần auth → wallet, nhưng MVP không

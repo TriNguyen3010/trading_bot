@@ -5,8 +5,8 @@
 - **Ngày:** 2026-04-24
 - **UI tham chiếu:** `Ref_screen/2_Entry_strategy.png` (mặc định builder, 1 strategy)
 - **JSON tham chiếu:**
-  - `Data/payload_create_bot.json` (35 dòng)
-  - `Data/payload_create_strategy.json` (154 dòng)
+  - `BE/payload_create_bot.json` (35 dòng)
+  - `BE/payload_create_strategy.json` (154 dòng)
 
 ---
 

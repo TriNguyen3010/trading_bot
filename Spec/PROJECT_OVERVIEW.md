@@ -121,7 +121,7 @@ trading_bot/
 │   └── Phase 1/               18+ plan docs (xem §10)
 ├── Ref_screen/                Design reference screenshots (cho Cypheus, FX, ...)
 ├── public/                    Static (logo.png)
-├── scripts/                   validate-sample.mjs (AJV validator cho Data/payload_*.json)
+├── scripts/                   validate-sample.mjs (AJV validator cho BE/payload_*.json)
 └── tsconfig.{json,app,node}.json   Project references — root delegates to .app
 ```
 
@@ -211,7 +211,7 @@ Panel trái (Cypheus) theo pattern VS Code / Linear:
 2 sections: **Chat** (Cypheus narrative) + **JSON** (live preview).
 
 ### 7.4 — Unified BE schema (Apr–May 2026)
-Spec: `src/schemas/unified-bot-strategy.schema.ts` + `Data/IMPLEMENTATION_PLAN.md`.
+Spec: `src/schemas/unified-bot-strategy.schema.ts` + `BE/IMPLEMENTATION_PLAN.md`.
 
 Backend đổi shape: trước split `{bot, strategy}` (legacy), giờ flat
 **`UnifiedBotStrategyCreate`** (1 file, 9 required + 36 optional fields).
@@ -321,7 +321,7 @@ break. Plan: `Spec/Phase 1/cypheus/drawer_persistence_plan.md` cho future.
 
 ## 9 · Backend integration
 
-Source: `Data/openapi.json` + `Data/API_SPEC.md`.
+Source: `BE/openapi.json` + `BE/API_SPEC.md`.
 
 | Endpoint | FE caller | Notes |
 |---|---|---|
@@ -333,14 +333,14 @@ HTTP client + auth (wallet connect) là milestone tiếp theo (xem §11).
 
 **Type generation**:
 ```bash
-pnpm gen:api          # openapi-typescript Data/openapi.json → src/types/api.d.ts
+pnpm gen:api          # openapi-typescript BE/openapi.json → src/types/api.d.ts
 pnpm gen:api:watch    # watch mode
 ```
 
 **Sample validator** (CI gate):
 ```bash
-pnpm validate:sample:create   # AJV check Data/payload_bot_strategy_create.json
-pnpm validate:sample:update   # AJV check Data/payload_bot_strategy_update.json
+pnpm validate:sample:create   # AJV check BE/payload_bot_strategy_create.json
+pnpm validate:sample:update   # AJV check BE/payload_bot_strategy_update.json
 ```
 
 ---
@@ -486,7 +486,7 @@ hỏi maintainer.
   nhận TS thực sự complain trước khi commit.
 - **Files không động vào**:
   - `src/types/api.d.ts` — auto-gen từ openapi
-  - `Data/openapi.json` — BE source, không sửa
+  - `BE/openapi.json` — BE source, không sửa
   - `_tmp_6_*` ở root — artifact cũ, ignore
 
 ---
@@ -497,7 +497,7 @@ hỏi maintainer.
 - **Default branch**: `main`
 - **Active branch**: `feat/2-phase-ui` (= main)
 - **Deploy**: Vercel (auto từ `main`)
-- **BE**: nhánh khác, owner team backend. FE talk qua `Data/openapi.json`
+- **BE**: nhánh khác, owner team backend. FE talk qua `BE/openapi.json`
   + payload samples + spec docs.
 
 Khi stuck:

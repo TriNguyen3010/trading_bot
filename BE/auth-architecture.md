@@ -72,16 +72,15 @@ Browser                          Backend                         Redis
 
 ### Chi tiết kỹ thuật
 
-| Component | Detail |
-|-----------|--------|
-| **Chuẩn chữ ký** | EIP-191 Personal Sign |
-| **Message format** | `"Sign this message to authenticate with Gamma Trade.\n\nNonce: {nonce}"` |
-| **Nonce storage** | Redis, key=`wallet_nonce:{address}`, TTL=24h |
-| **Nonce reusability** | Reusable trong TTL (không consume sau mỗi request) |
-| **Middleware** | `app/middleware/wallet_auth.py` → `WalletAuthMiddleware` |
-| **Recovery** | `eth_account.Account.recover_message()` |
-| **Auto-create** | User record tự động tạo lần đầu connect |
-
+| Component             | Detail                                                                    |
+| --------------------- | ------------------------------------------------------------------------- |
+| **Chuẩn chữ ký**      | EIP-191 Personal Sign                                                     |
+| **Message format**    | `"Sign this message to authenticate with Gamma Trade.\n\nNonce: {nonce}"` |
+| **Nonce storage**     | Redis, key=`wallet_nonce:{address}`, TTL=24h                              |
+| **Nonce reusability** | Reusable trong TTL (không consume sau mỗi request)                        |
+| **Middleware**        | `app/middleware/wallet_auth.py` → `WalletAuthMiddleware`                  |
+| **Recovery**          | `eth_account.Account.recover_message()`                                   |
+| **Auto-create**       | User record tự động tạo lần đầu connect                                   |
 
 ### Code references
 
@@ -146,16 +145,16 @@ Browser                    Backend                        Hyperliquid
 {
   "types": {
     "EIP712Domain": [
-      {"name": "name", "type": "string"},
-      {"name": "version", "type": "string"},
-      {"name": "chainId", "type": "uint256"},
-      {"name": "verifyingContract", "type": "address"}
+      { "name": "name", "type": "string" },
+      { "name": "version", "type": "string" },
+      { "name": "chainId", "type": "uint256" },
+      { "name": "verifyingContract", "type": "address" }
     ],
     "HyperliquidTransaction:ApproveAgent": [
-      {"name": "hyperliquidChain", "type": "string"},
-      {"name": "agentAddress", "type": "address"},
-      {"name": "agentName", "type": "string"},
-      {"name": "nonce", "type": "uint64"}
+      { "name": "hyperliquidChain", "type": "string" },
+      { "name": "agentAddress", "type": "address" },
+      { "name": "agentName", "type": "string" },
+      { "name": "nonce", "type": "uint64" }
     ]
   },
   "primaryType": "HyperliquidTransaction:ApproveAgent",
@@ -205,15 +204,15 @@ Browser                    Backend                        Hyperliquid
 
 ### Chi tiết kỹ thuật
 
-| Component | Detail |
-|-----------|--------|
-| **Chuẩn chữ ký** | EIP-712 Typed Data (eth_signTypedData_v4) |
-| **Chain ID** | 42161 (Arbitrum One) |
-| **signatureChainId** | `0xa4b1` (42161) — trong POST body |
-| **Pending state** | Redis, TTL=10 phút |
-| **Key storage** | PostgreSQL `agent_sessions.encrypted_private_key` |
-| **Encryption** | Fernet (derived từ `CREDENTIALS_ENCRYPTION_KEY`) |
-| **Spending limit** | Daily limit, auto-reset mỗi 24h |
+| Component            | Detail                                            |
+| -------------------- | ------------------------------------------------- |
+| **Chuẩn chữ ký**     | EIP-712 Typed Data (eth_signTypedData_v4)         |
+| **Chain ID**         | 42161 (Arbitrum One)                              |
+| **signatureChainId** | `0xa4b1` (42161) — trong POST body                |
+| **Pending state**    | Redis, TTL=10 phút                                |
+| **Key storage**      | PostgreSQL `agent_sessions.encrypted_private_key` |
+| **Encryption**       | Fernet (derived từ `CREDENTIALS_ENCRYPTION_KEY`)  |
+| **Spending limit**   | Daily limit, auto-reset mỗi 24h                   |
 
 ### Code references
 
@@ -304,32 +303,31 @@ Trade Signal → pre_trade_guard.validate_trade_entry()
 
 ### Endpoints sử dụng
 
-| Endpoint | Method | Mục đích | Auth |
-|----------|--------|----------|------|
-| `https://api.hyperliquid.xyz/exchange` | POST | Write actions (trade, approve, revoke) | EIP-712 signature required |
-| `https://api.hyperliquid.xyz/info` | POST | Read queries (market data, agent list) | Không cần auth |
+| Endpoint                               | Method | Mục đích                               | Auth                       |
+| -------------------------------------- | ------ | -------------------------------------- | -------------------------- |
+| `https://api.hyperliquid.xyz/exchange` | POST   | Write actions (trade, approve, revoke) | EIP-712 signature required |
+| `https://api.hyperliquid.xyz/info`     | POST   | Read queries (market data, agent list) | Không cần auth             |
 
 ### API calls forwarded qua Backend
 
 Các requests mà Backend đóng vai trò **proxy** — nhận signature từ frontend và forward lên Hyperliquid:
 
-| Backend Route | HL Endpoint | Action | Ai ký? |
-|---------------|-------------|--------|--------|
-| `POST /agent/confirm` | `/exchange` | `approveAgent` (tạo mới) | User ký EIP-712 via MetaMask |
-| `POST /agent/{id}/revoke` | `/exchange` | `approveAgent` (zero addr = revoke) | User ký EIP-712 via MetaMask |
-| `POST /agent/external-revoke` | `/exchange` | `approveAgent` (zero addr) | User ký EIP-712 via MetaMask |
+| Backend Route                 | HL Endpoint | Action                              | Ai ký?                       |
+| ----------------------------- | ----------- | ----------------------------------- | ---------------------------- |
+| `POST /agent/confirm`         | `/exchange` | `approveAgent` (tạo mới)            | User ký EIP-712 via MetaMask |
+| `POST /agent/{id}/revoke`     | `/exchange` | `approveAgent` (zero addr = revoke) | User ký EIP-712 via MetaMask |
+| `POST /agent/external-revoke` | `/exchange` | `approveAgent` (zero addr)          | User ký EIP-712 via MetaMask |
 
 ### API calls trực tiếp từ Backend (không qua user)
 
-| Caller | HL Endpoint | Action | Ai ký? |
-|--------|-------------|--------|--------|
-| `GET /agent/hyperliquid-wallets` | `/info` | `extraAgents` query | Không cần ký (read-only) |
-| Gamma Trade (trading) | `/exchange` | `order`, `cancel`, etc. | Agent private key (server-side) |
-| Agent self-revoke | `/exchange` | `approveAgent` (zero addr) | Agent private key (server-side) |
-| Market data sync | `/info` | OHLCV, L2Book queries | Không cần ký (read-only) |
+| Caller                           | HL Endpoint | Action                     | Ai ký?                          |
+| -------------------------------- | ----------- | -------------------------- | ------------------------------- |
+| `GET /agent/hyperliquid-wallets` | `/info`     | `extraAgents` query        | Không cần ký (read-only)        |
+| Gamma Trade (trading)            | `/exchange` | `order`, `cancel`, etc.    | Agent private key (server-side) |
+| Agent self-revoke                | `/exchange` | `approveAgent` (zero addr) | Agent private key (server-side) |
+| Market data sync                 | `/info`     | OHLCV, L2Book queries      | Không cần ký (read-only)        |
 
 ---
-
 
 ## Complete Auth Flow: Wallet ↔ Backend ↔ Hyperliquid
 
@@ -454,25 +452,25 @@ Browser                           Backend                        Hyperliquid
 
 ### Tóm tắt
 
-| Phase | Action | Auth method |
-|-------|--------|-------------|
-| Connect | Lấy nonce + ký message | EIP-191 personal_sign |
-| API calls | Gửi headers mỗi request | Nonce + Signature verify |
-| Agent create | Ký EIP-712, backend **forward** lên HL | User signs, backend forwards |
-| Agent revoke | Ký EIP-712, backend **forward** lên HL | User signs, backend forwards |
-| Trading | Bot tự ký mỗi lệnh | Agent private key (server-side) |
+| Phase        | Action                                 | Auth method                     |
+| ------------ | -------------------------------------- | ------------------------------- |
+| Connect      | Lấy nonce + ký message                 | EIP-191 personal_sign           |
+| API calls    | Gửi headers mỗi request                | Nonce + Signature verify        |
+| Agent create | Ký EIP-712, backend **forward** lên HL | User signs, backend forwards    |
+| Agent revoke | Ký EIP-712, backend **forward** lên HL | User signs, backend forwards    |
+| Trading      | Bot tự ký mỗi lệnh                     | Agent private key (server-side) |
 
 ### Phân loại requests tới Hyperliquid
 
-| Loại | Route | Hyperliquid Action | Ai ký? |
-|------|-------|-------------------|--------|
-| **FORWARD** | POST /agent/confirm | approveAgent | User (MetaMask) |
-| **FORWARD** | POST /agent/{id}/revoke | approveAgent (zero addr) | User (MetaMask) |
-| **FORWARD** | POST /agent/ext-revoke | approveAgent (zero addr) | User (MetaMask) |
-| **SERVER** | Bot trading | order, cancel, modify | Agent key (server) |
-| **SERVER** | Agent self-revoke | approveAgent (zero addr) | Agent key (server) |
-| **READ** | GET /agent/hl-wallets | POST /info extraAgents | Không cần |
-| **READ** | Market data sync | POST /info (OHLCV, L2Book) | Không cần |
+| Loại        | Route                   | Hyperliquid Action         | Ai ký?             |
+| ----------- | ----------------------- | -------------------------- | ------------------ |
+| **FORWARD** | POST /agent/confirm     | approveAgent               | User (MetaMask)    |
+| **FORWARD** | POST /agent/{id}/revoke | approveAgent (zero addr)   | User (MetaMask)    |
+| **FORWARD** | POST /agent/ext-revoke  | approveAgent (zero addr)   | User (MetaMask)    |
+| **SERVER**  | Bot trading             | order, cancel, modify      | Agent key (server) |
+| **SERVER**  | Agent self-revoke       | approveAgent (zero addr)   | Agent key (server) |
+| **READ**    | GET /agent/hl-wallets   | POST /info extraAgents     | Không cần          |
+| **READ**    | Market data sync        | POST /info (OHLCV, L2Book) | Không cần          |
 
 ---
 
@@ -485,11 +483,9 @@ Browser                           Backend                        Hyperliquid
 - Key chỉ decrypt khi build config (bot create/start)
 - Key tồn tại dạng plaintext trong config file trên disk khi bot running
 
-
 ### Non-custodial Guarantees
 
 - Backend **KHÔNG BAO GIỜ** có master wallet private key
 - User giữ toàn quyền revoke agent bất kỳ lúc nào
 - Agent key chỉ trade được — không thể withdraw funds từ Hyperliquid
 - Spending limit là lớp bảo vệ thêm phía server (Hyperliquid không enforce)
-

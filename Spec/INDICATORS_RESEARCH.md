@@ -6,7 +6,7 @@
 
 Ngày: 2026-05-04
 Tác giả: Research session
-Liên quan tới: `Data/indicators_talib.json`, `Data/indicators_pandas_ta.json`,
+Liên quan tới: `BE/indicators_talib.json`, `BE/indicators_pandas_ta.json`,
 `src/features/indicators/indicator-registry.ts`
 
 ---
@@ -17,8 +17,8 @@ Liên quan tới: `Data/indicators_talib.json`, `Data/indicators_pandas_ta.json`
 
 | File | Source | Tổng số | Số category | Ghi chú |
 |---|---|---|---|---|
-| `Data/indicators_talib.json` | TA-Lib | **162** | 10 | Có cả Math/Stat/Pattern (gần phân nửa là phụ) |
-| `Data/indicators_pandas_ta.json` | Pandas-TA 0.3.16+ | **227** | 5 | Đã có sẵn `params` + default value |
+| `BE/indicators_talib.json` | TA-Lib | **162** | 10 | Có cả Math/Stat/Pattern (gần phân nửa là phụ) |
+| `BE/indicators_pandas_ta.json` | Pandas-TA 0.3.16+ | **227** | 5 | Đã có sẵn `params` + default value |
 
 Tổng cộng **389 records**, sau khi dedupe (case-insensitive theo `name`) còn lại
 **~233 indicators duy nhất**. Có **33 indicators trùng tên** giữa 2 thư viện

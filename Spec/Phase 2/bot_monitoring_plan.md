@@ -503,7 +503,7 @@ Giữ scope hẹp để demo trong 1–2 sprint:
 | OrderBook UI jank với rapid render | Medium | Medium | Throttle render 4 fps (`useDeferredValue` hoặc `requestAnimationFrame` debounce); diff-render thay full re-render |
 | Cypheus dock chưa hỗ trợ `mode="monitoring"` | Medium | Low | Tiny extension trong Cypheus store: thêm `mode` field. Backward-compatible với Builder existing usage. M1 task. |
 | Cypheus narrative messages overflow / spam khi nhiều fills | Medium | Low | Throttle: max 1 message / 3s; group consecutive same-type events ("3 LONG opened") thay 3 message riêng |
-| Service interface design sai → khi swap real BE phải refactor | Medium | High | M1 design interface match `Data/openapi.json` shape; review với BE owner trước khi M2 |
+| Service interface design sai → khi swap real BE phải refactor | Medium | High | M1 design interface match `BE/openapi.json` shape; review với BE owner trước khi M2 |
 | Press Start 2P font chậm load → FOUT | Low | Low | `font-display: swap` + monospace fallback |
 
 ---

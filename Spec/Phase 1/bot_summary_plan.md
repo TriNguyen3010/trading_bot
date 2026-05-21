@@ -561,7 +561,7 @@ If user wants more conversational tone / strategy classification / risk advice:
 - **2-phase UI redesign** (`two_phase_ui_plan.md`): ✅ merged. Summary card mounts dưới Phase 2.
 - **Bot templates** (`bot_templates_plan.md`): ✅ merged. Summary works seamlessly cho cả manual + template-applied bots. Snapshot tests cho 8 built-in templates đảm bảo translator không break khi template thay đổi.
 - **Card yellow stages** (`card_yellow_stages_plan.md`): exception explicit — summary KHÔNG dùng yellow palette cho trading semantics (long=bullish-green, short=bearish-red, live=bearish-warning). Đây là content tone, không phải status surface.
-- **API spec integration** (`Data/IMPLEMENTATION_PLAN.md` Step 3): independent. Summary derive từ BuilderState, không qua serializer hay schema — pure UI side.
+- **API spec integration** (`BE/IMPLEMENTATION_PLAN.md` Step 3): independent. Summary derive từ BuilderState, không qua serializer hay schema — pure UI side.
 - **Drawer sequential progression**: independent.
 
 ---

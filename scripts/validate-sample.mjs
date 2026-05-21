@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
  * Validate a JSON payload against the OpenAPI schema dumped in
- * `Data/openapi.json` — used as a quick sanity check for sample payloads
- * (e.g. `Data/payload_bot_strategy_create.json`) before pushing them to a
+ * `BE/openapi.json` — used as a quick sanity check for sample payloads
+ * (e.g. `BE/payload_bot_strategy_create.json`) before pushing them to a
  * real backend.
  *
  * Usage:
  *   node scripts/validate-sample.mjs <payload.json> [--schema=UnifiedBotStrategyCreate]
  *
- * Why a temp script: Step 3 of `Data/IMPLEMENTATION_PLAN.md` will replace
+ * Why a temp script: Step 3 of `BE/IMPLEMENTATION_PLAN.md` will replace
  * this with a Zod-based check that runs in the test suite. This file is
  * deliberately small + dependency-light so it can be deleted then.
  *
@@ -53,7 +53,7 @@ if (!fileArg) {
 }
 
 // ── Load OpenAPI + payload ───────────────────────────────────────────────────
-const openapiPath = resolve(repoRoot, 'Data/openapi.json');
+const openapiPath = resolve(repoRoot, 'BE/openapi.json');
 const payloadPath = resolve(repoRoot, fileArg);
 
 const openapi = JSON.parse(readFileSync(openapiPath, 'utf8'));

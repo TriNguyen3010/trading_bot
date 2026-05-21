@@ -5,9 +5,7 @@
   "configurations": {
     "strategy_type": "statistical",
     "startup_candle_count": 200,
-    "informative_timeframes": [
-      "1h"
-    ],
+    "informative_timeframes": ["1h"],
     "risk": {
       "stoploss": -0.4,
       "trailing_stop": true,
@@ -39,10 +37,7 @@
     "ignore_roi_if_entry_signal": false,
     "max_open_trades": -1,
     "signals": {
-      "candlestick": [
-        "close",
-        "volume"
-      ],
+      "candlestick": ["close", "volume"],
       "indicators": [
         {
           "name": "RSI",

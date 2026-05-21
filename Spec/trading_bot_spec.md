@@ -5,7 +5,7 @@
 - **Phiên bản:** 1.0
 - **Ngày:** 2026-04-24
 - **Nguồn tham chiếu:** `Ref_screen/1_Config_bot.png` → `7_close_method_3.png`, `Comp.png`
-- **Payload tham chiếu:** `Data/payload_create_bot.json`, `Data/payload_create_strategy.json`
+- **Payload tham chiếu:** `BE/payload_create_bot.json`, `BE/payload_create_strategy.json`
 
 ---
 

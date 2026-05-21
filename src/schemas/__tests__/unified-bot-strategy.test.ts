@@ -3,7 +3,7 @@
  *   1. Good fixtures (sample payloads + production log request) → expect PASS.
  *   2. Failure cases for cross-field rules and enum constraints.
  *
- * Plan reference: Data/IMPLEMENTATION_PLAN.md §3.3.7.
+ * Plan reference: BE/IMPLEMENTATION_PLAN.md §3.3.7.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -25,10 +25,10 @@ function loadJSON(rel: string) {
   return JSON.parse(readFileSync(resolve(repoRoot, rel), 'utf8'));
 }
 
-const sampleCreate = loadJSON('Data/payload_bot_strategy_create.json');
-const sampleUpdate = loadJSON('Data/payload_bot_strategy_update.json');
+const sampleCreate = loadJSON('BE/payload_bot_strategy_create.json');
+const sampleUpdate = loadJSON('BE/payload_bot_strategy_update.json');
 const productionLog = loadJSON(
-  'Data/user_2_bot_strategy_create_POST_20260428_042734.json',
+  'BE/user_2_bot_strategy_create_POST_20260428_042734.json',
 );
 
 /* -------------------------------------------------------------------------- */

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * Schemas mirror `Data/payload_create_strategy.json` exactly. Field names use
+ * Schemas mirror `BE/payload_create_strategy.legacy.json` exactly. Field names use
  * the backend's snake_case convention.
  */
 

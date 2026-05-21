@@ -10,9 +10,7 @@
           "name": "HT_DCPERIOD",
           "description": "Hilbert Transform - Dominant Cycle Period",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -27,9 +25,7 @@
           "name": "HT_DCPHASE",
           "description": "Hilbert Transform - Dominant Cycle Phase",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -44,9 +40,7 @@
           "name": "HT_PHASOR",
           "description": "Hilbert Transform - Phasor Components",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 2,
@@ -65,9 +59,7 @@
           "name": "HT_SINE",
           "description": "Hilbert Transform - SineWave",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 2,
@@ -86,9 +78,7 @@
           "name": "HT_TRENDMODE",
           "description": "Hilbert Transform - Trend vs Cycle Mode",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -109,9 +99,7 @@
           "name": "ADD",
           "description": "Vector Arithmetic Add",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -126,9 +114,7 @@
           "name": "DIV",
           "description": "Vector Arithmetic Div",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -143,9 +129,7 @@
           "name": "MAX",
           "description": "Highest value over a specified period",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -160,9 +144,7 @@
           "name": "MAXINDEX",
           "description": "Index of highest value over a specified period",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -177,9 +159,7 @@
           "name": "MIN",
           "description": "Lowest value over a specified period",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -194,9 +174,7 @@
           "name": "MININDEX",
           "description": "Index of lowest value over a specified period",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -211,9 +189,7 @@
           "name": "MINMAX",
           "description": "Lowest and highest values over a specified period",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 2,
@@ -232,9 +208,7 @@
           "name": "MINMAXINDEX",
           "description": "Indexes of lowest and highest values over a specified period",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 2,
@@ -253,9 +227,7 @@
           "name": "MULT",
           "description": "Vector Arithmetic Mult",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -270,9 +242,7 @@
           "name": "SUB",
           "description": "Vector Arithmetic Subtraction",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -287,9 +257,7 @@
           "name": "SUM",
           "description": "Summation",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -310,9 +278,7 @@
           "name": "ACOS",
           "description": "Vector Trigonometric ACos",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -327,9 +293,7 @@
           "name": "ASIN",
           "description": "Vector Trigonometric ASin",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -344,9 +308,7 @@
           "name": "ATAN",
           "description": "Vector Trigonometric ATan",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -361,9 +323,7 @@
           "name": "CEIL",
           "description": "Vector Ceil",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -378,9 +338,7 @@
           "name": "COS",
           "description": "Vector Trigonometric Cos",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -395,9 +353,7 @@
           "name": "COSH",
           "description": "Vector Trigonometric Cosh",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -412,9 +368,7 @@
           "name": "EXP",
           "description": "Vector Arithmetic Exp",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -429,9 +383,7 @@
           "name": "FLOOR",
           "description": "Vector Floor",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -446,9 +398,7 @@
           "name": "LN",
           "description": "Vector Log Natural",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -463,9 +413,7 @@
           "name": "LOG10",
           "description": "Vector Log10",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -480,9 +428,7 @@
           "name": "SIN",
           "description": "Vector Trigonometric Sin",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -497,9 +443,7 @@
           "name": "SINH",
           "description": "Vector Trigonometric Sinh",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -514,9 +458,7 @@
           "name": "SQRT",
           "description": "Vector Square Root",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -531,9 +473,7 @@
           "name": "TAN",
           "description": "Vector Trigonometric Tan",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -548,9 +488,7 @@
           "name": "TANH",
           "description": "Vector Trigonometric Tanh",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -571,11 +509,7 @@
           "name": "ADX",
           "description": "Average Directional Movement Index",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -590,11 +524,7 @@
           "name": "ADXR",
           "description": "Average Directional Movement Index Rating",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -609,9 +539,7 @@
           "name": "APO",
           "description": "Absolute Price Oscillator",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -626,10 +554,7 @@
           "name": "AROON",
           "description": "Aroon",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low"
-            ],
+            "ohlcv": ["high", "low"],
             "params": []
           },
           "returns_count": 2,
@@ -648,10 +573,7 @@
           "name": "AROONOSC",
           "description": "Aroon Oscillator",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low"
-            ],
+            "ohlcv": ["high", "low"],
             "params": []
           },
           "returns_count": 1,
@@ -666,12 +588,7 @@
           "name": "BOP",
           "description": "Balance Of Power",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -686,11 +603,7 @@
           "name": "CCI",
           "description": "Commodity Channel Index",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -705,9 +618,7 @@
           "name": "CMO",
           "description": "Chande Momentum Oscillator",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -722,11 +633,7 @@
           "name": "DX",
           "description": "Directional Movement Index",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -741,10 +648,7 @@
           "name": "IMI",
           "description": "Intraday Momentum Index",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "close"
-            ],
+            "ohlcv": ["open", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -759,9 +663,7 @@
           "name": "MACD",
           "description": "Moving Average Convergence/Divergence",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 3,
@@ -784,9 +686,7 @@
           "name": "MACDEXT",
           "description": "MACD with controllable MA type",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 3,
@@ -809,9 +709,7 @@
           "name": "MACDFIX",
           "description": "Moving Average Convergence/Divergence Fix 12/26",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 3,
@@ -834,12 +732,7 @@
           "name": "MFI",
           "description": "Money Flow Index",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close",
-              "volume"
-            ],
+            "ohlcv": ["high", "low", "close", "volume"],
             "params": []
           },
           "returns_count": 1,
@@ -854,11 +747,7 @@
           "name": "MINUS_DI",
           "description": "Minus Directional Indicator",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -873,10 +762,7 @@
           "name": "MINUS_DM",
           "description": "Minus Directional Movement",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low"
-            ],
+            "ohlcv": ["high", "low"],
             "params": []
           },
           "returns_count": 1,
@@ -891,9 +777,7 @@
           "name": "MOM",
           "description": "Momentum",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -908,11 +792,7 @@
           "name": "PLUS_DI",
           "description": "Plus Directional Indicator",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -927,10 +807,7 @@
           "name": "PLUS_DM",
           "description": "Plus Directional Movement",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low"
-            ],
+            "ohlcv": ["high", "low"],
             "params": []
           },
           "returns_count": 1,
@@ -945,9 +822,7 @@
           "name": "PPO",
           "description": "Percentage Price Oscillator",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -962,9 +837,7 @@
           "name": "ROC",
           "description": "Rate of change : ((real/prevPrice)-1)*100",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -979,9 +852,7 @@
           "name": "ROCP",
           "description": "Rate of change Percentage: (real-prevPrice)/prevPrice",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -996,9 +867,7 @@
           "name": "ROCR",
           "description": "Rate of change ratio: (real/prevPrice)",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1013,9 +882,7 @@
           "name": "ROCR100",
           "description": "Rate of change ratio 100 scale: (real/prevPrice)*100",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1030,9 +897,7 @@
           "name": "RSI",
           "description": "Relative Strength Index",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1047,11 +912,7 @@
           "name": "STOCH",
           "description": "Stochastic",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 2,
@@ -1070,11 +931,7 @@
           "name": "STOCHF",
           "description": "Stochastic Fast",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 2,
@@ -1093,9 +950,7 @@
           "name": "STOCHRSI",
           "description": "Stochastic Relative Strength Index",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 2,
@@ -1114,9 +969,7 @@
           "name": "TRIX",
           "description": "1-day Rate-Of-Change (ROC) of a Triple Smooth EMA",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1131,11 +984,7 @@
           "name": "ULTOSC",
           "description": "Ultimate Oscillator",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1150,11 +999,7 @@
           "name": "WILLR",
           "description": "Williams' %R",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1175,11 +1020,7 @@
           "name": "ACCBANDS",
           "description": "Acceleration Bands",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 3,
@@ -1202,9 +1043,7 @@
           "name": "BBANDS",
           "description": "Bollinger Bands",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 3,
@@ -1227,9 +1066,7 @@
           "name": "DEMA",
           "description": "Double Exponential Moving Average",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1244,9 +1081,7 @@
           "name": "EMA",
           "description": "Exponential Moving Average",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1261,9 +1096,7 @@
           "name": "HT_TRENDLINE",
           "description": "Hilbert Transform - Instantaneous Trendline",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1278,9 +1111,7 @@
           "name": "KAMA",
           "description": "Kaufman Adaptive Moving Average",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1295,9 +1126,7 @@
           "name": "MA",
           "description": "Moving average",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1312,9 +1141,7 @@
           "name": "MAMA",
           "description": "MESA Adaptive Moving Average",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 2,
@@ -1333,9 +1160,7 @@
           "name": "MAVP",
           "description": "Moving average with variable period",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1350,9 +1175,7 @@
           "name": "MIDPOINT",
           "description": "MidPoint over period",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1367,10 +1190,7 @@
           "name": "MIDPRICE",
           "description": "Midpoint Price over period",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low"
-            ],
+            "ohlcv": ["high", "low"],
             "params": []
           },
           "returns_count": 1,
@@ -1385,10 +1205,7 @@
           "name": "SAR",
           "description": "Parabolic SAR",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low"
-            ],
+            "ohlcv": ["high", "low"],
             "params": []
           },
           "returns_count": 1,
@@ -1403,10 +1220,7 @@
           "name": "SAREXT",
           "description": "Parabolic SAR - Extended",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low"
-            ],
+            "ohlcv": ["high", "low"],
             "params": []
           },
           "returns_count": 1,
@@ -1421,9 +1235,7 @@
           "name": "SMA",
           "description": "Simple Moving Average",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1438,9 +1250,7 @@
           "name": "T3",
           "description": "Triple Exponential Moving Average (T3)",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1455,9 +1265,7 @@
           "name": "TEMA",
           "description": "Triple Exponential Moving Average",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1472,9 +1280,7 @@
           "name": "TRIMA",
           "description": "Triangular Moving Average",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1489,9 +1295,7 @@
           "name": "WMA",
           "description": "Weighted Moving Average",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1506,9 +1310,7 @@
           "name": "wrapped_func",
           "description": "Weighted Moving Average",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -1529,12 +1331,7 @@
           "name": "CDL2CROWS",
           "description": "Two Crows",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1549,12 +1346,7 @@
           "name": "CDL3BLACKCROWS",
           "description": "Three Black Crows",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1569,12 +1361,7 @@
           "name": "CDL3INSIDE",
           "description": "Three Inside Up/Down",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1589,12 +1376,7 @@
           "name": "CDL3LINESTRIKE",
           "description": "Three-Line Strike",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1609,12 +1391,7 @@
           "name": "CDL3OUTSIDE",
           "description": "Three Outside Up/Down",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1629,12 +1406,7 @@
           "name": "CDL3STARSINSOUTH",
           "description": "Three Stars In The South",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1649,12 +1421,7 @@
           "name": "CDL3WHITESOLDIERS",
           "description": "Three Advancing White Soldiers",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1669,12 +1436,7 @@
           "name": "CDLABANDONEDBABY",
           "description": "Abandoned Baby",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1689,12 +1451,7 @@
           "name": "CDLADVANCEBLOCK",
           "description": "Advance Block",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1709,12 +1466,7 @@
           "name": "CDLBELTHOLD",
           "description": "Belt-hold",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1729,12 +1481,7 @@
           "name": "CDLBREAKAWAY",
           "description": "Breakaway",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1749,12 +1496,7 @@
           "name": "CDLCLOSINGMARUBOZU",
           "description": "Closing Marubozu",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1769,12 +1511,7 @@
           "name": "CDLCONCEALBABYSWALL",
           "description": "Concealing Baby Swallow",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1789,12 +1526,7 @@
           "name": "CDLCOUNTERATTACK",
           "description": "Counterattack",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1809,12 +1541,7 @@
           "name": "CDLDARKCLOUDCOVER",
           "description": "Dark Cloud Cover",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1829,12 +1556,7 @@
           "name": "CDLDOJI",
           "description": "Doji",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1849,12 +1571,7 @@
           "name": "CDLDOJISTAR",
           "description": "Doji Star",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1869,12 +1586,7 @@
           "name": "CDLDRAGONFLYDOJI",
           "description": "Dragonfly Doji",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1889,12 +1601,7 @@
           "name": "CDLENGULFING",
           "description": "Engulfing Pattern",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1909,12 +1616,7 @@
           "name": "CDLEVENINGDOJISTAR",
           "description": "Evening Doji Star",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1929,12 +1631,7 @@
           "name": "CDLEVENINGSTAR",
           "description": "Evening Star",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1949,12 +1646,7 @@
           "name": "CDLGAPSIDESIDEWHITE",
           "description": "Up/Down-gap side-by-side white lines",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1969,12 +1661,7 @@
           "name": "CDLGRAVESTONEDOJI",
           "description": "Gravestone Doji",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -1989,12 +1676,7 @@
           "name": "CDLHAMMER",
           "description": "Hammer",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2009,12 +1691,7 @@
           "name": "CDLHANGINGMAN",
           "description": "Hanging Man",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2029,12 +1706,7 @@
           "name": "CDLHARAMI",
           "description": "Harami Pattern",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2049,12 +1721,7 @@
           "name": "CDLHARAMICROSS",
           "description": "Harami Cross Pattern",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2069,12 +1736,7 @@
           "name": "CDLHIGHWAVE",
           "description": "High-Wave Candle",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2089,12 +1751,7 @@
           "name": "CDLHIKKAKE",
           "description": "Hikkake Pattern",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2109,12 +1766,7 @@
           "name": "CDLHIKKAKEMOD",
           "description": "Modified Hikkake Pattern",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2129,12 +1781,7 @@
           "name": "CDLHOMINGPIGEON",
           "description": "Homing Pigeon",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2149,12 +1796,7 @@
           "name": "CDLIDENTICAL3CROWS",
           "description": "Identical Three Crows",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2169,12 +1811,7 @@
           "name": "CDLINNECK",
           "description": "In-Neck Pattern",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2189,12 +1826,7 @@
           "name": "CDLINVERTEDHAMMER",
           "description": "Inverted Hammer",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2209,12 +1841,7 @@
           "name": "CDLKICKING",
           "description": "Kicking",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2229,12 +1856,7 @@
           "name": "CDLKICKINGBYLENGTH",
           "description": "Kicking - bull/bear determined by the longer marubozu",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2249,12 +1871,7 @@
           "name": "CDLLADDERBOTTOM",
           "description": "Ladder Bottom",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2269,12 +1886,7 @@
           "name": "CDLLONGLEGGEDDOJI",
           "description": "Long Legged Doji",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2289,12 +1901,7 @@
           "name": "CDLLONGLINE",
           "description": "Long Line Candle",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2309,12 +1916,7 @@
           "name": "CDLMARUBOZU",
           "description": "Marubozu",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2329,12 +1931,7 @@
           "name": "CDLMATCHINGLOW",
           "description": "Matching Low",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2349,12 +1946,7 @@
           "name": "CDLMATHOLD",
           "description": "Mat Hold",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2369,12 +1961,7 @@
           "name": "CDLMORNINGDOJISTAR",
           "description": "Morning Doji Star",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2389,12 +1976,7 @@
           "name": "CDLMORNINGSTAR",
           "description": "Morning Star",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2409,12 +1991,7 @@
           "name": "CDLONNECK",
           "description": "On-Neck Pattern",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2429,12 +2006,7 @@
           "name": "CDLPIERCING",
           "description": "Piercing Pattern",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2449,12 +2021,7 @@
           "name": "CDLRICKSHAWMAN",
           "description": "Rickshaw Man",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2469,12 +2036,7 @@
           "name": "CDLRISEFALL3METHODS",
           "description": "Rising/Falling Three Methods",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2489,12 +2051,7 @@
           "name": "CDLSEPARATINGLINES",
           "description": "Separating Lines",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2509,12 +2066,7 @@
           "name": "CDLSHOOTINGSTAR",
           "description": "Shooting Star",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2529,12 +2081,7 @@
           "name": "CDLSHORTLINE",
           "description": "Short Line Candle",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2549,12 +2096,7 @@
           "name": "CDLSPINNINGTOP",
           "description": "Spinning Top",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2569,12 +2111,7 @@
           "name": "CDLSTALLEDPATTERN",
           "description": "Stalled Pattern",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2589,12 +2126,7 @@
           "name": "CDLSTICKSANDWICH",
           "description": "Stick Sandwich",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2609,12 +2141,7 @@
           "name": "CDLTAKURI",
           "description": "Takuri (Dragonfly Doji with very long lower shadow)",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2629,12 +2156,7 @@
           "name": "CDLTASUKIGAP",
           "description": "Tasuki Gap",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2649,12 +2171,7 @@
           "name": "CDLTHRUSTING",
           "description": "Thrusting Pattern",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2669,12 +2186,7 @@
           "name": "CDLTRISTAR",
           "description": "Tristar Pattern",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2689,12 +2201,7 @@
           "name": "CDLUNIQUE3RIVER",
           "description": "Unique 3 River",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2709,12 +2216,7 @@
           "name": "CDLUPSIDEGAP2CROWS",
           "description": "Upside Gap Two Crows",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2729,12 +2231,7 @@
           "name": "CDLXSIDEGAP3METHODS",
           "description": "Upside/Downside Gap Three Methods",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2755,9 +2252,7 @@
           "name": "AVGDEV",
           "description": "Average Deviation",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -2772,12 +2267,7 @@
           "name": "AVGPRICE",
           "description": "Average Price",
           "inputs": {
-            "ohlcv": [
-              "open",
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["open", "high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2792,10 +2282,7 @@
           "name": "MEDPRICE",
           "description": "Median Price",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low"
-            ],
+            "ohlcv": ["high", "low"],
             "params": []
           },
           "returns_count": 1,
@@ -2810,11 +2297,7 @@
           "name": "TYPPRICE",
           "description": "Typical Price",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2829,11 +2312,7 @@
           "name": "WCLPRICE",
           "description": "Weighted Close Price",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -2854,9 +2333,7 @@
           "name": "BETA",
           "description": "Beta",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -2871,9 +2348,7 @@
           "name": "CORREL",
           "description": "Pearson's Correlation Coefficient (r)",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -2888,9 +2363,7 @@
           "name": "LINEARREG",
           "description": "Linear Regression",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -2905,9 +2378,7 @@
           "name": "LINEARREG_ANGLE",
           "description": "Linear Regression Angle",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -2922,9 +2393,7 @@
           "name": "LINEARREG_INTERCEPT",
           "description": "Linear Regression Intercept",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -2939,9 +2408,7 @@
           "name": "LINEARREG_SLOPE",
           "description": "Linear Regression Slope",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -2956,9 +2423,7 @@
           "name": "STDDEV",
           "description": "Standard Deviation",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -2973,9 +2438,7 @@
           "name": "TSF",
           "description": "Time Series Forecast",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -2990,9 +2453,7 @@
           "name": "VAR",
           "description": "Variance",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,
@@ -3013,11 +2474,7 @@
           "name": "ATR",
           "description": "Average True Range",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -3032,11 +2489,7 @@
           "name": "NATR",
           "description": "Normalized Average True Range",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -3051,11 +2504,7 @@
           "name": "TRANGE",
           "description": "True Range",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close"
-            ],
+            "ohlcv": ["high", "low", "close"],
             "params": []
           },
           "returns_count": 1,
@@ -3076,12 +2525,7 @@
           "name": "AD",
           "description": "Chaikin A/D Line",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close",
-              "volume"
-            ],
+            "ohlcv": ["high", "low", "close", "volume"],
             "params": []
           },
           "returns_count": 1,
@@ -3096,12 +2540,7 @@
           "name": "ADOSC",
           "description": "Chaikin A/D Oscillator",
           "inputs": {
-            "ohlcv": [
-              "high",
-              "low",
-              "close",
-              "volume"
-            ],
+            "ohlcv": ["high", "low", "close", "volume"],
             "params": []
           },
           "returns_count": 1,
@@ -3116,9 +2555,7 @@
           "name": "OBV",
           "description": "On Balance Volume",
           "inputs": {
-            "ohlcv": [
-              "price"
-            ],
+            "ohlcv": ["price"],
             "params": []
           },
           "returns_count": 1,

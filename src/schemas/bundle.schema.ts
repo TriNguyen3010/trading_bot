@@ -7,7 +7,7 @@ import { strategyPayloadSchema } from './strategy.schema';
  * `./unified-bot-strategy.schema.ts` for new code. This bundle is retained
  * only for the existing Export/Import flow which still produces the
  * 2-payload split (`{bot, strategy}`). Once that flow is migrated to
- * `UnifiedBotStrategyCreate` (see `Data/IMPLEMENTATION_PLAN.md` Step 3 +
+ * `UnifiedBotStrategyCreate` (see `BE/IMPLEMENTATION_PLAN.md` Step 3 +
  * `serializer.ts buildUnifiedPayload`), this file can be removed.
  *
  * 1-file export bundle: { bot, strategy }. The user's MVP decision

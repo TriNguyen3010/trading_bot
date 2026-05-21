@@ -1,9 +1,9 @@
 /**
  * Zod schemas mirroring `UnifiedBotStrategyCreate` / `UnifiedBotStrategyUpdate`
- * from `Data/openapi.json` — the new shape backend wants for
+ * from `BE/openapi.json` — the new shape backend wants for
  * POST `/bot-strategy/create` and PATCH `/bot-strategy/{bot_id}`.
  *
- * See `Data/IMPLEMENTATION_PLAN.md` Step 3 + `Data/API_SPEC.md` §2–§6 for
+ * See `BE/IMPLEMENTATION_PLAN.md` Step 3 + `BE/API_SPEC.md` §2–§6 for
  * the field-by-field reference. Cross-field rules (§3.3.3) are encoded as
  * `superRefine`s so backend doesn't have to re-validate them.
  *
@@ -317,7 +317,7 @@ export const logicSchema = z.object({
 
 // BE accepts list items that are EITHER plain conditions OR nested
 // `{type:'group', conditions:[...]}` groups. Mirrors strategy.schema.ts
-// — see Data/payload_entry_conditions_nested_sample.json for the
+// — see BE/payload_entry_conditions_nested_sample.json for the
 // authoritative shape (Tuấn, 2026-04-24).
 export type ConditionListItem =
   | z.infer<typeof baseConditionSchema>
@@ -497,7 +497,7 @@ export const strategyConfigurationsSchema =
 
     /* (4) DROPPED — original plan rule: partial_enabled → position_adjustment_enable.
      * Production log shows BE accepts `partial_enabled=true` without the
-     * adjustment flag set (Data/user_2_bot_strategy_create_POST_*.json status
+     * adjustment flag set (BE/user_2_bot_strategy_create_POST_*.json status
      * 201). Enforcing this on FE would be stricter than BE, which is the
      * wrong direction. Re-enable only if BE confirms the constraint. */
 

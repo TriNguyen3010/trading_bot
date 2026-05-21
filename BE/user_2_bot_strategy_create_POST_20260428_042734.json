@@ -46,9 +46,7 @@
       "ignore_roi_if_entry_signal": false,
       "max_open_trades": -1,
       "signals": {
-        "candlestick": [
-          "close"
-        ],
+        "candlestick": ["close"],
         "indicators": [
           {
             "name": "ADX",

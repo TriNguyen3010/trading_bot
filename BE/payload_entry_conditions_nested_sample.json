@@ -56,8 +56,16 @@
       "signals": {
         "candlestick": ["close"],
         "indicators": [
-          { "name": "ADX", "type": "talib", "parameters": { "timeperiod": 14 } },
-          { "name": "EMA", "type": "talib", "parameters": { "timeperiod": 14 } },
+          {
+            "name": "ADX",
+            "type": "talib",
+            "parameters": { "timeperiod": 14 }
+          },
+          {
+            "name": "EMA",
+            "type": "talib",
+            "parameters": { "timeperiod": 14 }
+          },
           {
             "name": "BBANDS",
             "type": "talib",
@@ -142,9 +150,18 @@
             }
           ]
         },
-        "exit_long":  { "logic": { "type": "AND", "threshold": null }, "conditions": [] },
-        "entry_short": { "logic": { "type": "AND", "threshold": null }, "conditions": [] },
-        "exit_short":  { "logic": { "type": "AND", "threshold": null }, "conditions": [] }
+        "exit_long": {
+          "logic": { "type": "AND", "threshold": null },
+          "conditions": []
+        },
+        "entry_short": {
+          "logic": { "type": "AND", "threshold": null },
+          "conditions": []
+        },
+        "exit_short": {
+          "logic": { "type": "AND", "threshold": null },
+          "conditions": []
+        }
       },
       "custom_indicator_items": [],
       "informative_ohlcv_items": [],
@@ -167,7 +184,7 @@
     "ai_powered": false
   },
   "response": {
-    "bot":      { "id": 73, "bot_name": "my_bot", "status": "stopped" },
+    "bot": { "id": 73, "bot_name": "my_bot", "status": "stopped" },
     "strategy": { "id": 17, "name": "aaaaaa" }
   },
   "error": null

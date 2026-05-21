@@ -12,10 +12,10 @@
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "gen:api": "openapi-typescript Data/openapi.json -o src/types/api.d.ts",
-    "gen:api:watch": "openapi-typescript Data/openapi.json -o src/types/api.d.ts --watch",
-    "validate:sample:create": "node scripts/validate-sample.mjs Data/payload_bot_strategy_create.json --schema=UnifiedBotStrategyCreate",
-    "validate:sample:update": "node scripts/validate-sample.mjs Data/payload_bot_strategy_update.json --schema=UnifiedBotStrategyUpdate",
+    "gen:api": "openapi-typescript BE/openapi.json -o src/types/api.d.ts",
+    "gen:api:watch": "openapi-typescript BE/openapi.json -o src/types/api.d.ts --watch",
+    "validate:sample:create": "node scripts/validate-sample.mjs BE/payload_bot_strategy_create.json --schema=UnifiedBotStrategyCreate",
+    "validate:sample:update": "node scripts/validate-sample.mjs BE/payload_bot_strategy_update.json --schema=UnifiedBotStrategyUpdate",
     "prepare": "husky"
   },
   "dependencies": {

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * Mirrors `Data/payload_create_bot.json`.
+ * Mirrors `BE/payload_create_bot.legacy.json`.
  */
 
 export const telegramNotificationSettingsSchema = z.object({
