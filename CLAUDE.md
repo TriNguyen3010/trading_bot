@@ -2,7 +2,7 @@
 
 > **Audience:** Dev mới join project HOẶC AI agent (Claude/Copilot) cần context để code.
 > **Đọc xong file này:** nắm được app làm gì, code ở đâu, quy ước gì, chạy như nào.
-> **Last updated:** 2026-05-11
+> **Last updated:** 2026-05-21
 
 ---
 
@@ -11,6 +11,7 @@
 **Tên:** `trading-bot-builder` — Strategy Builder Tool cho nền tảng Trading Bot của Coin98.
 
 **Làm gì:** Web app cho user **không biết code Python** vẫn tạo được trading bot.
+
 1. User mở UI → fill form (chọn sàn, cặp coin, indicator, điều kiện vào/ra lệnh, risk).
 2. FE build payload JSON đúng schema BE.
 3. FE submit → BE auto-generate file Python (theo framework Freqtrade) → start process → bot chạy 24/7.
@@ -18,38 +19,41 @@
 **Sàn target:** Hyperliquid (perpetual DEX) — sau sẽ support thêm Binance/Bybit.
 
 **Trạng thái hiện tại:**
+
 - ✅ Wizard 4 step (BotConfig / EntryStrategy / Direction / CloseMethod) — DONE
 - ✅ Cypheus AI panel (scripted demo) — DONE
 - ✅ Export JSON ra file — DONE
-- 🚧 **Login bằng email** — đang làm (xem `PLAN_LOGIN_SUBMIT.md`)
+- ✅ **Coin98 wallet auth** — DONE (`src/features/wallet-auth/`, spec `docs/superpowers/specs/2026-05-14-c98-wallet-auth-design.md`)
 - 🚧 **Submit lên BE thật** (hiện chỉ download file) — đang làm
-- ⏳ Wallet auth (Web3) — future work
+- ⏳ Bot lifecycle (start/stop/monitoring) — future work
+- ⏳ Email/password login (`PLAN_LOGIN_SUBMIT.md`) — **superseded** bởi wallet auth, plan giữ làm reference
 
 ---
 
 ## 2. Stack & versions
 
-| Layer | Tool | Version |
-|-------|------|---------|
-| Package manager | pnpm | 10.28.2 |
-| Build | Vite | 6 |
-| Runtime | React | 18 |
-| Language | TypeScript | 5.7 |
-| Styling | Tailwind CSS | 3 |
-| UI primitives | Radix UI (via shadcn/ui pattern) | - |
-| State | Zustand (with `persist`) | 5 |
-| Forms | React Hook Form | 7 |
-| Validation | Zod | 3 |
-| Routing | React Router | 7 |
-| Motion | Framer Motion | 11 |
-| Toast | Sonner | 1 |
-| Icons | Lucide React | - |
-| JSON view | prism-react-renderer | - |
-| Test | Vitest + jsdom + @testing-library/react | 2 |
-| API types | openapi-typescript (gen từ `Data/openapi.json`) | - |
+| Layer           | Tool                                          | Version |
+| --------------- | --------------------------------------------- | ------- |
+| Package manager | pnpm                                          | 10.28.2 |
+| Build           | Vite                                          | 6       |
+| Runtime         | React                                         | 18      |
+| Language        | TypeScript                                    | 5.7     |
+| Styling         | Tailwind CSS                                  | 3       |
+| UI primitives   | Radix UI (via shadcn/ui pattern)              | -       |
+| State           | Zustand (with `persist`)                      | 5       |
+| Forms           | React Hook Form                               | 7       |
+| Validation      | Zod                                           | 3       |
+| Routing         | React Router                                  | 7       |
+| Motion          | Framer Motion                                 | 11      |
+| Toast           | Sonner                                        | 1       |
+| Icons           | Lucide React                                  | -       |
+| JSON view       | prism-react-renderer                          | -       |
+| Test            | Vitest + jsdom + @testing-library/react       | 2       |
+| API types       | openapi-typescript (gen từ `BE/openapi.json`) | -       |
 
 **Không dùng:**
-- Axios (dùng native `fetch` + wrapper trong `src/lib/http.ts` khi feature auth merged).
+
+- Axios (dùng native `fetch` + wrapper trong `src/lib/http.ts`).
 - Redux / MobX.
 - CSS-in-JS (chỉ Tailwind).
 
@@ -77,12 +81,13 @@ pnpm test        # vitest run
 ```
 
 **Account test:**
+
 - Email: `trinm@coin98.finance`
 - Password: `Coin98@123`
 
 **BE Base URL (dev):** `http://tradingbot.ne.com:8088` (HTTP only — BE chưa support HTTPS)
 
-**API docs:** Mở `http://localhost:8088/redoc` khi BE chạy local, hoặc check file `Data/openapi.json` local.
+**API docs:** Mở `http://localhost:8088/redoc` khi BE chạy local, hoặc check file `BE/openapi.json` local.
 
 ---
 
@@ -93,7 +98,7 @@ trading_bot/
 ├── src/
 │   ├── components/ui/          # shadcn primitives (Button, Input, Dialog, ...)
 │   ├── features/               # Domain features
-│   │   ├── auth/               # ← Login, ProtectedRoute (đang làm)
+│   │   ├── wallet-auth/        # Coin98 wallet connect + EIP-191 sign + session storage
 │   │   ├── bot-builder/        # Wizard 4 step + canvas
 │   │   ├── bot-monitoring/     # Trang xem bot đang chạy
 │   │   ├── bot-summary/        # Recap config trước khi export
@@ -120,18 +125,25 @@ trading_bot/
 │   ├── routes.tsx              # Router config
 │   ├── main.tsx                # Entry point
 │   └── index.css               # Tailwind layers
-├── Data/                       # JSON schemas + sample payloads
-│   ├── openapi.json            # BE OpenAPI spec (source of truth)
-│   ├── API_SPEC.md             # ★ Tài liệu BE chi tiết, READ TRƯỚC khi gọi API
+├── BE/                         # ★ TẤT CẢ tài liệu + fixture từ BE
+│   ├── openapi.json            # BE OpenAPI spec (source of truth, gen types)
+│   ├── API_SPEC.md             # ★ Tài liệu BE chi tiết bot-strategy, READ TRƯỚC khi gọi API
+│   ├── auth-architecture.md    # Kiến trúc 3-layer auth (wallet/agent/trading)
+│   ├── tradingbot_doc.md       # Tech design doc gốc (Tuấn Nguyễn Anh, 2 Mar 2026)
 │   ├── IMPLEMENTATION_PLAN.md  # Plan migrate sang UnifiedBotStrategyCreate
-│   └── payload_*.json          # Sample payload để test
-├── Spec/                       # Specs nội bộ
+│   ├── indicators_*.json       # Catalog indicators (talib + pandas-ta)
+│   ├── *Documentation*.md      # Reference docs cho TA-Lib + Pandas-TA
+│   └── payload_*.json          # Sample payload BE để test/validate
+├── Data/                       # FE-side reference (mockup, screenshots, market data)
+│   ├── Ref_bot/                # UI mockup PNGs cho designer
+│   ├── API docs by Redocly/    # Screenshots Redoc UI
+│   └── hyperliquid_top100*.csv # Market data tham khảo
+├── Spec/                       # Specs nội bộ (FE design specs)
 │   ├── PROJECT_OVERVIEW.md     # ★ Tour kiến trúc + history
 │   └── Phase 1/                # Specs từng feature
 ├── Ref_screen/                 # Screenshots design tham khảo
 ├── public/                     # Static assets
-├── tradingbot_doc.md           # Tech design doc gốc (Tuấn Nguyễn Anh, 2 Mar 2026)
-├── PLAN_LOGIN_SUBMIT.md        # ★ Plan code đang triển khai
+├── PLAN_LOGIN_SUBMIT.md        # Plan email login (superseded by wallet auth)
 ├── CLAUDE.md                   # ← bạn đang đọc
 ├── vite.config.ts
 ├── tsconfig.*.json
@@ -145,15 +157,16 @@ trading_bot/
 ## 5. Quy ước code
 
 ### 5.1. Import alias
+
 ```ts
-import { Button } from '@/components/ui/button';      // ← dùng '@/'
+import { Button } from '@/components/ui/button'; // ← dùng '@/'
 // KHÔNG dùng relative '../../components/ui/button'
 ```
 
 ### 5.2. State management
 
 - **Mỗi feature có store riêng** trong folder của feature đó, đặt tên `<feature>.store.ts`.
-  - Ví dụ: `features/bot-builder/store/builder.store.ts`, `features/auth/auth.store.ts`.
+  - Ví dụ: `features/bot-builder/store/builder.store.ts`, `features/wallet-auth/wallet.store.ts`.
 - Dùng Zustand với `persist` middleware **nếu cần survive reload** (vd builder, auth).
 - **Đừng** tạo global store khổng lồ — tách theo domain.
 
@@ -169,11 +182,11 @@ import { Button } from '@/components/ui/button';      // ← dùng '@/'
 
 ### 5.4. API calls
 
-- **CHƯA có khi merged `feat/auth`** — sau khi merge, tất cả API call qua `src/lib/http.ts`.
+- Tất cả API call qua wrapper `src/lib/http.ts` — tự attach `X-Wallet-*` headers, handle 401 (clear + redirect `/`), public-path whitelist.
 - Tách function gọi API ra file `<feature>.api.ts`, **không gọi trực tiếp trong component**.
   ```
-  features/auth/auth.api.ts          ← authApi.login()
-  features/bot-builder/bot-strategy.api.ts ← botStrategyApi.create()
+  features/wallet-auth/wallet.api.ts        ← walletApi.getNonce(), getStatus(), disconnect()
+  features/bot-builder/bot-strategy.api.ts  ← botStrategyApi.create()
   ```
 - Types lấy từ `src/types/api-helpers.ts` (re-export từ auto-gen).
 
@@ -218,12 +231,12 @@ import { Button } from '@/components/ui/button';      // ← dùng '@/'
 
 ## 6. Files đặc biệt — KHÔNG TỰ SỬA
 
-| File | Lý do |
-|------|-------|
-| `src/types/api.d.ts` | Auto-gen từ `Data/openapi.json`. Sửa file thì regen `pnpm gen:api` đè mất. |
-| `Data/openapi.json` | BE owns — copy từ BE, đừng sửa local. |
-| `pnpm-lock.yaml` | Pinned versions — chỉ thay đổi qua `pnpm add/remove/update`. |
-| `.claude/worktrees/*` | Auto-managed bởi Claude Code worktrees. Đừng commit. |
+| File                  | Lý do                                                                    |
+| --------------------- | ------------------------------------------------------------------------ |
+| `src/types/api.d.ts`  | Auto-gen từ `BE/openapi.json`. Sửa file thì regen `pnpm gen:api` đè mất. |
+| `BE/openapi.json`     | BE owns — copy từ BE, đừng sửa local.                                    |
+| `pnpm-lock.yaml`      | Pinned versions — chỉ thay đổi qua `pnpm add/remove/update`.             |
+| `.claude/worktrees/*` | Auto-managed bởi Claude Code worktrees. Đừng commit.                     |
 
 ---
 
@@ -231,30 +244,37 @@ import { Button } from '@/components/ui/button';      // ← dùng '@/'
 
 ### 7.1. Endpoints chính (FE phải dùng)
 
-| Method | Path | Mục đích | Status |
-|--------|------|----------|--------|
-| `POST` | `/user/login` | Đăng nhập, lấy JWT | 🚧 đang code |
-| `GET` | `/user/status` | Lấy info user hiện tại | 🚧 đang code |
-| `POST` | `/bot-strategy/create` | Tạo bot + strategy (atomic) | 🚧 đang code |
-| `PATCH` | `/bot-strategy/{bot_id}` | Update bot (atomic) | ⏳ future |
-| `GET` | `/bot/list` | Liệt kê bot của user | ⏳ future |
-| `POST` | `/bot/{id}/start` | Khởi động bot | ⏳ future |
-| `POST` | `/bot/{id}/stop` | Dừng bot | ⏳ future |
-| `GET` | `/bot/{id}/status` | Trạng thái real-time | ⏳ future |
-| `POST` | `/backtest/start` | Chạy backtest | ⏳ future |
+| Method  | Path                          | Mục đích                                                                                 | Status       |
+| ------- | ----------------------------- | ---------------------------------------------------------------------------------------- | ------------ |
+| `GET`   | `/wallet/nonce?address=0x...` | Lấy nonce + message để ký (PUBLIC, không cần auth)                                       | ✅ DONE      |
+| `GET`   | `/user/status`                | Lấy info user hiện tại (verify credentials)                                              | ✅ DONE      |
+| `POST`  | `/wallet/disconnect`          | Invalidate nonce trên BE (best-effort)                                                   | ✅ DONE      |
+| `POST`  | `/bot-strategy/create`        | Tạo bot + strategy (atomic)                                                              | 🚧 đang code |
+| `PATCH` | `/bot-strategy/{bot_id}`      | Update bot (atomic)                                                                      | ⏳ future    |
+| `GET`   | `/bot/list`                   | Liệt kê bot của user                                                                     | ⏳ future    |
+| `POST`  | `/bot/{id}/start`             | Khởi động bot (BE spawn process Freqtrade)                                               | ⏳ future    |
+| `POST`  | `/bot/{id}/stop`              | Dừng bot                                                                                 | ⏳ future    |
+| `GET`   | `/bot/{id}/status`            | Trạng thái real-time (`status`, `desired_status`, `is_process_running`, `error_message`) | ⏳ future    |
+| `POST`  | `/backtest/start`             | Chạy backtest                                                                            | ⏳ future    |
 
 **Endpoints legacy** (`/bot/create`, `/strategy/create`) — **đừng dùng**, BE đã chuyển sang `/bot-strategy/*` atomic.
+**Endpoints deprecated** (`/user/login`, `/user/token`, `/user/create`) — email/password flow, FE đã chuyển sang wallet auth.
 
 ### 7.2. Authentication
 
-- Tất cả endpoint trừ `/user/login` và `/user/create` cần header: `Authorization: Bearer <access_token>`.
-- Token lấy từ response `POST /user/login` → field `access_token`.
-- **Không có refresh token** ở phase này → 401 = force logout + redirect `/login`.
+- Cơ chế: **Coin98 wallet** + EIP-191 personal_sign. Không dùng email/password.
+- Headers mỗi request (do `src/lib/http.ts` tự attach): `X-Wallet-Address`, `X-Wallet-Nonce`, `X-Wallet-Signature`.
+- Public paths (không attach header): `/wallet/nonce`, `/internal/`, `/webhook/`, `/docs`, `/openapi`, `/health` — xem `PUBLIC_PATHS` trong `src/lib/http.ts`.
+- Credentials lưu ở `sessionStorage['trading_bot_wallet_auth']` — survives reload, expires khi đóng tab.
+- 401 từ BE → http.ts tự clear sessionStorage + redirect về `/` (landing public).
+- **Offline dev:** set `VITE_BYPASS_AUTH=true` trong `.env.local` để skip auth (header chip hiện `DEV bypass` để rõ).
+- Chi tiết kiến trúc auth (BE-side): `BE/auth-architecture.md`.
 
 ### 7.3. CORS ở dev
 
 FE dev dùng Vite proxy → bypass CORS:
-- FE gọi `/api/user/login` → Vite forward sang `http://tradingbot.ne.com:8088/user/login`.
+
+- FE gọi `/api/wallet/nonce?address=0x...` → Vite forward sang `http://tradingbot.ne.com:8088/wallet/nonce?address=0x...`.
 - `VITE_API_BASE_URL` ở dev phải là `/api` (không phải URL đầy đủ) — nếu không sẽ bypass proxy → lỗi CORS.
 - Cấu hình env theo mode đã commit sẵn: `.env.development` (= `/api`) và `.env.production` (= URL thật).
 - Production: BE phải config CORS allow origin của Vercel domain.
@@ -262,9 +282,10 @@ FE dev dùng Vite proxy → bypass CORS:
 
 ### 7.4. Tài liệu BE phải đọc
 
-1. **`Data/API_SPEC.md`** — version migrated từ OpenAPI. Đọc trước khi gọi bất kỳ endpoint nào.
-2. **`Data/openapi.json`** — source of truth, dùng để gen types.
-3. **`tradingbot_doc.md`** — tech design doc gốc, mô tả ý đồ thiết kế.
+1. **`BE/API_SPEC.md`** — version migrated từ OpenAPI. Đọc trước khi gọi bất kỳ endpoint nào.
+2. **`BE/openapi.json`** — source of truth cho schema, dùng để gen types. ⚠️ Chưa có `/wallet/*` routes — đợi BE regen spec.
+3. **`BE/auth-architecture.md`** — kiến trúc 3-layer auth (Wallet session / Agent / Trading execution). Đọc khi đụng wallet-auth / sau này là Hyperliquid agent.
+4. **`BE/tradingbot_doc.md`** — tech design doc gốc, mô tả ý đồ thiết kế.
 
 ---
 
@@ -306,6 +327,7 @@ Ví dụ tham khảo: `src/features/export-import/ExportDialog.tsx`.
 ### 8.4. Forms
 
 Pattern chuẩn:
+
 ```tsx
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -318,8 +340,10 @@ const form = useForm<FormValues>({ resolver: zodResolver(schema) });
 
 <form onSubmit={form.handleSubmit(onSubmit)}>
   <Input {...form.register('email')} />
-  {form.formState.errors.email && <span>{form.formState.errors.email.message}</span>}
-</form>
+  {form.formState.errors.email && (
+    <span>{form.formState.errors.email.message}</span>
+  )}
+</form>;
 ```
 
 ---
@@ -349,36 +373,44 @@ const form = useForm<FormValues>({ resolver: zodResolver(schema) });
 ## 10. Troubleshooting
 
 ### "Workspace still starting" khi bash
+
 Vite/dev server boot chậm. Đợi 5-10s rồi retry.
 
 ### Lỗi `CORS` khi gọi BE
+
 Bạn đang gọi thẳng `http://tradingbot.ne.com:8088/...` thay vì qua `/api/...`. Sửa lại request path.
 
 ### Type error sau khi BE update spec
+
 ```bash
-# Copy openapi.json mới từ BE vào Data/
+# Copy openapi.json mới từ BE vào BE/
 pnpm gen:api
 ```
 
 ### Builder state bị "kẹt" sau code mới
+
 LocalStorage có state cũ. DevTools → Application → Local Storage → xoá key `trading-bot-builder`.
 
-### Token tự logout liên tục
-Check `localStorage` → key auth store có `token` không. Có thể BE đổi format response → check `auth.api.ts`.
+### Wallet auth tự logout liên tục
+
+Check DevTools → Application → Session Storage → key `trading_bot_wallet_auth` có đủ 3 field (`address`, `nonce`, `signature`) không. Nếu nonce trên BE Redis hết TTL (24h) → 401 → http.ts clear creds + redirect `/`. Reconnect wallet để lấy nonce mới.
 
 ---
 
 ## 11. Tham khảo thêm
 
-| File | Mục đích |
-|------|----------|
-| `README.md` | Quick start chính thức (ngắn) |
-| `Spec/PROJECT_OVERVIEW.md` | Tour đầy đủ kiến trúc + history + branches |
-| `Spec/Phase 1/` | Specs từng UI feature (đọc khi sửa feature đó) |
-| `Data/API_SPEC.md` | API reference đầy đủ với worked example |
-| `Data/IMPLEMENTATION_PLAN.md` | Plan migrate sang Unified payload |
-| `tradingbot_doc.md` | Tech design doc gốc (Vietnamese) |
-| `PLAN_LOGIN_SUBMIT.md` | Plan đang implement (login + submit) |
+| File                                                          | Mục đích                                                        |
+| ------------------------------------------------------------- | --------------------------------------------------------------- |
+| `README.md`                                                   | Quick start chính thức (ngắn)                                   |
+| `Spec/PROJECT_OVERVIEW.md`                                    | Tour đầy đủ kiến trúc + history + branches                      |
+| `Spec/Phase 1/`                                               | Specs từng UI feature (đọc khi sửa feature đó)                  |
+| `BE/API_SPEC.md`                                              | API reference đầy đủ với worked example                         |
+| `BE/IMPLEMENTATION_PLAN.md`                                   | Plan migrate sang Unified payload                               |
+| `BE/tradingbot_doc.md`                                        | Tech design doc gốc (Vietnamese)                                |
+| `BE/auth-architecture.md`                                     | Kiến trúc 3-layer auth (wallet/agent/trading)                   |
+| `docs/superpowers/specs/2026-05-14-c98-wallet-auth-design.md` | Spec wallet auth (current)                                      |
+| `docs/superpowers/plans/2026-05-14-c98-wallet-auth.md`        | Plan implement wallet auth                                      |
+| `PLAN_LOGIN_SUBMIT.md`                                        | Plan email login — **superseded**, giữ làm historical reference |
 
 ---
 
@@ -387,7 +419,7 @@ Check `localStorage` → key auth store có `token` không. Có thể BE đổi 
 - **Tech design owner:** Tuấn Nguyễn Anh (BE)
 - **FE owner (project này):** Tri Nguyen (`trinm@coin98.finance`)
 - **BE base URL dev:** `http://tradingbot.ne.com:8088`
-- **BE OpenAPI:** `http://localhost:8088/redoc` (khi BE chạy local) hoặc `Data/openapi.json`
+- **BE OpenAPI:** `http://localhost:8088/redoc` (khi BE chạy local) hoặc `BE/openapi.json`
 
 ---
 
