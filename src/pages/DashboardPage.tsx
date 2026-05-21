@@ -192,12 +192,12 @@ export function DashboardPage() {
         }}
         aria-hidden
       />
-      {/* Dot-grid texture — constrained to start below the floating header
-          pill, matching Builder + Monitoring conventions. */}
+      {/* Dot-grid texture — starts at the viewport edge so it sits behind the
+          fixed floating header instead of leaving a black strip. */}
       <DotGridSpotlight
         className="pointer-events-none fixed z-0"
         style={{
-          top: 'var(--layout-header, 56px)',
+          top: 0,
           left: 0,
           right: 0,
           bottom: 0,

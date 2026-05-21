@@ -528,94 +528,100 @@ function MonitoringHeader({ meta }: { meta: BotMeta }) {
   // visible chrome is a single rounded-full bar centred with max-w,
   // sitting on the pure black page so it visually "floats".
   return (
-    <header className="flex h-[var(--layout-header,56px)] flex-shrink-0 items-center px-3 pt-2">
-      <div className="card-coin98 mx-auto flex w-full max-w-6xl items-center justify-between gap-3 rounded-full px-2 py-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.45)]">
-        <div className="flex min-w-0 items-center gap-2 pl-1">
-          {/* Back to dashboard */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/dashboard')}
-            className="rounded-full px-2.5 text-fg-muted hover:bg-black/40 hover:text-fg"
-            aria-label="Back to dashboard"
-          >
-            <ArrowLeft className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-            All bots
-          </Button>
-          <span className="text-border-strong">/</span>
-          {/* Bot identity — circular brand badge */}
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-brand text-black shadow-[0_0_12px_rgba(240,185,11,0.5)]">
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
-          </div>
-          <div className="flex min-w-0 flex-col">
-            <h1 className="truncate text-sm font-semibold text-fg">
-              {meta.name}
-            </h1>
-            <div className="flex items-center gap-1.5 text-[11px] text-fg-muted">
-              <code className="text-fg-secondary">{meta.pair}</code>
-              <span className="text-border-strong">·</span>
-              <span>{meta.timeframe}</span>
-              <span className="text-border-strong">·</span>
-              <span>{meta.exchange}</span>
-              <span className="text-border-strong">·</span>
-              <span>Up {uptime}</span>
+    <>
+      <header className="fixed inset-x-0 top-0 z-30 flex h-[var(--layout-header,56px)] items-center px-3 pt-2">
+        <div className="app-header-pill mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between gap-3 rounded-full py-3 pl-4 pr-3">
+          <div className="flex min-w-0 items-center gap-2 pl-1">
+            {/* Back to dashboard */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/dashboard')}
+              className="rounded-full px-2.5 text-fg-muted hover:bg-black/40 hover:text-fg"
+              aria-label="Back to dashboard"
+            >
+              <ArrowLeft className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+              All bots
+            </Button>
+            <span className="text-border-strong">/</span>
+            {/* Bot identity — circular brand badge */}
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-brand text-black shadow-[0_0_12px_rgba(240,185,11,0.5)]">
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <div className="flex min-w-0 flex-col">
+              <h1 className="truncate text-sm font-semibold text-fg">
+                {meta.name}
+              </h1>
+              <div className="flex items-center gap-1.5 text-[11px] text-fg-muted">
+                <code className="text-fg-secondary">{meta.pair}</code>
+                <span className="text-border-strong">·</span>
+                <span>{meta.timeframe}</span>
+                <span className="text-border-strong">·</span>
+                <span>{meta.exchange}</span>
+                <span className="text-border-strong">·</span>
+                <span>Up {uptime}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-1.5 pr-1">
-          {/* Status pill */}
-          <span
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider',
-              isLive
-                ? 'bg-bullish-subtle text-bullish'
-                : 'bg-brand-subtle text-brand',
-            )}
-          >
+          <div className="flex items-center gap-1.5 pr-1">
+            {/* Status pill */}
             <span
               className={cn(
-                'h-1.5 w-1.5 animate-pulse rounded-full',
-                isLive ? 'bg-bullish' : 'bg-brand',
+                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider',
+                isLive
+                  ? 'bg-bullish-subtle text-bullish'
+                  : 'bg-brand-subtle text-brand',
               )}
-            />
-            {isLive ? 'Live' : 'Dry-run'}
-          </span>
+            >
+              <span
+                className={cn(
+                  'h-1.5 w-1.5 animate-pulse rounded-full',
+                  isLive ? 'bg-bullish' : 'bg-brand',
+                )}
+              />
+              {isLive ? 'Live' : 'Dry-run'}
+            </span>
 
-          {/* Pill-shaped action buttons (Coin98 style) */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="rounded-full px-3 text-fg-muted hover:bg-black/40 hover:text-fg"
-          >
-            <Pause className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-            Pause
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              // TODO(wallet-team): wire to bot stop API + confirm modal.
-              // For demo: stop confirmed → return to dashboard.
-              navigate('/dashboard');
-            }}
-            className="rounded-full px-3 text-bearish hover:bg-bearish-subtle hover:text-bearish-hover"
-          >
-            <StopCircle className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-            Stop
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/builder')}
-            className="rounded-full px-3 text-fg-muted hover:bg-black/40 hover:text-fg"
-          >
-            <Pencil className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-            Edit
-          </Button>
+            {/* Pill-shaped action buttons (Coin98 style) */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full px-3 text-fg-muted hover:bg-black/40 hover:text-fg"
+            >
+              <Pause className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+              Pause
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                // TODO(wallet-team): wire to bot stop API + confirm modal.
+                // For demo: stop confirmed → return to dashboard.
+                navigate('/dashboard');
+              }}
+              className="rounded-full px-3 text-bearish hover:bg-bearish-subtle hover:text-bearish-hover"
+            >
+              <StopCircle className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+              Stop
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/builder')}
+              className="rounded-full px-3 text-fg-muted hover:bg-black/40 hover:text-fg"
+            >
+              <Pencil className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+              Edit
+            </Button>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <div
+        aria-hidden="true"
+        className="h-[var(--layout-header,56px)] flex-shrink-0"
+      />
+    </>
   );
 }
 
@@ -675,7 +681,7 @@ function CypheusRail({ messages = [] }: { messages?: CypheusMessage[] }) {
     <TooltipProvider delayDuration={collapsed ? 100 : 250}>
       <aside
         className={cn(
-          'flex h-full flex-shrink-0 flex-col bg-black',
+          'relative z-20 flex h-full flex-shrink-0 flex-col overflow-hidden rounded-3xl bg-black',
           'transition-[width] duration-fast ease-out-quick',
         )}
         style={{ width: 'var(--layout-left-panel)' }}
@@ -3787,9 +3793,9 @@ export function BotMonitoringPage() {
         <DotGridSpotlight
           className="pointer-events-none fixed z-0"
           style={{
-            top: 'var(--layout-header, 56px)',
-            left: 'var(--layout-left-panel, 320px)',
-            right: '280px',
+            top: 0,
+            left: 0,
+            right: 0,
             bottom: 0,
           }}
           dimmed={false}

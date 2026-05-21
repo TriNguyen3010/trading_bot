@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { ArrowDown, BookOpen } from 'lucide-react';
-import { LayoutGroup } from 'framer-motion';
+import { LayoutGroup, motion } from 'framer-motion';
+import { dropInItem, dropInStagger } from '@/lib/motion';
 import { CypheusPanel } from '@/features/cypheus/CypheusPanel';
 import { HeaderToolbar } from '@/features/bot-builder/components/HeaderToolbar';
 import { CypheusDock } from '@/features/cypheus/CypheusDock';
@@ -83,8 +84,8 @@ export function BuilderPage() {
         <DotGridSpotlight
           className="pointer-events-none fixed z-0"
           style={{
-            top: 'var(--layout-header)',
-            left: 'var(--layout-left-panel)',
+            top: 0,
+            left: 0,
             right: 'var(--drawer-width)',
             bottom: 0,
             transition: 'right 250ms cubic-bezier(0.2, 0.8, 0.2, 1)',
@@ -108,19 +109,30 @@ export function BuilderPage() {
               }}
             >
               {allPending ? (
-                <div className="mx-auto mb-8 flex max-w-[var(--layout-step-list)] flex-col items-center gap-3 text-fg-muted">
-                  <p className="text-sm">{strings.templates.emptyState.hint}</p>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setTemplatesOpen(true)}
-                    className="shadow-glow"
-                  >
-                    <BookOpen className="h-3.5 w-3.5" />
-                    {strings.templates.emptyState.cta}
-                  </Button>
-                  <ArrowDown className="mt-1 h-4 w-4 animate-bounce" />
-                </div>
+                <motion.div
+                  className="mx-auto mb-8 flex max-w-[var(--layout-step-list)] flex-col items-center gap-3 text-fg-muted"
+                  variants={dropInStagger}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  <motion.p variants={dropInItem} className="text-sm">
+                    {strings.templates.emptyState.hint}
+                  </motion.p>
+                  <motion.div variants={dropInItem} className="inline-flex">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setTemplatesOpen(true)}
+                      className="shadow-glow"
+                    >
+                      <BookOpen className="h-3.5 w-3.5" />
+                      {strings.templates.emptyState.cta}
+                    </Button>
+                  </motion.div>
+                  <motion.div variants={dropInItem} className="inline-flex">
+                    <ArrowDown className="mt-1 h-4 w-4 animate-bounce" />
+                  </motion.div>
+                </motion.div>
               ) : null}
               <BotBuilderCanvas />
             </div>

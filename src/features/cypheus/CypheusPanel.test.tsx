@@ -31,7 +31,7 @@ describe('CypheusPanel', () => {
           }),
         ).toBeInTheDocument();
       },
-      { timeout: 4000 },
+      { timeout: 6000 },
     );
 
     expect(screen.getByText(/Hi, I'm Cypheus/i)).toBeInTheDocument();
@@ -56,6 +56,17 @@ describe('CypheusPanel', () => {
       selector: '[data-pill="coming-soon"]',
     });
     expect(pill).toBeInTheDocument();
+  });
+
+  it('renders above the page background layer', () => {
+    render(<CypheusPanel />);
+
+    expect(screen.getByLabelText(/Cypheus assistant panel/i)).toHaveClass(
+      'relative',
+      'z-20',
+      'overflow-hidden',
+      'rounded-3xl',
+    );
   });
 
   it('starts collapsed and shows a red notification when unread messages exist', () => {

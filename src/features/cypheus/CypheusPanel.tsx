@@ -50,7 +50,7 @@ export function CypheusPanel() {
     <TooltipProvider delayDuration={collapsed ? 100 : 250}>
       <aside
         className={cn(
-          'card-coin98 flex h-full flex-shrink-0 flex-col',
+          'card-coin98 relative z-20 flex h-full flex-shrink-0 flex-col overflow-hidden rounded-3xl',
           'transition-[width] duration-fast ease-out-quick',
         )}
         style={{ width: 'var(--layout-left-panel)' }}

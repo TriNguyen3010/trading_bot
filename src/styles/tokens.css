@@ -169,6 +169,23 @@
   background: linear-gradient(180deg, #16161a 0%, #0c0c0e 100%);
 }
 
+/* Fixed app header pill — color-corrected glass surface.
+ * Keeps the Coin98 dark chrome stable while still letting the page glow
+ * soften underneath when the header is pinned during scroll. */
+.app-header-pill {
+  background: linear-gradient(
+    180deg,
+    rgba(22, 22, 26, 0.94) 0%,
+    rgba(12, 12, 14, 0.9) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(28px) saturate(140%);
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+}
+
 :root {
   color-scheme: dark;
 

@@ -1,5 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { motion } from 'framer-motion';
 import { Sliders } from 'lucide-react';
+import { dropInItem, dropInStagger } from '@/lib/motion';
 import { BotNameEditor } from './components/BotNameEditor';
 import { StepCard } from './components/StepCard';
 import { SummaryModeToggle } from './components/SummaryModeToggle';
@@ -189,9 +191,15 @@ export function BotBuilderCanvas() {
   // Phase cards block — extracted so we can render it inside either
   // the single-column or 2-column wrapper without duplicating JSX.
   const phaseCardsBlock = (
-    <ol className="space-y-0" data-flower-exclude>
+    <motion.ol
+      className="space-y-0"
+      data-flower-exclude
+      variants={dropInStagger}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Phase 1 — Bot Basics */}
-      <li
+      <motion.li
         ref={(el) => {
           cardRefs.current['bot-basics'] = el;
         }}
@@ -200,6 +208,7 @@ export function BotBuilderCanvas() {
           scrollMarginTop: 'calc(var(--layout-header) + 0.5rem)',
           scrollMarginBottom: 'calc(var(--dock-height, 0px) + 0.5rem)',
         }}
+        variants={dropInItem}
       >
         <div className="relative">
           <StepCard
@@ -217,10 +226,10 @@ export function BotBuilderCanvas() {
         </div>
         {/* Connector between Phase 1 and Phase 2 */}
         <StepConnector fromStep="bot-config" toStep="entry-strategy" />
-      </li>
+      </motion.li>
 
       {/* Phase 2 — Strategy (composite) */}
-      <li
+      <motion.li
         ref={(el) => {
           cardRefs.current['strategy'] = el;
         }}
@@ -229,11 +238,12 @@ export function BotBuilderCanvas() {
           scrollMarginTop: 'calc(var(--layout-header) + 0.5rem)',
           scrollMarginBottom: 'calc(var(--dock-height, 0px) + 0.5rem)',
         }}
+        variants={dropInItem}
       >
         <StrategyCard />
         <AddStrategyButton />
-      </li>
-    </ol>
+      </motion.li>
+    </motion.ol>
   );
 
   return (
