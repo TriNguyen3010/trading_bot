@@ -1,10 +1,12 @@
-# Launchpad + Dry-run/Live Launch Implementation Plan
+# Launchpad + Dry-run Launch Implementation Plan (Phase 2a)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Cho user "phóng" 1 bot đã tạo từ một **Launchpad hub** (modal 3-mode): Backtest / Dry-run / Live — với Live đi qua bước xác nhận rủi ro; và sau khi tạo bot xong thì mở thẳng Launchpad thay vì nhảy vào trang monitor.
+> **⚠️ Phase 2 SPLIT (2026-05-28):** Plan này gốc bao cả Live path, nhưng Live trên Hyperliquid cần **agent wallet flow** (POST `/agent/create` → EIP-712 sign → POST `/agent/confirm`) — đây là requirement mới khi openapi 2026-05-28 thêm 15 endpoint `/agent/*`. Live + agent flow đã tách ra **Phase 2b** (`docs/superpowers/plans/2026-05-28-phase-2b-launchpad-live-agent.md`). Plan **này (2a)** chỉ build Launchpad hub + dry-run launch + backtest bridge + post-create UX. Card Live trong Modal render **disabled** với label "Live (Phase 2b)" cho tới khi 2b ship.
 
-**Architecture:** Feature mới `src/features/launchpad/` gồm: `launch-actions.ts` (orchestrate PATCH `dry_run` + `botApi.start`) và `LaunchpadModal.tsx` (modal 2-step: `modes` → `live-confirm`). Launchpad mở từ Dashboard khi click bot **chưa chạy** (PAUSED/ERROR) — bot đang chạy (LIVE/DRY-RUN) vẫn vào monitor như cũ. Card Backtest cầu nối sang `BacktestDialog` (Phase 3). Dry-run/Live launch xong → điều hướng `/bots/:id`. **Lean scope:** monitor giàu dữ liệu và tier/paywall **không** thuộc plan này (Phase 4 / Phase 5).
+**Goal:** Cho user "phóng" 1 bot đã tạo từ một **Launchpad hub** (modal 3-mode): Backtest / Dry-run / Live — Backtest mở `BacktestDialog`, Dry-run chạy thẳng (PATCH `dry_run=true` + `botApi.start`), Live disabled defer Phase 2b. Sau khi tạo bot xong, mở thẳng Launchpad thay vì nhảy vào trang monitor.
+
+**Architecture:** Feature mới `src/features/launchpad/` gồm: `launch-actions.ts` (orchestrate PATCH `dry_run=true` + `botApi.start` cho dry-run path) và `LaunchpadModal.tsx` (modal 2-step: `modes` → `live-confirm` placeholder). Launchpad mở từ Dashboard khi click bot **chưa chạy** (PAUSED/ERROR) — bot đang chạy (LIVE/DRY-RUN) vẫn vào monitor như cũ. Card Backtest cầu nối sang `BacktestDialog` (Phase 3). Dry-run launch xong → điều hướng `/bots/:id`. Live card → defer (Phase 2b). **Lean scope:** monitor giàu dữ liệu và tier/paywall **không** thuộc plan này (Phase 4 / Phase 5).
 
 **Tech Stack:** React 18, TypeScript 5.7, Radix Dialog, Tailwind 3, Sonner, React Router 7 (`useNavigate`/`useLocation`), Vitest + @testing-library/react. API qua `src/lib/http.ts`.
 
@@ -15,7 +17,8 @@
 
 **Scope / Non-goals:**
 
-- ✅ In: Launchpad hub, dry-run launch, live launch + confirm, backtest bridge, error-bot Sync, post-create → Launchpad.
+- ✅ In: Launchpad hub (3-card layout), dry-run launch (PATCH dry_run=true + start), backtest bridge → `BacktestDialog`, error-bot Sync button, post-create → Launchpad UX rework.
+- ❌ Out: **Live launch path** + **agent wallet flow** → Phase 2b. Live card render **disabled** với label "Live — Phase 2b" và disable click. Live-confirm step skip viết trong Phase 2a (Phase 2b sẽ thêm).
 - ❌ Out: tier caps / paywall / billing (Phase 5); rich dry-run/live monitor data (Phase 4 — sau launch chỉ vào `/bots/:id` hiện có); "Edit recipe / Duplicate / Delete" trong Launchpad footer (chỉ render disabled/ẩn).
 
 ---
