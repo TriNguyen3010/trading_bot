@@ -2,12 +2,44 @@
   "openapi": "3.1.0",
   "info": { "title": "Gamma Trade Platform", "version": "0.1.0" },
   "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Admin Login",
+        "description": "Authenticate an administrator and return a JWT access token.",
+        "operationId": "admin_login_auth_login_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": ["health"],
         "summary": "Health Check",
         "description": "Check system health and report bot restoration status.\nReturns restoration_status: idle, in_progress, completed, failed",
         "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          }
+        }
+      }
+    },
+    "/health/deps": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Health Deps",
+        "description": "Report connectivity state of external dependencies (MQTT, Redis).\nUseful for post-incident triage without restarting the service.",
+        "operationId": "health_deps_health_deps_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -252,107 +284,6 @@
         "security": [{ "OAuth2PasswordBearer": [] }]
       }
     },
-    "/user/create": {
-      "post": {
-        "tags": ["user"],
-        "summary": "Create User",
-        "operationId": "create_user_user_create_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/UserCreate" }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/UserOut" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/user/login": {
-      "post": {
-        "tags": ["user"],
-        "summary": "Login",
-        "operationId": "login_user_login_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/UserLogin" }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Token" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/user/token": {
-      "post": {
-        "tags": ["user"],
-        "summary": "Token",
-        "operationId": "token_user_token_post",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_token_user_token_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Token" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
     "/user/status": {
       "get": {
         "tags": ["user"],
@@ -364,6 +295,476 @@
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/UserOut" }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/wallet/nonce": {
+      "get": {
+        "tags": ["wallet"],
+        "summary": "Get Nonce",
+        "description": "Generate a session nonce for wallet signing. No auth required.",
+        "operationId": "get_nonce_wallet_nonce_get",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "title": "Address" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WalletNonceResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/disconnect": {
+      "post": {
+        "tags": ["wallet"],
+        "summary": "Disconnect",
+        "description": "Invalidate the session nonce, effectively logging the user out.",
+        "operationId": "disconnect_wallet_disconnect_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/agent/create": {
+      "post": {
+        "tags": ["agent"],
+        "summary": "Create Agent",
+        "description": "Prepare a new agent wallet for the current user.\n\nGenerates an agent address and EIP-712 sign payload for Hyperliquid approveAgent.\nNo database record is created at this point — persistence happens only after\nHyperliquid confirms the approval via POST /agent/confirm.",
+        "operationId": "create_agent_agent_create_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateAgentRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentPrepareResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/agent/active": {
+      "get": {
+        "tags": ["agent"],
+        "summary": "Get Agent Info",
+        "description": "Get the currently active agent session info.",
+        "operationId": "get_agent_info_agent_active_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    { "$ref": "#/components/schemas/AgentInfoResponse" },
+                    { "type": "null" }
+                  ],
+                  "title": "Response Get Agent Info Agent Active Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/agent/list": {
+      "get": {
+        "tags": ["agent"],
+        "summary": "List Agents",
+        "description": "List all agent sessions (active and revoked) for the current user.",
+        "operationId": "list_agents_agent_list_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/AgentInfoResponse" },
+                  "type": "array",
+                  "title": "Response List Agents Agent List Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/agent/hyperliquid-wallets": {
+      "get": {
+        "tags": ["agent"],
+        "summary": "List Hyperliquid Wallets",
+        "description": "List all active agent wallets for the current user from Hyperliquid's on-chain registry.\n\nCalls Hyperliquid's extraAgents info endpoint using the user's master wallet address.\nReturns wallets that exist on-chain regardless of whether they are tracked in our DB.\nReturns an empty list if the user has no wallet_address set.",
+        "operationId": "list_hyperliquid_wallets_agent_hyperliquid_wallets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HyperliquidWalletResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Hyperliquid Wallets Agent Hyperliquid Wallets Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/agent/sync-status": {
+      "get": {
+        "tags": ["agent"],
+        "summary": "Get Agent Sync Status",
+        "description": "Get synchronization status between DB active agent and Hyperliquid on-chain agents.",
+        "operationId": "get_agent_sync_status_agent_sync_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSyncStatusResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/agent/external-revoke-payload": {
+      "get": {
+        "tags": ["agent"],
+        "summary": "Get External Revoke Payload",
+        "description": "Get EIP-712 payload for revoking an externally-created agent wallet via MetaMask.\n\nUsed for wallets that exist on Hyperliquid but are NOT tracked in our database.\nBuilds an approveAgent payload with agentAddress=0x000...000 and the given agent name.\nWhen signed and submitted, Hyperliquid deregisters the agent without a replacement.\n\nQuery params:\n    agent_name: The exact name of the agent to revoke (empty string for unnamed agents).",
+        "operationId": "get_external_revoke_payload_agent_external_revoke_payload_get",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "agent_name",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "", "title": "Agent Name" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/external-revoke": {
+      "post": {
+        "tags": ["agent"],
+        "summary": "External Revoke",
+        "description": "Revoke an agent wallet on Hyperliquid that is NOT tracked in our database.\n\nSubmits the master-wallet-signed approveAgent action directly to Hyperliquid.\nSame-name replacement deregisters the old wallet. No DB changes are made.",
+        "operationId": "external_revoke_agent_external_revoke_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ExternalRevokeRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/agent/revoke": {
+      "post": {
+        "tags": ["agent"],
+        "summary": "Revoke Agent Session",
+        "description": "Revoke the active agent session.\n\nThis deactivates the server-side agent. The user should also revoke\nthe agent on-chain via Hyperliquid.",
+        "operationId": "revoke_agent_session_agent_revoke_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/agent/revoked": {
+      "delete": {
+        "tags": ["agent"],
+        "summary": "Delete Revoked Agent Record",
+        "description": "Delete the most recently revoked agent record from the database.\n\nThe agent must already be revoked via POST /agent/revoke before calling this.\nIf the current agent is still active, the request will be rejected.",
+        "operationId": "delete_revoked_agent_record_agent_revoked_delete",
+        "responses": { "204": { "description": "Successful Response" } },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/agent/{agent_id}/revoke-payload": {
+      "get": {
+        "tags": ["agent"],
+        "summary": "Get Agent Revoke Payload",
+        "description": "Get EIP-712 payload for revoking a specific agent wallet via MetaMask.\n\nBuilds an approveAgent payload with agentAddress=0x000...000 and the agent's name.\nWhen signed by the master wallet and submitted, Hyperliquid deregisters the agent\nwithout registering a replacement.\n\nThe returned sign_payload must be passed to eth_signTypedData_v4 in the browser.\nThen submit the signature to POST /agent/{id}/revoke.",
+        "operationId": "get_agent_revoke_payload_agent__agent_id__revoke_payload_get",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "title": "Agent Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/{agent_id}/revoke": {
+      "post": {
+        "tags": ["agent"],
+        "summary": "Revoke Agent By Id Route",
+        "description": "Revoke a specific agent wallet by ID.\n\nRequires a browser-provided EIP-712 signature from the master wallet (obtained\nvia GET /agent/{id}/revoke-payload + MetaMask signing).\n\nWorkflow:\n1. GET /agent/{id}/revoke-payload → get sign_payload\n2. Pass sign_payload to eth_signTypedData_v4 in MetaMask\n3. POST /agent/{id}/revoke with {wallet_address, nonce, signature}\n\nThe signature is forwarded to Hyperliquid, which deregisters the old agent\nvia the same-name pruning rule. The DB record is marked revoked only on success.",
+        "operationId": "revoke_agent_by_id_route_agent__agent_id__revoke_post",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "title": "Agent Id" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AgentRevokeRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/{agent_id}": {
+      "delete": {
+        "tags": ["agent"],
+        "summary": "Delete Agent By Id Route",
+        "description": "Hard-delete a specific agent record by ID.\n\nThe agent must already be revoked via POST /agent/{id}/revoke before deletion.",
+        "operationId": "delete_agent_by_id_route_agent__agent_id__delete",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "title": "Agent Id" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Successful Response" },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/check-limit": {
+      "post": {
+        "tags": ["agent"],
+        "summary": "Check Limit",
+        "description": "Check if a trade amount is within the spending limit.",
+        "operationId": "check_limit_agent_check_limit_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpendingLimitCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpendingLimitCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/agent/sign-payload/{agent_address}": {
+      "get": {
+        "tags": ["agent"],
+        "summary": "Get Sign Payload",
+        "description": "Get EIP-712 typed data for approveAgent signing.\n\nReturns the payload that frontend passes to eth_signTypedData_v4.\nChecks pending state first, falls back to the confirmed active agent.",
+        "operationId": "get_sign_payload_agent_sign_payload__agent_address__get",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "agent_address",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Agent Address" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/confirm": {
+      "post": {
+        "tags": ["agent"],
+        "summary": "Confirm Agent",
+        "description": "Confirm agent approval by forwarding signature to Hyperliquid.\n\nLoads the pending agent wallet prepared via POST /agent/create, submits the\nsigned approveAgent action to Hyperliquid, and only persists the AgentSession\nif Hyperliquid returns a successful response. Any previously active agent is\ndeactivated only on success, so a failed Hyperliquid approval never removes\nthe user's working agent.",
+        "operationId": "confirm_agent_agent_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AgentConfirmRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AgentCreateResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
               }
             }
           }
@@ -526,6 +927,41 @@
         "tags": ["bot"],
         "summary": "Start Bot",
         "operationId": "start_bot_bot__bot_id__start_post",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "bot_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "title": "Bot Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BotStatusOut" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bot/{bot_id}/restart": {
+      "post": {
+        "tags": ["bot"],
+        "summary": "Restart Bot",
+        "description": "Restart a bot by publishing a RESTART command to MQTT.",
+        "operationId": "restart_bot_bot__bot_id__restart_post",
         "security": [{ "OAuth2PasswordBearer": [] }],
         "parameters": [
           {
@@ -1018,6 +1454,98 @@
         }
       }
     },
+    "/bot/{bot_id}/db_trades": {
+      "get": {
+        "tags": ["bot"],
+        "summary": "Get Bot Db Trades",
+        "description": "Read trades directly from the bot's local SQLite DB (server-side).\n\nThis avoids the issue where the UI runs on a different host and cannot\naccess the container-internal filesystem paths.",
+        "operationId": "get_bot_db_trades_bot__bot_id__db_trades_get",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "bot_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "title": "Bot Id" }
+          },
+          {
+            "name": "open_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Open Only"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 500, "title": "Limit" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bot/{bot_id}/audit_logs": {
+      "get": {
+        "tags": ["bot"],
+        "summary": "Get Bot Audit Logs",
+        "description": "Get audit log of control commands for a bot.",
+        "operationId": "get_bot_audit_logs_bot__bot_id__audit_logs_get",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "bot_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "title": "Bot Id" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 50, "title": "Limit" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/BotAuditLogOut" },
+                  "title": "Response Get Bot Audit Logs Bot  Bot Id  Audit Logs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/bot/{bot_id}/test_signal": {
       "post": {
         "tags": ["bot"],
@@ -1047,6 +1575,27 @@
             }
           }
         }
+      }
+    },
+    "/bot/rotate-wallet": {
+      "post": {
+        "tags": ["bot"],
+        "summary": "Rotate Bot Wallet",
+        "description": "Rotate API wallet for all owner bots.\n\nThis endpoint:\n1. Loads the active agent wallet from agent_sessions\n2. Updates all bot configs with the active agent wallet fields\n3. Stops running bots, updates config, and restarts them\n4. Returns per-bot status with detailed error messages\n\nOnly owner-level users can rotate wallets for all their bots.\n\nReturns:\n    BotWalletRotationResponse with per-bot status and aggregated counts",
+        "operationId": "rotate_bot_wallet_bot_rotate_wallet_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BotWalletRotationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
       }
     },
     "/bot-strategy/create": {
@@ -1419,6 +1968,55 @@
                 "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
               }
             }
+          }
+        }
+      }
+    },
+    "/backtest/{backtest_id}/candles": {
+      "get": {
+        "tags": ["backtest"],
+        "summary": "Get Backtest Candles",
+        "description": "Get OHLCV candle data for a given backtest_id, using stored backtest metadata to resolve pair and range.",
+        "operationId": "get_backtest_candles_backtest__backtest_id__candles_get",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "backtest_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "title": "Backtest Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacktestCandlesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacktestCandlesErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacktestCandlesErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -1891,142 +2489,6 @@
           }
         }
       }
-    },
-    "/webhook/{bot_id}": {
-      "post": {
-        "tags": ["webhook"],
-        "summary": "Receive Freqtrade Webhook",
-        "description": "Receive webhook notification from Freqtrade and broadcast to WebSocket clients.\n\n**Important**: Configure Freqtrade webhook URL as:\n`https://your-api.com/api/webhook/bot/{bot_id}?token={optional_webhook_token}`\n\nEvent Types:\n- `buy` — Trade entry (open long/short position)\n- `sell` — Trade exit (close position, profit/loss realized)\n- `buy_cancel` — Entry order cancelled\n- `sell_cancel` — Exit order cancelled\n- `protection_trigger` — Stop-loss or protection triggered\n\nReturns:\n    {'status': 'ok', 'message': 'Signal broadcasted'} on success",
-        "operationId": "receive_freqtrade_webhook_webhook__bot_id__post",
-        "parameters": [
-          {
-            "name": "bot_id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "integer", "title": "Bot Id" }
-          },
-          {
-            "name": "token",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
-              "description": "Optional webhook token for validation",
-              "title": "Token"
-            },
-            "description": "Optional webhook token for validation"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FreqtradeWebhookPayload"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Receive Freqtrade Webhook Webhook  Bot Id  Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/ws/connections/bot/{bot_id}": {
-      "get": {
-        "tags": ["websocket"],
-        "summary": "Get Bot Connections",
-        "description": "Get active WebSocket connection status for a bot.",
-        "operationId": "get_bot_connections_ws_connections_bot__bot_id__get",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "bot_id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "integer", "title": "Bot Id" }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/ws/connections/user": {
-      "get": {
-        "tags": ["websocket"],
-        "summary": "Get User Bot Connections",
-        "description": "Get all bots with active WebSocket connections for current user.",
-        "operationId": "get_user_bot_connections_ws_connections_user_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
-          }
-        },
-        "security": [{ "OAuth2PasswordBearer": [] }]
-      }
-    },
-    "/ws/bot/{bot_id}/info": {
-      "get": {
-        "tags": ["websocket"],
-        "summary": "WebSocket connection info for bot signal stream",
-        "description": "Returns the WebSocket URL and connection instructions for real-time bot signal streaming.\n\n**Note:** The actual connection is via WebSocket (`ws://` or `wss://`), not HTTP.\nSwagger UI cannot open WebSocket connections — use the URL returned here.\n\n---\n\n**How to connect:**\n\n```\nws://HOST/api/ws/bot/{bot_id}?token=<YOUR_JWT_TOKEN>\n```\n\n**Requirements:**\n- Bot must be **running** before connecting\n- Only **one client** can listen to a bot at a time\n\n**Signal types received:**\n- `trade_entry` — new trade opened\n- `trade_exit` — trade closed\n- `status_change` — bot status changed\n- `custom_signal` — custom strategy signal\n\n**Example (JavaScript):**\n```js\nconst ws = new WebSocket(`ws://localhost:8000/api/ws/bot/${botId}?token=${token}`);\nws.onmessage = (e) => console.log(JSON.parse(e.data));\n```\n\n**Example (Python):**\n```python\nimport asyncio, websockets, json\n\nasync def listen():\n    uri = f\"ws://localhost:8000/api/ws/bot/{bot_id}?token=<TOKEN>\"\n    async with websockets.connect(uri) as ws:\n        async for msg in ws:\n            print(json.loads(msg))\n\nasyncio.run(listen())\n```\n\n**CLI (wscat):**\n```bash\nwscat -c \"ws://localhost:8000/api/ws/bot/{bot_id}?token=<TOKEN>\"\n```\n\n**Error codes:**\n- `4000` — Bot is not running\n- `4001` — Bot already has an active listener\n- `4008` — Auth failed or bot not found",
-        "operationId": "websocket_bot_info_ws_bot__bot_id__info_get",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "bot_id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "integer", "title": "Bot Id" }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "WebSocket URL and instructions for connecting to bot signal stream",
-            "content": { "application/json": { "schema": {} } }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
@@ -2053,12 +2515,22 @@
       "AdminUserOut": {
         "properties": {
           "id": { "type": "integer", "title": "Id" },
-          "email": { "type": "string", "format": "email", "title": "Email" },
+          "email": {
+            "anyOf": [
+              { "type": "string", "format": "email" },
+              { "type": "null" }
+            ],
+            "title": "Email"
+          },
+          "wallet_address": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Wallet Address"
+          },
           "is_active": { "type": "boolean", "title": "Is Active" },
           "is_admin": { "type": "boolean", "title": "Is Admin" }
         },
         "type": "object",
-        "required": ["id", "email", "is_active", "is_admin"],
+        "required": ["id", "is_active", "is_admin"],
         "title": "AdminUserOut"
       },
       "AdminUserUpdate": {
@@ -2085,6 +2557,243 @@
         },
         "type": "object",
         "title": "AdminUserUpdate"
+      },
+      "AgentConfirmRequest": {
+        "properties": {
+          "wallet_address": {
+            "type": "string",
+            "maxLength": 42,
+            "minLength": 42,
+            "title": "Wallet Address"
+          },
+          "agent_address": {
+            "type": "string",
+            "maxLength": 42,
+            "minLength": 42,
+            "title": "Agent Address"
+          },
+          "signature": {
+            "type": "string",
+            "minLength": 130,
+            "title": "Signature"
+          },
+          "nonce": { "type": "integer", "title": "Nonce" }
+        },
+        "type": "object",
+        "required": ["wallet_address", "agent_address", "signature", "nonce"],
+        "title": "AgentConfirmRequest"
+      },
+      "AgentCreateResponse": {
+        "properties": {
+          "id": { "type": "integer", "title": "Id" },
+          "agent_address": { "type": "string", "title": "Agent Address" },
+          "label": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Label"
+          },
+          "spending_limit_usd": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Spending Limit Usd"
+          },
+          "spent_today_usd": { "type": "number", "title": "Spent Today Usd" },
+          "is_active": { "type": "boolean", "title": "Is Active" },
+          "created_at": { "type": "string", "title": "Created At" }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "agent_address",
+          "label",
+          "spending_limit_usd",
+          "spent_today_usd",
+          "is_active",
+          "created_at"
+        ],
+        "title": "AgentCreateResponse",
+        "description": "Response from POST /agent/confirm — DB row was created after Hyperliquid success."
+      },
+      "AgentInfoResponse": {
+        "properties": {
+          "id": { "type": "integer", "title": "Id" },
+          "agent_address": { "type": "string", "title": "Agent Address" },
+          "label": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Label"
+          },
+          "spending_limit_usd": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Spending Limit Usd"
+          },
+          "spent_today_usd": { "type": "number", "title": "Spent Today Usd" },
+          "is_active": { "type": "boolean", "title": "Is Active" },
+          "created_at": { "type": "string", "title": "Created At" },
+          "revoked_at": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Revoked At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "agent_address",
+          "label",
+          "spending_limit_usd",
+          "spent_today_usd",
+          "is_active",
+          "created_at"
+        ],
+        "title": "AgentInfoResponse"
+      },
+      "AgentPrepareResponse": {
+        "properties": {
+          "agent_address": { "type": "string", "title": "Agent Address" },
+          "label": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Label"
+          },
+          "spending_limit_usd": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Spending Limit Usd"
+          },
+          "sign_payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Sign Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_address",
+          "label",
+          "spending_limit_usd",
+          "sign_payload"
+        ],
+        "title": "AgentPrepareResponse",
+        "description": "Response from POST /agent/create — no DB row created yet."
+      },
+      "AgentRevokeRequest": {
+        "properties": {
+          "wallet_address": {
+            "type": "string",
+            "title": "Wallet Address",
+            "description": "Master wallet address that signed the payload."
+          },
+          "nonce": {
+            "type": "integer",
+            "title": "Nonce",
+            "description": "Nonce used in the EIP-712 payload (milliseconds timestamp)."
+          },
+          "signature": {
+            "type": "string",
+            "title": "Signature",
+            "description": "EIP-712 signature from eth_signTypedData_v4 (0x-prefixed hex)."
+          }
+        },
+        "type": "object",
+        "required": ["wallet_address", "nonce", "signature"],
+        "title": "AgentRevokeRequest",
+        "description": "Body for POST /agent/{id}/revoke with a browser-provided MetaMask signature."
+      },
+      "AgentSyncStatusResponse": {
+        "properties": {
+          "has_db_active_agent": {
+            "type": "boolean",
+            "title": "Has Db Active Agent"
+          },
+          "db_active_agent_id": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+            "title": "Db Active Agent Id"
+          },
+          "db_active_agent_address": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Db Active Agent Address"
+          },
+          "onchain_verification_status": {
+            "type": "string",
+            "title": "Onchain Verification Status"
+          },
+          "onchain_active_addresses": {
+            "items": { "type": "string" },
+            "type": "array",
+            "title": "Onchain Active Addresses"
+          },
+          "is_db_agent_onchain_active": {
+            "anyOf": [{ "type": "boolean" }, { "type": "null" }],
+            "title": "Is Db Agent Onchain Active"
+          },
+          "mismatch_db_active_but_onchain_missing": {
+            "type": "boolean",
+            "title": "Mismatch Db Active But Onchain Missing"
+          },
+          "message": { "type": "string", "title": "Message" }
+        },
+        "type": "object",
+        "required": [
+          "has_db_active_agent",
+          "onchain_verification_status",
+          "onchain_active_addresses",
+          "mismatch_db_active_but_onchain_missing",
+          "message"
+        ],
+        "title": "AgentSyncStatusResponse",
+        "description": "DB-to-Hyperliquid synchronization status for the current user's active agent."
+      },
+      "BacktestCandlesErrorResponse": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "description": "Error message"
+          }
+        },
+        "type": "object",
+        "required": ["detail"],
+        "title": "BacktestCandlesErrorResponse"
+      },
+      "BacktestCandlesResponse": {
+        "properties": {
+          "backtest_id": {
+            "type": "integer",
+            "title": "Backtest Id",
+            "description": "Backtest identifier"
+          },
+          "pair": {
+            "type": "string",
+            "title": "Pair",
+            "description": "Trading pair"
+          },
+          "timeframe": {
+            "type": "string",
+            "title": "Timeframe",
+            "description": "Candle timeframe"
+          },
+          "range_start": {
+            "type": "integer",
+            "title": "Range Start",
+            "description": "Start timestamp (milliseconds)"
+          },
+          "range_end": {
+            "type": "integer",
+            "title": "Range End",
+            "description": "End timestamp (milliseconds)"
+          },
+          "candles": {
+            "items": { "$ref": "#/components/schemas/CandleRecord" },
+            "type": "array",
+            "title": "Candles",
+            "description": "List of OHLCV candles, ascending by timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "backtest_id",
+          "pair",
+          "timeframe",
+          "range_start",
+          "range_end",
+          "candles"
+        ],
+        "title": "BacktestCandlesResponse"
       },
       "BacktestHistoryItem": {
         "properties": {
@@ -2246,35 +2955,39 @@
         "title": "BacktestRequest",
         "description": "Request schema for starting a backtest"
       },
-      "Body_token_user_token_post": {
+      "BotAuditLogOut": {
         "properties": {
-          "grant_type": {
-            "anyOf": [
-              { "type": "string", "pattern": "^password$" },
-              { "type": "null" }
-            ],
-            "title": "Grant Type"
+          "id": { "type": "integer", "title": "Id" },
+          "bot_id": { "type": "integer", "title": "Bot Id" },
+          "server_id": { "type": "string", "title": "Server Id" },
+          "request_id": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Request Id"
           },
-          "username": { "type": "string", "title": "Username" },
-          "password": {
+          "action": { "type": "string", "title": "Action" },
+          "triggered_by": { "type": "string", "title": "Triggered By" },
+          "result": { "type": "string", "title": "Result" },
+          "error_details": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Error Details"
+          },
+          "timestamp": {
             "type": "string",
-            "format": "password",
-            "title": "Password"
-          },
-          "scope": { "type": "string", "title": "Scope", "default": "" },
-          "client_id": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Client Id"
-          },
-          "client_secret": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "format": "password",
-            "title": "Client Secret"
+            "format": "date-time",
+            "title": "Timestamp"
           }
         },
         "type": "object",
-        "required": ["username", "password"],
-        "title": "Body_token_user_token_post"
+        "required": [
+          "id",
+          "bot_id",
+          "server_id",
+          "action",
+          "triggered_by",
+          "result",
+          "timestamp"
+        ],
+        "title": "BotAuditLogOut"
       },
       "BotConfigOut": {
         "properties": {
@@ -3211,6 +3924,31 @@
           "strategy_name": {
             "anyOf": [{ "type": "string" }, { "type": "null" }],
             "title": "Strategy Name"
+          },
+          "locked_by": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Locked By"
+          },
+          "locked_at": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ],
+            "title": "Locked At"
+          },
+          "last_heartbeat": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ],
+            "title": "Last Heartbeat"
+          },
+          "created_at": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ],
+            "title": "Created At"
           }
         },
         "type": "object",
@@ -3245,6 +3983,24 @@
           "error_message": {
             "anyOf": [{ "type": "string" }, { "type": "null" }],
             "title": "Error Message"
+          },
+          "locked_by": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Locked By"
+          },
+          "locked_at": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ],
+            "title": "Locked At"
+          },
+          "last_heartbeat": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ],
+            "title": "Last Heartbeat"
           }
         },
         "type": "object",
@@ -3260,6 +4016,98 @@
         "required": ["bot", "strategy"],
         "title": "BotStrategyOut",
         "description": "Unified response containing both bot and strategy details.\n\nReturned by POST /bot-strategy/create and PATCH /bot-strategy/{bot_id}.\n\nExample response::\n\n    {\n        \"bot\": {\n            \"id\": 5,\n            \"bot_name\": \"my_bot\",\n            \"status\": \"stopped\",\n            \"strategy_name\": \"MyRSIStrategy\",\n            ...\n        },\n        \"strategy\": {\n            \"id\": 12,\n            \"bot_id\": 5,\n            \"name\": \"MyRSIStrategy\",\n            \"strategy_type\": \"statistical\",\n            \"configurations\": { ... },\n            ...\n        }\n    }"
+      },
+      "BotWalletRotationResponse": {
+        "properties": {
+          "total_bots": { "type": "integer", "title": "Total Bots" },
+          "updated_count": { "type": "integer", "title": "Updated Count" },
+          "restarted_count": { "type": "integer", "title": "Restarted Count" },
+          "error_count": { "type": "integer", "title": "Error Count" },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/BotWalletRotationResultItem"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "message": { "type": "string", "title": "Message" }
+        },
+        "type": "object",
+        "required": [
+          "total_bots",
+          "updated_count",
+          "restarted_count",
+          "error_count",
+          "results",
+          "message"
+        ],
+        "title": "BotWalletRotationResponse",
+        "description": "Response from bulk wallet rotation endpoint."
+      },
+      "BotWalletRotationResultItem": {
+        "properties": {
+          "bot_id": { "type": "integer", "title": "Bot Id" },
+          "bot_name": { "type": "string", "title": "Bot Name" },
+          "was_running": { "type": "boolean", "title": "Was Running" },
+          "updated": { "type": "boolean", "title": "Updated" },
+          "restart_attempted": {
+            "type": "boolean",
+            "title": "Restart Attempted"
+          },
+          "restarted": { "type": "boolean", "title": "Restarted" },
+          "error": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bot_id",
+          "bot_name",
+          "was_running",
+          "updated",
+          "restart_attempted",
+          "restarted"
+        ],
+        "title": "BotWalletRotationResultItem",
+        "description": "Per-bot outcome from wallet rotation operation."
+      },
+      "CandleRecord": {
+        "properties": {
+          "timestamp": {
+            "type": "integer",
+            "title": "Timestamp",
+            "description": "Unix timestamp (milliseconds)"
+          },
+          "open": {
+            "type": "number",
+            "title": "Open",
+            "description": "Open price"
+          },
+          "high": {
+            "type": "number",
+            "title": "High",
+            "description": "High price"
+          },
+          "low": {
+            "type": "number",
+            "title": "Low",
+            "description": "Low price"
+          },
+          "close": {
+            "type": "number",
+            "title": "Close",
+            "description": "Close price"
+          },
+          "volume": {
+            "type": "number",
+            "title": "Volume",
+            "description": "Volume"
+          }
+        },
+        "type": "object",
+        "required": ["timestamp", "open", "high", "low", "close", "volume"],
+        "title": "CandleRecord"
       },
       "CheckDepthOfMarket": {
         "properties": {
@@ -3279,6 +4127,23 @@
         },
         "type": "object",
         "title": "CheckDepthOfMarket"
+      },
+      "CreateAgentRequest": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              { "type": "string", "maxLength": 16, "minLength": 1 },
+              { "type": "null" }
+            ],
+            "title": "Label"
+          },
+          "spending_limit_usd": {
+            "anyOf": [{ "type": "number", "minimum": 0.0 }, { "type": "null" }],
+            "title": "Spending Limit Usd"
+          }
+        },
+        "type": "object",
+        "title": "CreateAgentRequest"
       },
       "CustomExitConfig": {
         "properties": {
@@ -3632,6 +4497,35 @@
         "type": "object",
         "title": "ExitPricingConfig",
         "description": "Controls how the bot picks the exit price (freqtrade: exit_pricing)."
+      },
+      "ExternalRevokeRequest": {
+        "properties": {
+          "wallet_address": {
+            "type": "string",
+            "title": "Wallet Address",
+            "description": "Master wallet address that signed the payload."
+          },
+          "agent_name": {
+            "type": "string",
+            "title": "Agent Name",
+            "description": "Agent name used in the signed EIP-712 payload (empty for unnamed).",
+            "default": ""
+          },
+          "nonce": {
+            "type": "integer",
+            "title": "Nonce",
+            "description": "Nonce used in the EIP-712 payload (milliseconds timestamp)."
+          },
+          "signature": {
+            "type": "string",
+            "title": "Signature",
+            "description": "EIP-712 signature from eth_signTypedData_v4 (0x-prefixed hex)."
+          }
+        },
+        "type": "object",
+        "required": ["wallet_address", "nonce", "signature"],
+        "title": "ExternalRevokeRequest",
+        "description": "Body for POST /agent/external-revoke — revoke a wallet not tracked in our DB."
       },
       "ForceEntryPayload": {
         "properties": {
@@ -4006,150 +4900,6 @@
         "title": "FreqAIRLConfig",
         "description": "Reinforcement Learning configuration for FreqAI (freqai.rl_config)."
       },
-      "FreqtradeWebhookPayload": {
-        "properties": {
-          "type": {
-            "type": "string",
-            "title": "Type",
-            "description": "Event type: buy, sell, buy_cancel, sell_cancel, protection_trigger"
-          },
-          "exchange": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Exchange",
-            "description": "Exchange name"
-          },
-          "pair": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Pair",
-            "description": "Trading pair (e.g., BTC/USDT)"
-          },
-          "stake_amount": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
-            "title": "Stake Amount",
-            "description": "Trade stake amount"
-          },
-          "stake_currency": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Stake Currency",
-            "description": "Stake currency"
-          },
-          "fiat_currency": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Fiat Currency",
-            "description": "Fiat currency (if configured)"
-          },
-          "trade_id": {
-            "anyOf": [{ "type": "integer" }, { "type": "null" }],
-            "title": "Trade Id",
-            "description": "Trade ID (can be unique identifier)"
-          },
-          "open_date": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Open Date",
-            "description": "ISO format open date"
-          },
-          "open_rate": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
-            "title": "Open Rate",
-            "description": "Entry price"
-          },
-          "open_rate_requested": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
-            "title": "Open Rate Requested",
-            "description": "Requested entry price"
-          },
-          "amount": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
-            "title": "Amount",
-            "description": "Trade amount/size"
-          },
-          "amount_requested": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
-            "title": "Amount Requested",
-            "description": "Requested amount"
-          },
-          "trade_direction": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Trade Direction",
-            "description": "long or short"
-          },
-          "current_rate": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
-            "title": "Current Rate",
-            "description": "Current price"
-          },
-          "close_date": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Close Date",
-            "description": "ISO format close date"
-          },
-          "close_rate": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
-            "title": "Close Rate",
-            "description": "Exit price"
-          },
-          "profit_abs": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
-            "title": "Profit Abs",
-            "description": "Profit/loss in quote currency"
-          },
-          "profit_amount": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
-            "title": "Profit Amount",
-            "description": "Alias for profit_abs (Freqtrade uses this name)"
-          },
-          "profit_ratio": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
-            "title": "Profit Ratio",
-            "description": "Profit ratio (0.05 = 5%)"
-          },
-          "exit_reason": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Exit Reason",
-            "description": "Why trade exited"
-          },
-          "trade_duration": {
-            "anyOf": [{ "type": "integer" }, { "type": "null" }],
-            "title": "Trade Duration",
-            "description": "Trade duration in seconds"
-          },
-          "trade_duration_m": {
-            "anyOf": [{ "type": "integer" }, { "type": "null" }],
-            "title": "Trade Duration M",
-            "description": "Trade duration in minutes"
-          },
-          "trade_duration_s": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Trade Duration S",
-            "description": "Trade duration formatted string"
-          },
-          "order_type": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Order Type",
-            "description": "limit or market"
-          },
-          "order_timestamp": {
-            "anyOf": [{ "type": "integer" }, { "type": "null" }],
-            "title": "Order Timestamp",
-            "description": "Order timestamp"
-          },
-          "slippage": {
-            "anyOf": [{ "type": "integer" }, { "type": "null" }],
-            "title": "Slippage",
-            "description": "Slippage percentage (e.g., 5 = 5%)"
-          },
-          "message": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Message",
-            "description": "Human readable message"
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": ["type"],
-        "title": "FreqtradeWebhookPayload",
-        "description": "Freqtrade webhook payload structure (JSON format)."
-      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -4218,6 +4968,20 @@
         "type": "object",
         "title": "HyperliquidIngestTriggerRequest",
         "description": "Optional override list; when empty, env-based resolution is used."
+      },
+      "HyperliquidWalletResponse": {
+        "properties": {
+          "address": { "type": "string", "title": "Address" },
+          "name": { "type": "string", "title": "Name" },
+          "valid_until": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+            "title": "Valid Until"
+          }
+        },
+        "type": "object",
+        "required": ["address", "name"],
+        "title": "HyperliquidWalletResponse",
+        "description": "A single agent wallet entry as returned by Hyperliquid's extraAgents endpoint."
       },
       "IndicatorItem": {
         "properties": {
@@ -4849,6 +5613,27 @@
         "title": "SignalsConfig",
         "description": "Entry and exit signal definitions for a statistical / hybrid strategy."
       },
+      "SpendingLimitCheckRequest": {
+        "properties": {
+          "amount_usd": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Amount Usd"
+          }
+        },
+        "type": "object",
+        "required": ["amount_usd"],
+        "title": "SpendingLimitCheckRequest"
+      },
+      "SpendingLimitCheckResponse": {
+        "properties": {
+          "allowed": { "type": "boolean", "title": "Allowed" },
+          "reason": { "type": "string", "title": "Reason" }
+        },
+        "type": "object",
+        "required": ["allowed", "reason"],
+        "title": "SpendingLimitCheckResponse"
+      },
       "StrategyConfigurations": {
         "properties": {
           "interface_version": {
@@ -5436,7 +6221,7 @@
         "type": "object",
         "title": "TelegramNotificationSettings"
       },
-      "Token": {
+      "TokenResponse": {
         "properties": {
           "access_token": { "type": "string", "title": "Access Token" },
           "token_type": {
@@ -5447,7 +6232,7 @@
         },
         "type": "object",
         "required": ["access_token"],
-        "title": "Token"
+        "title": "TokenResponse"
       },
       "UnfilledTimeoutConfig": {
         "properties": {
@@ -5948,33 +6733,25 @@
         "title": "UnifiedBotStrategyUpdate",
         "description": "Request schema for atomically updating bot config and/or strategy in one call.\n\nBoth sections are optional — omit a section to leave it unchanged.\n\nThe ``strategy_configurations`` field, if provided, triggers strategy file\nregeneration and syncs relevant settings (risk, position_adjustment, etc.)\nback to the bot's config.json."
       },
-      "UserCreate": {
-        "properties": {
-          "email": { "type": "string", "format": "email", "title": "Email" },
-          "password": { "type": "string", "minLength": 8, "title": "Password" }
-        },
-        "type": "object",
-        "required": ["email", "password"],
-        "title": "UserCreate"
-      },
-      "UserLogin": {
-        "properties": {
-          "email": { "type": "string", "format": "email", "title": "Email" },
-          "password": { "type": "string", "title": "Password" }
-        },
-        "type": "object",
-        "required": ["email", "password"],
-        "title": "UserLogin"
-      },
       "UserOut": {
         "properties": {
           "id": { "type": "integer", "title": "Id" },
-          "email": { "type": "string", "format": "email", "title": "Email" },
+          "email": {
+            "anyOf": [
+              { "type": "string", "format": "email" },
+              { "type": "null" }
+            ],
+            "title": "Email"
+          },
+          "wallet_address": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Wallet Address"
+          },
           "is_active": { "type": "boolean", "title": "Is Active" },
           "is_admin": { "type": "boolean", "title": "Is Admin" }
         },
         "type": "object",
-        "required": ["id", "email", "is_active", "is_admin"],
+        "required": ["id", "is_active", "is_admin"],
         "title": "UserOut"
       },
       "ValidationError": {
@@ -5992,6 +6769,15 @@
         "type": "object",
         "required": ["loc", "msg", "type"],
         "title": "ValidationError"
+      },
+      "WalletNonceResponse": {
+        "properties": {
+          "nonce": { "type": "string", "title": "Nonce" },
+          "message": { "type": "string", "title": "Message" }
+        },
+        "type": "object",
+        "required": ["nonce", "message"],
+        "title": "WalletNonceResponse"
       },
       "WebhookConfig": {
         "properties": {
@@ -6221,7 +7007,7 @@
     "securitySchemes": {
       "OAuth2PasswordBearer": {
         "type": "oauth2",
-        "flows": { "password": { "scopes": {}, "tokenUrl": "/user/token" } }
+        "flows": { "password": { "scopes": {}, "tokenUrl": "auth/login" } }
       }
     }
   }
