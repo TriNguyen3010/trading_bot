@@ -82,4 +82,40 @@ describe('BacktestDialog', () => {
     expect(screen.getByText('47')).toBeInTheDocument();
     expect(screen.getByText('61.7%')).toBeInTheDocument();
   });
+
+  it('cancel during running calls backtestApi.cancel + closes dialog', async () => {
+    mockStart.mockResolvedValue({
+      job_id: 1,
+      backtest_id: 99,
+      status: 'queued',
+      message: 'Backtest submitted successfully',
+      poll_url: '/backtest/99',
+    });
+    vi.mocked(backtestApi.cancel).mockResolvedValue(undefined);
+    const onOpenChange = vi.fn();
+    render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={onOpenChange}
+        initialBacktestId={99}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: /cancel and go back/i }),
+    );
+    await waitFor(() => expect(backtestApi.cancel).toHaveBeenCalledWith(99));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('renders the no-strategy warning when bot.strategyName is null', () => {
+    render(
+      <BacktestDialog
+        open
+        bot={{ ...bot, strategyName: null }}
+        onOpenChange={() => {}}
+      />,
+    );
+    expect(screen.getByText(/chưa có strategy name/i)).toBeInTheDocument();
+  });
 });

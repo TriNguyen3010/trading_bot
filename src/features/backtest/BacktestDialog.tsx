@@ -129,19 +129,16 @@ export function BacktestDialog({
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px] data-[state=open]:animate-fade-in" />
-        <DialogPrimitive.Content
-          aria-describedby={undefined}
-          className="fixed left-1/2 top-1/2 z-50 w-[640px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-border-strong bg-surface-elevated shadow-lg data-[state=open]:animate-fade-in"
-        >
+        <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[640px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-border-strong bg-surface-elevated shadow-lg data-[state=open]:animate-fade-in">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border bg-canvas/40 px-5 py-3">
             <div className="min-w-0">
               <DialogPrimitive.Title className="truncate text-sm font-semibold text-fg">
                 Backtest <span className="text-brand">{bot.name}</span>
               </DialogPrimitive.Title>
-              <p className="text-2xs text-fg-muted">
-                {bot.pair} · {bot.timeframe} · risk $0
-              </p>
+              <DialogPrimitive.Description className="text-2xs text-fg-muted">
+                {bot.pair} · {bot.timeframe}
+              </DialogPrimitive.Description>
             </div>
             <DialogPrimitive.Close
               className="grid h-8 w-8 place-items-center rounded-lg border border-border text-fg-muted hover:text-fg"
@@ -224,7 +221,7 @@ export function BacktestDialog({
                   <Button
                     variant="primary"
                     size="md"
-                    disabled={submitting}
+                    disabled={submitting || !Number(stake) || !Number(wallet)}
                     onClick={runBacktest}
                     aria-label="Run backtest"
                   >
@@ -308,6 +305,7 @@ export function BacktestDialog({
                     onClick={() => {
                       setStep('setup');
                       setBacktestId(null);
+                      setError(null);
                     }}
                   >
                     Run again
@@ -320,6 +318,26 @@ export function BacktestDialog({
                     Done
                   </Button>
                 </div>
+              </div>
+            )}
+
+            {step === 'result' && !metrics && (
+              <div className="flex flex-col items-center py-10 text-center">
+                <p className="text-sm text-fg-muted">
+                  No metrics returned. Try again.
+                </p>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  className="mt-4"
+                  onClick={() => {
+                    setStep('setup');
+                    setBacktestId(null);
+                    setError(null);
+                  }}
+                >
+                  Run again
+                </Button>
               </div>
             )}
           </div>
