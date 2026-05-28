@@ -2,13 +2,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
+  Loader2,
   PanelLeftClose,
   PanelLeftOpen,
-  Pause,
   Pencil,
+  Play,
+  RefreshCcw,
   Sparkles,
   StopCircle,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -19,7 +22,16 @@ import {
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { cn } from '@/lib/utils';
+import { formatBackendError } from '@/lib/format-error';
+// Mock data API (snapshots/fills/cycles) — kept until next plan replaces with
+// real /bot/{id}/open_trades, /performance, etc. Real lifecycle endpoints live
+// in `./bot.api` and are imported as `lifecycleApi` below to avoid the name
+// collision.
 import { botApi } from './mockBotData';
+import { botApi as lifecycleApi, type BotStatusOut } from './bot.api';
+import { useBotStatusPoll } from './useBotStatusPoll';
+import { ConfirmActionDialog } from './ConfirmActionDialog';
+import { formatStatusLabel } from './lifecycle-actions';
 import { hlApi, type MetaAndAssetCtxs } from './hyperliquid.service';
 import {
   hierarchy as d3Hierarchy,
@@ -519,10 +531,30 @@ function formatUptime(deployedAt: number) {
 // ──────────────────────────────────────────────────────────────────────
 // Header (mirrors HeaderToolbar styling: dense top bar, semantic tokens)
 // ──────────────────────────────────────────────────────────────────────
-function MonitoringHeader({ meta }: { meta: BotMeta }) {
+function MonitoringHeader({
+  meta,
+  liveStatus,
+  pending,
+  onStart,
+  onStopClick,
+  onSync,
+}: {
+  meta: BotMeta;
+  liveStatus: BotStatusOut | null;
+  pending: boolean;
+  onStart: () => void;
+  onStopClick: () => void;
+  onSync: () => void;
+}) {
   const navigate = useNavigate();
   const uptime = formatUptime(meta.deployedAt);
-  const isLive = meta.mode === 'live';
+  // Prefer live status from BE poll; fall back to mock meta.mode label
+  // (`live`/`dry-run`) only when we haven't received a server response yet.
+  const status =
+    liveStatus?.status ?? (meta.mode === 'live' ? 'running' : 'stopped');
+  const isRunning = status === 'running';
+  const isError = !!liveStatus?.error_message;
+  const isTransition = status === 'starting' || status === 'stopping';
 
   // Coin98 floating pill nav: header occupies the full row but the
   // visible chrome is a single rounded-full bar centred with max-w,
@@ -565,46 +597,94 @@ function MonitoringHeader({ meta }: { meta: BotMeta }) {
           </div>
 
           <div className="flex items-center gap-1.5 pr-1">
-            {/* Status pill */}
+            {/* Live status pill — driven by /bot/{id}/status poll. Colors:
+                green pulse for running, red for error, brand for stopped /
+                transition. */}
             <span
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider',
-                isLive
-                  ? 'bg-bullish-subtle text-bullish'
-                  : 'bg-brand-subtle text-brand',
+                isError
+                  ? 'bg-bearish-subtle text-bearish'
+                  : isRunning
+                    ? 'bg-bullish-subtle text-bullish'
+                    : 'bg-brand-subtle text-brand',
               )}
             >
               <span
                 className={cn(
-                  'h-1.5 w-1.5 animate-pulse rounded-full',
-                  isLive ? 'bg-bullish' : 'bg-brand',
+                  'h-1.5 w-1.5 rounded-full',
+                  isError
+                    ? 'bg-bearish'
+                    : isRunning
+                      ? 'animate-pulse bg-bullish'
+                      : isTransition
+                        ? 'animate-pulse bg-brand'
+                        : 'bg-brand',
                 )}
               />
-              {isLive ? 'Live' : 'Dry-run'}
+              {formatStatusLabel(status)}
             </span>
 
-            {/* Pill-shaped action buttons (Coin98 style) */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="rounded-full px-3 text-fg-muted hover:bg-black/40 hover:text-fg"
-            >
-              <Pause className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-              Pause
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                // TODO(wallet-team): wire to bot stop API + confirm modal.
-                // For demo: stop confirmed → return to dashboard.
-                navigate('/dashboard');
-              }}
-              className="rounded-full px-3 text-bearish hover:bg-bearish-subtle hover:text-bearish-hover"
-            >
-              <StopCircle className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-              Stop
-            </Button>
+            {/* Start — visible when bot is stopped (not running, not error) */}
+            {!isRunning && !isError && (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={pending || isTransition}
+                onClick={onStart}
+                className="rounded-full px-3 text-bullish hover:bg-bullish-subtle"
+              >
+                {pending || isTransition ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Play className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                )}
+                Start
+              </Button>
+            )}
+
+            {/* Stop — visible when bot is running */}
+            {isRunning && (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={pending || isTransition}
+                onClick={onStopClick}
+                className="rounded-full px-3 text-bearish hover:bg-bearish-subtle hover:text-bearish-hover"
+              >
+                {pending || isTransition ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <StopCircle
+                    className="mr-1.5 h-3.5 w-3.5"
+                    aria-hidden="true"
+                  />
+                )}
+                Stop
+              </Button>
+            )}
+
+            {/* Sync — visible only when BE reports an error */}
+            {isError && (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={pending}
+                onClick={onSync}
+                className="rounded-full px-3 text-warning hover:bg-warning/10"
+              >
+                {pending ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCcw
+                    className="mr-1.5 h-3.5 w-3.5"
+                    aria-hidden="true"
+                  />
+                )}
+                Sync
+              </Button>
+            )}
+
             <Button
               variant="ghost"
               size="sm"
@@ -3765,6 +3845,61 @@ export function BotMonitoringPage() {
   const orderBook = useHyperliquidOrderBook(coin);
   const markets = useHyperliquidMarkets();
 
+  // ── Task 7: real lifecycle wiring ──
+  // botId may be NaN for legacy mock ids (e.g. "abc") — `useBotStatusPoll`
+  // skips the fetch when botId is null/NaN, so the header just falls back
+  // to the mock meta.mode label.
+  const botIdNum = id ? Number(id) : null;
+  const safeBotId =
+    botIdNum != null && !Number.isNaN(botIdNum) ? botIdNum : null;
+  const { status: liveStatus, setStatus: setLiveStatus } =
+    useBotStatusPoll(safeBotId);
+  const [pending, setPending] = useState(false);
+  const [confirmStop, setConfirmStop] = useState(false);
+
+  const doStart = useCallback(async () => {
+    if (safeBotId == null) return;
+    setPending(true);
+    try {
+      const next = await lifecycleApi.start(safeBotId);
+      setLiveStatus(next);
+      toast.success(`Starting bot #${safeBotId}`);
+    } catch (err) {
+      toast.error(formatBackendError(err));
+    } finally {
+      setPending(false);
+    }
+  }, [safeBotId, setLiveStatus]);
+
+  const doStop = useCallback(async () => {
+    if (safeBotId == null) return;
+    setPending(true);
+    try {
+      const next = await lifecycleApi.stop(safeBotId);
+      setLiveStatus(next);
+      toast.success(`Stopping bot #${safeBotId}`);
+    } catch (err) {
+      toast.error(formatBackendError(err));
+    } finally {
+      setPending(false);
+      setConfirmStop(false);
+    }
+  }, [safeBotId, setLiveStatus]);
+
+  const doSync = useCallback(async () => {
+    if (safeBotId == null) return;
+    setPending(true);
+    try {
+      const next = await lifecycleApi.sync(safeBotId);
+      setLiveStatus(next);
+      toast.message('Re-synced bot status');
+    } catch (err) {
+      toast.error(formatBackendError(err));
+    } finally {
+      setPending(false);
+    }
+  }, [safeBotId, setLiveStatus]);
+
   if (!meta || !snap) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-black text-fg-muted">
@@ -3784,7 +3919,51 @@ export function BotMonitoringPage() {
         }}
         aria-hidden="true"
       />
-      <MonitoringHeader meta={meta} />
+      <MonitoringHeader
+        meta={meta}
+        liveStatus={liveStatus}
+        pending={pending}
+        onStart={doStart}
+        onStopClick={() => setConfirmStop(true)}
+        onSync={doSync}
+      />
+
+      {liveStatus?.error_message ? (
+        <div
+          role="alert"
+          className="mx-auto mt-2 flex max-w-[1200px] items-center justify-between gap-3 rounded-lg border border-bearish/40 bg-bearish-subtle px-4 py-3 text-xs text-bearish"
+        >
+          <div>
+            <strong className="mr-2">Bot error:</strong>
+            {liveStatus.error_message}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={doSync}
+            disabled={pending}
+            className="px-3 text-warning hover:bg-warning/10"
+          >
+            {pending ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            Sync
+          </Button>
+        </div>
+      ) : null}
+
+      <ConfirmActionDialog
+        open={confirmStop}
+        onOpenChange={setConfirmStop}
+        title="Stop this bot?"
+        body="The bot will stop placing orders immediately. Open positions are NOT closed automatically — close them manually or with a take-profit/stop-loss already set."
+        confirmLabel="Stop"
+        variant="destructive"
+        busy={pending}
+        onConfirm={doStop}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         <CypheusRail messages={cypheusMessages} />
