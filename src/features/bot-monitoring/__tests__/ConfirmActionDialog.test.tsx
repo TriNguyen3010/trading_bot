@@ -49,7 +49,7 @@ describe('ConfirmActionDialog', () => {
         open
         onOpenChange={() => {}}
         title="Stop bot?"
-        body=""
+        body="Stopping…"
         confirmLabel="Stop"
         variant="destructive"
         onConfirm={onConfirm}
