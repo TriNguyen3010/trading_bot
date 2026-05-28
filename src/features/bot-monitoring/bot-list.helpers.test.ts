@@ -60,6 +60,21 @@ describe('deriveMode', () => {
     expect(deriveMode(makeBot({ status: 'running' }), null)).toBe('PAUSED');
     expect(deriveMode(makeBot({ error_message: 'x' }), null)).toBe('ERROR');
   });
+  it('returns STARTING when status is starting', () => {
+    expect(deriveMode(makeBot({ status: 'starting' }), makeConfig())).toBe(
+      'STARTING',
+    );
+  });
+  it('returns STOPPING when status is stopping', () => {
+    expect(deriveMode(makeBot({ status: 'stopping' }), makeConfig())).toBe(
+      'STOPPING',
+    );
+  });
+  it('STARTING/STOPPING take precedence over error_message=null check', () => {
+    expect(
+      deriveMode(makeBot({ status: 'starting', error_message: null }), null),
+    ).toBe('STARTING');
+  });
 });
 
 describe('derivePair', () => {
