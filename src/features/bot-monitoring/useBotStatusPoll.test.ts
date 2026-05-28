@@ -106,4 +106,23 @@ describe('useBotStatusPoll', () => {
     await vi.advanceTimersByTimeAsync(60_000);
     expect(botApi.getStatus).toHaveBeenCalledTimes(1);
   });
+
+  it('honors enabled:false — does initial fetch but no polling', async () => {
+    vi.mocked(botApi.getStatus).mockResolvedValue(
+      mkStatus({ status: 'starting' }),
+    );
+    renderHook(() => useBotStatusPoll(42, { enabled: false }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(botApi.getStatus).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(botApi.getStatus).toHaveBeenCalledTimes(1);
+  });
+
+  it('does nothing when botId is null', async () => {
+    const { result } = renderHook(() => useBotStatusPoll(null));
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(botApi.getStatus).not.toHaveBeenCalled();
+    expect(result.current.loading).toBe(false);
+    expect(result.current.status).toBeNull();
+  });
 });

@@ -21,6 +21,7 @@ import {
   zipBotsAndConfigs,
   type ConfigShape,
   type DashboardBot,
+  type DashboardBotMode,
 } from '@/features/bot-monitoring/bot-list.helpers';
 import { ConfirmActionDialog } from '@/features/bot-monitoring/ConfirmActionDialog';
 import { formatBackendError } from '@/lib/format-error';
@@ -154,7 +155,26 @@ export function DashboardPage() {
   const handleRefresh = () => setRefreshKey((k) => k + 1);
 
   // ── Lifecycle actions (Task 6 — wired to botApi.start/stop/sync/remove) ──
-  const [pendingActionId, setPendingActionId] = useState<number | null>(null);
+  const [pendingActionIds, setPendingActionIds] = useState<Set<number>>(
+    () => new Set(),
+  );
+
+  const markPending = useCallback((id: number) => {
+    setPendingActionIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []);
+
+  const clearPending = useCallback((id: number) => {
+    setPendingActionIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
   const [confirmState, setConfirmState] = useState<null | {
     action: 'stop' | 'remove';
     botId: number;
@@ -191,7 +211,7 @@ export function DashboardPage() {
 
   const doStart = useCallback(
     async (id: number) => {
-      setPendingActionId(id);
+      markPending(id);
       try {
         const next = await botApi.start(id);
         updateOneBot(id, next);
@@ -199,15 +219,15 @@ export function DashboardPage() {
       } catch (err) {
         toast.error(formatBackendError(err));
       } finally {
-        setPendingActionId(null);
+        clearPending(id);
       }
     },
-    [updateOneBot],
+    [updateOneBot, markPending, clearPending],
   );
 
   const doStop = useCallback(
     async (id: number) => {
-      setPendingActionId(id);
+      markPending(id);
       try {
         const next = await botApi.stop(id);
         updateOneBot(id, next);
@@ -215,16 +235,16 @@ export function DashboardPage() {
       } catch (err) {
         toast.error(formatBackendError(err));
       } finally {
-        setPendingActionId(null);
+        clearPending(id);
         setConfirmState(null);
       }
     },
-    [updateOneBot],
+    [updateOneBot, markPending, clearPending],
   );
 
   const doSync = useCallback(
     async (id: number) => {
-      setPendingActionId(id);
+      markPending(id);
       try {
         const next = await botApi.sync(id);
         updateOneBot(id, next);
@@ -232,15 +252,15 @@ export function DashboardPage() {
       } catch (err) {
         toast.error(formatBackendError(err));
       } finally {
-        setPendingActionId(null);
+        clearPending(id);
       }
     },
-    [updateOneBot],
+    [updateOneBot, markPending, clearPending],
   );
 
   const doRemove = useCallback(
     async (id: number) => {
-      setPendingActionId(id);
+      markPending(id);
       try {
         await botApi.remove(id);
         removeOneBot(id);
@@ -248,11 +268,11 @@ export function DashboardPage() {
       } catch (err) {
         toast.error(formatBackendError(err));
       } finally {
-        setPendingActionId(null);
+        clearPending(id);
         setConfirmState(null);
       }
     },
-    [removeOneBot],
+    [removeOneBot, markPending, clearPending],
   );
 
   // Show real bots when available; fall back to demo samples when the user
@@ -531,7 +551,7 @@ export function DashboardPage() {
                     <BotCard
                       key={bot.id}
                       bot={bot}
-                      busy={pendingActionId === bot.id}
+                      busy={pendingActionIds.has(bot.id)}
                       // Demo cards use mock ids (1/2/4) — navigating to
                       // /bots/{id} would 404. Route demos to /builder
                       // instead so the click is a useful conversion. They
@@ -630,7 +650,7 @@ export function DashboardPage() {
         }
         confirmLabel={confirmState?.action === 'remove' ? 'Delete' : 'Stop'}
         variant="destructive"
-        busy={confirmState != null && pendingActionId === confirmState.botId}
+        busy={confirmState != null && pendingActionIds.has(confirmState.botId)}
         onConfirm={() => {
           if (!confirmState) return;
           if (confirmState.action === 'stop') void doStop(confirmState.botId);
@@ -665,14 +685,15 @@ function BotCard({
   onSync,
   onRemove,
 }: BotCardProps) {
-  const modeStyle = {
+  const modeStyle: Record<DashboardBotMode, string> = {
     LIVE: 'border-bullish/30 bg-bullish-subtle text-bullish',
     'DRY-RUN': 'border-brand/30 bg-brand-subtle text-brand',
     PAUSED: 'border-fg-muted/30 bg-fg-muted/10 text-fg-muted',
     ERROR: 'border-bearish/40 bg-bearish-subtle text-bearish',
-    STARTING: 'border-brand/20 bg-brand/5 text-brand/60',
-    STOPPING: 'border-fg-muted/20 bg-fg-muted/5 text-fg-muted/60',
-  }[bot.mode];
+    STARTING: 'border-brand/20 bg-brand/5 text-brand/70',
+    STOPPING: 'border-fg-muted/20 bg-fg-muted/5 text-fg-muted/70',
+  };
+  const modeStyleClass = modeStyle[bot.mode];
 
   const pnlClass =
     bot.pnlDirection === 'up'
@@ -698,7 +719,7 @@ function BotCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
             <span
-              className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-2xs font-bold uppercase ${modeStyle}`}
+              className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-2xs font-bold uppercase ${modeStyleClass}`}
             >
               {bot.mode === 'LIVE' && (
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
