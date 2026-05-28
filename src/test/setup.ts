@@ -1,6 +1,15 @@
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
+// @testing-library/dom's waitFor fake-timer path is gated on `typeof jest !==
+// 'undefined'`. Vitest exposes `vi` but not `jest`, so waitFor falls back to
+// real-timer polling and hangs indefinitely when fake timers are active.
+// Assigning vi to jest makes jestFakeTimersAreEnabled() return true (it then
+// checks setTimeout.clock which Vitest's fake-timers DO set), so waitFor
+// correctly advances fake timers instead of polling with real intervals.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).jest = vi;
+
 // Force the auth-bypass demo flag OFF for tests — `.env.local` carries
 // `VITE_BYPASS_AUTH=true` for local demo purposes and would otherwise
 // leak into vitest's Vite env, masking the real 401-redirect behaviour
