@@ -12,6 +12,12 @@ export type BotStrategyResponse = Schemas['BotStrategyOut'];
 export type BotResponse = Schemas['BotOut'];
 export type StrategyResponse = Schemas['StrategyOut'];
 
+// Backtest
+export type BacktestRequest = Schemas['BacktestRequest'];
+export type BacktestJobResponse = Schemas['BacktestJobResponse'];
+export type BacktestHistoryItem = Schemas['BacktestHistoryItem'];
+export type BacktestHistoryList = Schemas['BacktestHistoryList'];
+
 // Sub-schemas (dùng nhiều)
 export type StrategyConfigurations = Schemas['StrategyConfigurations'];
 export type SignalsConfig = Schemas['SignalsConfig'];
