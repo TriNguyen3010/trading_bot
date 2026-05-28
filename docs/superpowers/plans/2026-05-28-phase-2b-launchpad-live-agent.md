@@ -4,7 +4,7 @@
 
 **Goal:** Mở khoá Live launch trên Launchpad (đã build trong Phase 2a). Hyperliquid yêu cầu **agent wallet** (sub-key được EIP-712 approve) trước khi bot tự đặt lệnh tiền thật. Flow: user bấm Live → FE check user đã confirm agent chưa → nếu chưa, chạy 3-step onboarding (POST `/agent/create` → wallet ký EIP-712 → POST `/agent/confirm`) → sau khi confirm xong, PATCH `dry_run=false` + `botApi.start(id)`.
 
-**Architecture:** Feature mới `src/features/agent-wallet/` chứa: `agent.api.ts` (5 method REST), `agent-helpers.ts` (pure — extract nonce from sign_payload, format spending limit, error mapper), `useAgentSignFlow` hook (orchestrate Create → ký → Confirm với progress states), và `AgentOnboardingDialog.tsx` (3-step modal). Mở rộng `src/features/launchpad/launch-actions.ts` để Live path check `getActive` agent trước; nếu null → trigger onboarding flow → continue launch sau confirm. Reuse `getEthereumProvider()` từ `wallet-auth/wallet.provider.ts` (đã có cho EIP-191 personal_sign — EIP-712 chỉ đổi method name).
+**Architecture:** Feature mới `src/features/agent-wallet/` chứa: `agent.api.ts` (5 method REST), `agent-helpers.ts` (pure — extract nonce from sign_payload, format spending limit, error mapper), `useAgentSignFlow` hook (orchestrate Create → ký → Confirm với progress states), và `AgentOnboardingDialog.tsx` (3-step modal). Mở rộng `src/features/launchpad/launch-actions.ts` để Live path check `getActive` agent trước; nếu null → trigger onboarding flow → continue launch sau confirm. Reuse `detectCoin98()` từ `wallet-auth/wallet.provider.ts` (đã có cho EIP-191 personal_sign — EIP-712 chỉ đổi method name).
 
 **Tech Stack:** React 18, TypeScript 5.7, Radix Dialog, Tailwind 3, Sonner, Vitest + @testing-library/react. Wallet provider qua `src/features/wallet-auth/wallet.provider.ts` (Coin98 / window.ethereum). API qua `src/lib/http.ts`.
 
@@ -145,19 +145,17 @@ interface AgentInfoResponse {
   revoked_at?: string | null;
 }
 
-// /agent/check-limit
+// /agent/check-limit (verified 2026-05-28 against openapi commit c13fe09)
 interface SpendingLimitCheckRequest {
-  bot_id?: number; // shape TBD — verify in actual schema
-  requested_usd: number;
+  amount_usd: number; // * required, exclusiveMinimum 0
 }
 interface SpendingLimitCheckResponse {
-  allowed: boolean;
-  remaining_usd?: number;
-  message?: string;
+  allowed: boolean; // * required
+  reason: string; // * required (NOT remaining_usd / message)
 }
 ```
 
-⚠️ Note: `SpendingLimitCheckRequest/Response` shapes ở trên là **giả định** — implementer verify với `pnpm gen:api` xong rồi sửa exact type. Endpoints `revoke` / `revoke-payload` / `external-revoke` để future plan.
+⚠️ Note: Endpoints `revoke` / `revoke-payload` / `external-revoke` để future plan.
 
 ---
 
@@ -302,10 +300,10 @@ describe('agentApi.list', () => {
 
 describe('agentApi.checkLimit', () => {
   it('POSTs /agent/check-limit', async () => {
-    mockHttp.mockResolvedValue({ allowed: true, remaining_usd: 500 });
-    await agentApi.checkLimit({ requested_usd: 200 });
+    mockHttp.mockResolvedValue({ allowed: true, reason: 'ok' });
+    await agentApi.checkLimit({ amount_usd: 200 });
     expect(mockHttp).toHaveBeenCalledWith('POST', '/agent/check-limit', {
-      requested_usd: 200,
+      amount_usd: 200,
     });
   });
 });
@@ -421,11 +419,10 @@ describe('eip712Sign', () => {
 - [ ] **Step 2: Implement**
 
 ```ts
-import type { EthereumProvider } from '@/features/wallet-auth/wallet.provider';
+import type { EthereumProvider } from '@/features/wallet-auth/wallet.types';
 import {
   UserRejectedError,
   NoProviderError,
-  isUserReject,
 } from '@/features/wallet-auth/wallet.provider';
 
 /** EIP-712 sign_payload từ BE là object opaque. Parse nonce defensively. */
@@ -467,13 +464,22 @@ export async function eip712Sign(
       params: [walletAddress, JSON.stringify(typedData)],
     })) as string;
   } catch (err) {
-    if (isUserReject(err)) throw new UserRejectedError();
+    // Coin98 / EIP-1193 returns code 4001 for user-reject. Inline check
+    // mirrors private `isUserReject` in wallet.provider.ts (line 28) — keep
+    // them in sync if the wallet-auth feature changes its reject signal.
+    if (
+      typeof err === 'object' &&
+      err !== null &&
+      (err as { code?: number }).code === 4001
+    ) {
+      throw new UserRejectedError();
+    }
     throw err;
   }
 }
 ```
 
-> Note: `EthereumProvider`, `UserRejectedError`, `NoProviderError`, `isUserReject` đã có sẵn ở `src/features/wallet-auth/wallet.provider.ts` từ Phase 0 — import từ đó, **không tạo lại**.
+> Note: `UserRejectedError`, `NoProviderError` exported từ `src/features/wallet-auth/wallet.provider.ts`; `EthereumProvider` type ở `wallet.types.ts`. `isUserReject` là **private** trong wallet.provider.ts — plan inline check 4001 thay vì xin export (tránh đụng vào Phase 0 code). `detectCoin98()` (không phải `detectCoin98`) là helper detect provider.
 
 - [ ] **Step 3: Test pass + commit**
 
@@ -523,7 +529,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAgentSignFlow } from './useAgentSignFlow';
 import { agentApi } from './agent.api';
 import { eip712Sign } from './agent-helpers';
-import { getEthereumProvider } from '@/features/wallet-auth/wallet.provider';
+import { detectCoin98 } from '@/features/wallet-auth/wallet.provider';
 import { useWalletStore } from '@/features/wallet-auth/wallet.store';
 
 vi.mock('./agent.api', () => ({
@@ -538,7 +544,7 @@ vi.mock('@/features/wallet-auth/wallet.provider', async () => {
   const actual = await vi.importActual<
     typeof import('@/features/wallet-auth/wallet.provider')
   >('@/features/wallet-auth/wallet.provider');
-  return { ...actual, getEthereumProvider: vi.fn() };
+  return { ...actual, detectCoin98: vi.fn() };
 });
 
 beforeEach(() => {
@@ -559,17 +565,20 @@ describe('useAgentSignFlow', () => {
     vi.mocked(agentApi.create).mockResolvedValue({
       agent_address: '0xagent',
       label: 'main',
+      spending_limit_usd: 1000,
       sign_payload: { message: { nonce: 999 } },
     });
     vi.mocked(eip712Sign).mockResolvedValue('0xsig');
     vi.mocked(agentApi.confirm).mockResolvedValue({
       id: 1,
       agent_address: '0xagent',
+      label: 'main',
+      spending_limit_usd: 1000,
       is_active: true,
       spent_today_usd: 0,
       created_at: '2026-05-28T00:00:00Z',
     });
-    vi.mocked(getEthereumProvider).mockReturnValue({
+    vi.mocked(detectCoin98).mockReturnValue({
       request: vi.fn(),
     } as never);
 
@@ -601,10 +610,12 @@ describe('useAgentSignFlow', () => {
       await import('@/features/wallet-auth/wallet.provider');
     vi.mocked(agentApi.create).mockResolvedValue({
       agent_address: '0xagent',
+      label: null,
+      spending_limit_usd: null,
       sign_payload: { message: { nonce: 1 } },
     });
     vi.mocked(eip712Sign).mockRejectedValue(new UserRejectedError());
-    vi.mocked(getEthereumProvider).mockReturnValue({
+    vi.mocked(detectCoin98).mockReturnValue({
       request: vi.fn(),
     } as never);
 
@@ -633,7 +644,7 @@ import { useCallback, useState } from 'react';
 import { agentApi } from './agent.api';
 import { eip712Sign, extractNonceFromSignPayload } from './agent-helpers';
 import {
-  getEthereumProvider,
+  detectCoin98,
   UserRejectedError,
   NoProviderError,
 } from '@/features/wallet-auth/wallet.provider';
@@ -671,7 +682,7 @@ export function useAgentSignFlow(): UseAgentSignFlowResult {
         });
         return;
       }
-      const provider = getEthereumProvider();
+      const provider = detectCoin98();
       if (!provider) {
         setState({
           stage: 'error',
@@ -775,7 +786,7 @@ export interface AgentOnboardingDialogProps {
 Component file structure:
 
 ```tsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Loader2, Check, AlertCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -901,6 +912,8 @@ describe('AgentOnboardingDialog', () => {
     const agent = {
       id: 1,
       agent_address: '0xagent',
+      label: null,
+      spending_limit_usd: null,
       is_active: true,
       spent_today_usd: 0,
       created_at: '2026-05-28T00:00:00Z',
