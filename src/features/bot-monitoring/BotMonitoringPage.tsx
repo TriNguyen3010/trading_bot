@@ -551,7 +551,8 @@ function MonitoringHeader({
   // Prefer live status from BE poll; fall back to mock meta.mode label
   // (`live`/`dry-run`) only when we haven't received a server response yet.
   const status =
-    liveStatus?.status ?? (meta.mode === 'live' ? 'running' : 'stopped');
+    liveStatus?.status ??
+    (meta.mode === 'live' || meta.mode === 'dry-run' ? 'running' : 'stopped');
   const isRunning = status === 'running';
   const isError = !!liveStatus?.error_message;
   const isTransition = status === 'starting' || status === 'stopping';
@@ -625,16 +626,16 @@ function MonitoringHeader({
               {formatStatusLabel(status)}
             </span>
 
-            {/* Start — visible when bot is stopped (not running, not error) */}
-            {!isRunning && !isError && (
+            {/* Start — visible when bot is stopped (not running, not error, not in transition) */}
+            {!isRunning && !isError && !isTransition && (
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={pending || isTransition}
+                disabled={pending}
                 onClick={onStart}
                 className="rounded-full px-3 text-bullish hover:bg-bullish-subtle"
               >
-                {pending || isTransition ? (
+                {pending ? (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <Play className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
@@ -643,16 +644,16 @@ function MonitoringHeader({
               </Button>
             )}
 
-            {/* Stop — visible when bot is running */}
-            {isRunning && (
+            {/* Stop — visible when bot is running (not in transition) */}
+            {isRunning && !isTransition && (
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={pending || isTransition}
+                disabled={pending}
                 onClick={onStopClick}
                 className="rounded-full px-3 text-bearish hover:bg-bearish-subtle hover:text-bearish-hover"
               >
-                {pending || isTransition ? (
+                {pending ? (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <StopCircle

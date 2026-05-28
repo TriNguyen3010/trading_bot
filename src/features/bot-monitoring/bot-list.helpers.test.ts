@@ -75,6 +75,14 @@ describe('deriveMode', () => {
       deriveMode(makeBot({ status: 'starting', error_message: null }), null),
     ).toBe('STARTING');
   });
+  it('STARTING takes precedence over error_message when both present', () => {
+    expect(
+      deriveMode(
+        makeBot({ status: 'starting', error_message: 'crash' }),
+        makeConfig(),
+      ),
+    ).toBe('STARTING');
+  });
 });
 
 describe('derivePair', () => {

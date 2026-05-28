@@ -38,20 +38,31 @@ export function useBotStatusPoll(
 
   const inFlightRef = useRef(false);
 
+  // Guard against stale setState calls after unmount during in-flight fetch.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const fetchOnce = useCallback(async () => {
     if (botId == null) return;
     if (inFlightRef.current) return;
     inFlightRef.current = true;
     try {
       const res = await botApi.getStatus(botId);
+      if (!mountedRef.current) return;
       setStatusState(res);
       statusRef.current = res;
       setError(null);
     } catch (err) {
+      if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       inFlightRef.current = false;
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, [botId]);
 
