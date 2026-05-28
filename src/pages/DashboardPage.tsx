@@ -485,6 +485,8 @@ function BotCard({ bot, onClick }: BotCardProps) {
     'DRY-RUN': 'border-brand/30 bg-brand-subtle text-brand',
     PAUSED: 'border-fg-muted/30 bg-fg-muted/10 text-fg-muted',
     ERROR: 'border-bearish/40 bg-bearish-subtle text-bearish',
+    STARTING: 'border-brand/20 bg-brand/5 text-brand/60',
+    STOPPING: 'border-fg-muted/20 bg-fg-muted/5 text-fg-muted/60',
   }[bot.mode];
 
   const pnlClass =

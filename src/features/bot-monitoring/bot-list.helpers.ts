@@ -1,7 +1,13 @@
 import { jsonPairToUi } from '@/lib/pair-format';
 import type { BotOut } from './bot.api';
 
-export type DashboardBotMode = 'LIVE' | 'DRY-RUN' | 'PAUSED' | 'ERROR';
+export type DashboardBotMode =
+  | 'LIVE'
+  | 'DRY-RUN'
+  | 'PAUSED'
+  | 'ERROR'
+  | 'STARTING'
+  | 'STOPPING';
 
 export interface DashboardBot {
   id: number;
@@ -32,9 +38,11 @@ export interface ConfigShape {
 }
 
 export function deriveMode(
-  bot: BotOut,
+  bot: Pick<BotOut, 'status' | 'error_message'>, // S3: narrow so T6 can pass BotStatusOut without cast
   config: ConfigShape | null,
 ): DashboardBotMode {
+  if (bot.status === 'starting') return 'STARTING';
+  if (bot.status === 'stopping') return 'STOPPING';
   if (bot.error_message) return 'ERROR';
   if (bot.status === 'running') {
     // Need config to disambiguate live vs dry-run. If config fetch failed
