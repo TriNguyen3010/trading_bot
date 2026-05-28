@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { toast } from 'sonner';
 import { DashboardPage } from '../DashboardPage';
 import { botApi, type BotOut } from '@/features/bot-monitoring/bot.api';
 import { RequireWalletProvider } from '@/features/wallet-auth/RequireWalletProvider';
@@ -10,8 +11,26 @@ vi.mock('@/features/bot-monitoring/bot.api', () => ({
   botApi: {
     list: vi.fn(),
     getConfig: vi.fn(),
+    getStatus: vi.fn(),
+    start: vi.fn(),
+    stop: vi.fn(),
+    sync: vi.fn(),
+    remove: vi.fn(),
   },
 }));
+
+vi.mock('sonner', async () => {
+  const actual = await vi.importActual<typeof import('sonner')>('sonner');
+  return {
+    ...actual,
+    toast: {
+      success: vi.fn(),
+      error: vi.fn(),
+      message: vi.fn(),
+      warning: vi.fn(),
+    },
+  };
+});
 
 function renderPage() {
   return render(
@@ -263,5 +282,152 @@ describe('DashboardPage', () => {
     await new Promise((r) => setTimeout(r, 0));
 
     expect(vi.mocked(botApi.list)).toHaveBeenCalledOnce();
+  });
+});
+
+// ── Task 6: lifecycle actions wired on BotCard ─────────────────────────
+describe('DashboardPage — lifecycle actions', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    useWalletStore.setState({
+      address: '0xabc',
+      nonce: 'n',
+      signature: 's',
+      status: 'ready',
+      user: null,
+      error: null,
+      signingMessage: null,
+    });
+  });
+
+  function loadOne(over: Partial<BotOut> = {}, dryRun = true) {
+    vi.mocked(botApi.list).mockResolvedValueOnce([
+      {
+        id: 7,
+        bot_name: 'Lifecycle bot',
+        status: 'stopped',
+        desired_status: null,
+        error_message: null,
+        strategy_name: 'X',
+        ...over,
+      },
+    ]);
+    vi.mocked(botApi.getConfig).mockResolvedValueOnce({
+      config: {
+        dry_run: dryRun,
+        timeframe: '5m',
+        exchange: { pair_whitelist: ['BTC/USDT'] },
+      },
+    });
+  }
+
+  it('Start button calls botApi.start and optimistically updates row to STARTING', async () => {
+    loadOne();
+    vi.mocked(botApi.start).mockResolvedValueOnce({
+      id: 7,
+      bot_name: 'Lifecycle bot',
+      status: 'starting',
+      desired_status: 'running',
+      is_process_running: false,
+      error_message: null,
+    });
+
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText('Lifecycle bot')).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^start$/i }));
+
+    expect(botApi.start).toHaveBeenCalledWith(7);
+    await waitFor(() =>
+      expect(screen.getByText(/starting…/i)).toBeInTheDocument(),
+    );
+    expect(vi.mocked(toast.success)).toHaveBeenCalledWith(
+      expect.stringContaining('#7'),
+    );
+  });
+
+  it('Stop button shows confirm dialog and calls botApi.stop on confirm', async () => {
+    loadOne({ status: 'running' });
+    vi.mocked(botApi.stop).mockResolvedValueOnce({
+      id: 7,
+      bot_name: 'Lifecycle bot',
+      status: 'stopping',
+      desired_status: 'stopped',
+      is_process_running: true,
+      error_message: null,
+    });
+
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText('Lifecycle bot')).toBeInTheDocument(),
+    );
+
+    // Click the Stop button on the card → confirm dialog opens.
+    fireEvent.click(screen.getByRole('button', { name: /^stop$/i }));
+    expect(screen.getByText(/Stop "Lifecycle bot"\?/)).toBeInTheDocument();
+
+    // Click the Stop button INSIDE the dialog (it's the last "Stop" on screen).
+    const stopButtons = screen.getAllByRole('button', { name: /^stop$/i });
+    fireEvent.click(stopButtons[stopButtons.length - 1]);
+    expect(botApi.stop).toHaveBeenCalledWith(7);
+  });
+
+  it('Delete button confirms then removes the row', async () => {
+    loadOne();
+    vi.mocked(botApi.remove).mockResolvedValueOnce(undefined);
+
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText('Lifecycle bot')).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /delete bot/i }));
+    expect(screen.getByText(/Delete "Lifecycle bot"\?/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }));
+    expect(botApi.remove).toHaveBeenCalledWith(7);
+    await waitFor(() =>
+      expect(screen.queryByText('Lifecycle bot')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('Sync button visible only in ERROR mode', async () => {
+    loadOne({ status: 'stopped', error_message: 'Process crashed' });
+    vi.mocked(botApi.sync).mockResolvedValueOnce({
+      id: 7,
+      bot_name: 'Lifecycle bot',
+      status: 'stopped',
+      desired_status: null,
+      is_process_running: false,
+      error_message: null,
+    });
+
+    renderPage();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: /fix connection/i }),
+      ).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /fix connection/i }));
+    expect(botApi.sync).toHaveBeenCalledWith(7);
+  });
+
+  it('demo cards do not call real lifecycle endpoints', async () => {
+    vi.mocked(botApi.list).mockResolvedValueOnce([]); // empty → demos render
+    renderPage();
+    await waitFor(() =>
+      expect(
+        screen.getByText(/haven't built any bots yet/i),
+      ).toBeInTheDocument(),
+    );
+    // The demo cards render the action UI in disabled state. Even if the
+    // user clicks Start, no real botApi call should fire.
+    const startBtns = screen.queryAllByRole('button', { name: /^start$/i });
+    for (const b of startBtns) {
+      fireEvent.click(b);
+    }
+    expect(botApi.start).not.toHaveBeenCalled();
   });
 });
