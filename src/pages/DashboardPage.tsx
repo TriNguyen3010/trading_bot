@@ -1,16 +1,28 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, RefreshCw, Search } from 'lucide-react';
+import {
+  ArrowRight,
+  Loader2,
+  Play,
+  RefreshCcw,
+  RefreshCw,
+  Search,
+  StopCircle,
+  Trash2,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { ImportDialog } from '@/features/export-import/ImportDialog';
 import { useRequireWallet } from '@/features/wallet-auth/RequireWalletProvider';
-import { botApi } from '@/features/bot-monitoring/bot.api';
+import { botApi, type BotStatusOut } from '@/features/bot-monitoring/bot.api';
 import {
+  deriveMode,
   zipBotsAndConfigs,
   type ConfigShape,
   type DashboardBot,
 } from '@/features/bot-monitoring/bot-list.helpers';
+import { ConfirmActionDialog } from '@/features/bot-monitoring/ConfirmActionDialog';
 import { formatBackendError } from '@/lib/format-error';
 import { AppHeader } from './AppHeader';
 
@@ -140,6 +152,108 @@ export function DashboardPage() {
   }, [refreshKey]);
 
   const handleRefresh = () => setRefreshKey((k) => k + 1);
+
+  // ── Lifecycle actions (Task 6 — wired to botApi.start/stop/sync/remove) ──
+  const [pendingActionId, setPendingActionId] = useState<number | null>(null);
+  const [confirmState, setConfirmState] = useState<null | {
+    action: 'stop' | 'remove';
+    botId: number;
+    botName: string;
+  }>(null);
+
+  // Splice one bot's mode/errorMsg in `realBots` after a lifecycle response.
+  // BotStatusOut doesn't carry `dry_run`, so we re-use the previous row's
+  // mode as a hint (LIVE → dry_run=false, DRY-RUN → true, otherwise unknown).
+  // When the new status falls through to `running` and dry_run is unknown,
+  // deriveMode returns PAUSED — user can Refresh to re-fetch getConfig.
+  const updateOneBot = useCallback((id: number, next: BotStatusOut) => {
+    setRealBots((prev) => {
+      if (!prev) return prev;
+      return prev.map((b) => {
+        if (b.id !== id) return b;
+        const prevDryRun =
+          b.mode === 'LIVE' ? false : b.mode === 'DRY-RUN' ? true : null;
+        return {
+          ...b,
+          mode: deriveMode(
+            { status: next.status, error_message: next.error_message ?? null },
+            { dry_run: prevDryRun },
+          ),
+          errorMsg: next.error_message ?? null,
+        };
+      });
+    });
+  }, []);
+
+  const removeOneBot = useCallback((id: number) => {
+    setRealBots((prev) => (prev ? prev.filter((b) => b.id !== id) : prev));
+  }, []);
+
+  const doStart = useCallback(
+    async (id: number) => {
+      setPendingActionId(id);
+      try {
+        const next = await botApi.start(id);
+        updateOneBot(id, next);
+        toast.success(`Starting bot #${id}`);
+      } catch (err) {
+        toast.error(formatBackendError(err));
+      } finally {
+        setPendingActionId(null);
+      }
+    },
+    [updateOneBot],
+  );
+
+  const doStop = useCallback(
+    async (id: number) => {
+      setPendingActionId(id);
+      try {
+        const next = await botApi.stop(id);
+        updateOneBot(id, next);
+        toast.success(`Stopping bot #${id}`);
+      } catch (err) {
+        toast.error(formatBackendError(err));
+      } finally {
+        setPendingActionId(null);
+        setConfirmState(null);
+      }
+    },
+    [updateOneBot],
+  );
+
+  const doSync = useCallback(
+    async (id: number) => {
+      setPendingActionId(id);
+      try {
+        const next = await botApi.sync(id);
+        updateOneBot(id, next);
+        toast.message('Re-synced bot status');
+      } catch (err) {
+        toast.error(formatBackendError(err));
+      } finally {
+        setPendingActionId(null);
+      }
+    },
+    [updateOneBot],
+  );
+
+  const doRemove = useCallback(
+    async (id: number) => {
+      setPendingActionId(id);
+      try {
+        await botApi.remove(id);
+        removeOneBot(id);
+        toast.success(`Bot #${id} deleted`);
+      } catch (err) {
+        toast.error(formatBackendError(err));
+      } finally {
+        setPendingActionId(null);
+        setConfirmState(null);
+      }
+    },
+    [removeOneBot],
+  );
 
   // Show real bots when available; fall back to demo samples when the user
   // has no bots yet (empty state). Loading/error states render their own
@@ -417,13 +531,43 @@ export function DashboardPage() {
                     <BotCard
                       key={bot.id}
                       bot={bot}
+                      busy={pendingActionId === bot.id}
                       // Demo cards use mock ids (1/2/4) — navigating to
                       // /bots/{id} would 404. Route demos to /builder
-                      // instead so the click is a useful conversion.
+                      // instead so the click is a useful conversion. They
+                      // also leave lifecycle props undefined so action
+                      // buttons render disabled (no real backend bot to act
+                      // on).
                       onClick={
                         bot.isDemo
                           ? () => requireWalletThen(() => navigate('/builder'))
                           : () => navigate(`/bots/${bot.id}`)
+                      }
+                      onStart={
+                        bot.isDemo ? undefined : () => void doStart(bot.id)
+                      }
+                      onStop={
+                        bot.isDemo
+                          ? undefined
+                          : () =>
+                              setConfirmState({
+                                action: 'stop',
+                                botId: bot.id,
+                                botName: bot.name,
+                              })
+                      }
+                      onSync={
+                        bot.isDemo ? undefined : () => void doSync(bot.id)
+                      }
+                      onRemove={
+                        bot.isDemo
+                          ? undefined
+                          : () =>
+                              setConfirmState({
+                                action: 'remove',
+                                botId: bot.id,
+                                botName: bot.name,
+                              })
                       }
                     />
                   ))}
@@ -466,6 +610,33 @@ export function DashboardPage() {
       </main>
 
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
+
+      <ConfirmActionDialog
+        open={confirmState != null}
+        onOpenChange={(o) => {
+          if (!o) setConfirmState(null);
+        }}
+        title={
+          confirmState?.action === 'remove'
+            ? `Delete "${confirmState.botName}"?`
+            : confirmState
+              ? `Stop "${confirmState.botName}"?`
+              : ''
+        }
+        body={
+          confirmState?.action === 'remove'
+            ? 'This action cannot be undone. The bot, its strategy file, and its tracking history will be permanently removed.'
+            : 'The bot will stop placing orders immediately. Open positions are NOT closed automatically — you can manage them on the bot detail page.'
+        }
+        confirmLabel={confirmState?.action === 'remove' ? 'Delete' : 'Stop'}
+        variant="destructive"
+        busy={confirmState != null && pendingActionId === confirmState.botId}
+        onConfirm={() => {
+          if (!confirmState) return;
+          if (confirmState.action === 'stop') void doStop(confirmState.botId);
+          else void doRemove(confirmState.botId);
+        }}
+      />
     </div>
   );
 }
@@ -477,9 +648,23 @@ export function DashboardPage() {
 interface BotCardProps {
   bot: DashboardBot | MockBot;
   onClick: () => void;
+  busy?: boolean;
+  /** Lifecycle handlers. Undefined → button disabled (e.g. demo cards). */
+  onStart?: () => void;
+  onStop?: () => void;
+  onSync?: () => void;
+  onRemove?: () => void;
 }
 
-function BotCard({ bot, onClick }: BotCardProps) {
+function BotCard({
+  bot,
+  onClick,
+  busy = false,
+  onStart,
+  onStop,
+  onSync,
+  onRemove,
+}: BotCardProps) {
   const modeStyle = {
     LIVE: 'border-bullish/30 bg-bullish-subtle text-bullish',
     'DRY-RUN': 'border-brand/30 bg-brand-subtle text-brand',
@@ -601,27 +786,96 @@ function BotCard({ bot, onClick }: BotCardProps) {
         </div>
       ) : null}
 
-      {/* Actions */}
+      {/* Actions — mode-driven. STARTING/STOPPING show a non-clickable
+          spinner; ERROR offers Sync + Delete; PAUSED offers Start + Delete;
+          LIVE/DRY-RUN offer Stop + Delete. Demo cards (no handlers) render
+          the same controls disabled. */}
       <div className="mt-3 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-        {bot.mode === 'ERROR' ? (
-          <Button variant="primary" size="sm" className="flex-1">
-            Fix connection
+        {bot.mode === 'STARTING' || bot.mode === 'STOPPING' ? (
+          <Button variant="secondary" size="sm" className="flex-1" disabled>
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            {bot.mode === 'STARTING' ? 'Starting…' : 'Stopping…'}
           </Button>
-        ) : (
+        ) : bot.mode === 'ERROR' ? (
           <>
-            <Button variant="secondary" size="sm" className="flex-1">
-              Edit
-            </Button>
-            <Button variant="secondary" size="sm" className="flex-1">
-              {bot.mode === 'PAUSED' ? 'Resume' : 'Pause'}
+            <Button
+              variant="primary"
+              size="sm"
+              className="flex-1"
+              disabled={busy || !onSync}
+              onClick={onSync}
+            >
+              {busy ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Fix connection
             </Button>
             <Button
               variant="ghost"
               size="sm"
               className="px-2 text-bearish hover:bg-bearish-subtle"
-              aria-label="Stop bot"
+              aria-label="Delete bot"
+              disabled={busy || !onRemove}
+              onClick={onRemove}
             >
-              ■
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </>
+        ) : bot.mode === 'PAUSED' ? (
+          <>
+            <Button
+              variant="primary"
+              size="sm"
+              className="flex-1"
+              disabled={busy || !onStart}
+              onClick={onStart}
+            >
+              {busy ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Play className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Start
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="px-2 text-bearish hover:bg-bearish-subtle"
+              aria-label="Delete bot"
+              disabled={busy || !onRemove}
+              onClick={onRemove}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </>
+        ) : (
+          /* LIVE or DRY-RUN */
+          <>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1"
+              disabled={busy || !onStop}
+              onClick={onStop}
+            >
+              {busy ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <StopCircle className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Stop
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="px-2 text-bearish hover:bg-bearish-subtle"
+              aria-label="Delete bot"
+              disabled={busy || !onRemove}
+              onClick={onRemove}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </>
         )}
