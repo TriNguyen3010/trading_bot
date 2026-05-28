@@ -309,7 +309,9 @@ toast.warning('Phiên đăng nhập hết hạn');
 
 Toast position: top-right (mặc định Sonner). `<Toaster />` mount ở `BuilderPage`.
 
-### 8.3. Dialog (Radix Dialog wrapper)
+### 8.3. Dialog — 2 pattern, dùng đúng chỗ
+
+**Wrapper `@/components/ui/dialog`** — cho dialog tiện ích (confirm/alert/simple modal). Overlay + close button mặc định. Ngắn gọn:
 
 ```tsx
 <Dialog open={open} onOpenChange={setOpen}>
@@ -322,7 +324,11 @@ Toast position: top-right (mặc định Sonner). `<Toaster />` mount ở `Build
 </Dialog>
 ```
 
-Ví dụ tham khảo: `src/features/export-import/ExportDialog.tsx`.
+Ví dụ: `src/features/bot-monitoring/ConfirmActionDialog.tsx`.
+
+**Raw `@radix-ui/react-dialog`** (`DialogPrimitive`) — cho modal full-screen bespoke cần custom layout/animation (2-pane, slide-out, animate width…). Phải tự render `Overlay` + `Close` + chrome.
+
+Ví dụ: `src/features/export-import/ExportDialog.tsx` (2-pane animate width), `src/features/launchpad/LaunchpadModal.tsx` (Phase 2 — sau), `src/features/backtest/BacktestDialog.tsx` (Phase 3 — sau).
 
 ### 8.4. Forms
 

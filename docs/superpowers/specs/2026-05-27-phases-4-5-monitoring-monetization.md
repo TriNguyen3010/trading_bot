@@ -2,7 +2,7 @@
 
 > **Mục đích doc này:** AI/dev mới vào đọc xong là biết ngay 2 phase còn lại (chưa có plan) là gì, đang bị chặn bởi cái gì, cần gì để bắt đầu, và viết plan TDD lúc nào. Đây là **spec (design + handoff)**, KHÔNG phải implementation plan — vì cả 2 phase còn thiếu thông tin BE nên chưa TDD được.
 >
-> **Last updated:** 2026-05-27
+> **Last updated:** 2026-05-28 (post-openapi refresh + Phase 1 ship)
 
 ---
 
@@ -10,18 +10,16 @@
 
 Toàn bộ flow bot mong muốn được định nghĩa bởi prototype `public/bot-launch-prototype.html` (bản mới nhất, 4757 dòng). Đã bóc thành 6 phase:
 
-| Phase | Nội dung                                | Trạng thái                           | Artifact                                                  |
-| ----- | --------------------------------------- | ------------------------------------ | --------------------------------------------------------- |
-| 0     | Submit create bot                       | ✅ **DONE trong code**               | `ExportDialog.handleSubmit` → `POST /bot-strategy/create` |
-| 1     | Lifecycle (start/stop/sync/delete)      | 📝 có plan, chưa build               | `docs/superpowers/plans/2026-05-21-bot-lifecycle.md`      |
-| 3     | Backtest                                | 📝 có plan, chưa build               | `docs/superpowers/plans/2026-05-27-backtest.md`           |
-| 2     | Launchpad + dry-run/live                | 📝 có plan, chưa build               | `docs/superpowers/plans/2026-05-27-launchpad-dry-live.md` |
-| **4** | **Rich monitoring (real-time)**         | ⛔ **CHƯA PLAN — BE chặn**           | **doc này, §1**                                           |
-| **5** | **Monetization (tier/paywall/billing)** | ⛔ **CHƯA PLAN — BE + product chặn** | **doc này, §2** + business model doc                      |
+| Phase | Nội dung                                | Trạng thái                                                                    | Artifact                                                  |
+| ----- | --------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------- |
+| 0     | Submit create bot                       | ✅ **DONE in code**                                                           | `ExportDialog.handleSubmit` → `POST /bot-strategy/create` |
+| 1     | Lifecycle (start/stop/sync/delete)      | ✅ **DONE in code (PR #12, await review merge)**                              | `docs/superpowers/plans/2026-05-21-bot-lifecycle.md`      |
+| 3     | Backtest                                | 📝 plan tightened (Gap 2 + results shape known), chưa build                   | `docs/superpowers/plans/2026-05-27-backtest.md`           |
+| 2     | Launchpad + dry-run/live                | 📝 plan cần split 2a (unblocked) + 2b (mới unblock với /agent/\*), chưa build | `docs/superpowers/plans/2026-05-27-launchpad-dry-live.md` |
+| **4** | **Rich monitoring (real-time)**         | 🟡 **PARTIAL UNBLOCK — plan-able với workaround**                             | **doc này, §1**                                           |
+| **5** | **Monetization (tier/paywall/billing)** | ⛔ **CHƯA PLAN — BE + product chặn**                                          | **doc này, §2** + business model doc                      |
 
-**Build order đã chốt: 1 → 3 → 2 → (4, 5).** Phase 4 & 5 là cuối vì bị chặn ngoài tầm FE.
-
-⚠️ **Lưu ý:** `CLAUDE.md §1` hiện stale — ghi Phase 0 submit "chỉ download file / đang làm", nhưng thực tế đã submit thật. Đừng tin dòng đó.
+**Build order đã chốt: 1 → 3 → 2 → (4, 5).** Phase 4 còn block một phần (2 endpoint), Phase 5 chặn toàn bộ ngoài tầm FE.
 
 **Context roadmap đầy đủ:** memory `project_bot_flow_roadmap.md`.
 
@@ -42,48 +40,78 @@ Thay màn monitor **mock** hiện tại bằng dữ liệu thật: open trades, 
 
 `src/features/bot-monitoring/BotMonitoringPage.tsx` (~3839 dòng) **chạy hoàn toàn bằng mock** — `import { botApi } from './mockBotData'` (KHÔNG phải `bot.api.ts` thật) + `hyperliquid.service.ts` cho market data thật. Nút Stop còn `// TODO(wallet-team)`. **Phase 4 = thay nguồn dữ liệu mock này bằng BE thật**, giữ nguyên phần lớn UI/animation đã polish.
 
-### 1.4. BE contract — endpoint CÓ nhưng UNTYPED (đây là blocker)
+### 1.4. BE contract — partial unblock (refresh 2026-05-28)
 
-| Endpoint                | Method | Vấn đề                                      |
-| ----------------------- | ------ | ------------------------------------------- |
-| `/bot/{id}/open_trades` | GET    | response `schema = {}` — **không có shape** |
-| `/bot/{id}/logs`        | GET    | response `schema = {}`                      |
-| `/bot/{id}/performance` | GET    | response `schema = {}`                      |
+**Còn empty (2 endpoint — vẫn cần Tuấn document):**
 
-Endpoint tồn tại, gọi được, trả `application/json`, nhưng **openapi.json không định nghĩa shape** → `src/types/api.d.ts` gen ra type rỗng → FE không build typed UI được.
+| Endpoint                | Method | Vấn đề                                            |
+| ----------------------- | ------ | ------------------------------------------------- |
+| `/bot/{id}/open_trades` | GET    | response `schema = {}` — không có shape           |
+| `/bot/{id}/db_trades`   | GET    | response `schema = {}` (alternative — cũng empty) |
+| `/bot/{id}/performance` | GET    | response `schema = {}`                            |
 
-**Control nâng cao (typed, dùng sau):** `/bot/{id}/force_entry`, `/force_exit`, `/set_stoploss`, `/test_signal` — có sẵn, để "manual intervention" sau.
+**🆕 Workaround đã typed (Tuấn vừa thêm trong openapi refresh 2026-05-28):**
 
-**Real-time:** prototype vẽ `WS /ws/bot/{id}/info` nhưng **spec là REST-only, không có WS**. → Phase 4 dùng **polling** (tái dùng `useBotStatusPoll` pattern của Phase 1, cadence ~3s). WS chỉ làm nếu BE thêm sau.
+| Endpoint                 | Method | Response                     | Use case                                                                                                                               |
+| ------------------------ | ------ | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `/bot/{id}/audit_logs`   | GET    | `array<BotAuditLogOut>` ✅   | Thay `/logs` cho activity feed. Field: `{id, bot_id, server_id, action, triggered_by, result, error_details, timestamp}`               |
+| `/backtest/{id}/candles` | GET    | `BacktestCandlesResponse` ✅ | Equity curve cho `BacktestResultScreen` (Phase 3 nâng cao). Field: `{backtest_id, pair, timeframe, range_start, range_end, candles[]}` |
+| `/bot/{id}/restart`      | POST   | `BotStatusOut` ✅            | Lifecycle action mới — restart bot (defer Phase 1.1 nếu cần)                                                                           |
+| `/bot/rotate-wallet`     | POST   | —                            | Rotate agent wallet (Phase 2b advanced)                                                                                                |
 
-### 1.5. Sub-gap: backtest `results` (có thể gộp vào đây hoặc Phase 3.1)
+**Real-time:** spec mới đã **xoá** 3 WS endpoints cũ (`/ws/bot/{id}/info`, `/ws/connections/*`) → Phase 4 confirm REST polling (tái dùng `useBotStatusPoll` pattern của Phase 1, cadence ~3s). WS không có trong roadmap nữa.
 
-`BacktestHistoryItem.results` là `object` untyped. Metric top-level (`trade_count`, `total_profit`, `win_rate`) đã typed; nhưng **max-drawdown / Sharpe / avg-trade / equity-curve nằm trong `results`** mà BE chưa định nghĩa. Phase 3 đã render phòng thủ ("—" nếu thiếu). Khi BE document `results`, siết type trong `src/features/backtest/backtest-helpers.ts` (`extractMetrics`).
+**Control nâng cao (typed, dùng sau):** `/bot/{id}/force_entry`, `/force_exit`, `/set_stoploss`, `/test_signal` — vẫn có sẵn cho "manual intervention".
 
-### 1.6. FE work outline (khi đã unblock)
+### 1.5. ✅ RESOLVED — Backtest `results` shape known từ sample
 
-- `bot-monitoring/monitoring.api.ts`: `getOpenTrades(id)`, `getLogs(id)`, `getPerformance(id)` (typed sau khi có schema).
-- Hook poll cho từng nguồn (hoặc 1 hook gộp), cadence khác nhau (trades 3s, performance 8s…).
+`BE/backtest_200.json` (sample Tuấn gửi 2026-05-28) đã xác nhận shape:
+
+- `results = { strategy: { [name]: RawFreqtradeReport }, strategy_comparison: Array<BacktestComparisonItem> }`
+- `BacktestComparisonItem` chứa: trades, profit_total_abs/pct, winrate (0-1), sharpe, sortino, calmar, profit_factor, max_drawdown_account (0-1 ratio), max_drawdown_abs (string!), duration_avg (string).
+- Top-level `total_profit` = absolute USDT/USDC (= `profit_total_abs` rounded). **Gap 2 closed.**
+
+Phase 3 plan (`docs/superpowers/plans/2026-05-27-backtest.md`) đã update:
+
+- `BacktestComparisonItem` interface FE-defined local.
+- `extractMetrics` đọc trực tiếp `results.strategy_comparison[0]` typed.
+- `formatTotalProfit(v, currency)` với USDT suffix.
+
+§1.5 sub-gap CLOSED — không cần BE document `results` nữa (FE owns local type).
+
+### 1.6. FE work outline (khi unblock toàn bộ)
+
+- `bot-monitoring/monitoring.api.ts`:
+  - `getOpenTrades(id)` + `getPerformance(id)` — typed **sau khi Tuấn document** (2 endpoint còn empty).
+  - `getAuditLogs(id)` — typed **NGAY** (`BotAuditLogOut[]`), dùng cho activity feed thay `/logs`.
+- Hook poll cho từng nguồn (hoặc 1 hook gộp), cadence khác nhau (trades 3s, performance 8s, audit_logs 5s…).
 - Thay các `use*` mock trong `BotMonitoringPage.tsx` (`useSnapshot`, `useFills`, `useEquityCurve`, `useCycle`) bằng nguồn thật; map BE shape → các type UI hiện có (`PerformanceSnapshot`, `Fill`, `EquityPoint` trong `bot-monitoring/types.ts`).
 - Giữ Hyperliquid market data thật (`hyperliquid.service.ts`) như cũ.
+- Tận dụng `/backtest/{id}/candles` cho equity curve trong `BacktestResultScreen` (Phase 3.1 nâng cao).
 
-### 1.7. ⛔ BLOCKER — câu hỏi chính xác cho BE (Tuấn)
+### 1.7. ⛔ BLOCKER còn lại — câu hỏi cuối cho Tuấn
 
-> "Cho mình **shape JSON** (hoặc 1 sample response thật) của 3 endpoint: `GET /bot/{id}/open_trades`, `/logs`, `/performance`, và object `results` trong `GET /backtest/{id}`. Hiện openapi.json để trống schema nên FE không gen type được."
+> "Em ơi, shape JSON của 2 endpoint cuối vẫn `schema={}` trong openapi:
+>
+> - `GET /bot/{id}/open_trades` (hoặc nếu deprecated thì xác nhận dùng `/db_trades` — nhưng `/db_trades` cũng đang empty)
+> - `GET /bot/{id}/performance`
+>
+> Document trong openapi hoặc gửi 1 sample response giúp anh.  
+> `/audit_logs` + `/backtest/{id}/candles` đã typed rồi — FE dùng được, cảm ơn em."
 
-→ Sau khi có: BE regen `openapi.json` (tốt nhất) HOẶC FE tự type từ sample + ghi chú "manual type, chờ BE".
+→ Sau khi có 2 shape này: BE regen `openapi.json` (tốt nhất) HOẶC FE tự type từ sample.
 
 ### 1.8. Ready-to-write-a-plan khi:
 
-- [ ] Có schema/sample cho open_trades + logs + performance (+ backtest `results`).
-- [ ] Phase 1 đã merge (poll pattern + `botApi`).
-- [ ] Chốt: polling (mặc định) hay chờ WS.
+- [ ] Có schema/sample cho `/open_trades` (hoặc `/db_trades`) + `/performance`. _(2 endpoint cuối)_
+- [x] ~~Phase 1 đã merge (poll pattern + botApi)~~ — DONE (PR #12, awaiting code-review GO).
+- [x] ~~Chốt: polling vs WS~~ — DONE: polling (WS endpoints đã removed từ spec).
+- [x] ~~`results` shape~~ — RESOLVED (xem §1.5).
 
 ### 1.9. Open questions
 
-- `/performance` có trả sẵn equity-curve series không, hay FE phải tự dựng từ trades?
-- `/logs` format (free-text lines vs structured events) → quyết định activity-feed mapping.
-- Auto-stop 7-day (Free) — do BE enforce hay FE chỉ hiển thị? (liên quan Phase 5).
+- `/performance` có trả sẵn equity-curve series không (cho live bot), hay FE phải tự dựng từ trades? _(Cho backtest, `/backtest/{id}/candles` đã có; live monitoring chưa rõ.)_
+- Auto-stop 7-day (Free) — do BE enforce hay FE chỉ hiển thị? _(Liên quan Phase 5.)_
 
 ---
 
