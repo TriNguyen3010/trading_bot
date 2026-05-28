@@ -17,6 +17,41 @@
 
 ---
 
+## Build notes (post-implementation, 2026-05-28)
+
+Phase 1 đã ship trên branch `feat/bot-lifecycle` (commits `78517f1`, `afa1080`, `1596b2d`, `616246e`, `db53cee`, `737daef`, `75b876c`, `7019cc8`). 393/393 tests pass, typecheck clean, 0 lint errors. Reviewer code nên đọc các deviation đã approve dưới đây — code có sai khác với snippet trong plan, **không phải bug**.
+
+### T3 — `useBotStatusPoll` (commit `1596b2d`) — 2 approved deviations
+
+- **Combined two `useEffect`s into one.** Plan calls `schedule()` synchronously before the initial fetch resolves, so `statusRef.current === null` → `isTerminal('')` is `false` → always picks `fastInterval` for the first tick. Breaks the "polls slow" test. Fix: `void fetchOnce().then(() => { if (enabled && active) schedule(); })`. Spec reviewer independently verified by reverting to plan code (test fails) — approved.
+- **Added `globalThis.jest = vi` shim to `src/test/setup.ts`** so `@testing-library/dom`'s `waitFor` recognizes Vitest fake timers (RTL gates fake-timer detection on `typeof jest !== 'undefined'`). Without it, `waitFor` falls back to real-timer polling and hangs.
+
+### T5 — `bot-list.helpers.ts` (commit `737daef`) — S3 + 2 approved deviations
+
+- **S3 finding applied** (see `docs/superpowers/reviews/2026-05-28-response-to-devin-bot-lifecycle-review.md` §S3): `deriveMode` param narrowed from `BotOut` → `Pick<BotOut, 'status' | 'error_message'>`. Removes the cast + misleading `strategy_name: b.name` line that T6's `updateOneBot` would otherwise need.
+- **Also touched `src/pages/DashboardPage.tsx`** (not in plan's file list): added `STARTING` + `STOPPING` entries to the `modeStyle` map. The map is `Record<DashboardBotMode, string>` (implicitly typed) so extending the union without extending the map fails typecheck.
+- **Preserved the 2-if guard** for the `running` branch. Plan's condensed `config?.dry_run === false ? 'LIVE' : 'DRY-RUN'` would regress the existing `handles null config (treats as PAUSED unless explicitly error)` test (with `running` + `config=null`, ternary returns `'DRY-RUN'` instead of falling through to `'PAUSED'`).
+
+### T1, T2, T4 — verbatim from plan
+
+T4 has a 1-line a11y test fixture follow-up in commit `db53cee` (replaced `body=""` → `body="Stopping…"` to silence Radix's `Missing Description` warning).
+
+### T6 + T7 — shipped without subagent code-review
+
+T1–T5 went through the `superpowers:subagent-driven-development` review chain (spec + code-quality reviewers). T6 (`75b876c`) and T7 (`7019cc8`) were shipped manually and skipped that chain. **Code reviewer should give these extra attention.**
+
+### Deferred findings (apply before merge, ~30 min)
+
+| #             | Source      | Effort   | Description                                                                                                                     |
+| ------------- | ----------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| T3 I2         | code-review | 10 lines | Missing tests for `enabled: false` and `botId === null` (documented contracts, no coverage today)                               |
+| T3 I1         | code-review | 1 line   | Unmount race window for in-flight `setState` (React 18 silently no-ops; low risk) — add a `mountedRef` guard inside `fetchOnce` |
+| T5 M1         | code-review | 1 line   | `Record<DashboardBotMode, string>` annotation on `modeStyle` for exhaustiveness lock-in                                         |
+| T5 M2         | code-review | 2 lines  | Bump opacity `/60` → `/70` on STARTING/STOPPING text classes (WCAG AA at 10px)                                                  |
+| T5 M4 _(opt)_ | code-review | 5 lines  | Test pinning `status='starting' + error_message='crash'` → STARTING precedence over ERROR                                       |
+
+---
+
 ## Background — what BE exposes
 
 Khi đọc plan này lần đầu, đây là 5 endpoint BE đã sẵn (xem `BE/openapi.json`):
