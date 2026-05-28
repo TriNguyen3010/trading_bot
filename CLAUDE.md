@@ -2,7 +2,7 @@
 
 > **Audience:** Dev mới join project HOẶC AI agent (Claude/Copilot) cần context để code.
 > **Đọc xong file này:** nắm được app làm gì, code ở đâu, quy ước gì, chạy như nào.
-> **Last updated:** 2026-05-21
+> **Last updated:** 2026-05-28
 
 ---
 
@@ -24,8 +24,8 @@
 - ✅ Cypheus AI panel (scripted demo) — DONE
 - ✅ Export JSON ra file — DONE
 - ✅ **Coin98 wallet auth** — DONE (`src/features/wallet-auth/`, spec `docs/superpowers/specs/2026-05-14-c98-wallet-auth-design.md`)
-- 🚧 **Submit lên BE thật** (hiện chỉ download file) — đang làm
-- ⏳ Bot lifecycle (start/stop/monitoring) — future work
+- ✅ **Submit lên BE thật** — DONE (`ExportDialog.handleSubmit` → `POST /bot-strategy/create`)
+- 📝 **Bot lifecycle / launchpad / backtest** — có plan đầy đủ trong `docs/superpowers/plans/` + spec phase 4-5 ở `docs/superpowers/specs/`; build order **1 → 3 → 2 → (4, 5)**, chưa build
 - ⏳ Email/password login (`PLAN_LOGIN_SUBMIT.md`) — **superseded** bởi wallet auth, plan giữ làm reference
 
 ---
