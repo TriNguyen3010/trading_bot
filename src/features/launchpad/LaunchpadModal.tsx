@@ -50,7 +50,7 @@ export function LaunchpadModal({
 }: LaunchpadModalProps) {
   // Phase 2a: `step` only ever transitions back to 'modes' on open. Phase 2b
   // will add the `setStep('live-confirm')` transition from the Live card.
-  const [step, setStep] = useState<Step>('modes');
+  const [, setStep] = useState<Step>('modes');
   const [busy, setBusy] = useState<LaunchMode | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,18 +91,11 @@ export function LaunchpadModal({
     }
   };
 
-  // Reference `step` so the union member stays "live" for the type-checker —
-  // Phase 2b will branch on it to render `'live-confirm'`.
-  void step;
-
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-md data-[state=open]:animate-fade-in" />
-        <DialogPrimitive.Content
-          aria-describedby={undefined}
-          className="fixed left-1/2 top-1/2 z-50 w-[920px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-border bg-surface-elevated shadow-lg data-[state=open]:animate-fade-in"
-        >
+        <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[920px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-border bg-surface-elevated shadow-lg data-[state=open]:animate-fade-in">
           {/* Top bar — Phase 2a: no Back button (no live-confirm step to back from). */}
           <div className="flex items-center justify-between border-b border-border-subtle px-6 py-3">
             <div />
@@ -138,9 +131,9 @@ export function LaunchpadModal({
             )}
 
             <div className="mb-7">
-              <div className="mb-1.5 font-mono text-2xs uppercase tracking-wider text-fg-muted">
+              <DialogPrimitive.Description className="mb-1.5 font-mono text-2xs uppercase tracking-wider text-fg-muted">
                 Bot #{bot.id} · {bot.pair} · {bot.timeframe}
-              </div>
+              </DialogPrimitive.Description>
               <DialogPrimitive.Title className="text-2xl font-bold leading-tight text-fg">
                 Launch <span className="text-brand">{bot.name}</span>
               </DialogPrimitive.Title>
