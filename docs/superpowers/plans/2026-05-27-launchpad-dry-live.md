@@ -45,13 +45,15 @@
 | `src/features/launchpad/LaunchpadModal.tsx`      | Modal hub: modes → live-confirm                  |
 | `src/features/launchpad/LaunchpadModal.test.tsx` | Component test                                   |
 
-**Modified files (2):**
+**Modified files (4):**
 
-| Path                                           | Change                                                                                            |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `src/features/bot-builder/bot-strategy.api.ts` | Add `update(botId, payload)` → PATCH `/bot-strategy/{id}`                                         |
-| `src/pages/DashboardPage.tsx`                  | Route non-running cards → Launchpad; mount `LaunchpadModal`; consume post-create `launchpadBotId` |
-| `src/features/export-import/ExportDialog.tsx`  | Post-create: navigate `/dashboard` + `state.launchpadBotId` thay vì `/bots/:id`                   |
+| Path                                                     | Change                                                                                                      |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `src/features/bot-builder/bot-strategy.api.ts`           | Add `update(botId, payload)` → PATCH `/bot-strategy/{id}`                                                   |
+| `src/pages/DashboardPage.tsx`                            | Route non-running cards + **Start button** → Launchpad; mount `LaunchpadModal`; consume `launchpadBotId`    |
+| `src/features/export-import/ExportDialog.tsx`            | Post-create: navigate `/dashboard` + `state.launchpadBotId` thay vì `/bots/:id`                             |
+| `src/features/bot-monitoring/BotMonitoringPage.tsx`      | **Stopped Start handler** routes through Dashboard Launchpad (close direct-`botApi.start` bypass — Task 5b) |
+| `src/features/bot-monitoring/BotMonitoringPage.test.tsx` | New regression test: stopped Start does NOT call `botApi.start` directly (Task 5b)                          |
 
 ---
 
@@ -715,9 +717,11 @@ function toLaunchpadBot(b: DashboardBot): LaunchpadBot {
 }
 ```
 
-- [ ] **Step 2: Route non-running cards to Launchpad**
+- [ ] **Step 2: Route non-running cards + Start button to Launchpad (Critical — close direct-start bypass)**
 
-Replace the `onClick` expression on the `<BotCard>` in the grid `.map` with mode-aware routing (running → monitor; stopped/error → Launchpad; demo → builder):
+⚠️ **Safety context (Devin round 5):** Phase 1's `BotCard` exposes a Start button that, for PAUSED bots, calls `doStart(bot.id)` → `botApi.start(id)` **directly**. This **bypasses Launchpad's Live-disabled gate** — a bot with `dry_run=false` in config (previously Live, now stopped) re-starts in LIVE mode without going through Phase 2b's agent EIP-712 confirmation. Fix: route BOTH the card click AND the Start button through Launchpad for non-running bots.
+
+Replace the `onClick` AND `onStart` expressions on the `<BotCard>` in the grid `.map`:
 
 ```tsx
                       onClick={
@@ -727,9 +731,18 @@ Replace the `onClick` expression on the `<BotCard>` in the grid `.map` with mode
                             ? () => navigate(`/bots/${bot.id}`)
                             : () => setLaunchBotTarget(toLaunchpadBot(bot))
                       }
+                      onStart={
+                        bot.isDemo
+                          ? undefined
+                          : () => setLaunchBotTarget(toLaunchpadBot(bot))
+                      }
 ```
 
+The Start button still renders for PAUSED bots (familiar UX), but its click now opens Launchpad — user explicitly picks mode (Backtest / Dry-run; Live card disabled in 2a) before bot actually starts. Phase 2b will enable Live card after agent flow.
+
 > `toLaunchpadBot` only receives real `DashboardBot`s — the `bot.isDemo` branch returns first, so `MockBot` (which lacks real fields) never reaches the mapper.
+
+> **Regression test required (Step 4 below):** Phase 1 T6 test asserts "Start button calls botApi.start with bot id". Phase 2a **MUST** update that test to: "Start button opens Launchpad (`launchBotTarget !== null` after click); `botApi.start` NOT called". Plus add new test pinning the safety: stopped bot + `dry_run=false` config → Start click → `botApi.start` NOT called directly.
 
 - [ ] **Step 3: Mount the Launchpad modal**
 
@@ -851,6 +864,113 @@ git commit -m "feat(launchpad): open Launchpad after bot creation"
 
 ---
 
+## Task 5b: Close direct-Start bypass on BotMonitoringPage (Critical — Devin round 5)
+
+**Files:**
+
+- Modify: `src/features/bot-monitoring/BotMonitoringPage.tsx`
+- Modify (or create): `src/features/bot-monitoring/BotMonitoringPage.test.tsx`
+
+⚠️ Phase 1 BotMonitoringPage header renders a Start button when `!isRunning && !isError && !isTransition` (= stopped). Its `onClick` → `doStart` → `botApi.start(id)` **directly** — **same bypass as Dashboard Task 4 Step 2 closes**. Route this Start through Launchpad too. Stop + Sync stay unchanged (Stop never escalates trust; Sync is read-only).
+
+- [ ] **Step 1: Replace the stopped Start handler**
+
+In `src/features/bot-monitoring/BotMonitoringPage.tsx`, find:
+
+- `doStart` definition (around line 3861)
+- The header `onStart={doStart}` prop wiring (around line 3927)
+
+Add a navigation-based handler that routes through Dashboard Launchpad (reusing Task 5's `launchpadBotId` consume effect):
+
+```tsx
+// Near the existing useNavigate import + meta hook:
+const handleStartClick = useCallback(() => {
+  // Route stopped-bot Start through Launchpad on Dashboard.
+  // Direct botApi.start would bypass Phase 2b's agent EIP-712 gate when the
+  // bot's stored config has dry_run=false (previously Live, now stopped).
+  navigate('/dashboard', { state: { launchpadBotId: meta.id } });
+}, [navigate, meta.id]);
+```
+
+Then wire the header: `onStart={handleStartClick}` (replacing the previous `onStart={doStart}`). `doStop` and `doSync` keep their existing wiring.
+
+> Note: `meta.id` — confirm shape in your implementer prompt. Phase 1 uses `useParams<{ id: string }>` + parses to number (`safeBotId`). Use the parsed number id, not the URL string.
+
+- [ ] **Step 2: Regression test**
+
+In `src/features/bot-monitoring/BotMonitoringPage.test.tsx` (create if absent, or extend existing):
+
+```tsx
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { BotMonitoringPage } from './BotMonitoringPage';
+import { botApi } from './bot.api';
+
+vi.mock('./bot.api', () => ({
+  botApi: {
+    getStatus: vi.fn(),
+    start: vi.fn(),
+    stop: vi.fn(),
+    sync: vi.fn(),
+  },
+}));
+
+describe('BotMonitoringPage — Start bypass closed', () => {
+  beforeEach(() => {
+    vi.mocked(botApi.getStatus).mockResolvedValue({
+      id: 7,
+      bot_name: 'Test',
+      status: 'stopped',
+      desired_status: null,
+      is_process_running: false,
+      error_message: null,
+    });
+    vi.mocked(botApi.start).mockReset();
+  });
+
+  it('stopped Start does NOT call botApi.start (routes through Dashboard Launchpad)', async () => {
+    render(
+      <MemoryRouter initialEntries={['/bots/7']}>
+        <Routes>
+          <Route path="/bots/:id" element={<BotMonitoringPage />} />
+          <Route path="/dashboard" element={<div>dashboard</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: /start/i }),
+      ).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /start/i }));
+    // Critical assertion: bot.api.start MUST NOT be called.
+    expect(botApi.start).not.toHaveBeenCalled();
+    // And navigation to dashboard should have happened (page text changes).
+    await waitFor(() =>
+      expect(screen.getByText('dashboard')).toBeInTheDocument(),
+    );
+  });
+});
+```
+
+> Test setup may need adjustment for `BotMonitoringPage`'s heavy mock dependencies (`useBotMeta`, `hlApi`, etc.). If isolation is too complex, mark with `// TODO(phase-4): expand` and defer to Phase 4 overhaul — but the assertion that `botApi.start` is NOT called is the safety contract; that part is non-negotiable.
+
+- [ ] **Step 3: Verify**
+
+Run: `pnpm typecheck && pnpm test BotMonitoringPage`
+Expected: PASS.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/features/bot-monitoring/BotMonitoringPage.tsx \
+        src/features/bot-monitoring/BotMonitoringPage.test.tsx
+git commit -m "fix(launchpad): route BotMonitoringPage stopped Start through Dashboard Launchpad"
+```
+
+---
+
 ## Task 6: Manual smoke + final sweep + PR
 
 **Files:** none (verification only)
@@ -865,11 +985,17 @@ Expected: all PASS / no diffs.
 Checklist (`pnpm dev`, wallet connected, BE up; needs Phase 1 + Phase 3 merged):
 
 - Create a bot (builder → Deploy) → lands on Dashboard with Launchpad open on the new bot.
-- Launchpad shows 3 cards. **Run backtest** → Launchpad closes, BacktestDialog opens for the same bot.
+- Launchpad shows 3 cards: **Backtest** (active), **Dry-run** (active), **Live (Phase 2b)** disabled with placeholder label.
+- **Run backtest** → Launchpad closes, BacktestDialog opens for the same bot.
 - **Start dry-run** → PATCH `/bot-strategy/{id}` (`dry_run:true`) + POST `/bot/{id}/start` fire → navigates to `/bots/:id`.
-- **Go live** → confirm step → **Yes, deploy live** → PATCH (`dry_run:false`) + start → `/bots/:id`.
+- **Live card** → click does NOT fire (disabled); label shows "Live (Phase 2b)".
 - Dashboard: clicking a LIVE/DRY-RUN card goes to monitor; clicking a PAUSED/ERROR card opens Launchpad.
 - ERROR bot Launchpad shows the error banner + **Sync** → POST `/bot/{id}/sync`.
+- **🔒 Critical bypass check (Devin R5):**
+  - Create a bot with `dry_run:false` in config (or PATCH an existing bot), STOP it manually. Dashboard now shows it as PAUSED.
+  - Click the **Start button on the Dashboard card** → must open Launchpad (NOT immediately call `botApi.start`). Verify Network tab: NO `POST /bot/{id}/start` until user picks a mode in Launchpad.
+  - On `/bots/{id}` Monitor page for the same stopped bot → click **Start** in header → must navigate back to `/dashboard` and auto-open Launchpad. Network tab: NO direct `POST /bot/{id}/start`.
+  - If either path fires `botApi.start` directly without going through Launchpad → Phase 2a is NOT shipped correctly.
 
 - [ ] **Step 3: Open PR**
 
