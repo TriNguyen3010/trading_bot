@@ -221,7 +221,11 @@ export function BacktestDialog({
                   <Button
                     variant="primary"
                     size="md"
-                    disabled={submitting || !Number(stake) || !Number(wallet)}
+                    disabled={
+                      submitting ||
+                      !(Number(stake) > 0) ||
+                      !(Number(wallet) > 0)
+                    }
                     onClick={runBacktest}
                     aria-label="Run backtest"
                   >
