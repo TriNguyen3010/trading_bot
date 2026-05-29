@@ -14,6 +14,7 @@ export interface DashboardBot {
   name: string;
   pair: string;
   timeframe: string;
+  strategyName: string | null;
   uptime: string | null;
   mode: DashboardBotMode;
   errorMsg: string | null;
@@ -74,6 +75,7 @@ export function zipBotsAndConfigs(
       name: bot.bot_name ?? `Bot #${bot.id}`,
       pair: derivePair(config),
       timeframe: deriveTimeframe(config),
+      strategyName: bot.strategy_name ?? null,
       uptime: null,
       mode: deriveMode(bot, config),
       errorMsg: bot.error_message ?? null,
