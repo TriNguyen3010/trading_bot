@@ -1,5 +1,12 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   FlaskConical,
@@ -128,6 +135,8 @@ function toLaunchpadBot(b: DashboardBot): LaunchpadBot {
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const consumedLaunchRef = useRef(false);
   const { requireWalletThen } = useRequireWallet();
   const [search, setSearch] = useState('');
   const [importOpen, setImportOpen] = useState(false);
@@ -213,6 +222,22 @@ export function DashboardPage() {
   const [launchBotTarget, setLaunchBotTarget] = useState<LaunchpadBot | null>(
     null,
   );
+
+  // After bot creation, ExportDialog routes here with state.launchpadBotId.
+  // Open the Launchpad for that freshly-created bot once it appears in the
+  // refetched list. Consume once so a manual refresh doesn't re-open it.
+  useEffect(() => {
+    const targetId = (location.state as { launchpadBotId?: number } | null)
+      ?.launchpadBotId;
+    if (targetId == null || consumedLaunchRef.current || !realBots) return;
+    const found = realBots.find((b) => b.id === targetId);
+    if (found) {
+      consumedLaunchRef.current = true;
+      setLaunchBotTarget(toLaunchpadBot(found));
+      // Clear the history state so back/refresh won't re-trigger.
+      navigate('/dashboard', { replace: true, state: {} });
+    }
+  }, [location.state, realBots, navigate]);
 
   // Splice one bot's mode/errorMsg in `realBots` after a lifecycle response.
   // BotStatusOut doesn't carry `dry_run`, so we re-use the previous row's
