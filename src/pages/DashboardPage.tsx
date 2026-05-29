@@ -29,6 +29,10 @@ import {
   BacktestDialog,
   type BacktestBot,
 } from '@/features/backtest/BacktestDialog';
+import {
+  LaunchpadModal,
+  type LaunchpadBot,
+} from '@/features/launchpad/LaunchpadModal';
 import { formatBackendError } from '@/lib/format-error';
 import { AppHeader } from './AppHeader';
 
@@ -104,6 +108,23 @@ const MOCK_BOTS: MockBot[] = [
     isDemo: true,
   },
 ];
+
+/** Map a loaded real bot to the minimal shape LaunchpadModal needs. The
+ * onClick router only invokes this for PAUSED/ERROR bots (LIVE/DRY-RUN/
+ * STARTING/STOPPING route to monitor, isDemo routes to /builder), so the
+ * mode narrowing cast is safe at runtime — STARTING/STOPPING never reach
+ * here. */
+function toLaunchpadBot(b: DashboardBot): LaunchpadBot {
+  return {
+    id: b.id,
+    name: b.name,
+    strategyName: b.strategyName,
+    pair: b.pair,
+    timeframe: b.timeframe,
+    mode: b.mode as LaunchpadBot['mode'],
+    errorMsg: b.errorMsg,
+  };
+}
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -189,6 +210,9 @@ export function DashboardPage() {
     botName: string;
   }>(null);
   const [backtestBot, setBacktestBot] = useState<BacktestBot | null>(null);
+  const [launchBotTarget, setLaunchBotTarget] = useState<LaunchpadBot | null>(
+    null,
+  );
 
   // Splice one bot's mode/errorMsg in `realBots` after a lifecycle response.
   // BotStatusOut doesn't carry `dry_run`, so we re-use the previous row's
@@ -570,7 +594,12 @@ export function DashboardPage() {
                       onClick={
                         bot.isDemo
                           ? () => requireWalletThen(() => navigate('/builder'))
-                          : () => navigate(`/bots/${bot.id}`)
+                          : bot.mode === 'LIVE' ||
+                              bot.mode === 'DRY-RUN' ||
+                              bot.mode === 'STARTING' ||
+                              bot.mode === 'STOPPING'
+                            ? () => navigate(`/bots/${bot.id}`)
+                            : () => setLaunchBotTarget(toLaunchpadBot(bot))
                       }
                       onStart={
                         bot.isDemo ? undefined : () => void doStart(bot.id)
@@ -685,6 +714,31 @@ export function DashboardPage() {
           if (!o) setBacktestBot(null);
         }}
         bot={backtestBot}
+      />
+
+      <LaunchpadModal
+        open={launchBotTarget !== null}
+        onOpenChange={(o) => {
+          if (!o) setLaunchBotTarget(null);
+        }}
+        bot={launchBotTarget}
+        onBacktest={() => {
+          if (launchBotTarget) {
+            setBacktestBot({
+              id: launchBotTarget.id,
+              name: launchBotTarget.name,
+              strategyName: launchBotTarget.strategyName,
+              pair: launchBotTarget.pair,
+              timeframe: launchBotTarget.timeframe,
+            });
+          }
+          setLaunchBotTarget(null);
+        }}
+        onLaunched={() => {
+          const id = launchBotTarget?.id;
+          setLaunchBotTarget(null);
+          if (id != null) navigate(`/bots/${id}`);
+        }}
       />
     </div>
   );
