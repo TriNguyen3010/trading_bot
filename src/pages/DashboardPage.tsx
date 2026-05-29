@@ -840,9 +840,14 @@ function BotCard({
       ) : null}
 
       {/* Backtest action — analysis row, separate from lifecycle row below
-          so the lifecycle row's sizing/tap targets stay intact. Hidden during
-          STARTING/STOPPING because the bot is mid-transition. Demo cards
-          pass undefined → row not rendered. */}
+          so the lifecycle row's sizing/tap targets stay intact. Demo cards
+          pass undefined → row not rendered.
+          Intentionally stays visible in ERROR mode: backtest is pure strategy
+          analysis (reads BotOut.strategy_name, runs Freqtrade against history)
+          and works regardless of live process health — independent of the
+          "Fix connection" lifecycle button. Only hidden during STARTING/STOPPING
+          since the lifecycle row is mid-transition and renders a non-interactive
+          spinner. */}
       {onBacktest && bot.mode !== 'STARTING' && bot.mode !== 'STOPPING' && (
         <div className="mt-3 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
           <Button
