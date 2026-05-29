@@ -63,7 +63,7 @@ describe('BacktestDialog', () => {
         status: 'completed',
         trade_count: 47,
         total_profit: 12.4,
-        win_rate: 0.617,
+        win_rate: 61.7,
         started_at: '2026-05-21T00:00:00Z',
         completed_at: '2026-05-21T00:01:00Z',
         results: { sharpe: 1.42 },
@@ -117,5 +117,85 @@ describe('BacktestDialog', () => {
       />,
     );
     expect(screen.getByText(/chưa có strategy name/i)).toBeInTheDocument();
+  });
+
+  it('reverts to setup with error banner when poll reports error', async () => {
+    mockPoll.mockReturnValue({
+      item: null,
+      done: true,
+      error: 'Backtest failed: insufficient candles',
+    });
+    render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        initialBacktestId={99}
+      />,
+    );
+    // Effect 1 should detect poll.error and revert to setup; the error
+    // text surfaces inside the setup-step error banner.
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Backtest failed: insufficient candles/i),
+      ).toBeInTheDocument(),
+    );
+    // Setup-step controls are visible again.
+    expect(
+      screen.getByRole('button', { name: /run backtest/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows "No metrics returned" fallback when poll completes with no item', () => {
+    mockPoll.mockReturnValue({ item: null, done: true, error: null });
+    render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        initialBacktestId={99}
+      />,
+    );
+    // Without an item, extractMetrics returns null and the result step
+    // falls back to the "No metrics returned" view.
+    expect(screen.getByText(/No metrics returned/i)).toBeInTheDocument();
+  });
+
+  it('"Run again" resets the dialog to setup from the result step', () => {
+    mockPoll.mockReturnValue({
+      item: {
+        id: 99,
+        bot_id: 42,
+        user_id: 7,
+        strategy_name: 'BollingerBreakout',
+        timeframe: '5m',
+        timerange: '20260514-20260521',
+        status: 'completed',
+        trade_count: 47,
+        total_profit: 12.4,
+        win_rate: 61.7,
+        started_at: '2026-05-21T00:00:00Z',
+        completed_at: '2026-05-21T00:01:00Z',
+        results: { sharpe: 1.42 },
+      },
+      done: true,
+      error: null,
+    });
+    render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        initialBacktestId={99}
+      />,
+    );
+    // First we're in the result step.
+    expect(screen.getByText('47')).toBeInTheDocument();
+    // Click Run again.
+    fireEvent.click(screen.getByRole('button', { name: /run again/i }));
+    // Setup-step controls reappear (Run button is visible again).
+    expect(
+      screen.getByRole('button', { name: /run backtest/i }),
+    ).toBeInTheDocument();
   });
 });

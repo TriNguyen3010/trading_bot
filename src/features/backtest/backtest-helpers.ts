@@ -87,7 +87,10 @@ export function extractMetrics(item: BacktestHistoryItem): BacktestMetrics {
     trades: item.trade_count ?? null,
     totalProfit: item.total_profit ?? null,
     winRate: item.win_rate ?? null,
-    maxDrawdownPct: comp ? comp.max_drawdown_account * 100 : null,
+    maxDrawdownPct:
+      comp && typeof comp.max_drawdown_account === 'number'
+        ? comp.max_drawdown_account * 100
+        : null,
     sharpe: comp?.sharpe ?? null,
     avgTrade: comp?.duration_avg ?? null,
   };
