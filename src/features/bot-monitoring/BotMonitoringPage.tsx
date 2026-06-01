@@ -3828,6 +3828,7 @@ function DevControls() {
 
 export function BotMonitoringPage() {
   const { id = '' } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const metaRaw = useBotMeta(id);
   const effectiveDeployedAt = useDevDeployedOverride(metaRaw?.deployedAt);
   const meta =
@@ -3858,19 +3859,14 @@ export function BotMonitoringPage() {
   const [pending, setPending] = useState(false);
   const [confirmStop, setConfirmStop] = useState(false);
 
-  const doStart = useCallback(async () => {
+  // Stopped Start must NOT call lifecycleApi.start directly — that bypasses the
+  // Launchpad mode-gate, so a PAUSED ex-Live bot (dry_run=false) would restart
+  // in LIVE without picking a mode / the Phase 2b agent confirmation. Route
+  // through the Dashboard Launchpad instead (Devin R5 / PR #15 Task 5b).
+  const handleStartClick = useCallback(() => {
     if (safeBotId == null) return;
-    setPending(true);
-    try {
-      const next = await lifecycleApi.start(safeBotId);
-      setLiveStatus(next);
-      toast.success(`Starting bot #${safeBotId}`);
-    } catch (err) {
-      toast.error(formatBackendError(err));
-    } finally {
-      setPending(false);
-    }
-  }, [safeBotId, setLiveStatus]);
+    navigate('/dashboard', { state: { launchpadBotId: safeBotId } });
+  }, [navigate, safeBotId]);
 
   const doStop = useCallback(async () => {
     if (safeBotId == null) return;
@@ -3924,7 +3920,7 @@ export function BotMonitoringPage() {
         meta={meta}
         liveStatus={liveStatus}
         pending={pending}
-        onStart={doStart}
+        onStart={handleStartClick}
         onStopClick={() => setConfirmStop(true)}
         onSync={doSync}
       />
