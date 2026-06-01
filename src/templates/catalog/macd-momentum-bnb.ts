@@ -34,7 +34,7 @@ export const macdMomentumBnb: BotTemplate = {
       marketType: 'futures',
       marginMode: 'cross',
       maxOpenTrades: 4,
-      stakeCurrency: 'USDT',
+      stakeCurrency: 'USDC',
       stakeAmount: 100,
       dryRunWallet: 1000,
     },

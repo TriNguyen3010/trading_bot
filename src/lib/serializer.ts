@@ -404,27 +404,12 @@ export function buildUnifiedPayload(state: BuilderState): UnifiedBundle {
       close.type === 'tp_sl' && close.slEnabled ? close.slValue / 100 : null,
     trailing_stop: close.type === 'tp_sl' && close.trailingEnabled,
 
-    telegram: {
-      enabled: false,
-      token: null,
-      chat_id: null,
-      allow_custom_messages: false,
-      notification_settings: {
-        // Initialise the 11-event matrix with conservative defaults so the
-        // BE doesn't have to pick.
-        status: 'on',
-        warning: 'on',
-        startup: 'on',
-        entry: 'on',
-        entry_fill: 'off',
-        entry_cancel: 'on',
-        exit: 'on',
-        exit_fill: 'on',
-        exit_cancel: 'on',
-        protection_trigger: 'on',
-        protection_trigger_global: 'on',
-      },
-    },
+    // The wizard collects no telegram token/chat_id yet, so we must NOT ship a
+    // telegram block: the BE merges whatever we send into the Freqtrade config,
+    // and a null/empty token there crashes it (surfaced as HTTP 500 on create).
+    // null = "no telegram", matching the proven-good create payload. Restore a
+    // populated block only once the wizard actually collects token + chat_id.
+    telegram: null,
 
     // ── Strategy fields ─────────────────────────────────────────
     strategy_description: null,

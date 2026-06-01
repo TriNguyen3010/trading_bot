@@ -17,6 +17,10 @@ export interface DashboardBot {
   strategyName: string | null;
   uptime: string | null;
   mode: DashboardBotMode;
+  /** dry_run captured from getConfig at load time. Persisted so lifecycle
+   * transitions (which only return BotStatusOut, no dry_run) can still
+   * resolve a running bot to DRY-RUN/LIVE instead of falling back to PAUSED. */
+  dryRun: boolean | null;
   errorMsg: string | null;
   pnl: string | null;
   pnlPct: string | null;
@@ -44,13 +48,17 @@ export function deriveMode(
 ): DashboardBotMode {
   if (bot.status === 'starting') return 'STARTING';
   if (bot.status === 'stopping') return 'STOPPING';
-  if (bot.error_message) return 'ERROR';
+  // A bot that is actually running reads as running even if it carries an
+  // error_message: Freqtrade logs non-fatal errors (e.g. a Telegram polling
+  // warning) while still trading, and a stale message from a previous attempt
+  // shouldn't mask a live bot. Only treat error_message as ERROR when the bot
+  // is NOT running (checked below). Need config to disambiguate live vs
+  // dry-run; if config fetch failed (null) fall through rather than misreport.
   if (bot.status === 'running') {
-    // Need config to disambiguate live vs dry-run. If config fetch failed
-    // (null) we'd be guessing — fall through to PAUSED rather than misreport.
     if (config?.dry_run === false) return 'LIVE';
     if (config?.dry_run === true) return 'DRY-RUN';
   }
+  if (bot.error_message) return 'ERROR';
   return 'PAUSED';
 }
 
@@ -78,6 +86,7 @@ export function zipBotsAndConfigs(
       strategyName: bot.strategy_name ?? null,
       uptime: null,
       mode: deriveMode(bot, config),
+      dryRun: config?.dry_run ?? null,
       errorMsg: bot.error_message ?? null,
       pnl: null,
       pnlPct: null,

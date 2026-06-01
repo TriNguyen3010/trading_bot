@@ -36,7 +36,7 @@ export const conservativeDcaBtc: BotTemplate = {
       marketType: 'futures',
       marginMode: 'cross',
       maxOpenTrades: 5,
-      stakeCurrency: 'USDT',
+      stakeCurrency: 'USDC',
       stakeAmount: 100,
       dryRunWallet: 1000,
     },

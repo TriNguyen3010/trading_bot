@@ -12,5 +12,9 @@ export async function launchBot(
   mode: LaunchMode,
 ): Promise<BotStatusOut> {
   await botStrategyApi.update(botId, { dry_run: mode === 'dry-run' });
+  // The wizard collects no Telegram token; disable Telegram before start so
+  // Freqtrade's Updater doesn't crash on a null token. Idempotent — harmless
+  // once the BE stops enabling Telegram by default.
+  await botApi.disableTelegram(botId);
   return botApi.start(botId);
 }

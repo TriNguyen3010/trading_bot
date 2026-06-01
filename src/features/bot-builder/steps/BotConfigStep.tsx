@@ -23,6 +23,7 @@ import {
   STAKE_CURRENCIES,
   PAIR_SUGGESTIONS,
 } from '@/lib/constants';
+import { deriveStakeCurrency } from '@/lib/pair-format';
 import { strings } from '@/i18n/en';
 import type { TradingMode, MarginMode } from '@/types/builder.types';
 
@@ -69,7 +70,19 @@ export function BotConfigSetup() {
               list="pair-suggestions"
               placeholder="BTC-USDC"
               value={config.pair}
-              onChange={(e) => patch({ pair: e.target.value.toUpperCase() })}
+              onChange={(e) => {
+                // Stake currency must equal the pair quote (Freqtrade stakes
+                // in stake_currency) — auto-align it so the user can't ship a
+                // USDT-stake-on-USDC-pair combo that 500s the backend.
+                const pair = e.target.value.toUpperCase();
+                patch({
+                  pair,
+                  stakeCurrency: deriveStakeCurrency(
+                    pair,
+                    config.stakeCurrency,
+                  ),
+                });
+              }}
               autoFocus
             />
             <datalist id="pair-suggestions">

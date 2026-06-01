@@ -21,15 +21,23 @@ export function validateBuilder(state: BuilderState): BuilderIssue[] {
 
   // Bot config -------------------------------------------------------------
   const c = state.botConfig;
+  const pairParts = parseUiPair(c.pair);
   if (!c.pair.trim()) {
     issues.push({
       stepId: 'bot-config',
       message: 'Pick a pair (e.g. BTC-USDC).',
     });
-  } else if (!parseUiPair(c.pair)) {
+  } else if (!pairParts) {
     issues.push({
       stepId: 'bot-config',
       message: 'Pair must be in BASE-QUOTE format, e.g. BTC-USDC.',
+    });
+  } else if (c.stakeCurrency.toUpperCase() !== pairParts.quote) {
+    // Freqtrade stakes in `stake_currency`, which must equal the pair quote;
+    // a mismatch (e.g. USDT stake on a BTC/USDC pair) makes the BE 500.
+    issues.push({
+      stepId: 'bot-config',
+      message: `Stake currency (${c.stakeCurrency}) must match the pair quote (${pairParts.quote}).`,
     });
   }
   if (!c.timeframe) {
