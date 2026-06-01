@@ -14,6 +14,8 @@
  * default heuristic SETTLE = QUOTE for futures.
  */
 
+import { STAKE_CURRENCIES } from './constants';
+
 export interface PairParts {
   base: string;
   quote: string;
@@ -38,6 +40,22 @@ export function uiPairToJson(
   if (market === 'futures')
     return `${parts.base}/${parts.quote}:${parts.quote}`;
   return `${parts.base}/${parts.quote}`;
+}
+
+/**
+ * Stake currency MUST equal the pair's quote currency: Freqtrade funds the
+ * (paper or live) wallet in `stake_currency`, so a USDT wallet cannot trade
+ * a USDC-quoted pair — the BE rejects that combo (was surfacing as a 500).
+ * When the user picks a pair we auto-align the stake currency to its quote,
+ * but only if that quote is one we actually offer; otherwise leave the
+ * current choice untouched and let {@link validateBuilder} flag the mismatch.
+ */
+export function deriveStakeCurrency(uiPair: string, current: string): string {
+  const parts = parseUiPair(uiPair);
+  if (!parts) return current;
+  return (STAKE_CURRENCIES as readonly string[]).includes(parts.quote)
+    ? parts.quote
+    : current;
 }
 
 export function jsonPairToUi(jsonPair: string): string {

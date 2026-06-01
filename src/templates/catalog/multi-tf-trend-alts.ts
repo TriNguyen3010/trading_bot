@@ -35,7 +35,7 @@ export const multiTfTrendAlts: BotTemplate = {
       marketType: 'futures',
       marginMode: 'cross',
       maxOpenTrades: 3,
-      stakeCurrency: 'USDT',
+      stakeCurrency: 'USDC',
       stakeAmount: 100,
       dryRunWallet: 1000,
     },

@@ -44,3 +44,26 @@ describe('BotConfigSetup leverage control', () => {
     expect(input.value).toBe('50');
   });
 });
+
+describe('BotConfigSetup pair → stake currency', () => {
+  beforeEach(() => {
+    useBuilderStore.getState().resetAll();
+  });
+
+  it('aligns the stake currency to the pair quote when the pair changes', () => {
+    // Default stake currency is USDT; switching to a USDC-quoted pair must
+    // flip it to USDC so we never ship the USDT-stake-on-USDC-pair combo
+    // that made the backend 500.
+    expect(useBuilderStore.getState().botConfig.stakeCurrency).toBe('USDT');
+
+    render(<BotConfigSetup />);
+    const pairInput = screen.getByPlaceholderText(
+      'BTC-USDC',
+    ) as HTMLInputElement;
+    fireEvent.change(pairInput, { target: { value: 'btc-usdc' } });
+
+    const config = useBuilderStore.getState().botConfig;
+    expect(config.pair).toBe('BTC-USDC');
+    expect(config.stakeCurrency).toBe('USDC');
+  });
+});

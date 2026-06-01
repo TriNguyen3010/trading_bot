@@ -30,7 +30,7 @@ export const cypheusDefault: BotTemplate = {
       marketType: 'futures',
       marginMode: 'cross',
       maxOpenTrades: 10,
-      stakeCurrency: 'USDT',
+      stakeCurrency: 'USDC',
       stakeAmount: 100,
       dryRunWallet: 1000,
     },
