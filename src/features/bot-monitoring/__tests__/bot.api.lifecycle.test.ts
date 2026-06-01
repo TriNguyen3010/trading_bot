@@ -22,6 +22,20 @@ describe('botApi lifecycle', () => {
     expect(res.desired_status).toBe('running');
   });
 
+  it('disableTelegram PATCHes telegram.enabled=false before lifecycle start', async () => {
+    mockHttp.mockResolvedValueOnce({ config: {} });
+    const res = await botApi.disableTelegram(42);
+    expect(mockHttp).toHaveBeenCalledWith('PATCH', '/bot/42/config', {
+      optional: {
+        telegram: {
+          enabled: false,
+          allow_custom_messages: false,
+        },
+      },
+    });
+    expect(res).toEqual({ config: {} });
+  });
+
   it('stop POSTs /bot/:id/stop', async () => {
     mockHttp.mockResolvedValueOnce({
       id: 42,

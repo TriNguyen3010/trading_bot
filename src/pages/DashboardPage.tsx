@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -24,8 +31,15 @@ import {
   type DashboardBotMode,
 } from '@/features/bot-monitoring/bot-list.helpers';
 import { ConfirmActionDialog } from '@/features/bot-monitoring/ConfirmActionDialog';
+import { isTerminal } from '@/features/bot-monitoring/lifecycle-actions';
 import { formatBackendError } from '@/lib/format-error';
 import { AppHeader } from './AppHeader';
+
+/** Poll cadence + safety cap for status polling after a lifecycle action.
+ * The BE spawns the Freqtrade process asynchronously, so /start returns
+ * 'starting' immediately and the row must keep polling until it settles. */
+const POLL_INTERVAL_MS = 1_500;
+const POLL_MAX_TRIES = 40; // ~60s; after this a manual Refresh/Sync is needed
 
 // =============================================================================
 // MOCK DATA — used as visual fallback in the empty state only (real bots = 0).
@@ -50,6 +64,7 @@ const MOCK_BOTS: MockBot[] = [
     timeframe: '5m',
     uptime: '5d 17h',
     mode: 'LIVE',
+    dryRun: false,
     pnl: '+$234.10',
     pnlPct: '+2.34%',
     pnlDirection: 'up',
@@ -68,6 +83,7 @@ const MOCK_BOTS: MockBot[] = [
     timeframe: '1h',
     uptime: '12h paper',
     mode: 'DRY-RUN',
+    dryRun: true,
     pnl: '+$18.40',
     pnlPct: '+0.18%',
     pnlDirection: 'up',
@@ -85,6 +101,7 @@ const MOCK_BOTS: MockBot[] = [
     timeframe: '4h',
     uptime: 'stopped 4m ago',
     mode: 'ERROR',
+    dryRun: null,
     pnl: '-$12.30',
     pnlPct: '-0.12%',
     pnlDirection: 'down',
@@ -182,22 +199,20 @@ export function DashboardPage() {
   }>(null);
 
   // Splice one bot's mode/errorMsg in `realBots` after a lifecycle response.
-  // BotStatusOut doesn't carry `dry_run`, so we re-use the previous row's
-  // mode as a hint (LIVE → dry_run=false, DRY-RUN → true, otherwise unknown).
-  // When the new status falls through to `running` and dry_run is unknown,
-  // deriveMode returns PAUSED — user can Refresh to re-fetch getConfig.
+  // BotStatusOut doesn't carry `dry_run`, so we use the dry_run captured from
+  // getConfig at load time (persisted on the row as `dryRun`). Without this a
+  // freshly-started bot would resolve to PAUSED instead of DRY-RUN/LIVE,
+  // because the transient STARTING mode carries no dry_run hint.
   const updateOneBot = useCallback((id: number, next: BotStatusOut) => {
     setRealBots((prev) => {
       if (!prev) return prev;
       return prev.map((b) => {
         if (b.id !== id) return b;
-        const prevDryRun =
-          b.mode === 'LIVE' ? false : b.mode === 'DRY-RUN' ? true : null;
         return {
           ...b,
           mode: deriveMode(
             { status: next.status, error_message: next.error_message ?? null },
-            { dry_run: prevDryRun },
+            { dry_run: b.dryRun },
           ),
           errorMsg: next.error_message ?? null,
         };
@@ -209,20 +224,67 @@ export function DashboardPage() {
     setRealBots((prev) => (prev ? prev.filter((b) => b.id !== id) : prev));
   }, []);
 
+  // Auto-poll a bot's status after a lifecycle action until it settles into a
+  // terminal state. Without this the row shows whatever /start returned
+  // ('starting') forever — the BE spawns the Freqtrade process async, so the
+  // card would be stuck on "Starting…" until a manual Refresh even though the
+  // bot is already running. Bounded so a genuinely stuck-'starting' BE can't
+  // poll forever.
+  const mountedRef = useRef(true);
+  const pollTimers = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  useEffect(() => {
+    mountedRef.current = true;
+    const timers = pollTimers.current;
+    return () => {
+      mountedRef.current = false;
+      timers.forEach((h) => clearTimeout(h));
+      timers.clear();
+    };
+  }, []);
+
+  const pollUntilSettled = useCallback(
+    (id: number) => {
+      let tries = 0;
+      function schedule() {
+        const h = setTimeout(() => {
+          pollTimers.current.delete(h);
+          void tick();
+        }, POLL_INTERVAL_MS);
+        pollTimers.current.add(h);
+      }
+      async function tick() {
+        if (!mountedRef.current) return;
+        let next: BotStatusOut;
+        try {
+          next = await botApi.getStatus(id);
+        } catch {
+          return; // stop on error — user can Refresh / Sync manually
+        }
+        if (!mountedRef.current || !next?.status) return;
+        updateOneBot(id, next);
+        if (!isTerminal(next.status) && ++tries < POLL_MAX_TRIES) schedule();
+      }
+      schedule();
+    },
+    [updateOneBot],
+  );
+
   const doStart = useCallback(
     async (id: number) => {
       markPending(id);
       try {
+        await botApi.disableTelegram(id);
         const next = await botApi.start(id);
         updateOneBot(id, next);
         toast.success(`Starting bot #${id}`);
+        if (!isTerminal(next.status)) pollUntilSettled(id);
       } catch (err) {
         toast.error(formatBackendError(err));
       } finally {
         clearPending(id);
       }
     },
-    [updateOneBot, markPending, clearPending],
+    [updateOneBot, markPending, clearPending, pollUntilSettled],
   );
 
   const doStop = useCallback(
@@ -232,6 +294,7 @@ export function DashboardPage() {
         const next = await botApi.stop(id);
         updateOneBot(id, next);
         toast.success(`Stopping bot #${id}`);
+        if (!isTerminal(next.status)) pollUntilSettled(id);
       } catch (err) {
         toast.error(formatBackendError(err));
       } finally {
@@ -239,23 +302,25 @@ export function DashboardPage() {
         setConfirmState(null);
       }
     },
-    [updateOneBot, markPending, clearPending],
+    [updateOneBot, markPending, clearPending, pollUntilSettled],
   );
 
   const doSync = useCallback(
     async (id: number) => {
       markPending(id);
       try {
+        await botApi.disableTelegram(id);
         const next = await botApi.sync(id);
         updateOneBot(id, next);
-        toast.message('Re-synced bot status');
+        toast.message('Connection settings fixed and status re-synced');
+        if (!isTerminal(next.status)) pollUntilSettled(id);
       } catch (err) {
         toast.error(formatBackendError(err));
       } finally {
         clearPending(id);
       }
     },
-    [updateOneBot, markPending, clearPending],
+    [updateOneBot, markPending, clearPending, pollUntilSettled],
   );
 
   const doRemove = useCallback(

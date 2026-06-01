@@ -83,6 +83,33 @@ describe('deriveMode', () => {
       ),
     ).toBe('STARTING');
   });
+  it('a RUNNING bot reads as running even with a (non-fatal/stale) error_message', () => {
+    // Freqtrade logs non-fatal errors (e.g. a Telegram polling warning) while
+    // still trading; a leftover error_message must not mask a running bot.
+    expect(
+      deriveMode(
+        makeBot({
+          status: 'running',
+          error_message: 'telegram.ext.Updater - Exception while polling',
+        }),
+        makeConfig({ dry_run: true }),
+      ),
+    ).toBe('DRY-RUN');
+    expect(
+      deriveMode(
+        makeBot({ status: 'running', error_message: 'some warning' }),
+        makeConfig({ dry_run: false }),
+      ),
+    ).toBe('LIVE');
+  });
+  it('still shows ERROR when NOT running and error_message is present', () => {
+    expect(
+      deriveMode(
+        makeBot({ status: 'stopped', error_message: 'crash on start' }),
+        makeConfig(),
+      ),
+    ).toBe('ERROR');
+  });
 });
 
 describe('derivePair', () => {

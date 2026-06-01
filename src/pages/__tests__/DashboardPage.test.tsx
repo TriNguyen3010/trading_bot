@@ -12,6 +12,7 @@ vi.mock('@/features/bot-monitoring/bot.api', () => ({
     list: vi.fn(),
     getConfig: vi.fn(),
     getStatus: vi.fn(),
+    disableTelegram: vi.fn(),
     start: vi.fn(),
     stop: vi.fn(),
     sync: vi.fn(),
@@ -321,9 +322,18 @@ describe('DashboardPage — lifecycle actions', () => {
     });
   }
 
-  it('Start button calls botApi.start and optimistically updates row to STARTING', async () => {
+  it('Start button disables Telegram, calls botApi.start, and optimistically updates row to STARTING', async () => {
     loadOne();
     vi.mocked(botApi.start).mockResolvedValueOnce({
+      id: 7,
+      bot_name: 'Lifecycle bot',
+      status: 'starting',
+      desired_status: 'running',
+      is_process_running: false,
+      error_message: null,
+    });
+    // Auto-poll keeps reporting 'starting' → card stays STARTING.
+    vi.mocked(botApi.getStatus).mockResolvedValue({
       id: 7,
       bot_name: 'Lifecycle bot',
       status: 'starting',
@@ -338,13 +348,79 @@ describe('DashboardPage — lifecycle actions', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /^start$/i }));
 
+    await waitFor(() => expect(botApi.disableTelegram).toHaveBeenCalledWith(7));
     expect(botApi.start).toHaveBeenCalledWith(7);
+    expect(
+      vi.mocked(botApi.disableTelegram).mock.invocationCallOrder[0],
+    ).toBeLessThan(vi.mocked(botApi.start).mock.invocationCallOrder[0]);
     await waitFor(() =>
       expect(screen.getByText(/starting…/i)).toBeInTheDocument(),
     );
     expect(vi.mocked(toast.success)).toHaveBeenCalledWith(
       expect.stringContaining('#7'),
     );
+  });
+
+  it('after Start, auto-polls status and flips the card to running without a manual refresh', async () => {
+    loadOne(); // dry_run=true, initial status 'stopped'
+    vi.mocked(botApi.start).mockResolvedValueOnce({
+      id: 7,
+      bot_name: 'Lifecycle bot',
+      status: 'starting',
+      desired_status: 'running',
+      is_process_running: false,
+      error_message: null,
+    });
+    // The BE reports running on the next status poll.
+    vi.mocked(botApi.getStatus).mockResolvedValue({
+      id: 7,
+      bot_name: 'Lifecycle bot',
+      status: 'running',
+      desired_status: 'running',
+      is_process_running: true,
+      error_message: null,
+    });
+
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText('Lifecycle bot')).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^start$/i }));
+
+    // Optimistic STARTING first…
+    await waitFor(() =>
+      expect(screen.getByText(/starting…/i)).toBeInTheDocument(),
+    );
+
+    // …then the auto-poll must flip it to DRY-RUN on its own (running +
+    // dry_run=true), WITHOUT the user clicking Refresh.
+    await waitFor(
+      () => expect(screen.getByText('DRY-RUN')).toBeInTheDocument(),
+      {
+        timeout: 4000,
+      },
+    );
+    expect(botApi.getStatus).toHaveBeenCalledWith(7);
+  });
+
+  it('does not call start when disabling Telegram fails', async () => {
+    loadOne();
+    vi.mocked(botApi.disableTelegram).mockRejectedValueOnce(
+      new Error('patch failed'),
+    );
+
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText('Lifecycle bot')).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^start$/i }));
+
+    await waitFor(() =>
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(
+        expect.stringContaining('patch failed'),
+      ),
+    );
+    expect(botApi.start).not.toHaveBeenCalled();
   });
 
   it('Stop button shows confirm dialog and calls botApi.stop on confirm', async () => {
@@ -411,7 +487,11 @@ describe('DashboardPage — lifecycle actions', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: /fix connection/i }));
-    expect(botApi.sync).toHaveBeenCalledWith(7);
+    expect(botApi.disableTelegram).toHaveBeenCalledWith(7);
+    await waitFor(() => expect(botApi.sync).toHaveBeenCalledWith(7));
+    expect(
+      vi.mocked(botApi.disableTelegram).mock.invocationCallOrder[0],
+    ).toBeLessThan(vi.mocked(botApi.sync).mock.invocationCallOrder[0]);
   });
 
   it('demo cards do not call real lifecycle endpoints', async () => {
