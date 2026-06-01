@@ -85,7 +85,7 @@ pnpm test        # vitest run
 - Email: `trinm@coin98.finance`
 - Password: `Coin98@123`
 
-**BE Base URL (dev):** `http://tradingbot.ne.com:8088` (HTTP only — BE chưa support HTTPS)
+**BE Base URL (dev):** `https://ai-gamma-trade-stg.coin98.dev` (HTTPS, public — xác nhận với BE 2026-06-01. Host cũ `tradingbot.ne.com:8088` chỉ là UI/Streamlit nội bộ, không còn là BE.)
 
 **API docs:** Mở `http://localhost:8088/redoc` khi BE chạy local, hoặc check file `BE/openapi.json` local.
 
@@ -274,7 +274,7 @@ import { Button } from '@/components/ui/button'; // ← dùng '@/'
 
 FE dev dùng Vite proxy → bypass CORS:
 
-- FE gọi `/api/wallet/nonce?address=0x...` → Vite forward sang `http://tradingbot.ne.com:8088/wallet/nonce?address=0x...`.
+- FE gọi `/api/wallet/nonce?address=0x...` → Vite forward sang `https://ai-gamma-trade-stg.coin98.dev/wallet/nonce?address=0x...`.
 - `VITE_API_BASE_URL` ở dev phải là `/api` (không phải URL đầy đủ) — nếu không sẽ bypass proxy → lỗi CORS.
 - Cấu hình env theo mode đã commit sẵn: `.env.development` (= `/api`) và `.env.production` (= URL thật).
 - Production: BE phải config CORS allow origin của Vercel domain.
@@ -384,7 +384,7 @@ Vite/dev server boot chậm. Đợi 5-10s rồi retry.
 
 ### Lỗi `CORS` khi gọi BE
 
-Bạn đang gọi thẳng `http://tradingbot.ne.com:8088/...` thay vì qua `/api/...`. Sửa lại request path.
+Bạn đang gọi thẳng `https://ai-gamma-trade-stg.coin98.dev/...` thay vì qua `/api/...`. Sửa lại request path.
 
 ### Type error sau khi BE update spec
 
@@ -424,7 +424,7 @@ Check DevTools → Application → Session Storage → key `trading_bot_wallet_a
 
 - **Tech design owner:** Tuấn Nguyễn Anh (BE)
 - **FE owner (project này):** Tri Nguyen (`trinm@coin98.finance`)
-- **BE base URL dev:** `http://tradingbot.ne.com:8088`
+- **BE base URL dev:** `https://ai-gamma-trade-stg.coin98.dev`
 - **BE OpenAPI:** `http://localhost:8088/redoc` (khi BE chạy local) hoặc `BE/openapi.json`
 
 ---
