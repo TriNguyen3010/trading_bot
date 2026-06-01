@@ -31,5 +31,14 @@ export type TelegramConfig = Schemas['TelegramConfig'];
 // Errors
 export type ValidationError = Schemas['HTTPValidationError'];
 
+// Agent wallet (Hyperliquid)
+export type CreateAgentRequest = Schemas['CreateAgentRequest'];
+export type AgentPrepareResponse = Schemas['AgentPrepareResponse'];
+export type AgentConfirmRequest = Schemas['AgentConfirmRequest'];
+export type AgentCreateResponse = Schemas['AgentCreateResponse'];
+export type AgentInfoResponse = Schemas['AgentInfoResponse'];
+export type SpendingLimitCheckRequest = Schemas['SpendingLimitCheckRequest'];
+export type SpendingLimitCheckResponse = Schemas['SpendingLimitCheckResponse'];
+
 // Endpoint paths (dùng cho fetch wrapper sau này)
 export type Paths = paths;
