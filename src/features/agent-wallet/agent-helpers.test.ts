@@ -4,6 +4,10 @@ import {
   formatSpendingLimit,
   eip712Sign,
 } from './agent-helpers';
+import {
+  UserRejectedError,
+  NoProviderError,
+} from '@/features/wallet-auth/wallet.provider';
 
 describe('extractNonceFromSignPayload', () => {
   it('returns nonce from message.nonce', () => {
@@ -39,5 +43,31 @@ describe('eip712Sign', () => {
       params: ['0xuser', JSON.stringify(typedData)],
     });
     expect(sig).toBe('0xsignature');
+  });
+
+  it('throws UserRejectedError when provider rejects with code 4001', async () => {
+    const request = vi.fn().mockRejectedValue({ code: 4001 });
+    const provider = { request } as never;
+    await expect(eip712Sign(provider, '0xuser', {})).rejects.toBeInstanceOf(
+      UserRejectedError,
+    );
+  });
+
+  it('rethrows original error when provider rejects with a non-4001 error', async () => {
+    const originalError = new Error('boom');
+    const request = vi.fn().mockRejectedValue(originalError);
+    const provider = { request } as never;
+    await expect(eip712Sign(provider, '0xuser', {})).rejects.toBe(
+      originalError,
+    );
+    await expect(eip712Sign(provider, '0xuser', {})).rejects.not.toBeInstanceOf(
+      UserRejectedError,
+    );
+  });
+
+  it('throws NoProviderError when called with a falsy provider', async () => {
+    await expect(
+      eip712Sign(null as never, '0xuser', {}),
+    ).rejects.toBeInstanceOf(NoProviderError);
   });
 });

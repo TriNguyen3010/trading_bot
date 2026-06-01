@@ -7,14 +7,17 @@ import {
 /** EIP-712 sign_payload từ BE là object opaque. Parse nonce defensively. */
 export function extractNonceFromSignPayload(payload: unknown): number {
   if (payload !== null && typeof payload === 'object' && 'message' in payload) {
-    const msg = (payload as Record<string, unknown>).message;
+    const msg = (payload as Record<string, unknown>).message as Record<
+      string,
+      unknown
+    >;
     if (
       msg !== null &&
       typeof msg === 'object' &&
       'nonce' in msg &&
-      typeof (msg as Record<string, unknown>).nonce === 'number'
+      typeof msg.nonce === 'number'
     ) {
-      return (msg as Record<string, unknown>).nonce as number;
+      return msg.nonce as number;
     }
   }
   return 0;
