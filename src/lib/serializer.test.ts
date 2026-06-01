@@ -150,6 +150,17 @@ describe('serializer', () => {
     );
   });
 
+  it('sends telegram as null when the wizard has no telegram config', () => {
+    // The wizard exposes no telegram fields, so the token is always null.
+    // The BE MERGES a provided telegram block into the Freqtrade config, and
+    // a null token there crashes it (HTTP 500). The proven-good payload simply
+    // omits telegram — so we must send null, not a block with a null token.
+    applyBollingerLong();
+    useBuilderStore.getState().patchDirection({ direction: 'long' });
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    expect(payload.telegram).toBeNull();
+  });
+
   it('round-trips a bundle through deserializeBundle', () => {
     applyBollingerLong();
     const bundle = buildBundle(useBuilderStore.getState());
