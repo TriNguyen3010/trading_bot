@@ -267,22 +267,9 @@ export function DashboardPage() {
     setRealBots((prev) => (prev ? prev.filter((b) => b.id !== id) : prev));
   }, []);
 
-  const doStart = useCallback(
-    async (id: number) => {
-      markPending(id);
-      try {
-        const next = await botApi.start(id);
-        updateOneBot(id, next);
-        toast.success(`Starting bot #${id}`);
-      } catch (err) {
-        toast.error(formatBackendError(err));
-      } finally {
-        clearPending(id);
-      }
-    },
-    [updateOneBot, markPending, clearPending],
-  );
-
+  // doStart removed: the only sanctioned start path is launchBot() via the
+  // Launchpad (PR #15 Task 4). A direct botApi.start here would re-open the
+  // Live-mode bypass — see Devin C-1 review of PR #14.
   const doStop = useCallback(
     async (id: number) => {
       markPending(id);
@@ -627,7 +614,9 @@ export function DashboardPage() {
                             : () => setLaunchBotTarget(toLaunchpadBot(bot))
                       }
                       onStart={
-                        bot.isDemo ? undefined : () => void doStart(bot.id)
+                        bot.isDemo
+                          ? undefined
+                          : () => setLaunchBotTarget(toLaunchpadBot(bot))
                       }
                       onStop={
                         bot.isDemo
