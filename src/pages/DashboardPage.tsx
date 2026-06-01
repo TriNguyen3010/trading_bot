@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   FlaskConical,
@@ -37,6 +37,10 @@ import {
   BacktestDialog,
   type BacktestBot,
 } from '@/features/backtest/BacktestDialog';
+import {
+  LaunchpadModal,
+  type LaunchpadBot,
+} from '@/features/launchpad/LaunchpadModal';
 import { formatBackendError } from '@/lib/format-error';
 import { AppHeader } from './AppHeader';
 
@@ -122,8 +126,27 @@ const MOCK_BOTS: MockBot[] = [
   },
 ];
 
+/** Map a loaded real bot to the minimal shape LaunchpadModal needs. The
+ * onClick router only invokes this for PAUSED/ERROR bots (LIVE/DRY-RUN/
+ * STARTING/STOPPING route to monitor, isDemo routes to /builder), so the
+ * mode narrowing cast is safe at runtime — STARTING/STOPPING never reach
+ * here. */
+function toLaunchpadBot(b: DashboardBot): LaunchpadBot {
+  return {
+    id: b.id,
+    name: b.name,
+    strategyName: b.strategyName,
+    pair: b.pair,
+    timeframe: b.timeframe,
+    mode: b.mode as LaunchpadBot['mode'],
+    errorMsg: b.errorMsg,
+  };
+}
+
 export function DashboardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const consumedLaunchRef = useRef(false);
   const { requireWalletThen } = useRequireWallet();
   const [search, setSearch] = useState('');
   const [importOpen, setImportOpen] = useState(false);
@@ -206,6 +229,25 @@ export function DashboardPage() {
     botName: string;
   }>(null);
   const [backtestBot, setBacktestBot] = useState<BacktestBot | null>(null);
+  const [launchBotTarget, setLaunchBotTarget] = useState<LaunchpadBot | null>(
+    null,
+  );
+
+  // After bot creation, ExportDialog routes here with state.launchpadBotId.
+  // Open the Launchpad for that freshly-created bot once it appears in the
+  // refetched list. Consume once so a manual refresh doesn't re-open it.
+  useEffect(() => {
+    const targetId = (location.state as { launchpadBotId?: number } | null)
+      ?.launchpadBotId;
+    if (targetId == null || consumedLaunchRef.current || !realBots) return;
+    const found = realBots.find((b) => b.id === targetId);
+    if (found) {
+      consumedLaunchRef.current = true;
+      setLaunchBotTarget(toLaunchpadBot(found));
+      // Clear the history state so back/refresh won't re-trigger.
+      navigate('/dashboard', { replace: true, state: {} });
+    }
+  }, [location.state, realBots, navigate]);
 
   // Splice one bot's mode/errorMsg in `realBots` after a lifecycle response.
   // BotStatusOut doesn't carry `dry_run`, so we use the dry_run captured from
@@ -234,11 +276,11 @@ export function DashboardPage() {
   }, []);
 
   // Auto-poll a bot's status after a lifecycle action until it settles into a
-  // terminal state. Without this the row shows whatever /start returned
-  // ('starting') forever — the BE spawns the Freqtrade process async, so the
-  // card would be stuck on "Starting…" until a manual Refresh even though the
-  // bot is already running. Bounded so a genuinely stuck-'starting' BE can't
-  // poll forever.
+  // terminal state. Without this the row shows whatever the action returned
+  // ('starting'/'stopping') forever — the BE spawns/kills the Freqtrade
+  // process async — until a manual Refresh. Bounded so a genuinely stuck
+  // 'starting' BE can't poll forever. Used by stop/sync; the Launchpad launch
+  // navigates to the monitor page (which polls there via useBotStatusPoll).
   const mountedRef = useRef(true);
   const pollTimers = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   useEffect(() => {
@@ -278,24 +320,11 @@ export function DashboardPage() {
     [updateOneBot],
   );
 
-  const doStart = useCallback(
-    async (id: number) => {
-      markPending(id);
-      try {
-        await botApi.disableTelegram(id);
-        const next = await botApi.start(id);
-        updateOneBot(id, next);
-        toast.success(`Starting bot #${id}`);
-        if (!isTerminal(next.status)) pollUntilSettled(id);
-      } catch (err) {
-        toast.error(formatBackendError(err));
-      } finally {
-        clearPending(id);
-      }
-    },
-    [updateOneBot, markPending, clearPending, pollUntilSettled],
-  );
-
+  // doStart removed: the only sanctioned start path is launchBot() via the
+  // Launchpad (PR #15 Task 4). A direct botApi.start here would re-open the
+  // Live-mode bypass — see Devin C-1 review of PR #14. The Launchpad's
+  // disableTelegram is wired in launchBot(); launch then navigates to the
+  // monitor page (which polls).
   const doStop = useCallback(
     async (id: number) => {
       markPending(id);
@@ -635,10 +664,17 @@ export function DashboardPage() {
                       onClick={
                         bot.isDemo
                           ? () => requireWalletThen(() => navigate('/builder'))
-                          : () => navigate(`/bots/${bot.id}`)
+                          : bot.mode === 'LIVE' ||
+                              bot.mode === 'DRY-RUN' ||
+                              bot.mode === 'STARTING' ||
+                              bot.mode === 'STOPPING'
+                            ? () => navigate(`/bots/${bot.id}`)
+                            : () => setLaunchBotTarget(toLaunchpadBot(bot))
                       }
                       onStart={
-                        bot.isDemo ? undefined : () => void doStart(bot.id)
+                        bot.isDemo
+                          ? undefined
+                          : () => setLaunchBotTarget(toLaunchpadBot(bot))
                       }
                       onStop={
                         bot.isDemo
@@ -750,6 +786,31 @@ export function DashboardPage() {
           if (!o) setBacktestBot(null);
         }}
         bot={backtestBot}
+      />
+
+      <LaunchpadModal
+        open={launchBotTarget !== null}
+        onOpenChange={(o) => {
+          if (!o) setLaunchBotTarget(null);
+        }}
+        bot={launchBotTarget}
+        onBacktest={() => {
+          if (launchBotTarget) {
+            setBacktestBot({
+              id: launchBotTarget.id,
+              name: launchBotTarget.name,
+              strategyName: launchBotTarget.strategyName,
+              pair: launchBotTarget.pair,
+              timeframe: launchBotTarget.timeframe,
+            });
+          }
+          setLaunchBotTarget(null);
+        }}
+        onLaunched={() => {
+          const id = launchBotTarget?.id;
+          setLaunchBotTarget(null);
+          if (id != null) navigate(`/bots/${id}`);
+        }}
       />
     </div>
   );

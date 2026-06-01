@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { toast } from 'sonner';
 import { DashboardPage } from '../DashboardPage';
 import { botApi, type BotOut } from '@/features/bot-monitoring/bot.api';
 import { RequireWalletProvider } from '@/features/wallet-auth/RequireWalletProvider';
@@ -322,25 +321,8 @@ describe('DashboardPage — lifecycle actions', () => {
     });
   }
 
-  it('Start button disables Telegram, calls botApi.start, and optimistically updates row to STARTING', async () => {
+  it('Start button routes through the Launchpad and does NOT call botApi.start directly', async () => {
     loadOne();
-    vi.mocked(botApi.start).mockResolvedValueOnce({
-      id: 7,
-      bot_name: 'Lifecycle bot',
-      status: 'starting',
-      desired_status: 'running',
-      is_process_running: false,
-      error_message: null,
-    });
-    // Auto-poll keeps reporting 'starting' → card stays STARTING.
-    vi.mocked(botApi.getStatus).mockResolvedValue({
-      id: 7,
-      bot_name: 'Lifecycle bot',
-      status: 'starting',
-      desired_status: 'running',
-      is_process_running: false,
-      error_message: null,
-    });
 
     renderPage();
     await waitFor(() =>
@@ -348,79 +330,53 @@ describe('DashboardPage — lifecycle actions', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /^start$/i }));
 
-    await waitFor(() => expect(botApi.disableTelegram).toHaveBeenCalledWith(7));
-    expect(botApi.start).toHaveBeenCalledWith(7);
-    expect(
-      vi.mocked(botApi.disableTelegram).mock.invocationCallOrder[0],
-    ).toBeLessThan(vi.mocked(botApi.start).mock.invocationCallOrder[0]);
+    // C-1 (R5 Critical): the Start button must open the Launchpad mode-gate,
+    // never fire botApi.start directly — otherwise a PAUSED ex-Live bot
+    // (dry_run=false) restarts in LIVE mode without picking a mode.
+    expect(botApi.start).not.toHaveBeenCalled();
     await waitFor(() =>
-      expect(screen.getByText(/starting…/i)).toBeInTheDocument(),
-    );
-    expect(vi.mocked(toast.success)).toHaveBeenCalledWith(
-      expect.stringContaining('#7'),
+      expect(
+        screen.getByRole('button', { name: /start dry-run/i }),
+      ).toBeInTheDocument(),
     );
   });
 
-  it('after Start, auto-polls status and flips the card to running without a manual refresh', async () => {
-    loadOne(); // dry_run=true, initial status 'stopped'
-    vi.mocked(botApi.start).mockResolvedValueOnce({
+  it('after Stop, auto-polls status until the bot settles (no manual refresh)', async () => {
+    loadOne({ status: 'running' }, false); // LIVE bot → renders a Stop button
+    vi.mocked(botApi.stop).mockResolvedValueOnce({
       id: 7,
       bot_name: 'Lifecycle bot',
-      status: 'starting',
-      desired_status: 'running',
-      is_process_running: false,
-      error_message: null,
-    });
-    // The BE reports running on the next status poll.
-    vi.mocked(botApi.getStatus).mockResolvedValue({
-      id: 7,
-      bot_name: 'Lifecycle bot',
-      status: 'running',
-      desired_status: 'running',
+      status: 'stopping',
+      desired_status: 'stopped',
       is_process_running: true,
       error_message: null,
     });
+    // The BE reports stopped on the next status poll.
+    vi.mocked(botApi.getStatus).mockResolvedValue({
+      id: 7,
+      bot_name: 'Lifecycle bot',
+      status: 'stopped',
+      desired_status: 'stopped',
+      is_process_running: false,
+      error_message: null,
+    });
 
     renderPage();
     await waitFor(() =>
       expect(screen.getByText('Lifecycle bot')).toBeInTheDocument(),
     );
-    fireEvent.click(screen.getByRole('button', { name: /^start$/i }));
 
-    // Optimistic STARTING first…
-    await waitFor(() =>
-      expect(screen.getByText(/starting…/i)).toBeInTheDocument(),
-    );
+    // Stop → confirm dialog → confirm (the inner Stop button).
+    fireEvent.click(screen.getByRole('button', { name: /^stop$/i }));
+    const stopButtons = screen.getAllByRole('button', { name: /^stop$/i });
+    fireEvent.click(stopButtons[stopButtons.length - 1]);
+    expect(botApi.stop).toHaveBeenCalledWith(7);
 
-    // …then the auto-poll must flip it to DRY-RUN on its own (running +
-    // dry_run=true), WITHOUT the user clicking Refresh.
-    await waitFor(
-      () => expect(screen.getByText('DRY-RUN')).toBeInTheDocument(),
-      {
-        timeout: 4000,
-      },
-    );
+    // Auto-poll flips the card to PAUSED (stopped) on its own.
+    await waitFor(() => expect(screen.getByText('PAUSED')).toBeInTheDocument(), {
+      timeout: 4000,
+    });
     expect(botApi.getStatus).toHaveBeenCalledWith(7);
-  });
-
-  it('does not call start when disabling Telegram fails', async () => {
-    loadOne();
-    vi.mocked(botApi.disableTelegram).mockRejectedValueOnce(
-      new Error('patch failed'),
-    );
-
-    renderPage();
-    await waitFor(() =>
-      expect(screen.getByText('Lifecycle bot')).toBeInTheDocument(),
-    );
-    fireEvent.click(screen.getByRole('button', { name: /^start$/i }));
-
-    await waitFor(() =>
-      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(
-        expect.stringContaining('patch failed'),
-      ),
-    );
-    expect(botApi.start).not.toHaveBeenCalled();
   });
 
   it('Stop button shows confirm dialog and calls botApi.stop on confirm', async () => {
