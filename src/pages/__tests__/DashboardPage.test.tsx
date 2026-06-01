@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { toast } from 'sonner';
 import { DashboardPage } from '../DashboardPage';
 import { botApi, type BotOut } from '@/features/bot-monitoring/bot.api';
 import { RequireWalletProvider } from '@/features/wallet-auth/RequireWalletProvider';
@@ -321,16 +320,8 @@ describe('DashboardPage — lifecycle actions', () => {
     });
   }
 
-  it('Start button calls botApi.start and optimistically updates row to STARTING', async () => {
+  it('Start button routes through the Launchpad and does NOT call botApi.start directly', async () => {
     loadOne();
-    vi.mocked(botApi.start).mockResolvedValueOnce({
-      id: 7,
-      bot_name: 'Lifecycle bot',
-      status: 'starting',
-      desired_status: 'running',
-      is_process_running: false,
-      error_message: null,
-    });
 
     renderPage();
     await waitFor(() =>
@@ -338,12 +329,14 @@ describe('DashboardPage — lifecycle actions', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /^start$/i }));
 
-    expect(botApi.start).toHaveBeenCalledWith(7);
+    // C-1 (R5 Critical): the Start button must open the Launchpad mode-gate,
+    // never fire botApi.start directly — otherwise a PAUSED ex-Live bot
+    // (dry_run=false) restarts in LIVE mode without picking a mode.
+    expect(botApi.start).not.toHaveBeenCalled();
     await waitFor(() =>
-      expect(screen.getByText(/starting…/i)).toBeInTheDocument(),
-    );
-    expect(vi.mocked(toast.success)).toHaveBeenCalledWith(
-      expect.stringContaining('#7'),
+      expect(
+        screen.getByRole('button', { name: /start dry-run/i }),
+      ).toBeInTheDocument(),
     );
   });
 
