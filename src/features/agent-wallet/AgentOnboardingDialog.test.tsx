@@ -85,6 +85,33 @@ describe('AgentOnboardingDialog', () => {
     await waitFor(() => expect(onSuccess).toHaveBeenCalledWith(agent));
   });
 
+  it('success Continue button calls onOpenChange(false)', () => {
+    const onOpenChange = vi.fn();
+    const agent = {
+      id: 1,
+      agent_address: '0xagent',
+      label: null,
+      spending_limit_usd: null,
+      is_active: true,
+      spent_today_usd: 0,
+      created_at: '2026-05-28T00:00:00Z',
+    };
+    vi.mocked(useAgentSignFlow).mockReturnValue({
+      state: { stage: 'success', agent },
+      run: vi.fn(),
+      reset: vi.fn(),
+    });
+    render(
+      <AgentOnboardingDialog
+        open
+        onOpenChange={onOpenChange}
+        onSuccess={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
   it('error state shows retry + cancel', () => {
     const reset = vi.fn();
     vi.mocked(useAgentSignFlow).mockReturnValue({

@@ -32,10 +32,13 @@ export function AgentOnboardingDialog({
     if (state.stage === 'success') onSuccess(state.agent);
   }, [state, onSuccess]);
 
-  // Reset to idle whenever the dialog (re)opens
+  // Reset to idle and re-seed input whenever the dialog (re)opens
   useEffect(() => {
-    if (open) reset();
-  }, [open, reset]);
+    if (open) {
+      reset();
+      setLimitInput(suggestedLimit != null ? String(suggestedLimit) : '');
+    }
+  }, [open, reset, suggestedLimit]);
 
   const handleGenerate = () => {
     const limitNum = parseFloat(limitInput);
@@ -171,11 +174,12 @@ function IdleStep({
         {limitInput && (
           <p className="text-2xs text-fg-muted">
             Cap:{' '}
-            {formatSpendingLimit(
-              Number.isFinite(parseFloat(limitInput))
-                ? parseFloat(limitInput)
-                : null,
-            )}
+            {(() => {
+              const parsed = parseFloat(limitInput);
+              return formatSpendingLimit(
+                Number.isFinite(parsed) ? parsed : null,
+              );
+            })()}
             /day
           </p>
         )}
