@@ -37,15 +37,6 @@ export interface LaunchpadModalProps {
   onLaunched: () => void;
 }
 
-/**
- * Step union kept intentionally wider than what we render in Phase 2a.
- * Phase 2b will revive the `'live-confirm'` step + Live launch flow once
- * the agent-wallet EIP-712 signing pipeline ships. Until then the modal
- * only renders `'modes'` and the Live card is a visible-but-disabled
- * placeholder so users see the option exists.
- */
-type Step = 'modes' | 'live-confirm';
-
 export function LaunchpadModal({
   open,
   onOpenChange,
@@ -53,16 +44,12 @@ export function LaunchpadModal({
   onBacktest,
   onLaunched,
 }: LaunchpadModalProps) {
-  // Phase 2a: `step` only ever transitions back to 'modes' on open. Phase 2b
-  // will add the `setStep('live-confirm')` transition from the Live card.
-  const [, setStep] = useState<Step>('modes');
   const [busy, setBusy] = useState<LaunchMode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setStep('modes');
       setBusy(null);
       setError(null);
       setOnboardingOpen(false);
@@ -92,6 +79,9 @@ export function LaunchpadModal({
     }
   };
 
+  // Assumes /agent/active is read-your-write consistent after /agent/confirm —
+  // if the backend serves `active` from a lagging replica, the retry would see
+  // no active agent and re-open onboarding.
   const handleOnboardingSuccess = () => {
     setOnboardingOpen(false);
     void doLaunch('live');
@@ -113,7 +103,7 @@ export function LaunchpadModal({
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-md data-[state=open]:animate-fade-in" />
           <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[920px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-border bg-surface-elevated shadow-lg data-[state=open]:animate-fade-in">
-            {/* Top bar — Phase 2a: no Back button (no live-confirm step to back from). */}
+            {/* Top bar */}
             <div className="flex items-center justify-between border-b border-border-subtle px-6 py-3">
               <div />
               <DialogPrimitive.Close
@@ -186,8 +176,6 @@ export function LaunchpadModal({
                   onClick={() => doLaunch('live')}
                 />
               </div>
-
-              {/* Phase 2b will add the `step === 'live-confirm'` block here. */}
             </div>
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
