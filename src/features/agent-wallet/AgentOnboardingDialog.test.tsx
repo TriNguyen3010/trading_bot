@@ -43,6 +43,29 @@ describe('AgentOnboardingDialog', () => {
     expect(run).toHaveBeenCalledWith({ spendingLimitUsd: 5000 });
   });
 
+  it('blocks Generate on a negative limit (no silent no-limit launch)', () => {
+    const run = vi.fn();
+    vi.mocked(useAgentSignFlow).mockReturnValue({
+      state: { stage: 'idle' },
+      run,
+      reset: vi.fn(),
+    });
+    render(
+      <AgentOnboardingDialog
+        open
+        onOpenChange={() => {}}
+        onSuccess={() => {}}
+      />,
+    );
+    fireEvent.change(screen.getByRole('spinbutton'), {
+      target: { value: '-5' },
+    });
+    const btn = screen.getByRole('button', { name: /Generate & Sign/i });
+    expect(btn).toBeDisabled();
+    fireEvent.click(btn);
+    expect(run).not.toHaveBeenCalled();
+  });
+
   it('renders spinner during creating/signing/confirming', () => {
     vi.mocked(useAgentSignFlow).mockReturnValue({
       state: { stage: 'signing', agentAddress: '0xagent' },

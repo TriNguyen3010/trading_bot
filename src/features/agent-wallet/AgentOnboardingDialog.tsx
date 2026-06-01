@@ -58,9 +58,19 @@ export function AgentOnboardingDialog({
     }
   }, [open, reset, suggestedLimit]);
 
+  // Empty input → no limit (null). A non-empty value that is non-numeric or
+  // negative is invalid: we block submit instead of coercing to null, because
+  // coercing a negative to null would silently launch with NO spending cap.
+  const limitNum = parseFloat(limitInput);
+  const limitInvalid =
+    limitInput.trim() !== '' && (!Number.isFinite(limitNum) || limitNum < 0);
+
   const handleGenerate = () => {
-    const limitNum = parseFloat(limitInput);
-    void run({ spendingLimitUsd: Number.isFinite(limitNum) ? limitNum : null });
+    if (limitInvalid) return;
+    void run({
+      spendingLimitUsd:
+        Number.isFinite(limitNum) && limitNum >= 0 ? limitNum : null,
+    });
   };
 
   const isBusy =
@@ -94,6 +104,7 @@ export function AgentOnboardingDialog({
             {state.stage === 'idle' && (
               <IdleStep
                 limitInput={limitInput}
+                limitInvalid={limitInvalid}
                 onLimitChange={setLimitInput}
                 onGenerate={handleGenerate}
               />
@@ -126,10 +137,12 @@ export function AgentOnboardingDialog({
 
 function IdleStep({
   limitInput,
+  limitInvalid,
   onLimitChange,
   onGenerate,
 }: {
   limitInput: string;
+  limitInvalid: boolean;
   onLimitChange: (v: string) => void;
   onGenerate: () => void;
 }) {
@@ -184,22 +197,32 @@ function IdleStep({
           placeholder="e.g. 5000"
           value={limitInput}
           onChange={(e) => onLimitChange(e.target.value)}
+          aria-invalid={limitInvalid}
           className={cn(
-            'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted',
-            'focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand',
+            'w-full rounded-lg border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted',
+            'focus:outline-none focus:ring-1',
+            limitInvalid
+              ? 'border-bearish focus:border-bearish focus:ring-bearish'
+              : 'border-border focus:border-brand focus:ring-brand',
           )}
         />
-        {limitInput && (
-          <p className="text-2xs text-fg-muted">
-            Cap:{' '}
-            {(() => {
-              const parsed = parseFloat(limitInput);
-              return formatSpendingLimit(
-                Number.isFinite(parsed) ? parsed : null,
-              );
-            })()}
-            /day
+        {limitInvalid ? (
+          <p className="text-2xs text-bearish">
+            Spending limit phải là số ≥ 0.
           </p>
+        ) : (
+          limitInput && (
+            <p className="text-2xs text-fg-muted">
+              Cap:{' '}
+              {(() => {
+                const parsed = parseFloat(limitInput);
+                return formatSpendingLimit(
+                  Number.isFinite(parsed) ? parsed : null,
+                );
+              })()}
+              /day
+            </p>
+          )
         )}
       </div>
 
@@ -207,6 +230,7 @@ function IdleStep({
         variant="primary"
         size="md"
         className="w-full"
+        disabled={limitInvalid}
         onClick={onGenerate}
       >
         Generate &amp; Sign
