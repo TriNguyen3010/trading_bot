@@ -80,7 +80,10 @@ export function useAgentSignFlow(): UseAgentSignFlowResult {
           stage: 'error',
           message: userRejected
             ? 'Bạn đã huỷ ký — agent không được tạo'
-            : noProvider
+            : // Belt-and-suspenders: unreachable on current path — run() already guards
+              // non-null provider before calling eip712Sign, which only throws
+              // NoProviderError on a falsy provider argument.
+              noProvider
               ? 'Không tìm thấy ví — vui lòng cài Coin98'
               : err instanceof Error
                 ? err.message

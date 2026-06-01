@@ -104,4 +104,112 @@ describe('useAgentSignFlow', () => {
     act(() => result.current.reset());
     expect(result.current.state).toEqual({ stage: 'idle' });
   });
+
+  it('errors immediately when wallet address is null (no-address guard)', async () => {
+    useWalletStore.setState({
+      address: null,
+      nonce: 'n',
+      signature: 's',
+      status: 'ready',
+      user: null,
+      error: null,
+      signingMessage: null,
+    });
+
+    const { result } = renderHook(() => useAgentSignFlow());
+    await act(async () => {
+      await result.current.run({});
+    });
+
+    expect(result.current.state.stage).toBe('error');
+    if (result.current.state.stage === 'error') {
+      expect(result.current.state.userRejected).toBe(false);
+    }
+    expect(agentApi.create).not.toHaveBeenCalled();
+  });
+
+  it('errors immediately when no Coin98 provider detected (no-provider guard)', async () => {
+    vi.mocked(detectCoin98).mockReturnValue(null);
+
+    const { result } = renderHook(() => useAgentSignFlow());
+    await act(async () => {
+      await result.current.run({});
+    });
+
+    expect(result.current.state.stage).toBe('error');
+    if (result.current.state.stage === 'error') {
+      expect(result.current.state.userRejected).toBe(false);
+    }
+    expect(agentApi.create).not.toHaveBeenCalled();
+  });
+
+  it('reports generic error (userRejected=false) when agentApi.confirm rejects', async () => {
+    vi.mocked(detectCoin98).mockReturnValue({ request: vi.fn() } as never);
+    vi.mocked(agentApi.create).mockResolvedValue({
+      agent_address: '0xagent',
+      label: null,
+      spending_limit_usd: null,
+      sign_payload: { message: { nonce: 42 } },
+    });
+    vi.mocked(eip712Sign).mockResolvedValue('0xsig');
+    vi.mocked(agentApi.confirm).mockRejectedValue(new Error('BE 500'));
+
+    const { result } = renderHook(() => useAgentSignFlow());
+    await act(async () => {
+      await result.current.run({});
+    });
+
+    expect(result.current.state.stage).toBe('error');
+    if (result.current.state.stage === 'error') {
+      expect(result.current.state.message).toBe('BE 500');
+      expect(result.current.state.userRejected).toBe(false);
+    }
+  });
+
+  it("transitions to 'signing' with correct agentAddress while sign promise is pending", async () => {
+    vi.mocked(detectCoin98).mockReturnValue({ request: vi.fn() } as never);
+    vi.mocked(agentApi.create).mockResolvedValue({
+      agent_address: '0xagent',
+      label: null,
+      spending_limit_usd: null,
+      sign_payload: { message: { nonce: 7 } },
+    });
+    vi.mocked(agentApi.confirm).mockResolvedValue({
+      id: 2,
+      agent_address: '0xagent',
+      label: null,
+      spending_limit_usd: null,
+      is_active: true,
+      spent_today_usd: 0,
+      created_at: '2026-06-01T00:00:00Z',
+    });
+
+    // Deferred promise so we can observe the 'signing' stage before resolution.
+    let resolveSign!: (sig: string) => void;
+    const signPromise = new Promise<string>((r) => {
+      resolveSign = r;
+    });
+    vi.mocked(eip712Sign).mockReturnValue(signPromise);
+
+    const { result } = renderHook(() => useAgentSignFlow());
+
+    // Start run without awaiting so we can inspect intermediate state.
+    act(() => {
+      void result.current.run({});
+    });
+
+    // Wait for the 'signing' stage — agentApi.create resolves synchronously
+    // (mockResolvedValue), so after the microtask queue drains we should be
+    // in 'signing' with the agentAddress set.
+    await waitFor(() => expect(result.current.state.stage).toBe('signing'));
+    if (result.current.state.stage === 'signing') {
+      expect(result.current.state.agentAddress).toBe('0xagent');
+    }
+
+    // Now let the sign promise resolve and wait for success.
+    await act(async () => {
+      resolveSign('0xsig');
+    });
+    await waitFor(() => expect(result.current.state.stage).toBe('success'));
+  });
 });
