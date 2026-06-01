@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { AlertCircle, Check, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,15 +27,33 @@ export function AgentOnboardingDialog({
     suggestedLimit != null ? String(suggestedLimit) : '',
   );
 
-  // Fire onSuccess when the flow reaches success
+  // Keep the latest onSuccess in a ref so the success effect doesn't depend on
+  // its identity. The parent (LaunchpadModal) passes an inline, non-memoized
+  // callback, so a new reference on every parent re-render would otherwise
+  // re-fire the success effect while state.stage is still 'success' — an
+  // infinite onSuccess → relaunch loop (the dialog stays mounted with open
+  // toggled, so the state never resets between fires).
+  const onSuccessRef = useRef(onSuccess);
   useEffect(() => {
-    if (state.stage === 'success') onSuccess(state.agent);
-  }, [state, onSuccess]);
+    onSuccessRef.current = onSuccess;
+  });
+
+  // Fire onSuccess exactly once per success transition. `firedRef` guards
+  // re-fires while the flow state stays 'success' (it only resets to idle on
+  // the next open); it is cleared when the dialog (re)opens.
+  const firedRef = useRef(false);
+  useEffect(() => {
+    if (state.stage === 'success' && !firedRef.current) {
+      firedRef.current = true;
+      onSuccessRef.current(state.agent);
+    }
+  }, [state]);
 
   // Reset to idle and re-seed input whenever the dialog (re)opens
   useEffect(() => {
     if (open) {
       reset();
+      firedRef.current = false;
       setLimitInput(suggestedLimit != null ? String(suggestedLimit) : '');
     }
   }, [open, reset, suggestedLimit]);

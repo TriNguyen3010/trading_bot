@@ -85,6 +85,47 @@ describe('AgentOnboardingDialog', () => {
     await waitFor(() => expect(onSuccess).toHaveBeenCalledWith(agent));
   });
 
+  it('fires onSuccess at most once even when the parent re-renders with a new onSuccess ref (no relaunch loop)', () => {
+    const agent = {
+      id: 1,
+      agent_address: '0xagent',
+      label: null,
+      spending_limit_usd: null,
+      is_active: true,
+      spent_today_usd: 0,
+      created_at: '2026-05-28T00:00:00Z',
+    };
+    vi.mocked(useAgentSignFlow).mockReturnValue({
+      state: { stage: 'success', agent },
+      run: vi.fn(),
+      reset: vi.fn(),
+    });
+    const onSuccess1 = vi.fn();
+    const { rerender } = render(
+      <AgentOnboardingDialog
+        open
+        onOpenChange={() => {}}
+        onSuccess={onSuccess1}
+      />,
+    );
+    expect(onSuccess1).toHaveBeenCalledTimes(1);
+
+    // LaunchpadModal passes an inline (non-memoized) onSuccess, so each parent
+    // re-render hands a fresh reference. While the flow state stays 'success'
+    // this must NOT re-fire onSuccess — otherwise doLaunch('live') loops and
+    // fires repeated real-money launches (Devin PR #19 critical finding).
+    const onSuccess2 = vi.fn();
+    rerender(
+      <AgentOnboardingDialog
+        open
+        onOpenChange={() => {}}
+        onSuccess={onSuccess2}
+      />,
+    );
+    expect(onSuccess2).not.toHaveBeenCalled();
+    expect(onSuccess1).toHaveBeenCalledTimes(1);
+  });
+
   it('success Continue button calls onOpenChange(false)', () => {
     const onOpenChange = vi.fn();
     const agent = {
