@@ -98,7 +98,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       );
       onOpenChange(false);
       setTimeout(() => {
-        navigate(`/bots/${response.bot.id}`);
+        navigate('/dashboard', {
+          state: { launchpadBotId: response.bot.id },
+        });
       }, 150);
     } catch (err) {
       setSubmitError(formatBackendError(err));
