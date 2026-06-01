@@ -14,6 +14,7 @@ export interface DashboardBot {
   name: string;
   pair: string;
   timeframe: string;
+  strategyName: string | null;
   uptime: string | null;
   mode: DashboardBotMode;
   /** dry_run captured from getConfig at load time. Persisted so lifecycle
@@ -82,6 +83,7 @@ export function zipBotsAndConfigs(
       name: bot.bot_name ?? `Bot #${bot.id}`,
       pair: derivePair(config),
       timeframe: deriveTimeframe(config),
+      strategyName: bot.strategy_name ?? null,
       uptime: null,
       mode: deriveMode(bot, config),
       dryRun: config?.dry_run ?? null,

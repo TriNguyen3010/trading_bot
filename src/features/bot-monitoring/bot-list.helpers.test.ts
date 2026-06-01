@@ -172,3 +172,26 @@ describe('zipBotsAndConfigs', () => {
     expect(zipBotsAndConfigs(bots, [null])[0].name).toBe('Bot #7');
   });
 });
+
+describe('zipBotsAndConfigs strategyName', () => {
+  it('carries BotOut.strategy_name onto DashboardBot', () => {
+    const bots = [
+      {
+        id: 42,
+        bot_name: 'Bollinger breakout',
+        status: 'stopped',
+        strategy_name: 'BollingerBreakout',
+      },
+    ] as Parameters<typeof zipBotsAndConfigs>[0];
+    const out = zipBotsAndConfigs(bots, [null]);
+    expect(out[0].strategyName).toBe('BollingerBreakout');
+  });
+
+  it('null when BE omits strategy_name', () => {
+    const bots = [{ id: 1, bot_name: 'X', status: 'stopped' }] as Parameters<
+      typeof zipBotsAndConfigs
+    >[0];
+    const out = zipBotsAndConfigs(bots, [null]);
+    expect(out[0].strategyName).toBeNull();
+  });
+});

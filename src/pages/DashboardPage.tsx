@@ -9,6 +9,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
+  FlaskConical,
   Loader2,
   Play,
   RefreshCcw,
@@ -32,6 +33,10 @@ import {
 } from '@/features/bot-monitoring/bot-list.helpers';
 import { ConfirmActionDialog } from '@/features/bot-monitoring/ConfirmActionDialog';
 import { isTerminal } from '@/features/bot-monitoring/lifecycle-actions';
+import {
+  BacktestDialog,
+  type BacktestBot,
+} from '@/features/backtest/BacktestDialog';
 import { formatBackendError } from '@/lib/format-error';
 import { AppHeader } from './AppHeader';
 
@@ -61,6 +66,7 @@ const MOCK_BOTS: MockBot[] = [
     id: 1,
     name: 'RSI Momentum Long',
     pair: 'ETH-USDC',
+    strategyName: null,
     timeframe: '5m',
     uptime: '5d 17h',
     mode: 'LIVE',
@@ -80,6 +86,7 @@ const MOCK_BOTS: MockBot[] = [
     id: 2,
     name: 'MACD Cross',
     pair: 'SOL-USDC',
+    strategyName: null,
     timeframe: '1h',
     uptime: '12h paper',
     mode: 'DRY-RUN',
@@ -98,6 +105,7 @@ const MOCK_BOTS: MockBot[] = [
     id: 4,
     name: 'ADX Trend Follow',
     pair: 'AVAX-USDC',
+    strategyName: null,
     timeframe: '4h',
     uptime: 'stopped 4m ago',
     mode: 'ERROR',
@@ -197,6 +205,7 @@ export function DashboardPage() {
     botId: number;
     botName: string;
   }>(null);
+  const [backtestBot, setBacktestBot] = useState<BacktestBot | null>(null);
 
   // Splice one bot's mode/errorMsg in `realBots` after a lifecycle response.
   // BotStatusOut doesn't carry `dry_run`, so we use the dry_run captured from
@@ -654,6 +663,18 @@ export function DashboardPage() {
                                 botName: bot.name,
                               })
                       }
+                      onBacktest={
+                        bot.isDemo
+                          ? undefined
+                          : () =>
+                              setBacktestBot({
+                                id: bot.id,
+                                name: bot.name,
+                                strategyName: bot.strategyName,
+                                pair: bot.pair,
+                                timeframe: bot.timeframe,
+                              })
+                      }
                     />
                   ))}
 
@@ -722,6 +743,14 @@ export function DashboardPage() {
           else void doRemove(confirmState.botId);
         }}
       />
+
+      <BacktestDialog
+        open={backtestBot !== null}
+        onOpenChange={(o) => {
+          if (!o) setBacktestBot(null);
+        }}
+        bot={backtestBot}
+      />
     </div>
   );
 }
@@ -739,6 +768,8 @@ interface BotCardProps {
   onStop?: () => void;
   onSync?: () => void;
   onRemove?: () => void;
+  /** Analysis entry point. Undefined → no Backtest row (e.g. demo cards). */
+  onBacktest?: () => void;
 }
 
 function BotCard({
@@ -749,6 +780,7 @@ function BotCard({
   onStop,
   onSync,
   onRemove,
+  onBacktest,
 }: BotCardProps) {
   const modeStyle: Record<DashboardBotMode, string> = {
     LIVE: 'border-bullish/30 bg-bullish-subtle text-bullish',
@@ -871,6 +903,29 @@ function BotCard({
           )}
         </div>
       ) : null}
+
+      {/* Backtest action — analysis row, separate from lifecycle row below
+          so the lifecycle row's sizing/tap targets stay intact. Demo cards
+          pass undefined → row not rendered.
+          Intentionally stays visible in ERROR mode: backtest is pure strategy
+          analysis (reads BotOut.strategy_name, runs Freqtrade against history)
+          and works regardless of live process health — independent of the
+          "Fix connection" lifecycle button. Only hidden during STARTING/STOPPING
+          since the lifecycle row is mid-transition and renders a non-interactive
+          spinner. */}
+      {onBacktest && bot.mode !== 'STARTING' && bot.mode !== 'STOPPING' && (
+        <div className="mt-3 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 border border-border-subtle text-fg-secondary hover:text-fg"
+            onClick={onBacktest}
+          >
+            <FlaskConical className="mr-1.5 h-3.5 w-3.5" />
+            Backtest
+          </Button>
+        </div>
+      )}
 
       {/* Actions — mode-driven. STARTING/STOPPING show a non-clickable
           spinner; ERROR offers Sync + Delete; PAUSED offers Start + Delete;
