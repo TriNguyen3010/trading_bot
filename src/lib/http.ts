@@ -77,7 +77,9 @@ const PUBLIC_PATHS = [
 
 // Endpoints with their own error UX (red box in dialog) → http.ts
 // suppresses toast. 401 still triggers global clear+redirect.
-const SILENT_TOAST_PREFIXES = ['/bot-strategy/', '/bot/'];
+// `/agent/*`: the Launchpad live-check + AgentOnboardingDialog own their
+// error UX (modal banner / ErrorStep), so a global toast would double up.
+const SILENT_TOAST_PREFIXES = ['/bot-strategy/', '/bot/', '/agent/'];
 
 const STORAGE_KEY = 'trading_bot_wallet_auth';
 
