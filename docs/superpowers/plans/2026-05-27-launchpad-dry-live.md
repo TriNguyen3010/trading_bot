@@ -883,18 +883,18 @@ In `src/features/bot-monitoring/BotMonitoringPage.tsx`, find:
 Add a navigation-based handler that routes through Dashboard Launchpad (reusing Task 5's `launchpadBotId` consume effect):
 
 ```tsx
-// Near the existing useNavigate import + meta hook:
+// Near the existing useNavigate import + safeBotId (Phase 1's parsed number id):
 const handleStartClick = useCallback(() => {
   // Route stopped-bot Start through Launchpad on Dashboard.
   // Direct botApi.start would bypass Phase 2b's agent EIP-712 gate when the
   // bot's stored config has dry_run=false (previously Live, now stopped).
-  navigate('/dashboard', { state: { launchpadBotId: meta.id } });
-}, [navigate, meta.id]);
+  navigate('/dashboard', { state: { launchpadBotId: safeBotId } });
+}, [navigate, safeBotId]);
 ```
 
 Then wire the header: `onStart={handleStartClick}` (replacing the previous `onStart={doStart}`). `doStop` and `doSync` keep their existing wiring.
 
-> Note: `meta.id` — confirm shape in your implementer prompt. Phase 1 uses `useParams<{ id: string }>` + parses to number (`safeBotId`). Use the parsed number id, not the URL string.
+> Use `safeBotId`, NOT `meta.id` (Devin SF-1): `meta` is `null` during loading so `meta.id` crashes at hook-eval time, and `BotMeta.id` is a `string` while the Dashboard consume effect compares `b.id === targetId` strictly against a `number` (string ≠ number → Launchpad silently never opens). `safeBotId` is the parsed number from `useParams<{ id: string }>` — same pattern `doStart`/`doStop`/`doSync` already use.
 
 - [ ] **Step 2: Regression test**
 
