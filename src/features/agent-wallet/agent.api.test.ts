@@ -31,6 +31,8 @@ describe('agentApi.confirm', () => {
     mockHttp.mockResolvedValue({
       id: 1,
       agent_address: '0xagent',
+      label: null,
+      spending_limit_usd: null,
       is_active: true,
       spent_today_usd: 0,
       created_at: '2026-05-28T00:00:00Z',
