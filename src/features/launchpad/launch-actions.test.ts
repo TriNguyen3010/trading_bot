@@ -8,7 +8,7 @@ vi.mock('@/features/bot-builder/bot-strategy.api', () => ({
   botStrategyApi: { update: vi.fn() },
 }));
 vi.mock('@/features/bot-monitoring/bot.api', () => ({
-  botApi: { start: vi.fn(), disableTelegram: vi.fn() },
+  botApi: { start: vi.fn(), disableTelegram: vi.fn(), enableTelegram: vi.fn() },
 }));
 vi.mock('@/features/agent-wallet/agent.api', () => ({
   agentApi: { active: vi.fn() },
@@ -17,6 +17,7 @@ vi.mock('@/features/agent-wallet/agent.api', () => ({
 const mockUpdate = vi.mocked(botStrategyApi.update);
 const mockStart = vi.mocked(botApi.start);
 const mockDisableTelegram = vi.mocked(botApi.disableTelegram);
+const mockEnableTelegram = vi.mocked(botApi.enableTelegram);
 const mockActive = vi.mocked(agentApi.active);
 
 const ACTIVE_AGENT = {
@@ -30,6 +31,7 @@ beforeEach(() => {
     .mockReset()
     .mockResolvedValue({ bot: { id: 42 }, strategy: {} } as never);
   mockDisableTelegram.mockReset().mockResolvedValue({} as never);
+  mockEnableTelegram.mockReset().mockResolvedValue({} as never);
   mockStart.mockReset().mockResolvedValue({
     id: 42,
     status: 'starting',
@@ -98,5 +100,23 @@ describe('launchBot', () => {
   it('returns the BotStatusOut from start', async () => {
     const res = await launchBot(42, 'dry-run');
     expect(res.status).toBe('starting');
+  });
+
+  it('telegram provided → enableTelegram (not disable) before start', async () => {
+    await launchBot(42, 'dry-run', { token: 't', chat_id: 'c' });
+    expect(mockEnableTelegram).toHaveBeenCalledWith(42, {
+      token: 't',
+      chat_id: 'c',
+    });
+    expect(mockDisableTelegram).not.toHaveBeenCalled();
+    expect(mockEnableTelegram.mock.invocationCallOrder[0]).toBeLessThan(
+      mockStart.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('no telegram arg → disableTelegram (unchanged default)', async () => {
+    await launchBot(42, 'dry-run');
+    expect(mockDisableTelegram).toHaveBeenCalledWith(42);
+    expect(mockEnableTelegram).not.toHaveBeenCalled();
   });
 });
