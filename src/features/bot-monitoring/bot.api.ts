@@ -20,6 +20,17 @@ export const botApi = {
   getConfig: (id: number) => http<BotConfigOut>('GET', `/bot/${id}/config`),
   disableTelegram: (id: number) =>
     http<BotConfigOut>('PATCH', `/bot/${id}/config`, DISABLE_TELEGRAM_PATCH),
+  enableTelegram: (id: number, cfg: { token: string; chat_id: string }) =>
+    http<BotConfigOut>('PATCH', `/bot/${id}/config`, {
+      optional: {
+        telegram: {
+          enabled: true,
+          token: cfg.token,
+          chat_id: cfg.chat_id,
+          allow_custom_messages: true,
+        },
+      },
+    } satisfies BotConfigUpdate),
   getStatus: (id: number) => http<BotStatusOut>('GET', `/bot/${id}/status`),
   start: (id: number) => http<BotStatusOut>('POST', `/bot/${id}/start`),
   stop: (id: number) => http<BotStatusOut>('POST', `/bot/${id}/stop`),
