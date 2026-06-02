@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { LaunchpadModal, type LaunchpadBot } from './LaunchpadModal';
 import { launchBot, AgentNotActiveError } from './launch-actions';
@@ -47,6 +47,7 @@ beforeEach(() => {
     .mockReset()
     .mockResolvedValue({ id: 42, status: 'starting' } as never);
 });
+afterEach(() => vi.unstubAllEnvs());
 
 describe('LaunchpadModal', () => {
   it('renders 3 mode cards + bot name', () => {
@@ -137,6 +138,64 @@ describe('LaunchpadModal', () => {
     await waitFor(() => expect(mockLaunch).toHaveBeenCalledTimes(2));
     expect(mockLaunch).toHaveBeenNthCalledWith(1, 42, 'live');
     expect(mockLaunch).toHaveBeenNthCalledWith(2, 42, 'live');
+  });
+
+  it('hides Telegram dev section when VITE_TELEGRAM_DEV is off', () => {
+    render(
+      <LaunchpadModal
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        onBacktest={() => {}}
+        onLaunched={() => {}}
+      />,
+    );
+    expect(screen.queryByLabelText(/bot token/i)).not.toBeInTheDocument();
+  });
+
+  it('passes telegram config when both dev fields are filled', async () => {
+    vi.stubEnv('VITE_TELEGRAM_DEV', 'true');
+    render(
+      <LaunchpadModal
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        onBacktest={() => {}}
+        onLaunched={() => {}}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/bot token/i), {
+      target: { value: '123:abc' },
+    });
+    fireEvent.change(screen.getByLabelText(/chat id/i), {
+      target: { value: '99' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /start dry-run/i }));
+    await waitFor(() =>
+      expect(mockLaunch).toHaveBeenCalledWith(42, 'dry-run', {
+        token: '123:abc',
+        chat_id: '99',
+      }),
+    );
+  });
+
+  it('blocks launch + shows error when only one telegram field is filled', async () => {
+    vi.stubEnv('VITE_TELEGRAM_DEV', 'true');
+    render(
+      <LaunchpadModal
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        onBacktest={() => {}}
+        onLaunched={() => {}}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/bot token/i), {
+      target: { value: '123:abc' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /start dry-run/i }));
+    expect(await screen.findByText(/cần nhập cả/i)).toBeInTheDocument();
+    expect(mockLaunch).not.toHaveBeenCalled();
   });
 
   it('backtest card delegates to onBacktest', () => {

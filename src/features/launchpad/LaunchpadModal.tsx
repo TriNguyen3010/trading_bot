@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { formatBackendError } from '@/lib/format-error';
 import { botApi } from '@/features/bot-monitoring/bot.api';
 import { AgentOnboardingDialog } from '@/features/agent-wallet/AgentOnboardingDialog';
@@ -47,22 +48,43 @@ export function LaunchpadModal({
   const [busy, setBusy] = useState<LaunchMode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const TELEGRAM_DEV = import.meta.env.VITE_TELEGRAM_DEV === 'true';
+  const [tgToken, setTgToken] = useState('');
+  const [tgChatId, setTgChatId] = useState('');
 
   useEffect(() => {
     if (open) {
       setBusy(null);
       setError(null);
       setOnboardingOpen(false);
+      setTgToken('');
+      setTgChatId('');
     }
   }, [open]);
 
   if (!bot) return null;
 
   const doLaunch = async (mode: LaunchMode) => {
+    let telegramArg: { token: string; chat_id: string } | undefined;
+    if (TELEGRAM_DEV) {
+      const token = tgToken.trim();
+      const chat_id = tgChatId.trim();
+      if (Boolean(token) !== Boolean(chat_id)) {
+        setError(
+          'Cần nhập cả Telegram token và chat_id, hoặc để trống cả hai.',
+        );
+        return;
+      }
+      if (token && chat_id) telegramArg = { token, chat_id };
+    }
     setBusy(mode);
     setError(null);
     try {
-      await launchBot(bot.id, mode);
+      if (telegramArg) {
+        await launchBot(bot.id, mode, telegramArg);
+      } else {
+        await launchBot(bot.id, mode);
+      }
       toast.success(
         `Bot #${bot.id} "${bot.name}" đang khởi động (${mode === 'live' ? 'LIVE' : 'dry-run'})`,
       );
@@ -176,6 +198,50 @@ export function LaunchpadModal({
                   onClick={() => doLaunch('live')}
                 />
               </div>
+
+              {TELEGRAM_DEV && (
+                <div className="mt-5 rounded-2xl border border-dashed border-border-subtle bg-surface/30 p-4">
+                  <p className="mb-3 font-mono text-2xs uppercase tracking-wider text-fg-muted">
+                    Telegram (dev test)
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="tg-token"
+                        className="block text-xs font-medium text-fg-muted"
+                      >
+                        Bot token
+                      </label>
+                      <Input
+                        id="tg-token"
+                        value={tgToken}
+                        onChange={(e) => setTgToken(e.target.value)}
+                        placeholder="123456:ABC-xyz"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="tg-chat"
+                        className="block text-xs font-medium text-fg-muted"
+                      >
+                        Chat ID
+                      </label>
+                      <Input
+                        id="tg-chat"
+                        value={tgChatId}
+                        onChange={(e) => setTgChatId(e.target.value)}
+                        placeholder="e.g. 123456789"
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+                  <p className="mt-2 text-2xs text-fg-muted">
+                    Điền cả hai để bot khởi động với Telegram bật (test
+                    /status). Để trống = tắt như cũ.
+                  </p>
+                </div>
+              )}
             </div>
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
