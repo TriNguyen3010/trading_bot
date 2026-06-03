@@ -103,13 +103,12 @@ function buildCustomExit(close: CloseMethodForm): CustomExitShape {
 export function buildBotPayload(state: BuilderState): BotPayload {
   const c = state.botConfig;
   const market = c.marketType;
-  const dryRun = c.tradingMode === 'dry-run';
 
   return {
     bot_name: state.botName,
     exchange_name: c.exchange,
     strategy_name: toPythonClassName(state.strategy.name || state.botName),
-    dry_run: dryRun,
+    dry_run: true, // always true on create — mode is set at launch time by Launchpad
     stake_currency: c.stakeCurrency,
     stake_amount: c.stakeAmount,
     max_open_trades: c.maxOpenTrades,
@@ -277,7 +276,6 @@ export function deserializeBundle(bundle: Bundle): DeserializedState {
     botConfig: {
       pair: jsonPairToUi(bot.pair),
       timeframe: bot.timeframe,
-      tradingMode: bot.dry_run ? 'dry-run' : 'live',
       leverage: bot.leverage,
       exchange: bot.exchange_name,
       marketType: bot.trading_mode,
@@ -559,7 +557,6 @@ export function deserializeUnifiedPayload(
     botConfig: {
       pair: jsonPairToUi(payload.pair),
       timeframe: payload.timeframe as BotConfigForm['timeframe'],
-      tradingMode: payload.dry_run ? 'dry-run' : 'live',
       leverage: payload.leverage ?? 1,
       exchange: payload.exchange_name,
       marketType: (payload.trading_mode ??
