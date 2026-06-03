@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -36,7 +36,6 @@ const EXPAND_EASE = [0.16, 1, 0.3, 1] as const;
 export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   const state = useBuilderStore();
   const issues = useMemo(() => validateBuilder(state), [state]);
-  const [parseError, setParseError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showJson, setShowJson] = useState(false);
@@ -44,27 +43,39 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
   const summary = useMemo(() => getDeploySummary(state), [state]);
 
-  const bundle = useMemo(() => {
-    if (issues.length > 0) return null;
+  // Derive the payload + any parse error purely (no setState during render).
+  const { draft: bundle, parseError } = useMemo(() => {
+    if (issues.length > 0)
+      return {
+        draft: null as ReturnType<typeof buildUnifiedPayload> | null,
+        parseError: null as string | null,
+      };
     try {
-      const draft = buildUnifiedPayload(state);
-      const result = unifiedBotStrategyCreateSchema.safeParse(draft);
+      const built = buildUnifiedPayload(state);
+      const result = unifiedBotStrategyCreateSchema.safeParse(built);
       if (!result.success) {
-        setParseError(
-          result.error.issues
+        return {
+          draft: null,
+          parseError: result.error.issues
             .slice(0, 4)
             .map((i) => `${i.path.join('.')}: ${i.message}`)
             .join('\n'),
-        );
-        return null;
+        };
       }
-      setParseError(null);
-      return draft;
+      return { draft: built, parseError: null };
     } catch (err) {
-      setParseError(err instanceof Error ? err.message : String(err));
-      return null;
+      return {
+        draft: null,
+        parseError: err instanceof Error ? err.message : String(err),
+      };
     }
   }, [state, issues.length]);
+
+  // Clear a stale submit error when the dialog is (re)opened — otherwise a
+  // previous failed Deploy keeps showing its red box on the next open.
+  useEffect(() => {
+    if (open) setSubmitError(null);
+  }, [open]);
 
   const json = bundle ? JSON.stringify(bundle, null, 2) : '';
   const filename = unifiedBotStrategyFilename(state.botName);

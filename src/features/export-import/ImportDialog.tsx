@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Upload, FileWarning } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -27,6 +27,15 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   const [textInput, setTextInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Clear stale input/error when the dialog is (re)opened so a previous failed
+  // paste/import doesn't linger.
+  useEffect(() => {
+    if (open) {
+      setError(null);
+      setTextInput('');
+    }
+  }, [open]);
 
   const handleApply = (raw: string) => {
     setError(null);
@@ -63,8 +72,21 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           raw.limit_offset_pct as UnifiedBundle['limit_offset_pct'],
         close_method_type:
           raw.close_method_type as UnifiedBundle['close_method_type'],
+        sl_enabled: raw.sl_enabled as UnifiedBundle['sl_enabled'],
       };
       const next = deserializeUnifiedPayload(bundle);
+      // Guard against a hand-edited file that decodes to an internally
+      // inconsistent state the wizard could never build (short can only run on
+      // futures). Refuse rather than hydrate a state that fails on Deploy.
+      if (
+        next.directionForm.direction === 'short' &&
+        next.botConfig.marketType !== 'futures'
+      ) {
+        setError(
+          'Inconsistent file: short direction requires a futures market.',
+        );
+        return;
+      }
       const store = useBuilderStore.getState();
       store.setBotName(next.botName);
       store.patchBotConfig(next.botConfig);
