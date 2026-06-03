@@ -77,3 +77,90 @@ describe('agentApi.checkLimit', () => {
     });
   });
 });
+
+describe('agentApi.hyperliquidWallets', () => {
+  it('GETs /agent/hyperliquid-wallets', async () => {
+    mockHttp.mockResolvedValue([]);
+    await agentApi.hyperliquidWallets();
+    expect(mockHttp).toHaveBeenCalledWith('GET', '/agent/hyperliquid-wallets');
+  });
+});
+
+describe('agentApi.syncStatus', () => {
+  it('GETs /agent/sync-status', async () => {
+    mockHttp.mockResolvedValue({
+      has_db_active_agent: false,
+      db_active_agent_id: null,
+      db_active_agent_address: null,
+      onchain_verification_status: 'ok',
+      onchain_active_addresses: [],
+      is_db_agent_onchain_active: null,
+      mismatch_db_active_but_onchain_missing: false,
+      message: 'no agent',
+    });
+    await agentApi.syncStatus();
+    expect(mockHttp).toHaveBeenCalledWith('GET', '/agent/sync-status');
+  });
+});
+
+describe('agentApi.revokePayload', () => {
+  it('GETs /agent/{id}/revoke-payload with agent_id in path', async () => {
+    mockHttp.mockResolvedValue({ sign_payload: {} });
+    await agentApi.revokePayload(42);
+    expect(mockHttp).toHaveBeenCalledWith('GET', '/agent/42/revoke-payload');
+  });
+});
+
+describe('agentApi.revoke', () => {
+  it('POSTs /agent/{id}/revoke with AgentRevokeRequest body', async () => {
+    mockHttp.mockResolvedValue(undefined);
+    await agentApi.revoke(42, {
+      wallet_address: '0xmaster',
+      nonce: 12345,
+      signature: '0xsig',
+    });
+    expect(mockHttp).toHaveBeenCalledWith('POST', '/agent/42/revoke', {
+      wallet_address: '0xmaster',
+      nonce: 12345,
+      signature: '0xsig',
+    });
+  });
+});
+
+describe('agentApi.externalRevokePayload', () => {
+  it('GETs /agent/external-revoke-payload?agent_name=<name>', async () => {
+    mockHttp.mockResolvedValue({ sign_payload: {} });
+    await agentApi.externalRevokePayload('my-agent');
+    expect(mockHttp).toHaveBeenCalledWith(
+      'GET',
+      '/agent/external-revoke-payload?agent_name=my-agent',
+    );
+  });
+
+  it('uses empty string when name is empty', async () => {
+    mockHttp.mockResolvedValue({ sign_payload: {} });
+    await agentApi.externalRevokePayload('');
+    expect(mockHttp).toHaveBeenCalledWith(
+      'GET',
+      '/agent/external-revoke-payload?agent_name=',
+    );
+  });
+});
+
+describe('agentApi.externalRevoke', () => {
+  it('POSTs /agent/external-revoke with ExternalRevokeRequest body', async () => {
+    mockHttp.mockResolvedValue(undefined);
+    await agentApi.externalRevoke({
+      wallet_address: '0xmaster',
+      agent_name: 'my-agent',
+      nonce: 999,
+      signature: '0xsig',
+    });
+    expect(mockHttp).toHaveBeenCalledWith('POST', '/agent/external-revoke', {
+      wallet_address: '0xmaster',
+      agent_name: 'my-agent',
+      nonce: 999,
+      signature: '0xsig',
+    });
+  });
+});
