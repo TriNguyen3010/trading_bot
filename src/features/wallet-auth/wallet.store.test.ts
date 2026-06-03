@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useWalletStore } from './wallet.store';
+import { WALLET_AUTH_CLEARED_EVENT } from '@/lib/http';
 
 vi.mock('./wallet.api', () => ({
   walletApi: {
@@ -352,6 +353,31 @@ describe('wallet.store', () => {
 
       expect(sessionStorage.getItem('trading_bot_wallet_auth')).toBeNull();
       expect(useWalletStore.getState().address).toBeNull();
+    });
+  });
+
+  // W-1: http.ts clears sessionStorage on 401 but (since the F9 fix) no longer
+  // forces a reload on the landing page — so it must also reset the in-memory
+  // store, else the UI shows a stale "connected" state with empty creds.
+  describe('wallet-auth cleared event (from http 401)', () => {
+    it('resets the store when http dispatches the cleared event', () => {
+      useWalletStore.setState({
+        address: '0xabc',
+        nonce: 'n',
+        signature: 's',
+        status: 'ready',
+        error: null,
+        signingMessage: null,
+        user: null,
+      });
+
+      window.dispatchEvent(new CustomEvent(WALLET_AUTH_CLEARED_EVENT));
+
+      const s = useWalletStore.getState();
+      expect(s.address).toBeNull();
+      expect(s.nonce).toBeNull();
+      expect(s.signature).toBeNull();
+      expect(s.status).toBe('idle');
     });
   });
 

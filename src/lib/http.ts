@@ -129,11 +129,25 @@ function getWalletCreds(): WalletCreds | null {
   }
 }
 
+/**
+ * Fired on the `window` whenever http.ts clears wallet creds (401). The wallet
+ * store listens for it and resets its in-memory state. We use an event instead
+ * of importing the store to avoid a store→api→http→store import cycle, and
+ * because http.ts no longer always full-page-redirects on 401 (see F9) — so
+ * the store would otherwise keep stale creds and show a false "connected" UI.
+ */
+export const WALLET_AUTH_CLEARED_EVENT = 'wallet-auth:cleared';
+
 function clearWalletAuth() {
   try {
     sessionStorage.removeItem(STORAGE_KEY);
   } catch {
     /* noop */
+  }
+  try {
+    window.dispatchEvent(new CustomEvent(WALLET_AUTH_CLEARED_EVENT));
+  } catch {
+    /* noop (non-browser env) */
   }
 }
 

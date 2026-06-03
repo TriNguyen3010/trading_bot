@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { toast } from 'sonner';
+import { WALLET_AUTH_CLEARED_EVENT } from '@/lib/http';
 import { walletApi } from './wallet.api';
 import {
   detectCoin98,
@@ -276,6 +277,15 @@ export const useWalletStore = create<WalletState>()((set) => ({
     });
   },
 }));
+
+// When http.ts clears creds on a 401 it dispatches WALLET_AUTH_CLEARED_EVENT.
+// Reset the in-memory store too — http.ts no longer always full-page-redirects
+// (F9), so without this the UI would keep a stale "connected" state.
+if (typeof window !== 'undefined') {
+  window.addEventListener(WALLET_AUTH_CLEARED_EVENT, () => {
+    useWalletStore.getState().reset();
+  });
+}
 
 // Check all 3 fields (match http.ts validation). If we only checked 2,
 // a partial-state edge case would slip past ProtectedRoute → one wasted
