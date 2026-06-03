@@ -8,6 +8,7 @@ import { useBacktestPoll } from './useBacktestPoll';
 import {
   presetToTimerange,
   extractMetrics,
+  extractTrades,
   formatWinRate,
   formatTotalProfit,
   quoteCurrencyFromPair,
@@ -56,6 +57,7 @@ export function BacktestDialog({
   const [step, setStep] = useState<Step>(
     initialBacktestId ? 'running' : 'setup',
   );
+  const [resultTab, setResultTab] = useState<'summary' | 'trades'>('summary');
 
   const poll = useBacktestPoll(step === 'running' ? backtestId : null);
 
@@ -78,11 +80,17 @@ export function BacktestDialog({
       setBacktestId(null);
       setError(null);
       setSubmitting(false);
+      setResultTab('summary');
     }
   }, [open, initialBacktestId]);
 
   const metrics = useMemo(
     () => (poll.item ? extractMetrics(poll.item) : null),
+    [poll.item],
+  );
+
+  const trades = useMemo(
+    () => (poll.item ? extractTrades(poll.item) : []),
     [poll.item],
   );
 
@@ -268,46 +276,81 @@ export function BacktestDialog({
 
             {step === 'result' && metrics && (
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
-                  <ResultMetric
-                    label="Trades"
-                    value={metrics.trades?.toString() ?? '—'}
-                  />
-                  <ResultMetric
-                    label="Net profit"
-                    value={formatTotalProfit(metrics.totalProfit, currency)}
-                    tone={
-                      (metrics.totalProfit ?? 0) >= 0 ? 'bullish' : 'bearish'
-                    }
-                  />
-                  <ResultMetric
-                    label="Win rate"
-                    value={formatWinRate(metrics.winRate)}
-                  />
-                  <ResultMetric
-                    label="Max drawdown"
-                    value={
-                      metrics.maxDrawdownPct != null
-                        ? `${metrics.maxDrawdownPct.toFixed(1)}%`
-                        : '—'
-                    }
-                    tone="bearish"
-                  />
-                  <ResultMetric
-                    label="Sharpe"
-                    value={
-                      metrics.sharpe != null ? metrics.sharpe.toFixed(2) : '—'
-                    }
-                  />
-                  <ResultMetric
-                    label="Avg trade"
-                    value={metrics.avgTrade ?? '—'}
-                  />
+                {/* Tab toggle */}
+                <div className="flex gap-1 rounded-lg bg-surface p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setResultTab('summary')}
+                    className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                      resultTab === 'summary'
+                        ? 'bg-surface-elevated text-fg shadow-sm'
+                        : 'text-fg-muted hover:text-fg'
+                    }`}
+                  >
+                    Tổng quan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setResultTab('trades')}
+                    className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                      resultTab === 'trades'
+                        ? 'bg-surface-elevated text-fg shadow-sm'
+                        : 'text-fg-muted hover:text-fg'
+                    }`}
+                  >
+                    {`Lệnh (${trades.length})`}
+                  </button>
                 </div>
-                <p className="text-2xs text-fg-muted">
-                  Drawdown / Sharpe / avg-trade đến từ <code>results</code> — sẽ
-                  là "—" nếu BE chưa trả các field đó.
-                </p>
+
+                {resultTab === 'summary' && (
+                  <>
+                    <div className="grid grid-cols-3 gap-3">
+                      <ResultMetric
+                        label="Trades"
+                        value={metrics.trades?.toString() ?? '—'}
+                      />
+                      <ResultMetric
+                        label="Net profit"
+                        value={formatTotalProfit(metrics.totalProfit, currency)}
+                        tone={
+                          (metrics.totalProfit ?? 0) >= 0
+                            ? 'bullish'
+                            : 'bearish'
+                        }
+                      />
+                      <ResultMetric
+                        label="Win rate"
+                        value={formatWinRate(metrics.winRate)}
+                      />
+                      <ResultMetric
+                        label="Max drawdown"
+                        value={
+                          metrics.maxDrawdownPct != null
+                            ? `${metrics.maxDrawdownPct.toFixed(1)}%`
+                            : '—'
+                        }
+                        tone="bearish"
+                      />
+                      <ResultMetric
+                        label="Sharpe"
+                        value={
+                          metrics.sharpe != null
+                            ? metrics.sharpe.toFixed(2)
+                            : '—'
+                        }
+                      />
+                      <ResultMetric
+                        label="Avg trade"
+                        value={metrics.avgTrade ?? '—'}
+                      />
+                    </div>
+                    <p className="text-2xs text-fg-muted">
+                      Drawdown / Sharpe / avg-trade đến từ <code>results</code>{' '}
+                      — sẽ là "—" nếu BE chưa trả các field đó.
+                    </p>
+                  </>
+                )}
+
                 <div className="flex justify-end gap-2 border-t border-border pt-4">
                   <Button
                     variant="secondary"
