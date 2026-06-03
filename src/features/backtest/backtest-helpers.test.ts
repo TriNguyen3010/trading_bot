@@ -67,11 +67,13 @@ describe('isBacktestTerminal', () => {
 });
 
 describe('formatWinRate', () => {
-  it('treats <=1 as a fraction', () => {
-    expect(formatWinRate(0.617)).toBe('61.7%');
-  });
-  it('treats >1 as already a percentage', () => {
+  it('renders the 0-100 percentage directly', () => {
     expect(formatWinRate(61.7)).toBe('61.7%');
+    expect(formatWinRate(44.23)).toBe('44.2%');
+  });
+  it('does NOT inflate a legit low win-rate (1.0 = 1%, not 100%)', () => {
+    expect(formatWinRate(1)).toBe('1.0%');
+    expect(formatWinRate(0.5)).toBe('0.5%');
   });
   it('renders dash for null', () => {
     expect(formatWinRate(null)).toBe('—');
@@ -222,6 +224,20 @@ describe('extractTrades', () => {
       results: { strategy: { Gamma: { trades: null } } },
     };
     expect(extractTrades(item)).toEqual([]);
+  });
+  it('coerces a trade with missing/non-number numeric fields (no render crash)', () => {
+    const item = {
+      ...base,
+      results: {
+        strategy: { Gamma: { trades: [{ pair: 'BTC/USDC' }] } },
+      },
+    } as unknown as BacktestHistoryItem;
+    const trades = extractTrades(item);
+    expect(trades).toHaveLength(1);
+    expect(trades[0].profit_abs).toBe(0);
+    expect(trades[0].profit_ratio).toBe(0);
+    // The table calls .toFixed on these — must not throw.
+    expect(() => trades[0].profit_abs.toFixed(2)).not.toThrow();
   });
 });
 

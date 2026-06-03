@@ -23,14 +23,13 @@ export function isBacktestTerminal(
   return /fail|error|cancel/i.test(item.status ?? '');
 }
 
-/** Win-rate units are undocumented at the openapi level; accept fraction
- * (0–1) or percent (0–100). Top-level `BacktestHistoryItem.win_rate` is
- * confirmed percentage 0-100 via sample, but the dual-unit guard stays in
- * case the comparison-item `winrate` (0-1 ratio) is fed through. */
+/** Formats the top-level `BacktestHistoryItem.win_rate`, which is a percentage
+ * 0-100 (confirmed via sample). Do NOT apply a 0-1→0-100 heuristic here: a
+ * legitimate 1% win-rate (v=1.0) would otherwise be inflated to 100%. The
+ * comparison-item `winrate` (0-1 ratio) is never routed through this. */
 export function formatWinRate(v: number | null): string {
   if (v == null) return '—';
-  const pct = v <= 1 ? v * 100 : v;
-  return `${pct.toFixed(1)}%`;
+  return `${v.toFixed(1)}%`;
 }
 
 /** `BacktestHistoryItem.total_profit` is absolute amount in stake currency
@@ -98,7 +97,33 @@ export function extractTrades(item: BacktestHistoryItem): BacktestTrade[] {
 
   if (!strategyKey) return [];
   const trades = strategy[strategyKey]?.trades;
-  return Array.isArray(trades) ? (trades as BacktestTrade[]) : [];
+  if (!Array.isArray(trades)) return [];
+  // Normalize each row: the table calls `.toFixed()` on profit fields and
+  // formats the timestamps, so coerce numbers (a missing/null/string field
+  // from a BE drift would otherwise white-screen the whole table).
+  return trades.map((raw) => {
+    const tr = (raw ?? {}) as Partial<BacktestTrade>;
+    return {
+      pair: String(tr.pair ?? ''),
+      open_timestamp: num(tr.open_timestamp),
+      close_timestamp: num(tr.close_timestamp),
+      open_rate: num(tr.open_rate),
+      close_rate: num(tr.close_rate),
+      profit_abs: num(tr.profit_abs),
+      profit_ratio: num(tr.profit_ratio),
+      exit_reason: String(tr.exit_reason ?? ''),
+      enter_tag: String(tr.enter_tag ?? ''),
+      trade_duration: num(tr.trade_duration),
+      is_short: Boolean(tr.is_short),
+      leverage: num(tr.leverage),
+    };
+  });
+}
+
+/** Coerce an unknown to a finite number, defaulting to 0. */
+function num(v: unknown): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
 }
 
 const MONTHS = [
