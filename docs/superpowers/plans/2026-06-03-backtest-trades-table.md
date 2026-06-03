@@ -41,11 +41,7 @@
 - [ ] **Step 1.1** — Write failing tests in `backtest-helpers.test.ts`:
 
   ```ts
-  import {
-    extractTrades,
-    formatTradeDuration,
-    formatTradeTime,
-  } from './backtest-helpers';
+  import { extractTrades } from './backtest-helpers';
   import type { BacktestHistoryItem } from '@/types/api-helpers';
 
   // Minimal trade fixture matching real backtest_200.json fields
@@ -183,7 +179,17 @@
 
 ### Steps
 
-- [ ] **Step 2.1** — Write failing tests in `backtest-helpers.test.ts`:
+- [ ] **Step 2.1** — Write failing tests in `backtest-helpers.test.ts`. First extend the existing import at the top of the file to add the two new helpers (Task 1 imported only `extractTrades`):
+
+  ```ts
+  import {
+    extractTrades,
+    formatTradeDuration,
+    formatTradeTime,
+  } from './backtest-helpers';
+  ```
+
+  Then add these `describe` blocks:
 
   ```ts
   describe('formatTradeDuration', () => {
