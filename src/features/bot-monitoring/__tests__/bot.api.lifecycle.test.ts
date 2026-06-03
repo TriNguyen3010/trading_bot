@@ -79,4 +79,49 @@ describe('botApi lifecycle', () => {
     expect(mockHttp).toHaveBeenCalledWith('DELETE', '/bot/42');
     expect(res).toBeUndefined();
   });
+
+  it('rotateWallet POSTs /bot/rotate-wallet and returns BotWalletRotationResponse', async () => {
+    mockHttp.mockResolvedValueOnce({
+      total_bots: 3,
+      updated_count: 2,
+      restarted_count: 1,
+      error_count: 1,
+      results: [
+        {
+          bot_id: 1,
+          bot_name: 'Alpha',
+          was_running: true,
+          updated: true,
+          restart_attempted: true,
+          restarted: true,
+          error: null,
+        },
+        {
+          bot_id: 2,
+          bot_name: 'Beta',
+          was_running: false,
+          updated: true,
+          restart_attempted: false,
+          restarted: false,
+          error: null,
+        },
+        {
+          bot_id: 3,
+          bot_name: 'Gamma',
+          was_running: true,
+          updated: false,
+          restart_attempted: false,
+          restarted: false,
+          error: 'No active agent',
+        },
+      ],
+      message: '2/3 bots updated',
+    });
+    const res = await botApi.rotateWallet();
+    expect(mockHttp).toHaveBeenCalledWith('POST', '/bot/rotate-wallet');
+    expect(res.total_bots).toBe(3);
+    expect(res.updated_count).toBe(2);
+    expect(res.error_count).toBe(1);
+    expect(res.results[2].error).toBe('No active agent');
+  });
 });
