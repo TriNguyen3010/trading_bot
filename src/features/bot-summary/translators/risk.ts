@@ -1,7 +1,8 @@
 /**
- * Risk block: trading mode / stake / leverage / wallet / max trades.
- * Returns lines + an optional warning when leverage looks dangerous on
- * live capital.
+ * Risk block: stake / leverage / wallet / max trades.
+ * Returns lines + an optional warning when leverage looks dangerous.
+ * Trading mode is a launch-time concern (handled by Launchpad) — not
+ * surfaced here.
  */
 import type { BotConfigForm } from '@/types/builder.types';
 import type { SummaryLine } from '../types';
@@ -23,20 +24,16 @@ export function translateRisk(c: BotConfigForm): TranslateRiskResult {
   const lines: SummaryLine[] = [];
   let warning: string | undefined;
 
-  // ── Trading mode ──────────────────────────────────────────────
-  if (c.tradingMode === 'live') {
-    lines.push(line(t('Live trading', 'bearish'), t(' — using real funds.')));
-  } else {
-    lines.push(
-      line(
-        t(
-          `Dry-run mode with a ${fmtMoney(c.dryRunWallet, c.stakeCurrency)} simulated wallet.`,
-        ),
+  // ── Dry-run wallet (always shown — bot always starts dry until launched) ──
+  lines.push(
+    line(
+      t(
+        `Dry-run with a ${fmtMoney(c.dryRunWallet, c.stakeCurrency)} simulated wallet.`,
       ),
-    );
-  }
+    ),
+  );
 
-  // ── Stake + concurrency ──────────────────────────────────────
+  // ── Stake + concurrency ──────────────────────────────────────────────────
   const concurrency =
     c.maxOpenTrades === -1
       ? 'unlimited concurrent positions'
@@ -51,7 +48,7 @@ export function translateRisk(c: BotConfigForm): TranslateRiskResult {
     ),
   );
 
-  // ── Leverage / market ────────────────────────────────────────
+  // ── Leverage / market ────────────────────────────────────────────────────
   if (c.marketType === 'spot') {
     lines.push(line(t('Spot trading — no leverage, no liquidation risk.')));
   } else if (c.leverage <= 1) {
@@ -64,9 +61,8 @@ export function translateRisk(c: BotConfigForm): TranslateRiskResult {
         t(` ${c.marginMode}-margin — high-leverage, monitor closely.`),
       ),
     );
-    if (c.tradingMode === 'live') {
-      warning = `${c.leverage}× leverage on live capital — losses can exceed your stake.`;
-    }
+    // Warning regardless of mode — high leverage is always risky
+    warning = `${c.leverage}× leverage — losses can exceed your stake.`;
   } else {
     lines.push(line(t(`Leverage ${c.leverage}× ${c.marginMode}-margin.`)));
   }

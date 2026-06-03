@@ -5,7 +5,7 @@ exports[`summarizeBot — 8 built-in templates > summarizes breakout-btc-15m wit
 BTC/USDC perpetual futures on Hyperliquid, 15-minute candles.
 
 ## Risk
-Dry-run mode with a $1,000 USDC simulated wallet.
+Dry-run with a $1,000 USDC simulated wallet.
 $100 USDC stake per trade, up to 5 concurrent positions.
 Leverage 5× cross-margin.
 
@@ -30,7 +30,7 @@ exports[`summarizeBot — 8 built-in templates > summarizes conservative-dca-btc
 BTC/USDC perpetual futures on Hyperliquid, 1-hour candles.
 
 ## Risk
-Dry-run mode with a $1,000 USDC simulated wallet.
+Dry-run with a $1,000 USDC simulated wallet.
 $100 USDC stake per trade, up to 5 concurrent positions.
 No leverage (1×), cross-margin futures.
 
@@ -52,8 +52,8 @@ exports[`summarizeBot — 8 built-in templates > summarizes cypheus-default with
 "## Market
 BTC/USDC perpetual futures on Hyperliquid, 5-minute candles.
 
-## Risk
-Dry-run mode with a $1,000 USDC simulated wallet.
+## Risk ⚠ 20× leverage — losses can exceed your stake.
+Dry-run with a $1,000 USDC simulated wallet.
 $100 USDC stake per trade, up to 10 concurrent positions.
 Leverage 20× cross-margin — high-leverage, monitor closely.
 
@@ -76,7 +76,7 @@ exports[`summarizeBot — 8 built-in templates > summarizes grid-stable-usdt-pai
 USDC/USDT perpetual futures on Hyperliquid, 5-minute candles.
 
 ## Risk
-Dry-run mode with a $1,000 USDT simulated wallet.
+Dry-run with a $1,000 USDT simulated wallet.
 $100 USDT stake per trade, up to 10 concurrent positions.
 No leverage (1×), cross-margin futures.
 
@@ -97,8 +97,8 @@ exports[`summarizeBot — 8 built-in templates > summarizes macd-momentum-bnb wi
 "## Market
 BNB/USDC perpetual futures on Hyperliquid, 30-minute candles.
 
-## Risk
-Dry-run mode with a $1,000 USDC simulated wallet.
+## Risk ⚠ 10× leverage — losses can exceed your stake.
+Dry-run with a $1,000 USDC simulated wallet.
 $100 USDC stake per trade, up to 4 concurrent positions.
 Leverage 10× cross-margin — high-leverage, monitor closely.
 
@@ -121,7 +121,7 @@ exports[`summarizeBot — 8 built-in templates > summarizes multi-tf-trend-alts 
 SOL/USDC perpetual futures on Hyperliquid, 4-hour candles.
 
 ## Risk
-Dry-run mode with a $1,000 USDC simulated wallet.
+Dry-run with a $1,000 USDC simulated wallet.
 $100 USDC stake per trade, up to 3 concurrent positions.
 Leverage 3× cross-margin.
 
@@ -147,7 +147,7 @@ exports[`summarizeBot — 8 built-in templates > summarizes rsi-oversold-eth-1h 
 ETH/USDC perpetual futures on Hyperliquid, 1-hour candles.
 
 ## Risk
-Dry-run mode with a $1,000 USDC simulated wallet.
+Dry-run with a $1,000 USDC simulated wallet.
 $100 USDC stake per trade, up to 3 concurrent positions.
 No leverage (1×), cross-margin futures.
 
@@ -169,8 +169,8 @@ exports[`summarizeBot — 8 built-in templates > summarizes scalping-btc-1m with
 "## Market
 BTC/USDC perpetual futures on Hyperliquid, 1-minute candles.
 
-## Risk
-Dry-run mode with a $1,000 USDC simulated wallet.
+## Risk ⚠ 20× leverage — losses can exceed your stake.
+Dry-run with a $1,000 USDC simulated wallet.
 $100 USDC stake per trade, up to 3 concurrent positions.
 Leverage 20× cross-margin — high-leverage, monitor closely.
 

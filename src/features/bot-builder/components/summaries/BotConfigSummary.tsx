@@ -1,7 +1,6 @@
 import { AlertTriangle } from 'lucide-react';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
-import { ReadOnlyChip } from './shared/ReadOnlyChip';
 import { TokenIcon } from './shared/TokenIcon';
 import { parseUiPair } from '@/lib/pair-format';
 
@@ -10,8 +9,7 @@ const HIGH_LEVERAGE_THRESHOLD = 10;
 export function BotConfigSummary() {
   const botConfig = useBuilderStore((s) => s.botConfig);
   const mode = useLayoutPrefsStore((s) => s.summaryMode);
-  const { pair, timeframe, leverage, tradingMode, stakeAmount, stakeCurrency } =
-    botConfig;
+  const { pair, timeframe, leverage, stakeAmount, stakeCurrency } = botConfig;
 
   if (!pair) {
     return (
@@ -22,7 +20,6 @@ export function BotConfigSummary() {
   const parts = parseUiPair(pair);
   const baseSymbol = parts?.base ?? pair;
   const isHighLev = leverage > HIGH_LEVERAGE_THRESHOLD;
-  const isLive = tradingMode === 'live';
 
   if (mode === 'narrative') {
     return (
@@ -43,15 +40,7 @@ export function BotConfigSummary() {
         >
           {leverage}×
         </span>{' '}
-        leverage in{' '}
-        <span
-          className={
-            isLive ? 'font-medium text-bearish' : 'font-medium text-bullish'
-          }
-        >
-          {isLive ? 'Live' : 'Dry-run'}
-        </span>{' '}
-        mode · stake{' '}
+        leverage · stake{' '}
         <span className="font-mono font-medium text-fg">
           ${stakeAmount.toLocaleString()}{' '}
           <span className="text-xs text-fg-muted">{stakeCurrency}</span>
@@ -69,14 +58,6 @@ export function BotConfigSummary() {
           <TokenIcon symbol={baseSymbol} />
           <span className="truncate">{pair}</span>
         </span>
-        <ReadOnlyChip
-          tone={isLive ? 'bearish' : 'bullish'}
-          title={
-            isLive ? 'Live trading — real money' : 'Dry-run — paper trading'
-          }
-        >
-          {isLive ? 'Live' : 'Dry-run'}
-        </ReadOnlyChip>
       </div>
       <div className="flex items-center gap-3 rounded-md border border-border-subtle bg-black/30 px-3 py-2">
         <Stat label="Timeframe" value={timeframe} />
