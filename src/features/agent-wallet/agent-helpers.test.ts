@@ -3,11 +3,13 @@ import {
   extractNonceFromSignPayload,
   formatSpendingLimit,
   eip712Sign,
+  isAgentCapFull,
 } from './agent-helpers';
 import {
   UserRejectedError,
   NoProviderError,
 } from '@/features/wallet-auth/wallet.provider';
+import { HttpError } from '@/lib/http';
 
 describe('extractNonceFromSignPayload', () => {
   it('returns nonce from message.nonce', () => {
@@ -69,5 +71,46 @@ describe('eip712Sign', () => {
     await expect(
       eip712Sign(null as never, '0xuser', {}),
     ).rejects.toBeInstanceOf(NoProviderError);
+  });
+});
+
+describe('isAgentCapFull', () => {
+  it('returns true for HttpError whose body contains "too many" and "agent" (case-insensitive)', () => {
+    const err = new HttpError(
+      400,
+      '{"detail":"Too many extra agents — limit is 3"}',
+    );
+    expect(isAgentCapFull(err)).toBe(true);
+  });
+
+  it('returns true when message has "TOO MANY" and "AGENT" uppercased', () => {
+    const err = new HttpError(400, 'TOO MANY AGENTS');
+    expect(isAgentCapFull(err)).toBe(true);
+  });
+
+  it('returns false when only "too many" matches but "agent" is absent', () => {
+    const err = new HttpError(400, 'Too many requests');
+    expect(isAgentCapFull(err)).toBe(false);
+  });
+
+  it('returns false when only "agent" matches but "too many" is absent', () => {
+    const err = new HttpError(400, 'agent wallet error');
+    expect(isAgentCapFull(err)).toBe(false);
+  });
+
+  it('returns true for a plain Error whose message contains both keywords', () => {
+    const err = new Error('too many agent connections');
+    expect(isAgentCapFull(err)).toBe(true);
+  });
+
+  it('returns false for a plain Error whose message lacks both keywords', () => {
+    const err = new Error('something went wrong');
+    expect(isAgentCapFull(err)).toBe(false);
+  });
+
+  it('returns false for a non-Error value', () => {
+    expect(isAgentCapFull('too many agents')).toBe(false);
+    expect(isAgentCapFull(null)).toBe(false);
+    expect(isAgentCapFull(undefined)).toBe(false);
   });
 });

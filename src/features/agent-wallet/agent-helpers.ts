@@ -3,6 +3,7 @@ import {
   UserRejectedError,
   NoProviderError,
 } from '@/features/wallet-auth/wallet.provider';
+import { HttpError } from '@/lib/http';
 
 /** EIP-712 sign_payload từ BE là object opaque. Parse nonce defensively. */
 export function extractNonceFromSignPayload(payload: unknown): number {
@@ -29,6 +30,17 @@ export function formatSpendingLimit(v: number | null | undefined): string {
   return v >= 1000
     ? `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
     : `$${v.toFixed(2)}`;
+}
+
+/** Detect Hyperliquid "agent cap full" error.
+ * Returns true when the error body/message contains BOTH "too many" AND "agent"
+ * (case-insensitive). Handles HttpError (checks .body) and plain Error (.message).
+ * Returns false for any non-Error value. */
+export function isAgentCapFull(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const text = err instanceof HttpError ? err.body : err.message;
+  const lower = text.toLowerCase();
+  return lower.includes('too many') && lower.includes('agent');
 }
 
 /** Wrap EIP-712 sign request to the wallet provider (Coin98 / window.ethereum).
