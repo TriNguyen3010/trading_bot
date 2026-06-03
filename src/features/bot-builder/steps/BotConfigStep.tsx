@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { useEffect } from 'react';
 import { useBuilderStore } from '../store/builder.store';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -7,15 +6,6 @@ import { NumberInput } from '@/components/ui/number-input';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { FormField } from '@/components/ui/form-field';
 import { Slider } from '@/components/ui/slider';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import {
   LEVERAGE_MAX,
   LEVERAGE_MIN,
@@ -25,7 +15,7 @@ import {
 } from '@/lib/constants';
 import { deriveStakeCurrency } from '@/lib/pair-format';
 import { strings } from '@/i18n/en';
-import type { TradingMode, MarginMode } from '@/types/builder.types';
+import type { MarginMode } from '@/types/builder.types';
 
 const HELP = strings.helpText.botConfig;
 
@@ -39,15 +29,6 @@ export function BotConfigSetup() {
   const patch = useBuilderStore((s) => s.patchBotConfig);
   const botName = useBuilderStore((s) => s.botName);
   const setBotName = useBuilderStore((s) => s.setBotName);
-  const [pendingLive, setPendingLive] = useState(false);
-
-  const handleTradingMode = (next: TradingMode) => {
-    if (next === 'live' && config.tradingMode !== 'live') {
-      setPendingLive(true);
-      return;
-    }
-    patch({ tradingMode: next });
-  };
 
   return (
     <>
@@ -107,19 +88,6 @@ export function BotConfigSetup() {
         </FormField>
       </div>
 
-      <FormField label="Trading mode" required help={HELP.tradingMode}>
-        <ToggleGroup<TradingMode>
-          value={config.tradingMode}
-          onChange={handleTradingMode}
-          fullWidth
-          ariaLabel="Trading mode"
-          options={[
-            { value: 'dry-run', label: 'Dry-run' },
-            { value: 'live', label: 'Live trade', tone: 'bearish' },
-          ]}
-        />
-      </FormField>
-
       <div data-cy-anchor="bot-config:leverage">
         <FormField label="Leverage" help={HELP.leverage}>
           <div className="flex items-center gap-3">
@@ -146,35 +114,6 @@ export function BotConfigSetup() {
           </div>
         </FormField>
       </div>
-
-      <Dialog open={pendingLive} onOpenChange={setPendingLive}>
-        <DialogContent>
-          <DialogHeader>
-            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-bearish/15 text-bearish">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-            <DialogTitle>Switch to Live trading?</DialogTitle>
-            <DialogDescription>
-              Live mode places orders with real funds. Dry-run is recommended
-              while you tune the strategy.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setPendingLive(false)}>
-              Stay in Dry-run
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                patch({ tradingMode: 'live' });
-                setPendingLive(false);
-              }}
-            >
-              I understand, go Live
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
@@ -270,19 +209,16 @@ export function BotConfigConfigure() {
         </FormField>
       </div>
 
-      {/* Dry-run wallet appears on its own row only while in dry-run
-       *  mode. Hidden in Live mode. */}
-      {config.tradingMode === 'dry-run' ? (
-        <FormField label="Dry-run wallet" help={HELP.dryRunWallet}>
-          <NumberInput
-            value={config.dryRunWallet}
-            onValueChange={(v) => patch({ dryRunWallet: Math.max(0, v ?? 0) })}
-            min={0}
-            step={100}
-            suffix={config.stakeCurrency}
-          />
-        </FormField>
-      ) : null}
+      {/* Dry-run wallet is always visible — mode is set at launch time, not build time. */}
+      <FormField label="Dry-run wallet" help={HELP.dryRunWallet}>
+        <NumberInput
+          value={config.dryRunWallet}
+          onValueChange={(v) => patch({ dryRunWallet: Math.max(0, v ?? 0) })}
+          min={0}
+          step={100}
+          suffix={config.stakeCurrency}
+        />
+      </FormField>
     </>
   );
 }
