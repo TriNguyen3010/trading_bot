@@ -90,7 +90,27 @@ interface WalletCreds {
 }
 
 function isPublicPath(path: string): boolean {
-  return PUBLIC_PATHS.some((p) => path.startsWith(p));
+  const clean = path.split('?')[0];
+  return PUBLIC_PATHS.some((p) => {
+    // Trailing-slash entries (/internal/, /webhook/) are genuine prefixes.
+    if (p.endsWith('/')) return clean.startsWith(p);
+    // Otherwise match the exact path, a sub-path, or a dotted extension
+    // (e.g. /openapi → /openapi.json) — but NOT a longer name that merely
+    // shares the prefix (e.g. /health must not match /healthcheck-bots).
+    return (
+      clean === p || clean.startsWith(`${p}/`) || clean.startsWith(`${p}.`)
+    );
+  });
+}
+
+/**
+ * Guard against reflecting a hostile/oversized non-JSON error body (e.g. an
+ * HTML error page from an intermediary proxy) verbatim into a toast.
+ */
+function safeErrorText(text: string, fallback: string): string {
+  const t = text.trim();
+  if (!t || t.startsWith('<') || t.length > 300) return fallback;
+  return t;
 }
 
 function hasSilentToast(path: string): boolean {
@@ -161,7 +181,9 @@ export async function http<T>(
   if (res.status === 401 && !BYPASS_AUTH) {
     clearWalletAuth();
     toast.warning('Phiên ví hết hạn, vui lòng kết nối lại.');
-    window.location.href = '/';
+    // Already on the public landing → clearing creds is enough; a redirect
+    // would force a needless full-page reload and lose in-page state.
+    if (window.location.pathname !== '/') window.location.href = '/';
     throw new HttpError(401, 'Unauthorized');
   }
 
@@ -178,7 +200,7 @@ export async function http<T>(
         if (typeof data.detail === 'string' && data.detail.trim())
           msg = data.detail;
       } catch {
-        if (text.trim()) msg = text;
+        msg = safeErrorText(text, msg);
       }
       toast.error(msg);
     }
@@ -193,7 +215,7 @@ export async function http<T>(
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
     if (!silentToast) {
-      toast.error(text || 'Đã có lỗi xảy ra.');
+      toast.error(safeErrorText(text, 'Đã có lỗi xảy ra.'));
     }
     throw new HttpError(res.status, text);
   }

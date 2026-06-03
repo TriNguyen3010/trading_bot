@@ -201,6 +201,98 @@ describe('http wrapper (wallet auth)', () => {
     expect(toast.error).toHaveBeenCalledWith('Server exploded');
   });
 
+  // F4: public-path matching must be segment-aware, not a loose startsWith.
+  it('attaches auth headers to a protected path that merely shares a public prefix', async () => {
+    setWalletCreds();
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    });
+
+    await http('GET', '/healthcheck-bots'); // shares "/health" prefix but is NOT public
+
+    const h = mockFetch.mock.calls[0][1].headers;
+    expect(h['X-Wallet-Address']).toBe('0xabc');
+  });
+
+  it('still treats /openapi.json as public (dotted extension)', async () => {
+    setWalletCreds();
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    });
+
+    await http('GET', '/openapi.json');
+
+    const h = mockFetch.mock.calls[0][1].headers;
+    expect(h['X-Wallet-Address']).toBeUndefined();
+  });
+
+  // F9: 401 must NOT trigger a full-page redirect when already on landing.
+  it('redirects on 401 when NOT on landing', async () => {
+    setWalletCreds();
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+      text: async () => 'expired',
+    });
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { ...window.location, pathname: '/dashboard', href: 'x' },
+    });
+
+    await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
+    expect(window.location.href).toBe('/');
+  });
+
+  it('does NOT redirect on 401 when already on landing (/)', async () => {
+    setWalletCreds();
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+      text: async () => 'expired',
+    });
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { ...window.location, pathname: '/', href: 'untouched' },
+    });
+
+    await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
+    expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull(); // still clears
+    expect(window.location.href).toBe('untouched'); // but no redirect
+  });
+
+  // F8: a hostile/oversized non-JSON error body must not be reflected verbatim.
+  it('falls back to generic message on HTML/oversized 5xx body', async () => {
+    setWalletCreds();
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'ISE',
+      text: async () => '<html><body>502 Bad Gateway proxy page</body></html>',
+    });
+
+    await expect(http('GET', '/fail')).rejects.toBeInstanceOf(HttpError);
+    expect(toast.error).toHaveBeenCalledWith('Đã có lỗi xảy ra.');
+  });
+
+  it('falls back to default message on HTML 403 body', async () => {
+    setWalletCreds();
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      statusText: 'Forbidden',
+      text: async () => '<html>403 Forbidden</html>',
+    });
+
+    await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
+    expect(toast.error).toHaveBeenCalledWith('Quyền truy cập bị từ chối.');
+  });
+
   it('throws ValidationError on 422 with FastAPI object detail', async () => {
     const detail = [
       { loc: ['body', 'name'], msg: 'required', type: 'value_error' },
