@@ -173,6 +173,21 @@ describe('http wrapper (wallet auth)', () => {
     expect(toast.error).not.toHaveBeenCalled();
   });
 
+  it('does NOT toast 5xx for /agent/* (modal/dialog handles)', async () => {
+    setWalletCreds();
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'ISE',
+      text: async () => 'boom',
+    });
+
+    await expect(http('GET', '/agent/active')).rejects.toBeInstanceOf(
+      HttpError,
+    );
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
   it('throws HttpError + toast on other server errors', async () => {
     setWalletCreds();
     mockFetch.mockResolvedValueOnce({

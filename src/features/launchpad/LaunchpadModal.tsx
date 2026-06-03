@@ -10,9 +10,15 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { formatBackendError } from '@/lib/format-error';
 import { botApi } from '@/features/bot-monitoring/bot.api';
-import { launchBot, type LaunchMode } from './launch-actions';
+import { AgentOnboardingDialog } from '@/features/agent-wallet/AgentOnboardingDialog';
+import {
+  launchBot,
+  type LaunchMode,
+  AgentNotActiveError,
+} from './launch-actions';
 
 export interface LaunchpadBot {
   id: number;
@@ -32,15 +38,6 @@ export interface LaunchpadModalProps {
   onLaunched: () => void;
 }
 
-/**
- * Step union kept intentionally wider than what we render in Phase 2a.
- * Phase 2b will revive the `'live-confirm'` step + Live launch flow once
- * the agent-wallet EIP-712 signing pipeline ships. Until then the modal
- * only renders `'modes'` and the Live card is a visible-but-disabled
- * placeholder so users see the option exists.
- */
-type Step = 'modes' | 'live-confirm';
-
 export function LaunchpadModal({
   open,
   onOpenChange,
@@ -48,37 +45,68 @@ export function LaunchpadModal({
   onBacktest,
   onLaunched,
 }: LaunchpadModalProps) {
-  // Phase 2a: `step` only ever transitions back to 'modes' on open. Phase 2b
-  // will add the `setStep('live-confirm')` transition from the Live card.
-  const [, setStep] = useState<Step>('modes');
   const [busy, setBusy] = useState<LaunchMode | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const TELEGRAM_DEV = import.meta.env.VITE_TELEGRAM_DEV === 'true';
+  const [tgToken, setTgToken] = useState('');
+  const [tgChatId, setTgChatId] = useState('');
 
   useEffect(() => {
     if (open) {
-      setStep('modes');
       setBusy(null);
       setError(null);
+      setOnboardingOpen(false);
+      setTgToken('');
+      setTgChatId('');
     }
   }, [open]);
 
   if (!bot) return null;
 
   const doLaunch = async (mode: LaunchMode) => {
+    let telegramArg: { token: string; chat_id: string } | undefined;
+    if (TELEGRAM_DEV) {
+      const token = tgToken.trim();
+      const chat_id = tgChatId.trim();
+      if (Boolean(token) !== Boolean(chat_id)) {
+        setError(
+          'Cần nhập cả Telegram token và chat_id, hoặc để trống cả hai.',
+        );
+        return;
+      }
+      if (token && chat_id) telegramArg = { token, chat_id };
+    }
     setBusy(mode);
     setError(null);
     try {
-      await launchBot(bot.id, mode);
+      if (telegramArg) {
+        await launchBot(bot.id, mode, telegramArg);
+      } else {
+        await launchBot(bot.id, mode);
+      }
       toast.success(
         `Bot #${bot.id} "${bot.name}" đang khởi động (${mode === 'live' ? 'LIVE' : 'dry-run'})`,
       );
       onOpenChange(false);
       onLaunched();
     } catch (err) {
-      setError(formatBackendError(err));
+      if (err instanceof AgentNotActiveError) {
+        setOnboardingOpen(true);
+      } else {
+        setError(formatBackendError(err));
+      }
     } finally {
       setBusy(null);
     }
+  };
+
+  // Assumes /agent/active is read-your-write consistent after /agent/confirm —
+  // if the backend serves `active` from a lagging replica, the retry would see
+  // no active agent and re-open onboarding.
+  const handleOnboardingSuccess = () => {
+    setOnboardingOpen(false);
+    void doLaunch('live');
   };
 
   const doSync = async () => {
@@ -92,89 +120,138 @@ export function LaunchpadModal({
   };
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-md data-[state=open]:animate-fade-in" />
-        <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[920px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-border bg-surface-elevated shadow-lg data-[state=open]:animate-fade-in">
-          {/* Top bar — Phase 2a: no Back button (no live-confirm step to back from). */}
-          <div className="flex items-center justify-between border-b border-border-subtle px-6 py-3">
-            <div />
-            <DialogPrimitive.Close
-              className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs text-fg-muted hover:bg-surface-hover hover:text-fg"
-              aria-label="Back to dashboard"
-            >
-              <X className="h-3.5 w-3.5" />
-              Back to dashboard
-            </DialogPrimitive.Close>
-          </div>
+    <>
+      <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-md data-[state=open]:animate-fade-in" />
+          <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[920px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-border bg-surface-elevated shadow-lg data-[state=open]:animate-fade-in">
+            {/* Top bar */}
+            <div className="flex items-center justify-between border-b border-border-subtle px-6 py-3">
+              <div />
+              <DialogPrimitive.Close
+                className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs text-fg-muted hover:bg-surface-hover hover:text-fg"
+                aria-label="Back to dashboard"
+              >
+                <X className="h-3.5 w-3.5" />
+                Back to dashboard
+              </DialogPrimitive.Close>
+            </div>
 
-          <div className="px-7 py-6">
-            {error && (
-              <div className="mb-5 rounded-lg border border-bearish/40 bg-bearish-subtle p-3 text-xs text-bearish">
-                {error}
-              </div>
-            )}
-
-            {bot.mode === 'ERROR' && bot.errorMsg && (
-              <div className="mb-6 flex items-center gap-3 rounded-2xl border border-bearish/40 bg-bearish-subtle px-5 py-3">
-                <AlertTriangle className="h-4 w-4 flex-shrink-0 text-bearish" />
-                <div className="flex-1 text-sm">
-                  <span className="font-semibold text-bearish">
-                    Last run failed.
-                  </span>{' '}
-                  <span className="text-fg-secondary">{bot.errorMsg}</span>
+            <div className="px-7 py-6">
+              {error && (
+                <div className="mb-5 rounded-lg border border-bearish/40 bg-bearish-subtle p-3 text-xs text-bearish">
+                  {error}
                 </div>
-                <Button variant="secondary" size="sm" onClick={doSync}>
-                  Sync
-                </Button>
+              )}
+
+              {bot.mode === 'ERROR' && bot.errorMsg && (
+                <div className="mb-6 flex items-center gap-3 rounded-2xl border border-bearish/40 bg-bearish-subtle px-5 py-3">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0 text-bearish" />
+                  <div className="flex-1 text-sm">
+                    <span className="font-semibold text-bearish">
+                      Last run failed.
+                    </span>{' '}
+                    <span className="text-fg-secondary">{bot.errorMsg}</span>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={doSync}>
+                    Sync
+                  </Button>
+                </div>
+              )}
+
+              <div className="mb-7">
+                <DialogPrimitive.Description className="mb-1.5 font-mono text-2xs uppercase tracking-wider text-fg-muted">
+                  Bot #{bot.id} · {bot.pair} · {bot.timeframe}
+                </DialogPrimitive.Description>
+                <DialogPrimitive.Title className="text-2xl font-bold leading-tight text-fg">
+                  Launch <span className="text-brand">{bot.name}</span>
+                </DialogPrimitive.Title>
               </div>
-            )}
 
-            <div className="mb-7">
-              <DialogPrimitive.Description className="mb-1.5 font-mono text-2xs uppercase tracking-wider text-fg-muted">
-                Bot #{bot.id} · {bot.pair} · {bot.timeframe}
-              </DialogPrimitive.Description>
-              <DialogPrimitive.Title className="text-2xl font-bold leading-tight text-fg">
-                Launch <span className="text-brand">{bot.name}</span>
-              </DialogPrimitive.Title>
+              <div className="grid grid-cols-3 gap-3">
+                <ModeCard
+                  icon={<ChartLine className="h-5 w-5" />}
+                  title="Backtest"
+                  desc="Test on past data · no risk"
+                  cta="Run backtest"
+                  onClick={() => {
+                    onOpenChange(false);
+                    onBacktest();
+                  }}
+                />
+                <ModeCard
+                  icon={<Play className="h-5 w-5" />}
+                  title="Dry-run"
+                  desc="Paper trade live market · sim wallet"
+                  cta="Start dry-run"
+                  tone="recommended"
+                  busy={busy === 'dry-run'}
+                  onClick={() => doLaunch('dry-run')}
+                />
+                <ModeCard
+                  icon={<Rocket className="h-5 w-5" />}
+                  title="Live"
+                  desc="Real money on Hyperliquid · agent wallet required"
+                  cta="Go Live"
+                  tone="danger"
+                  busy={busy === 'live'}
+                  onClick={() => doLaunch('live')}
+                />
+              </div>
+
+              {TELEGRAM_DEV && (
+                <div className="mt-5 rounded-2xl border border-dashed border-border-subtle bg-surface/30 p-4">
+                  <p className="mb-3 font-mono text-2xs uppercase tracking-wider text-fg-muted">
+                    Telegram (dev test)
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="tg-token"
+                        className="block text-xs font-medium text-fg-muted"
+                      >
+                        Bot token
+                      </label>
+                      <Input
+                        id="tg-token"
+                        value={tgToken}
+                        onChange={(e) => setTgToken(e.target.value)}
+                        placeholder="123456:ABC-xyz"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="tg-chat"
+                        className="block text-xs font-medium text-fg-muted"
+                      >
+                        Chat ID
+                      </label>
+                      <Input
+                        id="tg-chat"
+                        value={tgChatId}
+                        onChange={(e) => setTgChatId(e.target.value)}
+                        placeholder="e.g. 123456789"
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+                  <p className="mt-2 text-2xs text-fg-muted">
+                    Điền cả hai để bot khởi động với Telegram bật (test
+                    /status). Để trống = tắt như cũ.
+                  </p>
+                </div>
+              )}
             </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <ModeCard
-                icon={<ChartLine className="h-5 w-5" />}
-                title="Backtest"
-                desc="Test on past data · no risk"
-                cta="Run backtest"
-                onClick={() => {
-                  onOpenChange(false);
-                  onBacktest();
-                }}
-              />
-              <ModeCard
-                icon={<Play className="h-5 w-5" />}
-                title="Dry-run"
-                desc="Paper trade live market · sim wallet"
-                cta="Start dry-run"
-                tone="recommended"
-                busy={busy === 'dry-run'}
-                onClick={() => doLaunch('dry-run')}
-              />
-              <ModeCard
-                icon={<Rocket className="h-5 w-5" />}
-                title="Live"
-                desc="Real money on Hyperliquid · ships next sprint"
-                cta="Live — Phase 2b"
-                tone="danger"
-                disabled
-                onClick={() => {}}
-              />
-            </div>
-
-            {/* Phase 2b will add the `step === 'live-confirm'` block here. */}
-          </div>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+      <AgentOnboardingDialog
+        open={onboardingOpen}
+        onOpenChange={setOnboardingOpen}
+        onSuccess={handleOnboardingSuccess}
+      />
+    </>
   );
 }
 
