@@ -5,6 +5,7 @@ import {
   extractMetrics,
   formatWinRate,
   formatTotalProfit,
+  quoteCurrencyFromPair,
 } from './backtest-helpers';
 import type { BacktestHistoryItem } from '@/types/api-helpers';
 
@@ -68,6 +69,23 @@ describe('formatTotalProfit', () => {
   });
   it('renders dash for null', () => {
     expect(formatTotalProfit(null)).toBe('—');
+  });
+});
+
+describe('quoteCurrencyFromPair', () => {
+  it('reads the settle currency of a Freqtrade futures pair (BASE/QUOTE:SETTLE)', () => {
+    expect(quoteCurrencyFromPair('ETH/USDC:USDC')).toBe('USDC');
+  });
+  it('reads the quote of a dash pair (BASE-QUOTE)', () => {
+    expect(quoteCurrencyFromPair('ETH-USDC')).toBe('USDC');
+  });
+  it('reads the quote of a slash pair (BASE/QUOTE)', () => {
+    expect(quoteCurrencyFromPair('BTC/USDT')).toBe('USDT');
+  });
+  it('falls back to USDT when the pair is empty or unparseable', () => {
+    expect(quoteCurrencyFromPair('')).toBe('USDT');
+    expect(quoteCurrencyFromPair(null)).toBe('USDT');
+    expect(quoteCurrencyFromPair('BTC')).toBe('USDT');
   });
 });
 

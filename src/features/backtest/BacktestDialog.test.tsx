@@ -34,6 +34,19 @@ describe('BacktestDialog', () => {
     expect(screen.getByText('Bollinger breakout')).toBeInTheDocument();
   });
 
+  it('labels stake/wallet with the pair quote currency, not a hardcoded USDT', () => {
+    render(
+      <BacktestDialog
+        open
+        bot={{ ...bot, pair: 'ETH/USDC:USDC' }}
+        onOpenChange={() => {}}
+      />,
+    );
+    expect(screen.getByText(/Stake \/ trade \(USDC\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Dry-run wallet \(USDC\)/i)).toBeInTheDocument();
+    expect(screen.queryByText(/\(USDT\)/)).not.toBeInTheDocument();
+  });
+
   it('starts a backtest with bot_id + strategy + timerange on Run', async () => {
     mockStart.mockResolvedValue({
       job_id: 1,

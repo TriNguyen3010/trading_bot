@@ -45,6 +45,22 @@ export function formatTotalProfit(
   return `${sign}${Math.abs(v).toFixed(2)} ${stakeCurrency}`;
 }
 
+/** Derive the stake/quote currency from a pair so the UI doesn't hardcode
+ * "USDT". Handles Freqtrade futures `BASE/QUOTE:SETTLE` (→ SETTLE), plus
+ * `BASE/QUOTE` and `BASE-QUOTE` (→ QUOTE). Falls back to "USDT" when the pair
+ * is empty or has no separator. */
+export function quoteCurrencyFromPair(pair: string | null | undefined): string {
+  if (!pair) return 'USDT';
+  // Futures pairs settle in the currency after ':' (e.g. ETH/USDC:USDC).
+  if (pair.includes(':')) {
+    const settle = pair.split(':').pop()?.trim();
+    return settle || 'USDT';
+  }
+  const parts = pair.split(/[/-]/);
+  const quote = parts.length > 1 ? parts[parts.length - 1].trim() : '';
+  return quote || 'USDT';
+}
+
 /** Shape of one entry in `results.strategy_comparison[]`. BE openapi marks
  * `results` as `additionalProperties:true` (no schema), but sample
  * `BE/backtest_200.json` confirms this shape. FE owns the type locally
