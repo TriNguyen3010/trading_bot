@@ -301,6 +301,17 @@ describe('serializer', () => {
     expect(restored.closeMethod.slEnabled).toBe(false);
   });
 
+  // Hyperliquid is perp-only + the builder locks futures, so a payload missing
+  // trading_mode must decode to futures (not spot, which + leverage>1 fails T-3).
+  it('deserialize defaults marketType to futures when trading_mode is absent', () => {
+    applyBollingerLong();
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    const wire = JSON.parse(JSON.stringify(payload));
+    delete wire.trading_mode;
+    const restored = deserializeUnifiedPayload(wire);
+    expect(restored.botConfig.marketType).toBe('futures');
+  });
+
   describe('toPythonClassName', () => {
     it('PascalCases a space-separated name', () => {
       expect(toPythonClassName('Bollinger Breakout')).toBe('BollingerBreakout');

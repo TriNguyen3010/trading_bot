@@ -565,8 +565,11 @@ export function deserializeUnifiedPayload(
       timeframe: payload.timeframe as BotConfigForm['timeframe'],
       leverage: payload.leverage ?? 1,
       exchange: payload.exchange_name,
+      // Default to 'futures' (not 'spot'): Hyperliquid is perp-only and the
+      // builder locks marketType to futures. A file missing trading_mode that
+      // defaulted to spot + leverage>1 would fail schema rule T-3 on Deploy.
       marketType: (payload.trading_mode ??
-        'spot') as BotConfigForm['marketType'],
+        'futures') as BotConfigForm['marketType'],
       marginMode: (payload.margin_mode ??
         'cross') as BotConfigForm['marginMode'],
       maxOpenTrades: payload.max_open_trades,
