@@ -195,3 +195,88 @@ describe('AgentOnboardingDialog', () => {
     expect(reset).toHaveBeenCalled();
   });
 });
+
+describe('AgentOnboardingDialog — cap-full state', () => {
+  it('renders CapFullStep with "Quản lý agent" button when error is cap-full', () => {
+    vi.mocked(useAgentSignFlow).mockReturnValue({
+      state: {
+        stage: 'error',
+        message: 'Too many extra agents — limit is 3',
+        userRejected: false,
+      },
+      run: vi.fn(),
+      reset: vi.fn(),
+    });
+
+    const onManageAgents = vi.fn();
+    render(
+      <AgentOnboardingDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        onSuccess={vi.fn()}
+        onManageAgents={onManageAgents}
+      />,
+    );
+
+    expect(
+      screen.getByText(/Đã đạt giới hạn agent Hyperliquid/),
+    ).toBeInTheDocument();
+
+    const manageBtn = screen.getByRole('button', { name: /Quản lý agent/i });
+    fireEvent.click(manageBtn);
+    expect(onManageAgents).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders generic ErrorStep (not CapFullStep) for a non-cap-full error', () => {
+    vi.mocked(useAgentSignFlow).mockReturnValue({
+      state: {
+        stage: 'error',
+        message: 'Network error',
+        userRejected: false,
+      },
+      run: vi.fn(),
+      reset: vi.fn(),
+    });
+
+    render(
+      <AgentOnboardingDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        onSuccess={vi.fn()}
+        onManageAgents={vi.fn()}
+      />,
+    );
+
+    // Should show generic error retry UI, NOT the cap-full text
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Đã đạt giới hạn agent Hyperliquid/),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not render "Quản lý agent" button when onManageAgents is not provided', () => {
+    vi.mocked(useAgentSignFlow).mockReturnValue({
+      state: {
+        stage: 'error',
+        message: 'Too many extra agents — limit is 3',
+        userRejected: false,
+      },
+      run: vi.fn(),
+      reset: vi.fn(),
+    });
+
+    render(
+      <AgentOnboardingDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        onSuccess={vi.fn()}
+        // onManageAgents intentionally omitted
+      />,
+    );
+
+    // CapFullStep shows, but no "Quản lý agent" button when prop is missing
+    expect(
+      screen.getByText(/Đã đạt giới hạn agent Hyperliquid/),
+    ).toBeInTheDocument();
+  });
+});

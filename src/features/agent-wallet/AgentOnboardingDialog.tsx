@@ -4,7 +4,7 @@ import { AlertCircle, Check, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { AgentCreateResponse } from '@/types/api-helpers';
-import { formatSpendingLimit } from './agent-helpers';
+import { formatSpendingLimit, isAgentCapFull } from './agent-helpers';
 import { useAgentSignFlow } from './useAgentSignFlow';
 
 export interface AgentOnboardingDialogProps {
@@ -14,6 +14,9 @@ export interface AgentOnboardingDialogProps {
   suggestedLimit?: number | null;
   /** Called once Confirm succeeds — caller resumes the original action (e.g. launch live bot). */
   onSuccess: (agent: AgentCreateResponse) => void;
+  /** Called when user clicks "Quản lý agent" from the cap-full state. Optional —
+   *  callers that haven't wired it yet will simply not show the button for the cap-full path. */
+  onManageAgents?: () => void;
 }
 
 export function AgentOnboardingDialog({
@@ -21,6 +24,7 @@ export function AgentOnboardingDialog({
   onOpenChange,
   suggestedLimit,
   onSuccess,
+  onManageAgents,
 }: AgentOnboardingDialogProps) {
   const { state, run, reset } = useAgentSignFlow();
   const [limitInput, setLimitInput] = useState<string>(
@@ -119,13 +123,16 @@ export function AgentOnboardingDialog({
               />
             )}
 
-            {state.stage === 'error' && (
-              <ErrorStep
-                message={state.message}
-                onRetry={reset}
-                onCancel={() => onOpenChange(false)}
-              />
-            )}
+            {state.stage === 'error' &&
+              (isAgentCapFull(new Error(state.message)) ? (
+                <CapFullStep onManageAgents={() => onManageAgents?.()} />
+              ) : (
+                <ErrorStep
+                  message={state.message}
+                  onRetry={reset}
+                  onCancel={() => onOpenChange(false)}
+                />
+              ))}
           </div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
@@ -313,6 +320,33 @@ function ErrorStep({
           Cancel
         </Button>
       </div>
+    </div>
+  );
+}
+
+function CapFullStep({ onManageAgents }: { onManageAgents: () => void }) {
+  return (
+    <div className="space-y-5">
+      <div className="bg-warning-subtle flex items-start gap-3 rounded-lg border border-warning/40 p-4">
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+        <div className="space-y-1 text-sm">
+          <p className="font-semibold text-fg">
+            Đã đạt giới hạn agent Hyperliquid
+          </p>
+          <p className="text-fg-secondary">
+            Ví của bạn đã đạt số lượng agent tối đa trên Hyperliquid. Hãy revoke
+            một agent cũ để giải phóng slot, sau đó tạo lại agent mới.
+          </p>
+        </div>
+      </div>
+      <Button
+        variant="primary"
+        size="md"
+        className="w-full"
+        onClick={() => onManageAgents()}
+      >
+        Quản lý agent
+      </Button>
     </div>
   );
 }

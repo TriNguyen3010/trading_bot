@@ -1,5 +1,6 @@
 import { http } from '@/lib/http';
 import type { components } from '@/types/api';
+import type { BotWalletRotationResponse } from '@/types/api-helpers';
 
 export type BotOut = components['schemas']['BotOut'];
 export type BotConfigOut = components['schemas']['BotConfigOut'];
@@ -37,4 +38,7 @@ export const botApi = {
   sync: (id: number) => http<BotStatusOut>('POST', `/bot/${id}/sync`),
   // `remove` (not `delete` — reserved word in some lint configs)
   remove: (id: number) => http<void>('DELETE', `/bot/${id}`),
+  /** Rotate the active agent wallet into all owner bots (update config + restart running bots). */
+  rotateWallet: () =>
+    http<BotWalletRotationResponse>('POST', '/bot/rotate-wallet'),
 };

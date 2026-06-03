@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { formatBackendError } from '@/lib/format-error';
 import { botApi } from '@/features/bot-monitoring/bot.api';
 import { AgentOnboardingDialog } from '@/features/agent-wallet/AgentOnboardingDialog';
+import { ManageAgentsModal } from '@/features/agent-wallet/ManageAgentsModal';
 import {
   launchBot,
   type LaunchMode,
@@ -48,6 +49,7 @@ export function LaunchpadModal({
   const [busy, setBusy] = useState<LaunchMode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [manageAgentsOpen, setManageAgentsOpen] = useState(false);
   const TELEGRAM_DEV = import.meta.env.VITE_TELEGRAM_DEV === 'true';
   const [tgToken, setTgToken] = useState('');
   const [tgChatId, setTgChatId] = useState('');
@@ -57,6 +59,7 @@ export function LaunchpadModal({
       setBusy(null);
       setError(null);
       setOnboardingOpen(false);
+      setManageAgentsOpen(false);
       setTgToken('');
       setTgChatId('');
     }
@@ -250,6 +253,25 @@ export function LaunchpadModal({
         open={onboardingOpen}
         onOpenChange={setOnboardingOpen}
         onSuccess={handleOnboardingSuccess}
+        onManageAgents={() => {
+          setOnboardingOpen(false);
+          setManageAgentsOpen(true);
+        }}
+      />
+      <ManageAgentsModal
+        open={manageAgentsOpen}
+        onOpenChange={setManageAgentsOpen}
+        onRequestOnboarding={() => {
+          setManageAgentsOpen(false);
+          setOnboardingOpen(true);
+        }}
+        onRotateErrors={(results) => {
+          results.forEach((r) =>
+            toast.warning(
+              `Bot "${r.bot_name}" rotate lỗi: ${r.error ?? 'unknown'}`,
+            ),
+          );
+        }}
       />
     </>
   );
