@@ -25,14 +25,15 @@ vi.mock('./agent.api', () => ({
 vi.mock('@/features/bot-monitoring/bot.api', () => ({
   botApi: { rotateWallet: vi.fn() },
 }));
-// Mock the revoke flow hook to keep tests pure
-vi.mock('./useAgentRevokeFlow', () => ({
-  useAgentRevokeFlow: vi.fn(() => ({
-    state: { stage: 'idle' },
-    run: vi.fn(),
-    reset: vi.fn(),
-  })),
-}));
+// Mock the revoke flow hook to keep tests pure. The factory returns a SINGLE
+// stable object (created once), so `run`/`reset`/`state` keep the same identity
+// across re-renders — matching the real hook (reset/run are useCallback). A
+// fresh object per render would make `resetRevoke` change identity every render,
+// re-firing the open-effect (deps include resetRevoke) → infinite render loop.
+vi.mock('./useAgentRevokeFlow', () => {
+  const idle = { state: { stage: 'idle' }, run: vi.fn(), reset: vi.fn() };
+  return { useAgentRevokeFlow: vi.fn(() => idle) };
+});
 
 const defaultProps = {
   open: true,
