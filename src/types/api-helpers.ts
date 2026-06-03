@@ -40,5 +40,14 @@ export type AgentInfoResponse = Schemas['AgentInfoResponse'];
 export type SpendingLimitCheckRequest = Schemas['SpendingLimitCheckRequest'];
 export type SpendingLimitCheckResponse = Schemas['SpendingLimitCheckResponse'];
 
+// Agent management (Phase 2b.1)
+export type AgentSyncStatusResponse = Schemas['AgentSyncStatusResponse'];
+export type HyperliquidWalletResponse = Schemas['HyperliquidWalletResponse'];
+export type AgentRevokeRequest = Schemas['AgentRevokeRequest'];
+export type ExternalRevokeRequest = Schemas['ExternalRevokeRequest'];
+export type BotWalletRotationResponse = Schemas['BotWalletRotationResponse'];
+export type BotWalletRotationResultItem =
+  Schemas['BotWalletRotationResultItem'];
+
 // Endpoint paths (dùng cho fetch wrapper sau này)
 export type Paths = paths;
