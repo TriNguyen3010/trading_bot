@@ -367,8 +367,11 @@ export const riskConfigSchema = z
     trailing_only_offset_is_reached: z.boolean().default(false),
   })
   .superRefine((data, ctx) => {
-    // §3.3.2 — if offset present, must be > positive
+    // §3.3.2 — if offset present, must be > positive. Only enforced when
+    // trailing is actually ON; when off these fields are inert (Freqtrade
+    // ignores them) and a stale offset<=positive must not block create.
     if (
+      data.trailing_stop === true &&
       data.trailing_stop_positive_offset != null &&
       data.trailing_stop_positive != null &&
       data.trailing_stop_positive_offset <= data.trailing_stop_positive

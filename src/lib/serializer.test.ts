@@ -255,6 +255,52 @@ describe('serializer', () => {
     expect(payload.dry_run).toBe(true);
   });
 
+  // F1: the trailing offset>positive refinement must NOT fire when trailing is
+  // disabled — those fields are inert then, and Freqtrade ignores them.
+  it('passes schema with trailing disabled even when offset <= positive', () => {
+    applyBollingerLong();
+    useBuilderStore.getState().patchCloseMethod({
+      trailingEnabled: false,
+      trailingPositive: 5, // 0.05
+      trailingOffset: 2, // 0.02 — would violate offset>positive IF trailing were on
+    });
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    const result = unifiedBotStrategyCreateSchema.safeParse(payload);
+    if (!result.success) {
+      throw new Error(
+        `expected pass (trailing off): ${JSON.stringify(result.error.issues)}`,
+      );
+    }
+    expect(result.success).toBe(true);
+  });
+
+  // ...but it MUST still fire when trailing is ENABLED with a bad offset.
+  it('rejects schema with trailing enabled and offset <= positive', () => {
+    applyBollingerLong();
+    useBuilderStore.getState().patchCloseMethod({
+      trailingEnabled: true,
+      trailingPositive: 5,
+      trailingOffset: 2,
+    });
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    expect(unifiedBotStrategyCreateSchema.safeParse(payload).success).toBe(
+      false,
+    );
+  });
+
+  // F2: a tp_sl bot with SL turned OFF must round-trip back as slEnabled:false
+  // (not silently re-enabled at the -0.4 sentinel).
+  it('round-trips a tp_sl bot with SL disabled as slEnabled:false', () => {
+    applyBollingerLong();
+    useBuilderStore.getState().patchCloseMethod({ slEnabled: false });
+    useBuilderStore.getState().patchDirection({ direction: 'long' });
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    expect(payload.stoploss).toBeNull(); // top-level stoploss null when SL off
+    const wire = JSON.parse(JSON.stringify(payload));
+    const restored = deserializeUnifiedPayload(wire);
+    expect(restored.closeMethod.slEnabled).toBe(false);
+  });
+
   describe('toPythonClassName', () => {
     it('PascalCases a space-separated name', () => {
       expect(toPythonClassName('Bollinger Breakout')).toBe('BollingerBreakout');

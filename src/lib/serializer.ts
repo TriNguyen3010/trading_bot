@@ -357,6 +357,11 @@ export interface UnifiedBundle extends UnifiedBotStrategyCreate {
    * (including 'manual') so the round-trip is lossless. Inferred on
    * import if missing. */
   close_method_type?: CloseMethodForm['type'];
+  /** FE-only — CloseMethodForm.slEnabled. Needed because the BE risk block
+   * always carries a `stoploss` value (Freqtrade requires one), so "SL off"
+   * is otherwise indistinguishable from a real stop. Inferred from the
+   * top-level `stoploss` (null = off) on import if missing. */
+  sl_enabled?: boolean;
 }
 
 export function buildUnifiedPayload(state: BuilderState): UnifiedBundle {
@@ -433,6 +438,7 @@ export function buildUnifiedPayload(state: BuilderState): UnifiedBundle {
         ? state.directionForm.limitOffsetPct
         : null,
     close_method_type: state.closeMethod.type,
+    sl_enabled: close.type === 'tp_sl' && close.slEnabled,
   };
 }
 
@@ -597,8 +603,11 @@ export function deserializeUnifiedPayload(
       type: closeType,
       tpEnabled: customExit?.partial_enabled ?? false,
       tpLevels,
-      slEnabled: (risk?.stoploss ?? -0.4) > -0.4 || closeType === 'tp_sl',
-      slValue: (risk?.stoploss ?? -0.04) * 100,
+      // Prefer the explicit FE round-trip flag; else infer from the top-level
+      // `stoploss` (null = SL off). The `-0.4` sentinel in `risk.stoploss`
+      // must NOT be read as "enabled" — it's the disabled default.
+      slEnabled: payload.sl_enabled ?? payload.stoploss != null,
+      slValue: (payload.stoploss ?? risk?.stoploss ?? -0.04) * 100,
       trailingEnabled: risk?.trailing_stop ?? false,
       trailingPositive: (risk?.trailing_stop_positive ?? 0) * 100,
       trailingOffset: (risk?.trailing_stop_positive_offset ?? 0) * 100,
