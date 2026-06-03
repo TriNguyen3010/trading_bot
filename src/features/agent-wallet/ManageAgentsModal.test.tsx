@@ -276,3 +276,41 @@ describe('ManageAgentsModal — rotate-wallet', () => {
     ]);
   });
 });
+
+// Placed last: this overrides the revoke-flow mock to a 'success' state which
+// would leak into later tests (clearAllMocks does not clear mockReturnValue).
+describe('ManageAgentsModal — C-1: revoke stage reset after success', () => {
+  it('resets the revoke stage when handling a successful revoke (so a later confirm is not swallowed) and does not fire onboarding for a non-active agent', async () => {
+    const reset = vi.fn();
+    const { useAgentRevokeFlow } = await import('./useAgentRevokeFlow');
+    // Stable object (same ref each call) so no render loop; stage stays 'success'.
+    vi.mocked(useAgentRevokeFlow).mockReturnValue({
+      state: { stage: 'success' },
+      run: vi.fn(),
+      reset,
+    });
+    // External (not in DB) → non-active, so onboarding must NOT be triggered.
+    vi.mocked(agentApi.hyperliquidWallets).mockResolvedValue([
+      { address: '0xEXT', name: 'External Bot', valid_until: null },
+    ]);
+    vi.mocked(agentApi.list).mockResolvedValue([]);
+    const onRequestOnboarding = vi.fn();
+
+    render(
+      <ManageAgentsModal
+        {...defaultProps}
+        onRequestOnboarding={onRequestOnboarding}
+      />,
+    );
+    await waitFor(() => screen.getByText('External Bot'));
+
+    // Opening a row's confirm makes `confirm` truthy while stage is already
+    // 'success' → the post-success effect fires. With the fix it calls
+    // resetRevoke() (stage→idle); without it, the stage stays 'success' and a
+    // later confirm would be swallowed + onboarding spuriously triggered.
+    fireEvent.click(screen.getByRole('button', { name: /revoke/i }));
+
+    await waitFor(() => expect(reset).toHaveBeenCalled());
+    expect(onRequestOnboarding).not.toHaveBeenCalled();
+  });
+});

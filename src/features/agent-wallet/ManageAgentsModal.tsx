@@ -101,16 +101,22 @@ export function ManageAgentsModal({
   }, [open, loadData, resetRevoke]);
 
   // After successful revoke: refresh list. If revoked agent was active → trigger onboarding.
+  // Reset the revoke stage back to idle here — otherwise it stays 'success' and
+  // this effect re-fires the next time `confirm` becomes truthy (i.e. when the
+  // user opens the confirm box for a DIFFERENT row), wrongly swallowing that
+  // confirm + spuriously triggering onboarding. resetRevoke is a stable
+  // useCallback, safe in deps.
   useEffect(() => {
     if (revokeState.stage === 'success' && confirm) {
       const wasActive = confirm.agent.isDbActive;
       setConfirm(null);
+      resetRevoke();
       void loadData();
       if (wasActive) {
         onRequestOnboarding();
       }
     }
-  }, [revokeState.stage, confirm, loadData, onRequestOnboarding]);
+  }, [revokeState.stage, confirm, loadData, onRequestOnboarding, resetRevoke]);
 
   const handleRevokeConfirm = async () => {
     if (!confirm) return;
