@@ -101,6 +101,46 @@ export function extractTrades(item: BacktestHistoryItem): BacktestTrade[] {
   return Array.isArray(trades) ? (trades as BacktestTrade[]) : [];
 }
 
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+/** Converts `trade_duration` (minutes) to a human-readable duration string.
+ * < 60 min → "Xm", < 1440 min → "Xh Ym", >= 1440 min → "Xd Yh". */
+export function formatTradeDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const days = Math.floor(minutes / 1440);
+  if (days >= 1) {
+    const hours = Math.floor((minutes % 1440) / 60);
+    return `${days}d ${hours}h`;
+  }
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}h ${m}m`;
+}
+
+/** Converts an epoch-ms timestamp to "MMM DD HH:MM" (UTC) for table display.
+ * Example: 1777251300000 → "Apr 27 00:55". */
+export function formatTradeTime(epochMs: number): string {
+  const d = new Date(epochMs);
+  const mon = MONTHS[d.getUTCMonth()];
+  const day = d.getUTCDate();
+  const hh = String(d.getUTCHours()).padStart(2, '0');
+  const mm = String(d.getUTCMinutes()).padStart(2, '0');
+  return `${mon} ${day} ${hh}:${mm}`;
+}
+
 /** Shape of one entry in `results.strategy_comparison[]`. BE openapi marks
  * `results` as `additionalProperties:true` (no schema), but sample
  * `BE/backtest_200.json` confirms this shape. FE owns the type locally

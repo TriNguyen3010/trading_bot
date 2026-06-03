@@ -7,6 +7,8 @@ import {
   formatTotalProfit,
   quoteCurrencyFromPair,
   extractTrades,
+  formatTradeDuration,
+  formatTradeTime,
 } from './backtest-helpers';
 import type { BacktestHistoryItem } from '@/types/api-helpers';
 
@@ -220,5 +222,41 @@ describe('extractTrades', () => {
       results: { strategy: { Gamma: { trades: null } } },
     };
     expect(extractTrades(item)).toEqual([]);
+  });
+});
+
+describe('formatTradeDuration', () => {
+  it('formats minutes < 60 as "Xm"', () => {
+    expect(formatTradeDuration(45)).toBe('45m');
+  });
+  it('formats exactly 60 minutes as "1h 0m"', () => {
+    expect(formatTradeDuration(60)).toBe('1h 0m');
+  });
+  it('formats 360 minutes (6h) as "6h 0m"', () => {
+    expect(formatTradeDuration(360)).toBe('6h 0m');
+  });
+  it('formats 125 minutes as "2h 5m"', () => {
+    expect(formatTradeDuration(125)).toBe('2h 5m');
+  });
+  it('formats 1440 minutes (1 day) as "1d 0h"', () => {
+    expect(formatTradeDuration(1440)).toBe('1d 0h');
+  });
+  it('formats 2955 minutes as "2d 1h"', () => {
+    // 2955 / 1440 = 2d remainder 75min = 1h 15m → "2d 1h"
+    expect(formatTradeDuration(2955)).toBe('2d 1h');
+  });
+  it('formats 0 minutes as "0m"', () => {
+    expect(formatTradeDuration(0)).toBe('0m');
+  });
+});
+
+describe('formatTradeTime', () => {
+  it('formats epoch ms to "MMM DD HH:MM" in UTC', () => {
+    // 1777251300000 = 2026-04-27 00:55:00 UTC (confirmed from backtest_200.json open_date)
+    expect(formatTradeTime(1777251300000)).toBe('Apr 27 00:55');
+  });
+  it('formats close_timestamp correctly', () => {
+    // 1777272900000 = 2026-04-27 06:55:00 UTC
+    expect(formatTradeTime(1777272900000)).toBe('Apr 27 06:55');
   });
 });
