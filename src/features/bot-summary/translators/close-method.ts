@@ -173,8 +173,9 @@ function translateRoi(roiSteps: RoiStep[]): TranslateExitResult {
     const time =
       s.minutes === 0 ? 'immediately' : `after ${humanMinutes(s.minutes)}`;
     if (s.roi === 0) return `break-even ${time}`;
-    // ROI is a ratio (0.005 = 0.5%). Show as percentage.
-    const pct = (s.roi * 100).toFixed(s.roi < 0.01 && s.roi > 0 ? 2 : 1);
+    // ROI is already a percentage in builder state (1.5 = 1.5%; the serializer
+    // divides by 100 for the BE ratio). Display it directly — do NOT ×100.
+    const pct = s.roi.toFixed(s.roi < 1 && s.roi > 0 ? 2 : 1);
     return `${pct}% target ${time}`;
   });
 

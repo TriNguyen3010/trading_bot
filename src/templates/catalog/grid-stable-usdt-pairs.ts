@@ -94,10 +94,12 @@ export const gridStableUsdtPairs: BotTemplate = {
       trailingEnabled: false,
       trailingPositive: 1,
       trailingOffset: 1.5,
+      // roi is a percentage in builder state (serializer divides by 100).
+      // 0.5% / 0.3% / 0.1% targets — NOT 0.005 (which would ship 0.005%).
       roiSteps: [
-        { minutes: 0, roi: 0.005 },
-        { minutes: 30, roi: 0.003 },
-        { minutes: 60, roi: 0.001 },
+        { minutes: 0, roi: 0.5 },
+        { minutes: 30, roi: 0.3 },
+        { minutes: 60, roi: 0.1 },
         { minutes: 120, roi: 0 },
       ],
       exitConditions: { groupConnector: 'AND', groups: [] },
