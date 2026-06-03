@@ -30,3 +30,23 @@ describe('botApi.enableTelegram', () => {
     });
   });
 });
+
+// I-2: lock the lifecycle endpoint+method strings — a typo here (e.g. stop
+// hitting start, or remove hitting the wrong route) acts on real bots.
+describe('botApi lifecycle endpoints', () => {
+  beforeEach(() => mockHttp.mockResolvedValue({} as never));
+
+  it.each([
+    ['list', () => botApi.list(), 'GET', '/bot/list'],
+    ['getConfig', () => botApi.getConfig(7), 'GET', '/bot/7/config'],
+    ['getStatus', () => botApi.getStatus(7), 'GET', '/bot/7/status'],
+    ['start', () => botApi.start(7), 'POST', '/bot/7/start'],
+    ['stop', () => botApi.stop(7), 'POST', '/bot/7/stop'],
+    ['sync', () => botApi.sync(7), 'POST', '/bot/7/sync'],
+    ['remove', () => botApi.remove(7), 'DELETE', '/bot/7'],
+    ['rotateWallet', () => botApi.rotateWallet(), 'POST', '/bot/rotate-wallet'],
+  ] as const)('%s → %s %s', async (_name, call, method, path) => {
+    await call();
+    expect(mockHttp).toHaveBeenCalledWith(method, path);
+  });
+});
