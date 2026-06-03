@@ -151,7 +151,7 @@ function ParamHighlights({ template }: { template: BotTemplate }) {
     { label: t.timeframe, value: c.timeframe },
     {
       label: t.mode,
-      value: `${c.tradingMode === 'dry-run' ? 'Dry-run' : 'Live'} · ${c.marketType}${c.leverage > 1 ? ` · ${c.leverage}x` : ''}`,
+      value: `${c.marketType}${c.leverage > 1 ? ` · ${c.leverage}x` : ''}`,
     },
     {
       label: t.direction,

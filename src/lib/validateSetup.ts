@@ -2,11 +2,10 @@ import { z } from 'zod';
 import { LEVERAGE_MAX, LEVERAGE_MIN } from '@/lib/constants';
 import type { BuilderState, StepId } from '@/types/builder.types';
 
-// ── Bot Config Setup: pair + timeframe + tradingMode + leverage ──────────────
+// ── Bot Config Setup: pair + timeframe + leverage ────────────────────────────
 const botConfigSetupSchema = z.object({
   pair: z.string().min(3, 'Required'),
   timeframe: z.string().min(1, 'Required'),
-  tradingMode: z.enum(['dry-run', 'live']),
   leverage: z.number().min(LEVERAGE_MIN).max(LEVERAGE_MAX),
 });
 

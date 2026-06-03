@@ -29,7 +29,6 @@ export const scalpingBtc1m: BotTemplate = {
     botConfig: {
       pair: 'BTC-USDC',
       timeframe: '1m',
-      tradingMode: 'dry-run',
       leverage: 20,
       exchange: 'hyperliquid',
       marketType: 'futures',

@@ -30,7 +30,6 @@ export const gridStableUsdtPairs: BotTemplate = {
     botConfig: {
       pair: 'USDC-USDT',
       timeframe: '5m',
-      tradingMode: 'dry-run',
       leverage: 1,
       exchange: 'hyperliquid',
       marketType: 'futures',
