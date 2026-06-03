@@ -18,7 +18,6 @@ export type DrawerTab = 'setup' | 'configure';
 
 export type Direction = 'long' | 'short';
 export type OrderType = 'market' | 'limit';
-export type TradingMode = 'live' | 'dry-run';
 export type MarketType = 'spot' | 'futures';
 export type MarginMode = 'cross' | 'isolated';
 export type CloseMethodType = 'manual' | 'tp_sl' | 'indicator' | 'roi';
@@ -120,7 +119,6 @@ export interface CloseMethodForm {
 export interface BotConfigForm {
   pair: string; // UI format: BTC-USDC
   timeframe: string; // e.g. "5m"
-  tradingMode: TradingMode;
   leverage: number;
   exchange: string;
   marketType: MarketType;

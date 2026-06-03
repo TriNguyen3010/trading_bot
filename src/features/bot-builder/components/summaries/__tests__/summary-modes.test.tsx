@@ -13,7 +13,6 @@ function seedBotConfig() {
       pair: 'BTC-USDC',
       timeframe: '1h',
       leverage: 1,
-      tradingMode: 'dry-run',
       stakeAmount: 100,
       stakeCurrency: 'USDT',
     },
@@ -32,7 +31,6 @@ describe('BotConfigSummary · visual mode', () => {
     expect(screen.getByText(/1h/i)).toBeInTheDocument();
     expect(screen.getByText(/1×/)).toBeInTheDocument();
     expect(screen.getByText(/\$100/)).toBeInTheDocument();
-    expect(screen.getByText(/dry-run/i)).toBeInTheDocument();
   });
 });
 
@@ -42,13 +40,12 @@ describe('BotConfigSummary · narrative mode', () => {
     useLayoutPrefsStore.setState({ summaryMode: 'narrative' });
   });
 
-  it('renders a prose sentence containing pair + tf + lev + mode + stake', () => {
+  it('renders a prose sentence containing pair + tf + lev + stake', () => {
     const { container } = render(<BotConfigSummary />);
     const text = container.textContent ?? '';
     expect(text).toMatch(/BTC-USDC/);
     expect(text).toMatch(/1h/);
     expect(text).toMatch(/1×/);
-    expect(text).toMatch(/Dry-run/i);
     expect(text).toMatch(/\$100/);
     expect(text.toLowerCase()).toMatch(/trade|with|on/);
   });

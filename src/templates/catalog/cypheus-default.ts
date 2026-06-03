@@ -23,7 +23,6 @@ export const cypheusDefault: BotTemplate = {
     botConfig: {
       pair: 'BTC-USDC',
       timeframe: '5m',
-      tradingMode: 'dry-run',
       leverage: 20,
       // Defaults below — kept stable across template loads.
       exchange: 'hyperliquid',

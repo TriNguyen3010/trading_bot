@@ -23,7 +23,6 @@ const DEFAULT_DRAWER_WIDTH = FIXED_DRAWER_WIDTH;
 const defaultBotConfig: BotConfigForm = {
   pair: '',
   timeframe: '5m',
-  tradingMode: 'dry-run',
   leverage: 1,
   exchange: 'hyperliquid',
   marketType: 'futures',
@@ -167,7 +166,7 @@ export const useBuilderStore = create<BuilderStore>()(
     }),
     {
       name: 'trading-bot-builder',
-      version: 3,
+      version: 4,
       partialize: (state) => ({
         botName: state.botName,
         botConfig: state.botConfig,
@@ -178,37 +177,43 @@ export const useBuilderStore = create<BuilderStore>()(
         drawerWidth: state.drawerWidth,
         lastSavedAt: state.lastSavedAt,
       }),
-      // v2 → v3: flat `ConditionGroup` becomes `ConditionTree`. Reuse the
-      // legacy migration helper so existing OR-chains are preserved instead
-      // of collapsed into one giant AND group.
       migrate: (persisted: unknown, fromVersion: number) => {
         if (!persisted || typeof persisted !== 'object') return persisted;
-        if (fromVersion >= 3) return persisted;
         const s = persisted as {
           strategy?: { entryConditions?: unknown };
           closeMethod?: { exitConditions?: unknown };
+          botConfig?: Record<string, unknown>;
         };
-        if (
-          s.strategy?.entryConditions &&
-          'conditions' in (s.strategy.entryConditions as object) &&
-          !('groups' in (s.strategy.entryConditions as object))
-        ) {
-          s.strategy.entryConditions = migrateLegacyGroup(
-            s.strategy.entryConditions as Parameters<
-              typeof migrateLegacyGroup
-            >[0],
-          );
+        // v2 → v3: flat `ConditionGroup` becomes `ConditionTree`. Reuse the
+        // legacy migration helper so existing OR-chains are preserved instead
+        // of collapsed into one giant AND group.
+        if (fromVersion < 3) {
+          if (
+            s.strategy?.entryConditions &&
+            'conditions' in (s.strategy.entryConditions as object) &&
+            !('groups' in (s.strategy.entryConditions as object))
+          ) {
+            s.strategy.entryConditions = migrateLegacyGroup(
+              s.strategy.entryConditions as Parameters<
+                typeof migrateLegacyGroup
+              >[0],
+            );
+          }
+          if (
+            s.closeMethod?.exitConditions &&
+            'conditions' in (s.closeMethod.exitConditions as object) &&
+            !('groups' in (s.closeMethod.exitConditions as object))
+          ) {
+            s.closeMethod.exitConditions = migrateLegacyGroup(
+              s.closeMethod.exitConditions as Parameters<
+                typeof migrateLegacyGroup
+              >[0],
+            );
+          }
         }
-        if (
-          s.closeMethod?.exitConditions &&
-          'conditions' in (s.closeMethod.exitConditions as object) &&
-          !('groups' in (s.closeMethod.exitConditions as object))
-        ) {
-          s.closeMethod.exitConditions = migrateLegacyGroup(
-            s.closeMethod.exitConditions as Parameters<
-              typeof migrateLegacyGroup
-            >[0],
-          );
+        // v3 → v4: drop tradingMode (now a launch-time-only concern)
+        if (fromVersion < 4 && s.botConfig) {
+          delete s.botConfig['tradingMode'];
         }
         return s;
       },

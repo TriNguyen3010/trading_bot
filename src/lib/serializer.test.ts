@@ -22,7 +22,6 @@ describe('serializer', () => {
     store.patchBotConfig({
       pair: 'BTC-USDC',
       timeframe: '5m',
-      tradingMode: 'dry-run',
       leverage: 20,
       marketType: 'futures',
     });
@@ -186,7 +185,6 @@ describe('serializer', () => {
     expect(restored.botConfig.pair).toBe('BTC-USDC');
     expect(restored.botConfig.timeframe).toBe('5m');
     expect(restored.botConfig.leverage).toBe(20);
-    expect(restored.botConfig.tradingMode).toBe('dry-run');
     expect(restored.botConfig.marketType).toBe('futures');
     expect(restored.directionForm.direction).toBe('long');
     expect(restored.directionForm.orderType).toBe('market');
@@ -248,6 +246,13 @@ describe('serializer', () => {
       { minutes: 0, roi: 5 },
       { minutes: 60, roi: 2 },
     ]);
+  });
+
+  it('buildUnifiedPayload always sends dry_run: true regardless of store state', () => {
+    applyBollingerLong();
+    // Mode is decided at launch (Launchpad flips dry_run); create always ships dry.
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    expect(payload.dry_run).toBe(true);
   });
 
   describe('toPythonClassName', () => {

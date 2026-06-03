@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { BotConfigSetup } from './BotConfigStep';
+import { BotConfigSetup, BotConfigConfigure } from './BotConfigStep';
 import { useBuilderStore } from '../store/builder.store';
 
 describe('BotConfigSetup leverage control', () => {
@@ -65,5 +65,17 @@ describe('BotConfigSetup pair → stake currency', () => {
     const config = useBuilderStore.getState().botConfig;
     expect(config.pair).toBe('BTC-USDC');
     expect(config.stakeCurrency).toBe('USDC');
+  });
+});
+
+describe('BotConfigConfigure — dry-run wallet always visible', () => {
+  beforeEach(() => {
+    useBuilderStore.getState().resetAll();
+  });
+
+  it('renders the Dry-run wallet field regardless of any mode state', () => {
+    render(<BotConfigConfigure />);
+    // The label "Dry-run wallet" must always appear now that the mode toggle is gone
+    expect(screen.getByText(/dry-run wallet/i)).toBeInTheDocument();
   });
 });

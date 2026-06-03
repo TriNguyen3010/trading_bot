@@ -28,7 +28,6 @@ export const macdMomentumBnb: BotTemplate = {
     botConfig: {
       pair: 'BNB-USDC',
       timeframe: '30m',
-      tradingMode: 'dry-run',
       leverage: 10,
       exchange: 'hyperliquid',
       marketType: 'futures',

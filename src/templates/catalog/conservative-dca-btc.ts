@@ -30,7 +30,6 @@ export const conservativeDcaBtc: BotTemplate = {
     botConfig: {
       pair: 'BTC-USDC',
       timeframe: '1h',
-      tradingMode: 'dry-run',
       leverage: 1,
       exchange: 'hyperliquid',
       marketType: 'futures',

@@ -98,6 +98,15 @@ function migrateTemplateSnapshot(
   fromVersion: number,
 ): TemplateStateSnapshot {
   if (fromVersion === TEMPLATE_SCHEMA_VERSION) return snap;
+  // v2 → v3: tradingMode removed from BotConfigForm
+  if (fromVersion === 2) {
+    const botConfig = { ...snap.botConfig } as Record<string, unknown>;
+    delete botConfig['tradingMode'];
+    return {
+      ...snap,
+      botConfig: botConfig as unknown as TemplateStateSnapshot['botConfig'],
+    };
+  }
   throw new Error(
     `Template schemaVersion ${fromVersion} not supported (current: ${TEMPLATE_SCHEMA_VERSION}). ` +
       'Update the template or add a migration branch.',

@@ -45,4 +45,4 @@ export interface BotTemplate {
 
 /** Current state schema version. Bump when BuilderState shape changes
  * AND make sure every template + the migrator (`apply.ts`) is updated. */
-export const TEMPLATE_SCHEMA_VERSION = 2;
+export const TEMPLATE_SCHEMA_VERSION = 3;

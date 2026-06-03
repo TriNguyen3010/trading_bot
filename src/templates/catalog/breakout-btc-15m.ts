@@ -28,7 +28,6 @@ export const breakoutBtc15m: BotTemplate = {
     botConfig: {
       pair: 'BTC-USDC',
       timeframe: '15m',
-      tradingMode: 'dry-run',
       leverage: 5,
       exchange: 'hyperliquid',
       marketType: 'futures',

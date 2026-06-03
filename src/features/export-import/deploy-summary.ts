@@ -105,7 +105,7 @@ export function getDeploySummary(state: BuilderState): DeploySummary {
     maxOpenTrades: c.maxOpenTrades,
     leverage: c.leverage,
     maxExposure: c.stakeAmount * c.maxOpenTrades,
-    dryRun: c.tradingMode === 'dry-run',
+    dryRun: true, // always dry at create time — Launchpad sets mode at launch
     dryRunWallet: c.dryRunWallet,
     marketType: c.marketType,
     marginMode: c.marginMode,

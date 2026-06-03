@@ -29,7 +29,6 @@ export const multiTfTrendAlts: BotTemplate = {
     botConfig: {
       pair: 'SOL-USDC',
       timeframe: '4h',
-      tradingMode: 'dry-run',
       leverage: 3,
       exchange: 'hyperliquid',
       marketType: 'futures',

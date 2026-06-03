@@ -68,7 +68,6 @@ describe('summarizeBot — edge cases', () => {
       botConfig: {
         pair: '',
         timeframe: '5m',
-        tradingMode: 'dry-run',
         leverage: 1,
         exchange: 'binance',
         marketType: 'futures',
@@ -126,9 +125,8 @@ describe('summarizeBot — edge cases', () => {
     expect(result.gaps.some((g) => g.field === 'tpLevels')).toBe(true);
   });
 
-  it('high leverage on live mode → warning on risk block', () => {
+  it('high leverage (>=10x) → warning on risk block regardless of mode', () => {
     const state = toBuilderState(BUILT_IN_TEMPLATES[0]);
-    state.botConfig.tradingMode = 'live';
     state.botConfig.leverage = 50;
     state.botConfig.marketType = 'futures';
     const result = summarizeBot(state);

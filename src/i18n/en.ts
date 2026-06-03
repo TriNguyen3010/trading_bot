@@ -48,7 +48,7 @@ export const strings = {
   steps: {
     botConfig: {
       title: 'Bot Config',
-      description: 'Pick the market, timeframe and trading mode.',
+      description: 'Pick the market, timeframe and stake configuration.',
     },
     entryStrategy: {
       title: 'Entry Strategy',
@@ -73,7 +73,7 @@ export const strings = {
   phase: {
     botBasics: {
       title: 'Bot Basics',
-      description: 'Pick the market, timeframe and trading mode.',
+      description: 'Pick the market, timeframe and stake configuration.',
     },
     strategy: {
       title: 'Strategy',
@@ -218,7 +218,7 @@ export const strings = {
   botConfigDrawer: {
     title: 'Bot Basics',
     description:
-      'Pick the market, timeframe, trading mode and stake — all in one place.',
+      'Pick the market, timeframe, leverage and stake — all in one place.',
   },
   drawer: {
     setupTab: 'Setup',
@@ -255,8 +255,6 @@ export const strings = {
       pair: 'Trading pair the bot will trade, e.g. BTC-USDC. Must exist on Hyperliquid.',
       timeframe:
         'Candle interval the bot analyses and trades on. Shorter timeframes produce more signals but more noise.',
-      tradingMode:
-        'Dry-run simulates trades with a virtual wallet — no real funds at risk. Live places real orders.',
       leverage:
         'Futures leverage from 1× to 50×. Higher leverage amplifies both gains and liquidation risk.',
       exchange:
