@@ -333,7 +333,7 @@ Expected: FAIL — `TestingLibraryElementError: Unable to find an element with t
 
 Replace the entire content of `BotConfigStep.tsx`. The key changes:
 
-1. Remove import of `TradingMode` (line 28).
+1. On line 28, remove only the `TradingMode` specifier from the import — `MarginMode` is still used. Change `import type { TradingMode, MarginMode } from '@/types/builder.types';` to `import type { MarginMode } from '@/types/builder.types';`.
 2. Remove `useState` for `pendingLive`.
 3. Remove `handleTradingMode` function.
 4. Remove the `<FormField label="Trading mode" ...>` block (lines 110-121) entirely.

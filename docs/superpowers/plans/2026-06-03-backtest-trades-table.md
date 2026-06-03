@@ -26,7 +26,7 @@
 
 ---
 
-## Task 1 — `BacktestTrade` type + `quoteCurrencyFromPair` + `extractTrades` helper (TDD)
+## Task 1 — `BacktestTrade` type + `extractTrades` helper (TDD)
 
 **Files:** `src/features/backtest/backtest-helpers.ts`, `src/features/backtest/backtest-helpers.test.ts`
 
@@ -45,7 +45,6 @@
     extractTrades,
     formatTradeDuration,
     formatTradeTime,
-    quoteCurrencyFromPair,
   } from './backtest-helpers';
   import type { BacktestHistoryItem } from '@/types/api-helpers';
 
@@ -64,22 +63,6 @@
     is_short: false,
     leverage: 10,
   };
-
-  describe('quoteCurrencyFromPair', () => {
-    it('extracts quote from futures JSON pair "BTC/USDC:USDC"', () => {
-      expect(quoteCurrencyFromPair('BTC/USDC:USDC')).toBe('USDC');
-    });
-    it('extracts quote from spot JSON pair "ETH/USDT"', () => {
-      expect(quoteCurrencyFromPair('ETH/USDT')).toBe('USDT');
-    });
-    it('extracts quote from UI dash pair "BTC-USDT"', () => {
-      expect(quoteCurrencyFromPair('BTC-USDT')).toBe('USDT');
-    });
-    it('returns "USDT" as fallback for unknown format', () => {
-      expect(quoteCurrencyFromPair('')).toBe('USDT');
-      expect(quoteCurrencyFromPair('INVALID')).toBe('USDT');
-    });
-  });
 
   describe('extractTrades', () => {
     const base: BacktestHistoryItem = {
@@ -138,26 +121,9 @@
 
 - [ ] **Step 1.3** — Implement in `backtest-helpers.ts`:
 
-  ```ts
-  /** Extracts the quote currency from a Freqtrade JSON pair or UI dash pair.
-   * "BTC/USDC:USDC" → "USDC", "ETH/USDT" → "USDT", "BTC-USDT" → "USDT".
-   * Falls back to "USDT" for any unrecognised format. */
-  export function quoteCurrencyFromPair(pair: string): string {
-    if (!pair) return 'USDT';
-    // Futures: "BASE/QUOTE:SETTLE" or spot: "BASE/QUOTE"
-    if (pair.includes('/')) {
-      const main = pair.split(':')[0]; // drop settle part
-      const quote = main.split('/')[1];
-      return quote || 'USDT';
-    }
-    // UI dash pair: "BASE-QUOTE"
-    if (pair.includes('-')) {
-      const parts = pair.split('-');
-      return parts[1] || 'USDT';
-    }
-    return 'USDT';
-  }
+  > `quoteCurrencyFromPair` already exists from C1 — do NOT re-add it. Only add `BacktestTrade` + `extractTrades` here. Import `quoteCurrencyFromPair` from `'./backtest-helpers'` wherever it's needed later (it's already exported by C1).
 
+  ```ts
   /** Shape of one trade entry inside
    * `results.strategy.<StrategyName>.trades[]` in BE/backtest_200.json.
    * Field names match Freqtrade's backtest output exactly. */
@@ -201,7 +167,7 @@
 
 - [ ] **Step 1.4** — Run tests to confirm green: `pnpm test backtest-helpers`
 
-- [ ] **Step 1.5** — Commit: `feat(backtest): add BacktestTrade type + quoteCurrencyFromPair + extractTrades`
+- [ ] **Step 1.5** — Commit: `feat(backtest): add BacktestTrade type + extractTrades helper`
 
 ---
 
@@ -433,10 +399,10 @@ The result step currently renders 6 `ResultMetric` cards unconditionally. Add a 
 
 - [ ] **Step 3.3** — Implement in `BacktestDialog.tsx`:
 
-  1. Import `extractTrades` and `quoteCurrencyFromPair` from `'./backtest-helpers'`.
+  1. Import only `extractTrades` from `'./backtest-helpers'` (do NOT re-import `quoteCurrencyFromPair` — C1's `BacktestDialog` already imports and uses it at line 13 and derives `const currency` at line 94).
   2. Add state: `const [resultTab, setResultTab] = useState<'summary' | 'trades'>('summary');`
   3. Derive trades: `const trades = useMemo(() => (poll.item ? extractTrades(poll.item) : []), [poll.item]);`
-  4. Derive currency: `const currency = quoteCurrencyFromPair(bot.pair);` (replaces any prior hard-coded `'USDT'`).
+  4. Reuse the existing `currency` variable (already derived from `quoteCurrencyFromPair(bot.pair)` by C1 — do NOT redeclare it).
   5. In the existing `useEffect([open, initialBacktestId])` reset block, add `setResultTab('summary');`.
   6. In the result step render (inside `{step === 'result' && metrics && (...)}`) add the toggle strip above the grid:
 
@@ -676,7 +642,7 @@ Table scroll: wrap in a `div` with `max-h-[320px] overflow-y-auto` so it doesn't
 |-----------------|-----------|
 | `BacktestTrade` interface with real field names from `BE/backtest_200.json` | Task 1 — Step 1.3 |
 | `extractTrades(item)` — strategy_name key lookup + first-key fallback + `[]` guard | Task 1 — Step 1.3 |
-| `quoteCurrencyFromPair` for P/L column header currency | Task 1 — Step 1.3 |
+| `quoteCurrencyFromPair` for P/L column header currency | Already exists from C1 — reuse via `import { quoteCurrencyFromPair } from './backtest-helpers'` |
 | `formatTradeDuration(minutes)` — "6h 0m", "2d 1h", "45m" patterns | Task 2 — Step 2.3 |
 | `formatTradeTime(epochMs)` — "Apr 27 00:55" UTC display | Task 2 — Step 2.3 |
 | `resultTab` state reset on dialog re-open | Task 3 — Step 3.3 (useEffect) |
