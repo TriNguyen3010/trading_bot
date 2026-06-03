@@ -38,6 +38,11 @@ export function useBotStatusPoll(
 
   const inFlightRef = useRef(false);
 
+  // Monotonic generation. An optimistic setStatus() bumps it so any poll that
+  // was already in flight (and would resolve with now-stale server state)
+  // discards its result instead of clobbering the optimistic value.
+  const genRef = useRef(0);
+
   // Guard against stale setState calls after unmount during in-flight fetch.
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -51,14 +56,17 @@ export function useBotStatusPoll(
     if (botId == null) return;
     if (inFlightRef.current) return;
     inFlightRef.current = true;
+    const gen = genRef.current;
     try {
       const res = await botApi.getStatus(botId);
-      if (!mountedRef.current) return;
+      // Drop the result if unmounted, or if an optimistic update happened
+      // while this request was in flight (stale-overwrite guard).
+      if (!mountedRef.current || gen !== genRef.current) return;
       setStatusState(res);
       statusRef.current = res;
       setError(null);
     } catch (err) {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || gen !== genRef.current) return;
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       inFlightRef.current = false;
@@ -106,6 +114,7 @@ export function useBotStatusPoll(
   }, [fetchOnce]);
 
   const setStatus = useCallback((s: BotStatusOut) => {
+    genRef.current += 1; // invalidate any in-flight poll so it can't overwrite this
     setStatusState(s);
     statusRef.current = s;
   }, []);

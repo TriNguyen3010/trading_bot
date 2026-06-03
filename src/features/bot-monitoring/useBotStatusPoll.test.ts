@@ -36,6 +36,37 @@ describe('useBotStatusPoll', () => {
     expect(result.current.status?.status).toBe('stopped');
   });
 
+  // I-1: a poll already in flight must NOT overwrite a newer optimistic update.
+  it('does not let an in-flight poll overwrite a later optimistic setStatus', async () => {
+    let resolvePoll!: (s: BotStatusOut) => void;
+    const pending = new Promise<BotStatusOut>((r) => {
+      resolvePoll = r;
+    });
+    vi.mocked(botApi.getStatus)
+      .mockResolvedValueOnce(mkStatus({ status: 'running' })) // initial mount fetch
+      .mockReturnValueOnce(pending); // the in-flight background poll
+
+    const { result } = renderHook(() =>
+      useBotStatusPoll(42, { enabled: false }),
+    );
+    await waitFor(() => expect(result.current.status?.status).toBe('running'));
+
+    // A poll is now in flight…
+    let p!: Promise<void>;
+    act(() => {
+      p = result.current.refetch();
+    });
+    // …and an optimistic update lands while it's still awaiting.
+    act(() => result.current.setStatus(mkStatus({ status: 'stopping' })));
+    // The stale poll finally resolves with the old 'running' state.
+    await act(async () => {
+      resolvePoll(mkStatus({ status: 'running' }));
+      await p;
+    });
+
+    expect(result.current.status?.status).toBe('stopping'); // not clobbered
+  });
+
   it('polls fast (1.5s) while in transition state', async () => {
     vi.mocked(botApi.getStatus)
       .mockResolvedValueOnce(mkStatus({ status: 'starting' }))
