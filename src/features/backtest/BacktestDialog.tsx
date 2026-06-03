@@ -10,6 +10,7 @@ import {
   extractMetrics,
   formatWinRate,
   formatTotalProfit,
+  quoteCurrencyFromPair,
 } from './backtest-helpers';
 import type { BacktestRequest } from '@/types/api-helpers';
 
@@ -86,6 +87,11 @@ export function BacktestDialog({
   );
 
   if (!bot) return null;
+
+  // Stake/profit currency is the pair's quote (USDC on Hyperliquid), not a
+  // hardcoded "USDT". BE also returns `results.strategy[name].stake_currency`,
+  // but the pair is available before results land (for the setup-form labels).
+  const currency = quoteCurrencyFromPair(bot.pair);
 
   const runBacktest = async () => {
     setSubmitting(true);
@@ -188,7 +194,7 @@ export function BacktestDialog({
                 <div className="grid grid-cols-2 gap-3">
                   <label className="block">
                     <span className="mb-1.5 block text-xs font-medium text-fg-secondary">
-                      Dry-run wallet (USDT)
+                      Dry-run wallet ({currency})
                     </span>
                     <input
                       value={wallet}
@@ -199,7 +205,7 @@ export function BacktestDialog({
                   </label>
                   <label className="block">
                     <span className="mb-1.5 block text-xs font-medium text-fg-secondary">
-                      Stake / trade (USDT)
+                      Stake / trade ({currency})
                     </span>
                     <input
                       value={stake}
@@ -269,7 +275,7 @@ export function BacktestDialog({
                   />
                   <ResultMetric
                     label="Net profit"
-                    value={formatTotalProfit(metrics.totalProfit)}
+                    value={formatTotalProfit(metrics.totalProfit, currency)}
                     tone={
                       (metrics.totalProfit ?? 0) >= 0 ? 'bullish' : 'bearish'
                     }
