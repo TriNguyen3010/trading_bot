@@ -250,7 +250,7 @@ describe('serializer', () => {
 
   it('buildUnifiedPayload always sends dry_run: true regardless of store state', () => {
     applyBollingerLong();
-    // Even if somehow tradingMode appeared in persisted state, serializer must ignore it.
+    // Mode is decided at launch (Launchpad flips dry_run); create always ships dry.
     const payload = buildUnifiedPayload(useBuilderStore.getState());
     expect(payload.dry_run).toBe(true);
   });
