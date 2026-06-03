@@ -68,6 +68,7 @@ export function LaunchpadModal({
   if (!bot) return null;
 
   const doLaunch = async (mode: LaunchMode) => {
+    if (busy) return; // guard against a concurrent launch (e.g. double-click / relaunch race)
     let telegramArg: { token: string; chat_id: string } | undefined;
     if (TELEGRAM_DEV) {
       const token = tgToken.trim();

@@ -124,8 +124,8 @@ export function AgentOnboardingDialog({
             )}
 
             {state.stage === 'error' &&
-              (isAgentCapFull(new Error(state.message)) ? (
-                <CapFullStep onManageAgents={() => onManageAgents?.()} />
+              (isAgentCapFull(new Error(state.message)) && onManageAgents ? (
+                <CapFullStep onManageAgents={onManageAgents} />
               ) : (
                 <ErrorStep
                   message={state.message}

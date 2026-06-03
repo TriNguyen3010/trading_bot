@@ -254,7 +254,10 @@ describe('AgentOnboardingDialog — cap-full state', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('does not render "Quản lý agent" button when onManageAgents is not provided', () => {
+  // F5: cap-full with no manage handler must NOT dead-end on a no-op button —
+  // fall back to the generic ErrorStep so Retry/Cancel are always available.
+  it('falls back to ErrorStep (working Retry, no dead-end) when cap-full but onManageAgents omitted', () => {
+    const reset = vi.fn();
     vi.mocked(useAgentSignFlow).mockReturnValue({
       state: {
         stage: 'error',
@@ -262,7 +265,7 @@ describe('AgentOnboardingDialog — cap-full state', () => {
         userRejected: false,
       },
       run: vi.fn(),
-      reset: vi.fn(),
+      reset,
     });
 
     render(
@@ -274,9 +277,15 @@ describe('AgentOnboardingDialog — cap-full state', () => {
       />,
     );
 
-    // CapFullStep shows, but no "Quản lý agent" button when prop is missing
+    // No cap-full banner and no no-op "Quản lý agent" button…
     expect(
-      screen.getByText(/Đã đạt giới hạn agent Hyperliquid/),
-    ).toBeInTheDocument();
+      screen.queryByText(/Đã đạt giới hạn agent Hyperliquid/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Quản lý agent/i }),
+    ).not.toBeInTheDocument();
+    // …instead a generic error with a working Retry.
+    fireEvent.click(screen.getByRole('button', { name: /Retry/i }));
+    expect(reset).toHaveBeenCalled();
   });
 });
