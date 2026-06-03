@@ -9,6 +9,7 @@ import {
   presetToTimerange,
   extractMetrics,
   extractTrades,
+  formatTradeTime,
   formatWinRate,
   formatTotalProfit,
   quoteCurrencyFromPair,
@@ -348,6 +349,80 @@ export function BacktestDialog({
                       Drawdown / Sharpe / avg-trade đến từ <code>results</code>{' '}
                       — sẽ là "—" nếu BE chưa trả các field đó.
                     </p>
+                  </>
+                )}
+
+                {resultTab === 'trades' && (
+                  <>
+                    {trades.length === 0 ? (
+                      <p className="py-10 text-center text-sm text-fg-muted">
+                        Không có lệnh nào trong khoảng thời gian này.
+                      </p>
+                    ) : (
+                      <div className="max-h-[320px] overflow-y-auto rounded-xl border border-border-subtle">
+                        <table className="w-full text-xs">
+                          <thead className="sticky top-0 bg-surface-elevated">
+                            <tr className="border-b border-border-subtle text-left text-fg-muted">
+                              <th className="px-3 py-2 font-medium">Open</th>
+                              <th className="px-3 py-2 font-medium">Close</th>
+                              <th className="px-3 py-2 font-medium">Dir</th>
+                              <th className="px-3 py-2 text-right font-medium">{`P/L (${currency})`}</th>
+                              <th className="px-3 py-2 text-right font-medium">
+                                P/L %
+                              </th>
+                              <th className="px-3 py-2 font-medium">Exit</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {trades.map((t, i) => {
+                              const plSign = t.profit_abs >= 0 ? '+' : '';
+                              const plCls =
+                                t.profit_abs >= 0
+                                  ? 'text-bullish'
+                                  : 'text-bearish';
+                              const pctSign = t.profit_ratio >= 0 ? '+' : '';
+                              return (
+                                <tr
+                                  key={i}
+                                  className="border-b border-border-subtle/50 last:border-0 hover:bg-surface-hover/40"
+                                >
+                                  <td className="px-3 py-2 tabular-nums text-fg-secondary">
+                                    {formatTradeTime(t.open_timestamp)}
+                                  </td>
+                                  <td className="px-3 py-2 tabular-nums text-fg-secondary">
+                                    {formatTradeTime(t.close_timestamp)}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    {t.is_short ? (
+                                      <span className="rounded bg-bearish/15 px-1.5 py-0.5 text-2xs font-semibold text-bearish">
+                                        SHORT
+                                      </span>
+                                    ) : (
+                                      <span className="rounded bg-bullish/15 px-1.5 py-0.5 text-2xs font-semibold text-bullish">
+                                        LONG
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td
+                                    className={`px-3 py-2 text-right font-mono tabular-nums ${plCls}`}
+                                  >
+                                    {`${plSign}${t.profit_abs.toFixed(2)}`}
+                                  </td>
+                                  <td
+                                    className={`px-3 py-2 text-right font-mono tabular-nums ${plCls}`}
+                                  >
+                                    {`${pctSign}${(t.profit_ratio * 100).toFixed(2)}%`}
+                                  </td>
+                                  <td className="px-3 py-2 text-fg-muted">
+                                    {t.exit_reason}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </>
                 )}
 
