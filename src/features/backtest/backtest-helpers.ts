@@ -61,6 +61,86 @@ export function quoteCurrencyFromPair(pair: string | null | undefined): string {
   return quote || 'USDT';
 }
 
+/** Shape of one trade entry inside
+ * `results.strategy.<StrategyName>.trades[]` in BE/backtest_200.json.
+ * Field names match Freqtrade's backtest output exactly. */
+export interface BacktestTrade {
+  pair: string;
+  open_timestamp: number; // epoch ms
+  close_timestamp: number; // epoch ms
+  open_rate: number;
+  close_rate: number;
+  profit_abs: number; // absolute P/L in stake currency
+  profit_ratio: number; // fraction (0.01 = 1%)
+  exit_reason: string;
+  enter_tag: string;
+  trade_duration: number; // minutes
+  is_short: boolean;
+  leverage: number;
+}
+
+/** Extracts the per-trade list from `results.strategy.<StrategyName>.trades`.
+ * Uses `item.strategy_name` as the primary key; falls back to the first key
+ * of `results.strategy` if the name doesn't match. Returns `[]` when the
+ * path is absent, the array is missing, or it is not an array. */
+export function extractTrades(item: BacktestHistoryItem): BacktestTrade[] {
+  const results = item.results as
+    | { strategy?: Record<string, { trades?: unknown }> }
+    | null
+    | undefined;
+  const strategy = results?.strategy;
+  if (!strategy || typeof strategy !== 'object') return [];
+
+  const strategyKey =
+    item.strategy_name && strategy[item.strategy_name] !== undefined
+      ? item.strategy_name
+      : Object.keys(strategy)[0];
+
+  if (!strategyKey) return [];
+  const trades = strategy[strategyKey]?.trades;
+  return Array.isArray(trades) ? (trades as BacktestTrade[]) : [];
+}
+
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+/** Converts `trade_duration` (minutes) to a human-readable duration string.
+ * < 60 min → "Xm", < 1440 min → "Xh Ym", >= 1440 min → "Xd Yh". */
+export function formatTradeDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const days = Math.floor(minutes / 1440);
+  if (days >= 1) {
+    const hours = Math.floor((minutes % 1440) / 60);
+    return `${days}d ${hours}h`;
+  }
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}h ${m}m`;
+}
+
+/** Converts an epoch-ms timestamp to "MMM DD HH:MM" (UTC) for table display.
+ * Example: 1777251300000 → "Apr 27 00:55". */
+export function formatTradeTime(epochMs: number): string {
+  const d = new Date(epochMs);
+  const mon = MONTHS[d.getUTCMonth()];
+  const day = d.getUTCDate();
+  const hh = String(d.getUTCHours()).padStart(2, '0');
+  const mm = String(d.getUTCMinutes()).padStart(2, '0');
+  return `${mon} ${day} ${hh}:${mm}`;
+}
+
 /** Shape of one entry in `results.strategy_comparison[]`. BE openapi marks
  * `results` as `additionalProperties:true` (no schema), but sample
  * `BE/backtest_200.json` confirms this shape. FE owns the type locally

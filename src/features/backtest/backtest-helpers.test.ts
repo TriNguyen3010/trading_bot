@@ -6,8 +6,27 @@ import {
   formatWinRate,
   formatTotalProfit,
   quoteCurrencyFromPair,
+  extractTrades,
+  formatTradeDuration,
+  formatTradeTime,
 } from './backtest-helpers';
 import type { BacktestHistoryItem } from '@/types/api-helpers';
+
+// Minimal trade fixture matching real backtest_200.json fields
+const TRADE_FIXTURE = {
+  pair: 'BTC/USDC:USDC',
+  open_timestamp: 1777251300000,
+  close_timestamp: 1777272900000,
+  open_rate: 78938.0,
+  close_rate: 79088.0,
+  profit_abs: 0.97893036,
+  profit_ratio: 0.009791214945164765,
+  exit_reason: 'duration_6.0_hours',
+  enter_tag: 'ui_enter_long',
+  trade_duration: 360,
+  is_short: false,
+  leverage: 10,
+};
 
 describe('presetToTimerange', () => {
   it('formats N-day window as YYYYMMDD-YYYYMMDD (UTC)', () => {
@@ -151,5 +170,93 @@ describe('extractMetrics', () => {
       results: { strategy: {}, strategy_comparison: [] },
     });
     expect(m.sharpe).toBeNull();
+  });
+});
+
+describe('extractTrades', () => {
+  const base: BacktestHistoryItem = {
+    id: 200,
+    bot_id: 86,
+    user_id: 10,
+    strategy_name: 'Gamma',
+    timeframe: '5m',
+    timerange: '20260427-20260527',
+    status: 'completed',
+    trade_count: 104,
+    total_profit: -36.5898,
+    win_rate: 44.23,
+    started_at: '2026-05-27T07:27:25.027324',
+    completed_at: '2026-05-27T07:28:05.224419',
+    results: {
+      strategy: { Gamma: { trades: [TRADE_FIXTURE] } },
+      strategy_comparison: [],
+    },
+  };
+
+  it('returns trades array for the named strategy', () => {
+    const trades = extractTrades(base);
+    expect(trades).toHaveLength(1);
+    expect(trades[0].open_rate).toBe(78938.0);
+    expect(trades[0].profit_abs).toBeCloseTo(0.97893036);
+  });
+  it('falls back to first key when strategy_name does not match', () => {
+    const item = { ...base, strategy_name: 'Unknown' };
+    expect(extractTrades(item)).toHaveLength(1);
+  });
+  it('returns [] when results is null', () => {
+    expect(extractTrades({ ...base, results: null })).toEqual([]);
+  });
+  it('returns [] when results.strategy is missing', () => {
+    expect(extractTrades({ ...base, results: {} })).toEqual([]);
+  });
+  it('returns [] when trades array is empty', () => {
+    const item = {
+      ...base,
+      results: { strategy: { Gamma: { trades: [] } } },
+    };
+    expect(extractTrades(item)).toEqual([]);
+  });
+  it('returns [] when trades field is not an array', () => {
+    const item = {
+      ...base,
+      results: { strategy: { Gamma: { trades: null } } },
+    };
+    expect(extractTrades(item)).toEqual([]);
+  });
+});
+
+describe('formatTradeDuration', () => {
+  it('formats minutes < 60 as "Xm"', () => {
+    expect(formatTradeDuration(45)).toBe('45m');
+  });
+  it('formats exactly 60 minutes as "1h 0m"', () => {
+    expect(formatTradeDuration(60)).toBe('1h 0m');
+  });
+  it('formats 360 minutes (6h) as "6h 0m"', () => {
+    expect(formatTradeDuration(360)).toBe('6h 0m');
+  });
+  it('formats 125 minutes as "2h 5m"', () => {
+    expect(formatTradeDuration(125)).toBe('2h 5m');
+  });
+  it('formats 1440 minutes (1 day) as "1d 0h"', () => {
+    expect(formatTradeDuration(1440)).toBe('1d 0h');
+  });
+  it('formats 2955 minutes as "2d 1h"', () => {
+    // 2955 / 1440 = 2d remainder 75min = 1h 15m → "2d 1h"
+    expect(formatTradeDuration(2955)).toBe('2d 1h');
+  });
+  it('formats 0 minutes as "0m"', () => {
+    expect(formatTradeDuration(0)).toBe('0m');
+  });
+});
+
+describe('formatTradeTime', () => {
+  it('formats epoch ms to "MMM DD HH:MM" in UTC', () => {
+    // 1777251300000 = 2026-04-27 00:55:00 UTC (confirmed from backtest_200.json open_date)
+    expect(formatTradeTime(1777251300000)).toBe('Apr 27 00:55');
+  });
+  it('formats close_timestamp correctly', () => {
+    // 1777272900000 = 2026-04-27 06:55:00 UTC
+    expect(formatTradeTime(1777272900000)).toBe('Apr 27 06:55');
   });
 });
