@@ -119,3 +119,31 @@
 - **WS1:** fix W1-C1 (2-arg `HttpError`, both tests) + W1-I1 (`vi.fn()` mock) + W1-S1 (optional prop or fold caller into Task 7). Then GO.
 - **WS2:** apply W2-S1 (keep `MarginMode` on line 28). Already GO; this is a one-word edit.
 - **WS3:** excise `quoteCurrencyFromPair` from Task 1 + drop the duplicate import/`const currency` from Task 3.3 (W3-C1, W3-C2). Then GO.
+
+---
+
+# Round 2 re-review — fix commit `7332f92` (2026-06-03)
+
+Verified each round-1 finding against the fixed plans + real code/openapi/C1.
+
+| Finding | Status | Evidence |
+|---|---|---|
+| **W1-C1** `HttpError` 2-arg | ✅ Fixed | Both call sites now 2-arg: WS1 line 424 `new HttpError(400, '{"detail":"Too Many agents for this wallet"}')` and line 1613 `…"Too many extra agents — limit is 3"…`. No 3-arg occurrences remain. Matches `http.ts:60` `(status, body)`; `isAgentCapFull` parses `body` JSON `.detail` → contains "too many"+"agent" → `true`. |
+| **W1-I1** mock as `vi.fn()` | ✅ Fixed | Task 6 mock now `useAgentRevokeFlow: vi.fn(() => ({ … }))`, so the "external revoke uses name" test's `vi.mocked(useAgentRevokeFlow).mockReturnValue(...)` works. |
+| **W1-S1** optional prop | ✅ Fixed | `onManageAgents?: () => void` (optional); call sites guarded (`() => onManageAgents?.()` at the error block; context + note added). Sole caller `LaunchpadModal` (Phase 2b) now typechecks after the Task 7 commit without the Task 8 wiring → no red intermediate commit. `CapFullStep`'s own prop stays required `() => void`, satisfied by the wrapper. Cap-full test's `toHaveBeenCalledTimes(1)` still holds through the wrapper indirection. |
+| **W2-S1** keep `MarginMode` | ✅ Fixed | Task 3 Step 3 item 1 now explicit: change `import type { TradingMode, MarginMode }` → `import type { MarginMode }`. |
+| **W3-C1** excise `quoteCurrencyFromPair` from Task 1 | ✅ Fixed | Title, Step 1.1 import + `describe('quoteCurrencyFromPair')` block, Step 1.3 `export function`, Step 1.5 commit msg, and Self-Review row all removed/redirected to "reuse from C1." No `export function quoteCurrencyFromPair` remains in WS3; all mentions are now reuse/do-not-readd guidance. |
+| **W3-C2** Task 3.3 import-only + reuse `currency` | ✅ Fixed | Item 1 imports only `extractTrades` (explicit "do NOT re-import `quoteCurrencyFromPair` — C1 imports at line 13, derives `currency` at line 94"); item 4 "Reuse the existing `currency` … do NOT redeclare." No duplicate import / duplicate `const currency`. |
+
+## Round-2 verdicts
+
+| Plan | Verdict |
+|---|---|
+| **WS1** — agent mgmt | **GO** |
+| **WS2** — remove trading-mode | **GO** |
+| **WS3** — backtest trades table | **GO** |
+
+### One minor pre-existing nit (non-blocking, not introduced by the fixes)
+- **[W3-N2 · Nice-to-have]** WS3 Task 1, Step 1.1 — the test-file import block still lists `formatTradeDuration` and `formatTradeTime` (only implemented in **Task 2**), while Task 1's tests use only `extractTrades`. Taken literally, `pnpm test backtest-helpers` at Step 1.4 would fail to resolve those two named imports until Task 2 lands. Trivial and self-correcting (import only `extractTrades` in Task 1; add the format helpers to the import in Task 2). Present in round 1 too — does not affect the GO.
+
+No new placeholders or inconsistencies introduced. All six round-1 findings resolved correctly.
