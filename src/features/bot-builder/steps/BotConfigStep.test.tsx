@@ -57,10 +57,12 @@ describe('BotConfigSetup pair → stake currency', () => {
     expect(useBuilderStore.getState().botConfig.stakeCurrency).toBe('USDT');
 
     render(<BotConfigSetup />);
-    const pairInput = screen.getByPlaceholderText(
-      'BTC-USDC',
-    ) as HTMLInputElement;
-    fireEvent.change(pairInput, { target: { value: 'btc-usdc' } });
+    // Open the pair combobox, search, and pick BTC-USDC.
+    fireEvent.click(screen.getByRole('combobox', { name: 'Pair' }));
+    fireEvent.change(screen.getByPlaceholderText('Search pair (e.g. BTC)'), {
+      target: { value: 'btc' },
+    });
+    fireEvent.click(screen.getByRole('option', { name: /BTC-USDC/ }));
 
     const config = useBuilderStore.getState().botConfig;
     expect(config.pair).toBe('BTC-USDC');

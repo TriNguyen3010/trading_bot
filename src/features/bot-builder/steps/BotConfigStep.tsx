@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useBuilderStore } from '../store/builder.store';
 import { Input } from '@/components/ui/input';
+import { Combobox } from '@/components/ui/combobox';
 import { Select } from '@/components/ui/select';
 import { NumberInput } from '@/components/ui/number-input';
 import { ToggleGroup } from '@/components/ui/toggle-group';
@@ -48,16 +49,18 @@ export function BotConfigSetup() {
       <div className="grid grid-cols-2 gap-4">
         <div data-cy-anchor="bot-config:pair">
           <FormField label="Pair" required help={HELP.pair}>
-            <Input
-              list="pair-suggestions"
-              placeholder="BTC-USDC"
+            <Combobox
               value={config.pair}
-              onChange={(e) => {
+              options={PAIR_SUGGESTIONS}
+              placeholder="Select pair"
+              searchPlaceholder="Search pair (e.g. BTC)"
+              triggerProps={{ autoFocus: true, 'aria-label': 'Pair' }}
+              onChange={(raw) => {
                 // Stake currency must equal the pair quote (Freqtrade stakes
                 // in stake_currency) — auto-align it so the user can't ship a
                 // USDT-stake-on-USDC-pair combo that 500s the backend.
                 // normalizePairInput preserves special token casing (kPEPE…).
-                const pair = normalizePairInput(e.target.value);
+                const pair = normalizePairInput(raw);
                 patch({
                   pair,
                   stakeCurrency: deriveStakeCurrency(
@@ -66,13 +69,7 @@ export function BotConfigSetup() {
                   ),
                 });
               }}
-              autoFocus
             />
-            <datalist id="pair-suggestions">
-              {PAIR_SUGGESTIONS.map((p) => (
-                <option key={p} value={p} />
-              ))}
-            </datalist>
           </FormField>
         </div>
 
