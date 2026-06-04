@@ -149,6 +149,23 @@ describe('serializer', () => {
     );
   });
 
+  it('short bot passes UnifiedBotStrategyCreate schema (top-level can_short)', () => {
+    // Regression: BE checks can_short at TOP-LEVEL (see BE source-of-truth
+    // samples — configurations carries no can_short). The FE schema must not
+    // reject a short bot just because configurations.can_short is unset.
+    applyBollingerLong();
+    useBuilderStore.getState().patchDirection({ direction: 'short' });
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    expect(payload.can_short).toBe(true);
+    const result = unifiedBotStrategyCreateSchema.safeParse(payload);
+    if (!result.success) {
+      throw new Error(
+        `short bot rejected by schema: ${JSON.stringify(result.error.issues, null, 2)}`,
+      );
+    }
+    expect(result.success).toBe(true);
+  });
+
   it('sends telegram as null when the wizard has no telegram config', () => {
     // The wizard exposes no telegram fields, so the token is always null.
     // The BE MERGES a provided telegram block into the Freqtrade config, and

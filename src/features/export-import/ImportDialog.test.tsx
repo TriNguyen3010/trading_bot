@@ -102,10 +102,10 @@ describe('ImportDialog', () => {
     payload.configurations.signals.entry_short = JSON.parse(
       JSON.stringify(payload.configurations.signals.entry_long),
     );
-    // Satisfy configurations rule (3) (short conditions need can_short) but keep
-    // top-level can_short false so T-2 (can_short→futures) does NOT fire, and
-    // set spot/leverage=1 so T-3 passes — the payload is schema-valid yet decodes
-    // to the impossible short+spot combo.
+    // Keep top-level can_short false so T-2 (can_short→futures) does NOT fire,
+    // and set spot/leverage=1 so T-3 passes — the payload is schema-valid yet
+    // decodes to the impossible short+spot combo. (configurations.can_short is
+    // now ignored by the schema — kept here harmlessly.)
     payload.configurations.can_short = true;
     payload.can_short = false;
     payload.trading_mode = 'spot';

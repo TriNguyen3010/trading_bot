@@ -486,17 +486,11 @@ export const strategyConfigurationsSchema =
       }
     }
 
-    /* (3) Short conditions imply can_short must be true. */
-    const hasShortConditions =
-      (data.signals.entry_short?.conditions?.length ?? 0) > 0 ||
-      (data.signals.exit_short?.conditions?.length ?? 0) > 0;
-    if (hasShortConditions && !data.can_short) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['can_short'],
-        message: 'Must enable can_short when short conditions are present.',
-      });
-    }
+    /* (3) DROPPED — was: short conditions imply configurations.can_short=true.
+     * BE checks can_short at TOP-LEVEL (source-of-truth create samples carry
+     * no can_short inside configurations). This rule made FE stricter than BE
+     * and blocked every short-bot submit (configurations.can_short is unset by
+     * buildStrategyPayload). Top-level can_short stays correct via the wizard. */
 
     /* (4) DROPPED — original plan rule: partial_enabled → position_adjustment_enable.
      * Production log shows BE accepts `partial_enabled=true` without the

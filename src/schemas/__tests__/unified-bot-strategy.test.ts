@@ -282,8 +282,12 @@ describe('strategyConfigurationsSchema — cross-field rules', () => {
     }
   });
 
-  it('rejects short conditions when can_short is false', () => {
-    const bad = {
+  it('accepts short conditions without configurations.can_short (BE checks top-level)', () => {
+    // BE source-of-truth create samples carry can_short at TOP-LEVEL and none
+    // inside configurations. The old rule (rejecting short conditions unless
+    // configurations.can_short=true) was stricter than BE and blocked every
+    // short-bot submit; it was dropped. Short conditions must now validate.
+    const shortBot = {
       ...baseConfig,
       can_short: false,
       signals: {
@@ -303,13 +307,8 @@ describe('strategyConfigurationsSchema — cross-field rules', () => {
         },
       },
     };
-    const result = strategyConfigurationsSchema.safeParse(bad);
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(
-        result.error.issues.some((i) => i.path.join('.') === 'can_short'),
-      ).toBe(true);
-    }
+    const result = strategyConfigurationsSchema.safeParse(shortBot);
+    expect(result.success).toBe(true);
   });
 
   it('accepts partial_enabled=true without position_adjustment_enable (matches BE prod behavior)', () => {
