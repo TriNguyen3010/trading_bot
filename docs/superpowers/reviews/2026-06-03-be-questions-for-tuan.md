@@ -12,6 +12,8 @@ FE gửi payload `/bot-strategy/create` có:
 - top-level `stoploss`: `null` khi user tắt SL.
 - `configurations.risk.stoploss`: `-0.4` (−40%) cho cùng trạng thái đó.
 
+Lưu ý cả 2 trường hợp đều lệch như vậy: bot `tp_sl` tắt SL **và** bot ROI/manual/indicator đều ship top-level `null` nhưng `risk.stoploss = -0.4` — nên đây là vấn đề hệ thống, không phải edge case.
+
 Cho anh hỏi: **code gen file `.py` đọc field nào?** Và `-0.4` có phải là "stop bắt buộc mặc định" mà Freqtrade luôn cần (nên FE phải gửi 1 giá trị), hay BE coi `null` = không stop? → Anh cần biết để cho 2 field nhất quán + hiển thị đúng trên summary (giờ bot ROI/manual đang ship `-0.4` mà UI không nói gì).
 
 **2. Xin `error_code` ổn định khi đầy cap agent.**
@@ -24,5 +26,8 @@ Nếu user ký bằng 1 address khác với `X-Wallet-Address`/nonce đã xin (�
 FE lowercase address ở mọi chỗ (xin nonce + header). BE lưu/đọc nonce theo `wallet_nonce:{address}` — em confirm là lookup không phân biệt hoa/thường (hoặc cũng lowercase) để không lệch khi ví trả address checksum nhé.
 
 **5. (Product) Sau khi revoke/rotate để giải phóng slot, bot user vừa bấm "Go Live" có cần BE tự khởi động lại không,** hay FE sẽ chủ động gọi start lại? Anh muốn thống nhất hành vi để user bấm Live 1 phát là chạy, không phải bấm lại.
+
+**6. Xác nhận đơn vị `win_rate` ở `BacktestHistoryItem`.**
+FE giờ hiển thị thẳng `win_rate` như phần trăm `0–100` (đã bỏ heuristic đoán ratio). Em confirm field này luôn là `0–100` (không phải `0–1`) nhé — để anh chắc không hiển thị lệch 100 lần. (Không gấp như 1–2, chỉ là độ chính xác màn backtest.)
 
 Cảm ơn em, mấy cái 1–2 là chặn việc anh smoke-test Live thật nên ưu tiên giúp anh nhé.
