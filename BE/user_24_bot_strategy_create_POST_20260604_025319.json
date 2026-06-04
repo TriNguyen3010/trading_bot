@@ -1,0 +1,233 @@
+{
+  "timestamp": "2026-06-04T02:53:19.742435",
+  "user_id": 24,
+  "api_endpoint": "bot_strategy_create",
+  "method": "POST",
+  "status_code": 201,
+  "request": {
+    "bot_name": "my_bot2",
+    "exchange_name": "hyperliquid",
+    "strategy_name": "mybot2",
+    "dry_run": true,
+    "stake_currency": "USDC",
+    "stake_amount": 10.0,
+    "max_open_trades": 3,
+    "timeframe": "5m",
+    "pair": "BTC/USDC:USDC",
+    "dry_run_wallet": 1000.0,
+    "trading_mode": "futures",
+    "margin_mode": "cross",
+    "liquidation_buffer": 0.05,
+    "leverage": 11,
+    "can_short": true,
+    "position_adjustment_enable": false,
+    "cancel_open_orders_on_exit": true,
+    "process_only_new_candles": true,
+    "force_entry_enable": true,
+    "strategy_description": null,
+    "strategy_type": "statistical",
+    "configurations": {
+      "startup_candle_count": 200,
+      "informative_timeframes": [],
+      "signals": {
+        "candlestick": ["close"],
+        "indicators": [
+          {
+            "name": "BBANDS",
+            "type": "talib",
+            "output": "upperband",
+            "parameters": {
+              "timeperiod": 14,
+              "nbdevup": 2.0,
+              "nbdevdn": 2.0
+            }
+          }
+        ],
+        "entry_long": {
+          "logic": {
+            "type": "AND",
+            "threshold": null
+          },
+          "conditions": [
+            {
+              "left": "candle.close",
+              "op": "crossed_above",
+              "right_type": "indicator",
+              "right_number": null,
+              "right_indicator": "BBANDS (Upper Band) - 2.0, 2.0, 14",
+              "lookback": 0
+            }
+          ]
+        },
+        "exit_long": {
+          "logic": {
+            "type": "AND",
+            "threshold": null
+          },
+          "conditions": [
+            {
+              "left": "candle.close",
+              "op": "crossed_below",
+              "right_type": "indicator",
+              "right_number": null,
+              "right_indicator": "BBANDS (Upper Band) - 2.0, 2.0, 14",
+              "lookback": 0
+            }
+          ]
+        },
+        "entry_short": {
+          "logic": {
+            "type": "AND",
+            "threshold": null
+          },
+          "conditions": [
+            {
+              "left": "candle.close",
+              "op": "crossed_below",
+              "right_type": "indicator",
+              "right_number": null,
+              "right_indicator": "BBANDS (Upper Band) - 2.0, 2.0, 14",
+              "lookback": 0
+            }
+          ]
+        },
+        "exit_short": {
+          "logic": {
+            "type": "AND",
+            "threshold": null
+          },
+          "conditions": [
+            {
+              "left": "candle.close",
+              "op": "crossed_above",
+              "right_type": "indicator",
+              "right_number": null,
+              "right_indicator": "BBANDS (Upper Band) - 2.0, 2.0, 14",
+              "lookback": 0
+            }
+          ]
+        }
+      },
+      "custom_indicator_items": [],
+      "informative_ohlcv_items": []
+    },
+    "ai_powered": false
+  },
+  "response": {
+    "bot": {
+      "id": 142,
+      "bot_name": "my_bot2",
+      "status": "stopped",
+      "desired_status": null,
+      "error_message": null,
+      "strategy_name": "mybot2",
+      "locked_by": null,
+      "locked_at": null,
+      "last_heartbeat": null,
+      "created_at": "2026-06-04 02:53:19.723243"
+    },
+    "strategy": {
+      "id": 86,
+      "bot_id": 142,
+      "name": "mybot2",
+      "description": null,
+      "configurations": {
+        "startup_candle_count": 200,
+        "informative_timeframes": [],
+        "signals": {
+          "candlestick": ["close"],
+          "indicators": [
+            {
+              "name": "BBANDS",
+              "type": "talib",
+              "output": "upperband",
+              "parameters": {
+                "timeperiod": 14,
+                "nbdevup": 2.0,
+                "nbdevdn": 2.0
+              }
+            }
+          ],
+          "entry_long": {
+            "logic": {
+              "type": "AND",
+              "threshold": null
+            },
+            "conditions": [
+              {
+                "left": "candle.close",
+                "op": "crossed_above",
+                "right_type": "indicator",
+                "right_number": null,
+                "right_indicator": "BBANDS (Upper Band) - 2.0, 2.0, 14",
+                "lookback": 0
+              }
+            ]
+          },
+          "exit_long": {
+            "logic": {
+              "type": "AND",
+              "threshold": null
+            },
+            "conditions": [
+              {
+                "left": "candle.close",
+                "op": "crossed_below",
+                "right_type": "indicator",
+                "right_number": null,
+                "right_indicator": "BBANDS (Upper Band) - 2.0, 2.0, 14",
+                "lookback": 0
+              }
+            ]
+          },
+          "entry_short": {
+            "logic": {
+              "type": "AND",
+              "threshold": null
+            },
+            "conditions": [
+              {
+                "left": "candle.close",
+                "op": "crossed_below",
+                "right_type": "indicator",
+                "right_number": null,
+                "right_indicator": "BBANDS (Upper Band) - 2.0, 2.0, 14",
+                "lookback": 0
+              }
+            ]
+          },
+          "exit_short": {
+            "logic": {
+              "type": "AND",
+              "threshold": null
+            },
+            "conditions": [
+              {
+                "left": "candle.close",
+                "op": "crossed_above",
+                "right_type": "indicator",
+                "right_number": null,
+                "right_indicator": "BBANDS (Upper Band) - 2.0, 2.0, 14",
+                "lookback": 0
+              }
+            ]
+          },
+          "descriptions": {
+            "entry_long": "Long entry signal:\n- Candle Close crosses above BBANDS (Upper Band) - 2.0, 2.0, 14",
+            "entry_short": "Short entry signal:\n- Candle Close crosses below BBANDS (Upper Band) - 2.0, 2.0, 14",
+            "exit_long": "Long exit signal:\n- Candle Close crosses below BBANDS (Upper Band) - 2.0, 2.0, 14",
+            "exit_short": "Short exit signal:\n- Candle Close crosses above BBANDS (Upper Band) - 2.0, 2.0, 14"
+          }
+        },
+        "custom_indicator_items": [],
+        "informative_ohlcv_items": []
+      },
+      "ai_powered": false,
+      "strategy_type": "statistical",
+      "is_active": true,
+      "created_at": "2026-06-04 02:53:19.726143",
+      "updated_at": "2026-06-04 02:53:19.726149"
+    }
+  },
+  "error": null
+}

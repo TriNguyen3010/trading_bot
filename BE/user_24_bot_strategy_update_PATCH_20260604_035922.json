@@ -1,0 +1,685 @@
+{
+  "timestamp": "2026-06-04T03:59:22.033598",
+  "user_id": 24,
+  "api_endpoint": "bot_strategy_update",
+  "method": "PATCH",
+  "status_code": 200,
+  "request": {
+    "strategy_name": "asdas",
+    "strategy_type": "statistical",
+    "strategy_configurations": {
+      "interface_version": 3,
+      "strategy_type": "statistical",
+      "timeframe": "5m",
+      "startup_candle_count": 200,
+      "informative_timeframes": ["1h"],
+      "can_short": true,
+      "risk": {
+        "stoploss": -0.109,
+        "trailing_stop": false
+      },
+      "roi_steps": [
+        {
+          "minutes": 0,
+          "roi": 0.01
+        }
+      ],
+      "use_exit_signal": true,
+      "exit_profit_only": false,
+      "exit_profit_offset": 0.0,
+      "ignore_roi_if_entry_signal": false,
+      "max_open_trades": -1,
+      "signals": {
+        "candlestick": ["close"],
+        "indicators": [
+          {
+            "name": "ADX",
+            "type": "talib",
+            "parameters": {
+              "timeperiod": 14
+            }
+          },
+          {
+            "name": "BBANDS",
+            "type": "talib",
+            "output": "upperband",
+            "parameters": {
+              "timeperiod": 14,
+              "nbdevup": 2.0,
+              "nbdevdn": 2.0
+            }
+          },
+          {
+            "name": "BBANDS",
+            "type": "talib",
+            "output": "middleband",
+            "parameters": {
+              "timeperiod": 14,
+              "nbdevup": 2.0,
+              "nbdevdn": 2.0
+            }
+          },
+          {
+            "name": "BBANDS",
+            "type": "talib",
+            "output": "lowerband",
+            "parameters": {
+              "timeperiod": 14,
+              "nbdevup": 2.0,
+              "nbdevdn": 2.0
+            }
+          },
+          {
+            "name": "EMA",
+            "type": "talib",
+            "parameters": {
+              "timeperiod": 20
+            }
+          },
+          {
+            "name": "MACD",
+            "type": "talib",
+            "output": "macd",
+            "parameters": {
+              "fastperiod": 12,
+              "slowperiod": 26,
+              "signalperiod": 9
+            }
+          },
+          {
+            "name": "MACD",
+            "type": "talib",
+            "output": "macdsignal",
+            "parameters": {
+              "fastperiod": 12,
+              "slowperiod": 26,
+              "signalperiod": 9
+            }
+          },
+          {
+            "name": "MACD",
+            "type": "talib",
+            "output": "macdhist",
+            "parameters": {
+              "fastperiod": 12,
+              "slowperiod": 26,
+              "signalperiod": 9
+            }
+          },
+          {
+            "name": "NATR",
+            "type": "pandas_ta",
+            "parameters": {},
+            "pandas_ta_func": "natr"
+          },
+          {
+            "name": "OBV",
+            "type": "talib",
+            "parameters": {}
+          },
+          {
+            "name": "RSI",
+            "type": "talib",
+            "parameters": {
+              "timeperiod": 14
+            }
+          },
+          {
+            "name": "SAR",
+            "type": "talib",
+            "parameters": {}
+          },
+          {
+            "name": "STOCH",
+            "type": "talib",
+            "output": "slowk",
+            "parameters": {
+              "fastk_period": 5
+            }
+          },
+          {
+            "name": "STOCH",
+            "type": "talib",
+            "output": "slowd",
+            "parameters": {
+              "fastk_period": 5
+            }
+          },
+          {
+            "name": "STOCHRSI",
+            "type": "talib",
+            "output": "fastk",
+            "parameters": {
+              "timeperiod": 14,
+              "fastk_period": 5,
+              "fastd_period": 3
+            }
+          },
+          {
+            "name": "STOCHRSI",
+            "type": "talib",
+            "output": "fastd",
+            "parameters": {
+              "timeperiod": 14,
+              "fastk_period": 5,
+              "fastd_period": 3
+            }
+          },
+          {
+            "name": "SUPERTREND",
+            "type": "pandas_ta",
+            "output": "SUPERT_7_3.0",
+            "parameters": {},
+            "pandas_ta_func": "supertrend"
+          },
+          {
+            "name": "SUPERTREND",
+            "type": "pandas_ta",
+            "output": "SUPERTd_7_3.0",
+            "parameters": {},
+            "pandas_ta_func": "supertrend"
+          },
+          {
+            "name": "SUPERTREND",
+            "type": "pandas_ta",
+            "output": "SUPERTl_7_3.0",
+            "parameters": {},
+            "pandas_ta_func": "supertrend"
+          },
+          {
+            "name": "SUPERTREND",
+            "type": "pandas_ta",
+            "output": "SUPERTs_7_3.0",
+            "parameters": {},
+            "pandas_ta_func": "supertrend"
+          },
+          {
+            "name": "VWAP",
+            "type": "pandas_ta",
+            "parameters": {},
+            "pandas_ta_func": "vwap",
+            "requires_datetime_index": true
+          },
+          {
+            "name": "BBANDS",
+            "type": "talib",
+            "output": "upperband",
+            "parameters": {
+              "timeperiod": 14,
+              "nbdevup": 2.0,
+              "nbdevdn": 2.0
+            },
+            "timeframe": "1h"
+          },
+          {
+            "name": "BBANDS",
+            "type": "talib",
+            "output": "middleband",
+            "parameters": {
+              "timeperiod": 14,
+              "nbdevup": 2.0,
+              "nbdevdn": 2.0
+            },
+            "timeframe": "1h"
+          },
+          {
+            "name": "BBANDS",
+            "type": "talib",
+            "output": "lowerband",
+            "parameters": {
+              "timeperiod": 14,
+              "nbdevup": 2.0,
+              "nbdevdn": 2.0
+            },
+            "timeframe": "1h"
+          },
+          {
+            "name": "EMA",
+            "type": "talib",
+            "parameters": {
+              "timeperiod": 14
+            },
+            "timeframe": "1h"
+          },
+          {
+            "name": "STOCHRSI",
+            "type": "talib",
+            "output": "fastk",
+            "parameters": {
+              "timeperiod": 14,
+              "fastk_period": 5,
+              "fastd_period": 3
+            },
+            "timeframe": "1h"
+          },
+          {
+            "name": "STOCHRSI",
+            "type": "talib",
+            "output": "fastd",
+            "parameters": {
+              "timeperiod": 14,
+              "fastk_period": 5,
+              "fastd_period": 3
+            },
+            "timeframe": "1h"
+          },
+          {
+            "name": "SUPERTREND",
+            "type": "pandas_ta",
+            "output": "SUPERT_7_3.0",
+            "parameters": {},
+            "pandas_ta_func": "supertrend",
+            "timeframe": "1h"
+          }
+        ],
+        "entry_long": {
+          "logic": {
+            "type": "AND",
+            "threshold": null
+          },
+          "conditions": []
+        },
+        "exit_long": {
+          "logic": {
+            "type": "AND",
+            "threshold": null
+          },
+          "conditions": []
+        },
+        "entry_short": {
+          "logic": {
+            "type": "AND",
+            "threshold": null
+          },
+          "conditions": []
+        },
+        "exit_short": {
+          "logic": {
+            "type": "AND",
+            "threshold": null
+          },
+          "conditions": []
+        }
+      },
+      "custom_indicator_items": [
+        {
+          "name": "RES_20",
+          "source_type": "ohlcv",
+          "source_col": "close",
+          "source_field": "close",
+          "source_timeframe": null,
+          "operation": "rolling_max",
+          "period": 20
+        },
+        {
+          "name": "RES_20_1H",
+          "source_type": "ohlcv",
+          "source_col": "close_1h",
+          "source_field": "close",
+          "source_timeframe": "1h",
+          "operation": "rolling_max",
+          "period": 20
+        },
+        {
+          "name": "EMA_RES_20",
+          "source_type": "indicator",
+          "source_col": "EMA-20",
+          "source_field": "EMA-20",
+          "source_timeframe": null,
+          "operation": "rolling_max",
+          "period": 20
+        }
+      ],
+      "informative_ohlcv_items": [],
+      "custom_exit": {
+        "duration_enabled": false,
+        "duration_value": 24.0,
+        "duration_unit": "hours",
+        "profit_ratio_enabled": false,
+        "profit_ratio": 2.0,
+        "max_duration_enabled": false,
+        "max_duration_value": 72.0,
+        "max_duration_unit": "hours",
+        "time_window_enabled": false,
+        "time_start": "23:00",
+        "time_end": "23:59",
+        "partial_enabled": false,
+        "partial_levels": []
+      }
+    },
+    "ai_powered": false,
+    "optional": {
+      "telegram": {
+        "enabled": false
+      }
+    }
+  },
+  "response": {
+    "bot": {
+      "id": 140,
+      "bot_name": "my_bot",
+      "status": "stopped",
+      "desired_status": null,
+      "error_message": null,
+      "strategy_name": "asdas",
+      "locked_by": null,
+      "locked_at": null,
+      "last_heartbeat": null,
+      "created_at": "2026-06-04 02:45:52.500251"
+    },
+    "strategy": {
+      "id": 84,
+      "bot_id": 140,
+      "name": "asdas",
+      "description": null,
+      "configurations": {
+        "interface_version": 3,
+        "strategy_type": "statistical",
+        "timeframe": "5m",
+        "startup_candle_count": 200,
+        "informative_timeframes": ["1h"],
+        "can_short": true,
+        "risk": {
+          "stoploss": -0.109,
+          "trailing_stop": false
+        },
+        "roi_steps": [
+          {
+            "minutes": 0,
+            "roi": 0.01
+          }
+        ],
+        "use_exit_signal": true,
+        "exit_profit_only": false,
+        "exit_profit_offset": 0.0,
+        "ignore_roi_if_entry_signal": false,
+        "max_open_trades": -1,
+        "signals": {
+          "candlestick": ["close"],
+          "indicators": [
+            {
+              "name": "ADX",
+              "type": "talib",
+              "parameters": { "timeperiod": 14 }
+            },
+            {
+              "name": "BBANDS",
+              "type": "talib",
+              "output": "upperband",
+              "parameters": { "timeperiod": 14, "nbdevup": 2.0, "nbdevdn": 2.0 }
+            },
+            {
+              "name": "BBANDS",
+              "type": "talib",
+              "output": "middleband",
+              "parameters": { "timeperiod": 14, "nbdevup": 2.0, "nbdevdn": 2.0 }
+            },
+            {
+              "name": "BBANDS",
+              "type": "talib",
+              "output": "lowerband",
+              "parameters": { "timeperiod": 14, "nbdevup": 2.0, "nbdevdn": 2.0 }
+            },
+            {
+              "name": "EMA",
+              "type": "talib",
+              "parameters": { "timeperiod": 20 }
+            },
+            {
+              "name": "MACD",
+              "type": "talib",
+              "output": "macd",
+              "parameters": {
+                "fastperiod": 12,
+                "slowperiod": 26,
+                "signalperiod": 9
+              }
+            },
+            {
+              "name": "MACD",
+              "type": "talib",
+              "output": "macdsignal",
+              "parameters": {
+                "fastperiod": 12,
+                "slowperiod": 26,
+                "signalperiod": 9
+              }
+            },
+            {
+              "name": "MACD",
+              "type": "talib",
+              "output": "macdhist",
+              "parameters": {
+                "fastperiod": 12,
+                "slowperiod": 26,
+                "signalperiod": 9
+              }
+            },
+            {
+              "name": "NATR",
+              "type": "pandas_ta",
+              "parameters": {},
+              "pandas_ta_func": "natr"
+            },
+            { "name": "OBV", "type": "talib", "parameters": {} },
+            {
+              "name": "RSI",
+              "type": "talib",
+              "parameters": { "timeperiod": 14 }
+            },
+            { "name": "SAR", "type": "talib", "parameters": {} },
+            {
+              "name": "STOCH",
+              "type": "talib",
+              "output": "slowk",
+              "parameters": { "fastk_period": 5 }
+            },
+            {
+              "name": "STOCH",
+              "type": "talib",
+              "output": "slowd",
+              "parameters": { "fastk_period": 5 }
+            },
+            {
+              "name": "STOCHRSI",
+              "type": "talib",
+              "output": "fastk",
+              "parameters": {
+                "timeperiod": 14,
+                "fastk_period": 5,
+                "fastd_period": 3
+              }
+            },
+            {
+              "name": "STOCHRSI",
+              "type": "talib",
+              "output": "fastd",
+              "parameters": {
+                "timeperiod": 14,
+                "fastk_period": 5,
+                "fastd_period": 3
+              }
+            },
+            {
+              "name": "SUPERTREND",
+              "type": "pandas_ta",
+              "output": "SUPERT_7_3.0",
+              "parameters": {},
+              "pandas_ta_func": "supertrend"
+            },
+            {
+              "name": "SUPERTREND",
+              "type": "pandas_ta",
+              "output": "SUPERTd_7_3.0",
+              "parameters": {},
+              "pandas_ta_func": "supertrend"
+            },
+            {
+              "name": "SUPERTREND",
+              "type": "pandas_ta",
+              "output": "SUPERTl_7_3.0",
+              "parameters": {},
+              "pandas_ta_func": "supertrend"
+            },
+            {
+              "name": "SUPERTREND",
+              "type": "pandas_ta",
+              "output": "SUPERTs_7_3.0",
+              "parameters": {},
+              "pandas_ta_func": "supertrend"
+            },
+            {
+              "name": "VWAP",
+              "type": "pandas_ta",
+              "parameters": {},
+              "pandas_ta_func": "vwap",
+              "requires_datetime_index": true
+            },
+            {
+              "name": "BBANDS",
+              "type": "talib",
+              "output": "upperband",
+              "parameters": {
+                "timeperiod": 14,
+                "nbdevup": 2.0,
+                "nbdevdn": 2.0
+              },
+              "timeframe": "1h"
+            },
+            {
+              "name": "BBANDS",
+              "type": "talib",
+              "output": "middleband",
+              "parameters": {
+                "timeperiod": 14,
+                "nbdevup": 2.0,
+                "nbdevdn": 2.0
+              },
+              "timeframe": "1h"
+            },
+            {
+              "name": "BBANDS",
+              "type": "talib",
+              "output": "lowerband",
+              "parameters": {
+                "timeperiod": 14,
+                "nbdevup": 2.0,
+                "nbdevdn": 2.0
+              },
+              "timeframe": "1h"
+            },
+            {
+              "name": "EMA",
+              "type": "talib",
+              "parameters": { "timeperiod": 14 },
+              "timeframe": "1h"
+            },
+            {
+              "name": "STOCHRSI",
+              "type": "talib",
+              "output": "fastk",
+              "parameters": {
+                "timeperiod": 14,
+                "fastk_period": 5,
+                "fastd_period": 3
+              },
+              "timeframe": "1h"
+            },
+            {
+              "name": "STOCHRSI",
+              "type": "talib",
+              "output": "fastd",
+              "parameters": {
+                "timeperiod": 14,
+                "fastk_period": 5,
+                "fastd_period": 3
+              },
+              "timeframe": "1h"
+            },
+            {
+              "name": "SUPERTREND",
+              "type": "pandas_ta",
+              "output": "SUPERT_7_3.0",
+              "parameters": {},
+              "pandas_ta_func": "supertrend",
+              "timeframe": "1h"
+            }
+          ],
+          "entry_long": {
+            "logic": { "type": "AND", "threshold": null },
+            "conditions": []
+          },
+          "exit_long": {
+            "logic": { "type": "AND", "threshold": null },
+            "conditions": []
+          },
+          "entry_short": {
+            "logic": { "type": "AND", "threshold": null },
+            "conditions": []
+          },
+          "exit_short": {
+            "logic": { "type": "AND", "threshold": null },
+            "conditions": []
+          },
+          "descriptions": {
+            "entry_long": "",
+            "entry_short": "",
+            "exit_long": "",
+            "exit_short": ""
+          }
+        },
+        "custom_indicator_items": [
+          {
+            "name": "RES_20",
+            "source_type": "ohlcv",
+            "source_col": "close",
+            "source_field": "close",
+            "source_timeframe": null,
+            "operation": "rolling_max",
+            "period": 20
+          },
+          {
+            "name": "RES_20_1H",
+            "source_type": "ohlcv",
+            "source_col": "close_1h",
+            "source_field": "close",
+            "source_timeframe": "1h",
+            "operation": "rolling_max",
+            "period": 20
+          },
+          {
+            "name": "EMA_RES_20",
+            "source_type": "indicator",
+            "source_col": "EMA-20",
+            "source_field": "EMA-20",
+            "source_timeframe": null,
+            "operation": "rolling_max",
+            "period": 20
+          }
+        ],
+        "informative_ohlcv_items": [],
+        "custom_exit": {
+          "duration_enabled": false,
+          "duration_value": 24.0,
+          "duration_unit": "hours",
+          "profit_ratio_enabled": false,
+          "profit_ratio": 2.0,
+          "max_duration_enabled": false,
+          "max_duration_value": 72.0,
+          "max_duration_unit": "hours",
+          "time_window_enabled": false,
+          "time_start": "23:00",
+          "time_end": "23:59",
+          "partial_enabled": false,
+          "partial_levels": []
+        }
+      },
+      "ai_powered": false,
+      "strategy_type": "statistical",
+      "is_active": true,
+      "created_at": "2026-06-04 02:45:52.504167",
+      "updated_at": "2026-06-04 03:59:22.024969"
+    }
+  },
+  "error": null
+}
