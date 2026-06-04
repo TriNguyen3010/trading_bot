@@ -29,13 +29,9 @@ export const CANDLESTICK_OPTIONS: {
   { value: 'volume', label: 'Volume' },
 ];
 
-/** Pair suggestions until the CSV converter arrives from the user. */
-export const PAIR_SUGGESTIONS = [
-  'BTC-USDC',
-  'BTC-USDT',
-  'ETH-USDT',
-  'ETH-USDC',
-  'SOL-USDT',
-  'BNB-USDT',
-  'XRP-USDT',
-];
+/**
+ * Pair suggestions = the BE-supported Hyperliquid top-100 perps (USDC-quoted).
+ * Sourced from `BE/hyperliquid_top100_volume_by_dayNtlVlm.csv` via
+ * `supported-pairs.ts`.
+ */
+export { SUPPORTED_PAIRS as PAIR_SUGGESTIONS } from './supported-pairs';

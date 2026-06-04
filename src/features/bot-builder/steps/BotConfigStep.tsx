@@ -14,6 +14,7 @@ import {
   PAIR_SUGGESTIONS,
 } from '@/lib/constants';
 import { deriveStakeCurrency } from '@/lib/pair-format';
+import { normalizePairInput } from '@/lib/supported-pairs';
 import { strings } from '@/i18n/en';
 import type { MarginMode } from '@/types/builder.types';
 
@@ -55,7 +56,8 @@ export function BotConfigSetup() {
                 // Stake currency must equal the pair quote (Freqtrade stakes
                 // in stake_currency) — auto-align it so the user can't ship a
                 // USDT-stake-on-USDC-pair combo that 500s the backend.
-                const pair = e.target.value.toUpperCase();
+                // normalizePairInput preserves special token casing (kPEPE…).
+                const pair = normalizePairInput(e.target.value);
                 patch({
                   pair,
                   stakeCurrency: deriveStakeCurrency(
