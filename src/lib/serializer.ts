@@ -413,17 +413,11 @@ export function buildUnifiedPayload(state: BuilderState): UnifiedBundle {
 
   const configurations =
     strategy.configurations as unknown as UnifiedBotStrategyCreate['configurations'];
-  if (configurations) {
-    applyPastTenseCrossOps(configurations);
-    // BE reads the stop from `configurations.risk.stoploss`; Tuấn confirmed
-    // SL-off = `null` (no stop). Override here for the UNIFIED payload only —
-    // the shared `buildRisk` keeps a numeric sentinel for the legacy bundle
-    // path (whose schema is non-nullable). riskConfigSchema is nullable.
-    if (configurations.risk) {
-      configurations.risk.stoploss =
-        close.type === 'tp_sl' && close.slEnabled ? close.slValue / 100 : null;
-    }
-  }
+  if (configurations) applyPastTenseCrossOps(configurations);
+  // NOTE on SL-off: the DEPLOYED BE rejects `configurations.risk.stoploss: null`
+  // ("Input should be a valid number"), so we keep the numeric sentinel that
+  // `buildRisk` emits (-0.4 when SL is off) — the value BE has always accepted.
+  // Switch SL-off to `null` only once BE deploys null-acceptance (tracked w/ Tuấn).
 
   // Map the legacy `{bot, strategy}` split into the flat unified shape.
   // Anything not represented in the BuilderState today is omitted (BE

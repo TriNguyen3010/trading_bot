@@ -374,16 +374,18 @@ describe('serializer', () => {
     );
   });
 
-  // F2: a tp_sl bot with SL turned OFF must round-trip back as slEnabled:false
-  // (not silently re-enabled at the -0.4 sentinel).
+  // F2: a tp_sl bot with SL turned OFF must round-trip back as slEnabled:false.
+  // The DEPLOYED BE rejects `risk.stoploss: null` ("Input should be a valid
+  // number"), so SL-off must send a numeric value (the -0.4 sentinel), NOT null.
+  // (Revisit to `null` only once BE deploys null-acceptance — tracked w/ Tuấn.)
   it('round-trips a tp_sl bot with SL disabled as slEnabled:false', () => {
     applyBollingerLong();
     useBuilderStore.getState().patchCloseMethod({ slEnabled: false });
     useBuilderStore.getState().patchDirection({ direction: 'long' });
     const payload = buildUnifiedPayload(useBuilderStore.getState());
-    // SL off → BE reads configurations.risk.stoploss; null = no stop (Tuấn).
-    expect(payload.configurations?.risk?.stoploss).toBeNull();
-    // Top-level stoploss/trailing_stop dropped (BE ignores; samples omit).
+    // SL off → numeric sentinel (BE requires a number, not null).
+    expect(payload.configurations?.risk?.stoploss).toBe(-0.4);
+    // Top-level stoploss/trailing_stop still dropped (BE ignores; samples omit).
     expect('stoploss' in payload).toBe(false);
     const wire = JSON.parse(JSON.stringify(payload));
     const restored = deserializeUnifiedPayload(wire);
