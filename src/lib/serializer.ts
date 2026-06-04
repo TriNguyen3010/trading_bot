@@ -364,10 +364,56 @@ export interface UnifiedBundle extends UnifiedBotStrategyCreate {
   sl_enabled?: boolean;
 }
 
+// BE's strategy generator expects past-tense cross operators
+// (`crossed_above`/`crossed_below`) per the source-of-truth create samples,
+// while the FE UI/state and the legacy bundle use present tense. Convert ONLY
+// in the unified payload (whose op enum accepts both tenses) so the legacy
+// bundle path stays present-tense and schema-valid. Deserialize already coerces
+// past→present, so the round-trip is consistent.
+const CROSS_OP_PAST: Record<string, string> = {
+  crosses_above: 'crossed_above',
+  crosses_below: 'crossed_below',
+};
+
+function applyPastTenseCrossOps(
+  configurations: NonNullable<UnifiedBotStrategyCreate['configurations']>,
+): void {
+  const walk = (items: unknown[]): void => {
+    for (const item of items) {
+      if (item && typeof item === 'object') {
+        const obj = item as {
+          type?: string;
+          conditions?: unknown[];
+          op?: string;
+        };
+        if (obj.type === 'group' && Array.isArray(obj.conditions)) {
+          walk(obj.conditions);
+        } else if (obj.op && CROSS_OP_PAST[obj.op]) {
+          obj.op = CROSS_OP_PAST[obj.op];
+        }
+      }
+    }
+  };
+  const signals = configurations.signals;
+  for (const key of [
+    'entry_long',
+    'exit_long',
+    'entry_short',
+    'exit_short',
+  ] as const) {
+    const group = signals[key];
+    if (group) walk(group.conditions);
+  }
+}
+
 export function buildUnifiedPayload(state: BuilderState): UnifiedBundle {
   const bot = buildBotPayload(state);
   const strategy = buildStrategyPayload(state);
   const close = state.closeMethod;
+
+  const configurations =
+    strategy.configurations as unknown as UnifiedBotStrategyCreate['configurations'];
+  if (configurations) applyPastTenseCrossOps(configurations);
 
   // Map the legacy `{bot, strategy}` split into the flat unified shape.
   // Anything not represented in the BuilderState today is omitted (BE
@@ -419,11 +465,9 @@ export function buildUnifiedPayload(state: BuilderState): UnifiedBundle {
     strategy_type: 'statistical',
 
     // The legacy `buildStrategyPayload()` already returns a configurations
-    // object with the right shape — reuse it. We cast because the Zod
-    // inferred type carries `defaults` whereas the legacy type doesn't, but
-    // the runtime values are equivalent.
-    configurations:
-      strategy.configurations as unknown as UnifiedBotStrategyCreate['configurations'],
+    // object with the right shape — reuse it (cross ops converted to past
+    // tense above for the unified payload).
+    configurations,
 
     // Deprecated, but the BE accepts it. Emit `false` explicitly for clarity.
     ai_powered: false,

@@ -166,6 +166,49 @@ describe('serializer', () => {
     expect(result.success).toBe(true);
   });
 
+  it('unified payload emits past-tense cross ops (crossed_above); legacy bundle keeps present tense', () => {
+    const store = useBuilderStore.getState();
+    store.resetAll();
+    store.patchBotConfig({ pair: 'BTC-USDC', marketType: 'futures' });
+    store.patchStrategy({
+      name: 'X',
+      indicators: [makeIndicator('BB')],
+      entryConditions: {
+        groupConnector: 'AND',
+        groups: [
+          {
+            id: 'g1',
+            intraConnector: 'AND',
+            rules: [
+              {
+                id: 'c1',
+                left: 'candle.close',
+                op: 'crosses_above',
+                right_type: 'indicator',
+                right_number: null,
+                right_indicator: 'BB-20',
+                lookback: 0,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    store.patchDirection({ direction: 'long', orderType: 'market' });
+
+    const unified = buildUnifiedPayload(useBuilderStore.getState());
+    const uCond = unified.configurations?.signals.entry_long?.conditions[0] as {
+      op: string;
+    };
+    expect(uCond.op).toBe('crossed_above');
+
+    // Legacy bundle path must stay present-tense (its schema only allows present).
+    const bundle = buildBundle(useBuilderStore.getState());
+    const bCond = bundle.strategy.configurations.signals.entry_long
+      .conditions[0] as { op: string };
+    expect(bCond.op).toBe('crosses_above');
+  });
+
   it('sends telegram as null when the wizard has no telegram config', () => {
     // The wizard exposes no telegram fields, so the token is always null.
     // The BE MERGES a provided telegram block into the Freqtrade config, and
