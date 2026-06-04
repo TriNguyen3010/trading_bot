@@ -432,13 +432,17 @@ export const strategyFreqAIConfigSchema = z.object({
 /* -------------------------------------------------------------------------- */
 
 const baseStrategyConfigurationsSchema = z.object({
-  interface_version: z.number().int().default(3),
+  // These live at TOP-LEVEL in the BE create payload (source-of-truth samples
+  // carry them there and omit them from configurations). Keep optional with NO
+  // default so `.parse` never injects them into configurations — esp. leverage,
+  // whose default(1) would contradict the real top-level leverage.
+  interface_version: z.number().int().optional(),
   strategy_type: strategyTypeSchema.default('statistical'),
-  timeframe: strategyTimeframeSchema.default('5m'),
+  timeframe: strategyTimeframeSchema.optional(),
   startup_candle_count: z.number().int().positive().default(200),
-  process_only_new_candles: z.boolean().default(true),
+  process_only_new_candles: z.boolean().optional(),
   informative_timeframes: z.array(z.string()).default([]),
-  can_short: z.boolean().default(false),
+  can_short: z.boolean().optional(),
   risk: riskConfigSchema.optional(),
   roi_steps: z.array(roiStepSchema).default([]),
   use_exit_signal: z.boolean().default(false),
@@ -458,9 +462,9 @@ const baseStrategyConfigurationsSchema = z.object({
   informative_ohlcv_items: z.array(z.unknown()).default([]),
   freqai: strategyFreqAIConfigSchema.optional(),
   custom_exit: customExitConfigSchema.optional(),
-  leverage: z.number().default(1),
-  position_adjustment_enable: z.boolean().default(false),
-  max_entry_position_adjustment: z.number().int().default(-1),
+  leverage: z.number().optional(),
+  position_adjustment_enable: z.boolean().optional(),
+  max_entry_position_adjustment: z.number().int().optional(),
 });
 
 export const strategyConfigurationsSchema =

@@ -209,6 +209,32 @@ describe('serializer', () => {
     expect(bCond.op).toBe('crosses_above');
   });
 
+  it('does not inject configurations defaults absent from BE create samples', () => {
+    // BE create samples carry these at TOP-LEVEL (or omit them); their
+    // configurations block has none of them. Zod .default() must not inject
+    // them — esp. configurations.leverage=1 which would contradict the
+    // top-level leverage the bot actually runs at.
+    applyBollingerLong(); // leverage 20, futures, long
+    useBuilderStore.getState().patchDirection({ direction: 'long' });
+    const wire = unifiedBotStrategyCreateSchema.parse(
+      buildUnifiedPayload(useBuilderStore.getState()),
+    );
+    const cfg = wire.configurations as Record<string, unknown>;
+    for (const key of [
+      'interface_version',
+      'timeframe',
+      'process_only_new_candles',
+      'can_short',
+      'leverage',
+      'position_adjustment_enable',
+      'max_entry_position_adjustment',
+    ]) {
+      expect(key in cfg).toBe(false);
+    }
+    // Top-level still carries the real values.
+    expect(wire.leverage).toBe(20);
+  });
+
   it('sends telegram as null when the wizard has no telegram config', () => {
     // The wizard exposes no telegram fields, so the token is always null.
     // The BE MERGES a provided telegram block into the Freqtrade config, and
