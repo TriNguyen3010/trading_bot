@@ -355,7 +355,8 @@ export const signalsConfigSchema = z.object({
 
 export const riskConfigSchema = z
   .object({
-    stoploss: z.number().default(-0.1),
+    // Nullable: SL-off sends `null` (BE = no stop). Numeric otherwise.
+    stoploss: z.number().nullable().default(-0.1),
     trailing_stop: z.boolean().default(false),
     trailing_stop_positive: z.number().min(0).max(1).nullable().optional(),
     trailing_stop_positive_offset: z

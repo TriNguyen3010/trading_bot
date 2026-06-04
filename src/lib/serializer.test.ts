@@ -381,10 +381,28 @@ describe('serializer', () => {
     useBuilderStore.getState().patchCloseMethod({ slEnabled: false });
     useBuilderStore.getState().patchDirection({ direction: 'long' });
     const payload = buildUnifiedPayload(useBuilderStore.getState());
-    expect(payload.stoploss).toBeNull(); // top-level stoploss null when SL off
+    // SL off → BE reads configurations.risk.stoploss; null = no stop (Tuấn).
+    expect(payload.configurations?.risk?.stoploss).toBeNull();
+    // Top-level stoploss/trailing_stop dropped (BE ignores; samples omit).
+    expect('stoploss' in payload).toBe(false);
     const wire = JSON.parse(JSON.stringify(payload));
     const restored = deserializeUnifiedPayload(wire);
     expect(restored.closeMethod.slEnabled).toBe(false);
+    expect(Number.isNaN(restored.closeMethod.slValue)).toBe(false);
+  });
+
+  it('SL on → risk.stoploss is the ratio; legacy bundle stays numeric (decoupled)', () => {
+    applyBollingerLong(); // slEnabled:true, slValue:-3
+    useBuilderStore.getState().patchDirection({ direction: 'long' });
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    expect(payload.configurations?.risk?.stoploss).toBeCloseTo(-0.03);
+
+    // Legacy bundle path keeps a numeric stoploss (its schema is non-nullable):
+    // SL off → -0.4 sentinel, not null. Decoupling guarantees this still parses.
+    useBuilderStore.getState().patchCloseMethod({ slEnabled: false });
+    const bundle = buildBundle(useBuilderStore.getState());
+    expect(bundle.strategy.configurations.risk.stoploss).toBe(-0.4);
+    expect(bundleSchema.safeParse(bundle).success).toBe(true);
   });
 
   // Hyperliquid is perp-only + the builder locks futures, so a payload missing

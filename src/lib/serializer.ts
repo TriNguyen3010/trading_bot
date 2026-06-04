@@ -413,7 +413,17 @@ export function buildUnifiedPayload(state: BuilderState): UnifiedBundle {
 
   const configurations =
     strategy.configurations as unknown as UnifiedBotStrategyCreate['configurations'];
-  if (configurations) applyPastTenseCrossOps(configurations);
+  if (configurations) {
+    applyPastTenseCrossOps(configurations);
+    // BE reads the stop from `configurations.risk.stoploss`; Tuấn confirmed
+    // SL-off = `null` (no stop). Override here for the UNIFIED payload only —
+    // the shared `buildRisk` keeps a numeric sentinel for the legacy bundle
+    // path (whose schema is non-nullable). riskConfigSchema is nullable.
+    if (configurations.risk) {
+      configurations.risk.stoploss =
+        close.type === 'tp_sl' && close.slEnabled ? close.slValue / 100 : null;
+    }
+  }
 
   // Map the legacy `{bot, strategy}` split into the flat unified shape.
   // Anything not represented in the BuilderState today is omitted (BE
@@ -445,13 +455,9 @@ export function buildUnifiedPayload(state: BuilderState): UnifiedBundle {
     force_entry_enable: bot.force_entry_enable,
     process_throttle_secs: bot.process_throttle_secs,
 
-    // Risk fields are also exposed at top-level per UnifiedBotStrategyCreate,
-    // but the Source-of-truth lives inside `configurations.risk`. Lift the
-    // SL setting up so simple BE consumers without StrategyConfigurations
-    // still see it.
-    stoploss:
-      close.type === 'tp_sl' && close.slEnabled ? close.slValue / 100 : null,
-    trailing_stop: close.type === 'tp_sl' && close.trailingEnabled,
+    // Top-level `stoploss`/`trailing_stop` are NOT sent: BE reads the stop from
+    // `configurations.risk` (Tuấn) and the source-of-truth create samples omit
+    // the top-level copies. (Schema still accepts them as optional.)
 
     // The wizard collects no telegram token/chat_id yet, so we must NOT ship a
     // telegram block: the BE merges whatever we send into the Freqtrade config,
