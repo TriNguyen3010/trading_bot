@@ -171,7 +171,7 @@ const KNOWN_DEVIATIONS: Record<string, Known[]> = {
     {
       path: 'configurations.signals.entry_long.conditions[0].right_indicator',
       category: 'migration',
-      note: 'FE emits shorthand "BB-14"; BE sample uses "BBANDS (Upper Band) - 2.0, 2.0, 14". Tuấn: BE matches by key (name+output), not the exact string — so this is acceptable once name+output are correct.',
+      note: 'FE emits shorthand "BBANDS-14-2-2"; BE sample uses "BBANDS (Upper Band) - 2.0, 2.0, 14". Tuấn: BE matches by key (name+output), not the exact string — so this is acceptable once name+output are correct.',
     },
     {
       path: 'configurations.signals.exit_long.conditions[0].right_indicator',

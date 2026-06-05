@@ -12,7 +12,7 @@ Leverage 5× cross-margin.
 ## Entry
 Buys long when all of these are true:
 • RSI(14) is above 60
-• candle close is above the 50-period moving average
+• candle close is above the 50-period simple moving average
 
 ## Action
 Goes Long with Market orders (fills immediately at best price).
@@ -127,7 +127,7 @@ Leverage 3× cross-margin.
 
 ## Entry
 Buys long when all of these are true:
-• candle close is above the 200-period moving average
+• candle close is above the 200-period simple moving average
 • RSI(14) is above 50
 
 ## Action
@@ -177,7 +177,7 @@ Leverage 20× cross-margin — high-leverage, monitor closely.
 ## Entry
 Buys long when all of these are true:
 • RSI(14) is below 25
-• candle close is above the 20-period moving average
+• candle close is above the 20-period simple moving average
 
 ## Action
 Goes Long with Market orders (fills immediately at best price).
