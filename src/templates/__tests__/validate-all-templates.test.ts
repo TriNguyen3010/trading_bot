@@ -15,9 +15,47 @@ import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { buildUnifiedPayload } from '@/lib/serializer';
 import { unifiedBotStrategyCreateSchema } from '@/schemas/unified-bot-strategy.schema';
 import { validateBuilder } from '@/lib/validator';
+import {
+  INDICATOR_REGISTRY,
+  indicatorOutputId,
+} from '@/features/indicators/indicator-registry';
 import { BUILT_IN_TEMPLATES, TEMPLATE_SCHEMA_VERSION } from '@/templates';
 import type { BotTemplate } from '@/templates';
 import type { StepId, StepStatus } from '@/types/builder.types';
+
+/** Every metric id a template's indicators can be referenced by. Multi-output
+ *  indicators expand to one id per output (BBANDS → upper/middle/lower). */
+function validIndicatorIds(t: BotTemplate): Set<string> {
+  const ids = new Set<string>();
+  for (const ind of t.state.strategy.indicators) {
+    const def = INDICATOR_REGISTRY[ind.name];
+    if (def && def.outputs.length > 1) {
+      for (const o of def.outputs)
+        ids.add(indicatorOutputId({ ...ind, output: o }));
+    } else {
+      ids.add(indicatorOutputId(ind));
+    }
+  }
+  return ids;
+}
+
+/** Non-candle refs used on either side of every condition rule. */
+function conditionRefs(t: BotTemplate): string[] {
+  const refs: string[] = [];
+  for (const tree of [
+    t.state.strategy.entryConditions,
+    t.state.closeMethod.exitConditions,
+  ]) {
+    for (const g of tree.groups) {
+      for (const r of g.rules) {
+        if (r.left && !r.left.startsWith('candle.')) refs.push(r.left);
+        if (r.right_type === 'indicator' && r.right_indicator)
+          refs.push(r.right_indicator);
+      }
+    }
+  }
+  return refs;
+}
 
 const ALL_CONFIGURED: Record<StepId, StepStatus> = {
   'bot-config': 'configured',
@@ -75,6 +113,18 @@ describe('built-in templates', () => {
         );
       }
       expect(issues).toEqual([]);
+    },
+  );
+
+  it.each(BUILT_IN_TEMPLATES.map((t) => [t.id, t]))(
+    'template %s condition refs all resolve to a known metric',
+    (_id, template) => {
+      const valid = validIndicatorIds(template);
+      const dangling = conditionRefs(template).filter((r) => !valid.has(r));
+      expect(
+        dangling,
+        `Template "${template.id}" has condition refs that match no indicator metric: ${dangling.join(', ')}`,
+      ).toEqual([]);
     },
   );
 

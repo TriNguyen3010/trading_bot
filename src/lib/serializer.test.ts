@@ -184,6 +184,34 @@ describe('serializer', () => {
     expect(vwapOut).not.toHaveProperty('output'); // VWAP is single-output
   });
 
+  it('round-trips a multi-output indicator output through deserialize', () => {
+    const store = useBuilderStore.getState();
+    store.resetAll();
+    const bb = { ...makeIndicator('BBANDS'), output: 'lowerband' };
+    store.patchStrategy({ name: 'X', indicators: [bb] });
+    const payload = buildUnifiedPayload(useBuilderStore.getState());
+    const back = deserializeUnifiedPayload(payload);
+    const bbBack = back.strategy.indicators.find((i) => i.name === 'BBANDS')!;
+    expect(bbBack.output).toBe('lowerband');
+  });
+
+  it('never serializes a templated (unresolved) output string', () => {
+    const store = useBuilderStore.getState();
+    store.resetAll();
+    // SUPERTREND is hidden from the picker, but guard the serializer too:
+    // its outputs are templates ("SUPERT_{length}_{multiplier}").
+    store.patchStrategy({
+      name: 'X',
+      indicators: [makeIndicator('SUPERTREND')],
+    });
+    const out = buildUnifiedPayload(useBuilderStore.getState());
+    const inds = out.configurations!.signals.indicators as Array<
+      Record<string, unknown>
+    >;
+    const st = inds.find((i) => i.name === 'SUPERTREND')!;
+    expect(String(st.output ?? '')).not.toContain('{');
+  });
+
   it('unified payload emits past-tense cross ops (crossed_above); legacy bundle keeps present tense', () => {
     const store = useBuilderStore.getState();
     store.resetAll();

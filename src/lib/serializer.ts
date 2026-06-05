@@ -49,13 +49,18 @@ function serializeIndicators(indicators: IndicatorItem[]) {
   return indicators.map((ind) => {
     const def = INDICATOR_REGISTRY[ind.name];
     const multi = (def?.outputs.length ?? 0) > 1;
+    const output = ind.output ?? def?.outputs[0];
+    // Never put an unresolved template ("SUPERT_{length}_{multiplier}") on the
+    // wire. Such indicators are hidden from the picker (Phase 2C); this is a
+    // defensive guard for the import/programmatic path.
+    const emitOutput = multi && !!output && !output.includes('{');
     return {
       name: ind.name,
       type: ind.type,
       parameters: ind.parameters,
       // BE convention: only multi-output indicators carry `output`; talib
       // single-output (RSI/SMA/…) omit it (matches source-of-truth samples).
-      ...(multi ? { output: ind.output ?? def!.outputs[0] } : {}),
+      ...(emitOutput ? { output } : {}),
       ...(def?.pandasTaFunc ? { pandas_ta_func: def.pandasTaFunc } : {}),
       ...(def?.requiresDatetimeIndex ? { requires_datetime_index: true } : {}),
     };
@@ -240,6 +245,7 @@ function deserializeIndicators(
     name: string;
     type: string;
     parameters: Record<string, number | string>;
+    output?: string;
   }[],
 ): IndicatorItem[] {
   return list.map((i) => ({
@@ -250,6 +256,7 @@ function deserializeIndicators(
       | 'pandas_ta'
       | 'custom',
     parameters: i.parameters,
+    ...(i.output ? { output: i.output } : {}),
   }));
 }
 
@@ -642,6 +649,7 @@ export function deserializeUnifiedPayload(
           name: i.name,
           type: i.type,
           parameters: (i.parameters ?? {}) as Record<string, number | string>,
+          output: (i as { output?: string }).output,
         })),
       ),
       entryConditions: entryGroup

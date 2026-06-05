@@ -47,6 +47,7 @@ export const macdMomentumBnb: BotTemplate = {
           name: 'MACD',
           type: 'talib',
           parameters: { fastperiod: 12, slowperiod: 26, signalperiod: 9 },
+          output: 'macd',
         },
       ],
       entryConditions: {
@@ -58,7 +59,7 @@ export const macdMomentumBnb: BotTemplate = {
             rules: [
               {
                 id: `${ID}-cond-1`,
-                left: 'MACD-12-26-9',
+                left: 'MACD-12-26-9.macd',
                 op: '>',
                 right_type: 'number',
                 right_number: 0,
