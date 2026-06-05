@@ -38,6 +38,13 @@ const ALL_OPS: {
   { value: 'is_going_down', label: 'is going down', rightType: 'none' },
 ];
 
+/** "BBANDS-20-2-2.upperband" → "BBANDS-20-2-2 · upperband" for readability.
+ *  Single-output ids (no ".output" suffix) are returned unchanged. */
+function metricLabel(id: string): string {
+  const dot = id.lastIndexOf('.');
+  return dot === -1 ? id : `${id.slice(0, dot)} · ${id.slice(dot + 1)}`;
+}
+
 export function ConditionRow({
   row,
   indicators,
@@ -58,7 +65,7 @@ export function ConditionRow({
       const id = indicatorOutputId(i);
       return {
         value: id,
-        label: id,
+        label: metricLabel(id),
         category: INDICATOR_REGISTRY[i.name]?.category ?? 'Custom',
         description: INDICATOR_REGISTRY[i.name]?.description,
       };
@@ -77,7 +84,7 @@ export function ConditionRow({
 
   const indicatorOptions: MetricOption[] = indicators.map((i) => ({
     value: indicatorOutputId(i),
-    label: indicatorOutputId(i),
+    label: metricLabel(indicatorOutputId(i)),
     category: INDICATOR_REGISTRY[i.name]?.category ?? 'Custom',
     description: INDICATOR_REGISTRY[i.name]?.description,
   }));

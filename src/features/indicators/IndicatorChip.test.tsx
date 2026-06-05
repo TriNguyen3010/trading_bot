@@ -18,6 +18,12 @@ describe('IndicatorChip param panel', () => {
     expect(screen.getByText('Lower Deviation')).toBeInTheDocument();
   });
 
+  it('shows the chosen output in the chip summary for multi-output', () => {
+    const item = { ...makeIndicator('BBANDS'), output: 'upperband' };
+    render(<IndicatorChip item={item} onChange={vi.fn()} onRemove={vi.fn()} />);
+    expect(screen.getByText('BBANDS-20-2-2.upperband')).toBeInTheDocument();
+  });
+
   it('shows no param fields for OBV (parameter-less indicator)', async () => {
     renderChip('OBV');
     fireEvent.click(screen.getByLabelText(/edit obv parameters/i));
