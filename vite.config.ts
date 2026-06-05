@@ -15,12 +15,14 @@ export default defineConfig({
     host: '127.0.0.1',
     proxy: {
       '/api': {
-        // BE "Gamma Trade Platform" (FastAPI). Confirmed by BE team 2026-05-29:
-        // tradingbot.ne.com = UI (NOT the server, was 502/down); the real BE
-        // is this HTTPS staging host (public → also reachable from home).
-        target: 'https://ai-gamma-trade-stg.coin98.dev',
+        // BE "Gamma Trade Platform" (FastAPI). Updated 2026-06-05 (Tuấn):
+        // the real, working BE (creates bots in DB + has backtest data) is
+        // tradingbot.ne.com:8088 again — the ai-gamma staging host was stale
+        // (bots never landed in the real DB). HTTP host → secure:false; dev
+        // proxies over it so no mixed-content here (prod is the open issue).
+        target: 'http://tradingbot.ne.com:8088',
         changeOrigin: true,
-        secure: true,
+        secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
