@@ -46,11 +46,20 @@ function serializeGroup(tree: ConditionTree): SignalGroup {
 }
 
 function serializeIndicators(indicators: IndicatorItem[]) {
-  return indicators.map((ind) => ({
-    name: ind.name,
-    type: ind.type,
-    parameters: ind.parameters,
-  }));
+  return indicators.map((ind) => {
+    const def = INDICATOR_REGISTRY[ind.name];
+    const multi = (def?.outputs.length ?? 0) > 1;
+    return {
+      name: ind.name,
+      type: ind.type,
+      parameters: ind.parameters,
+      // BE convention: only multi-output indicators carry `output`; talib
+      // single-output (RSI/SMA/…) omit it (matches source-of-truth samples).
+      ...(multi ? { output: ind.output ?? def!.outputs[0] } : {}),
+      ...(def?.pandasTaFunc ? { pandas_ta_func: def.pandasTaFunc } : {}),
+      ...(def?.requiresDatetimeIndex ? { requires_datetime_index: true } : {}),
+    };
+  });
 }
 
 interface RiskShape {

@@ -166,6 +166,24 @@ describe('serializer', () => {
     expect(result.success).toBe(true);
   });
 
+  it('serializes multi-output + pandas_ta indicator fields', () => {
+    const store = useBuilderStore.getState();
+    store.resetAll();
+    const bb = { ...makeIndicator('BBANDS'), output: 'upperband' };
+    const vwap = makeIndicator('VWAP');
+    store.patchStrategy({ name: 'X', indicators: [bb, vwap] });
+    const out = buildUnifiedPayload(useBuilderStore.getState());
+    const inds = out.configurations!.signals.indicators as Array<
+      Record<string, unknown>
+    >;
+    const bbOut = inds.find((i) => i.name === 'BBANDS')!;
+    expect(bbOut.output).toBe('upperband');
+    const vwapOut = inds.find((i) => i.name === 'VWAP')!;
+    expect(vwapOut.pandas_ta_func).toBe('vwap');
+    expect(vwapOut.requires_datetime_index).toBe(true);
+    expect(vwapOut).not.toHaveProperty('output'); // VWAP is single-output
+  });
+
   it('unified payload emits past-tense cross ops (crossed_above); legacy bundle keeps present tense', () => {
     const store = useBuilderStore.getState();
     store.resetAll();
