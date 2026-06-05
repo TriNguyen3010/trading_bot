@@ -4,11 +4,11 @@
  *
  * Examples:
  *   'RSI-14'         → 'RSI(14)'
- *   'MA-50'          → 'the 50-period moving average'
+ *   'SMA-50'         → 'the 50-period simple moving average'
+ *   'EMA-20'         → 'the 20-period exponential moving average'
  *   'MACD-12-26-9'   → 'MACD line'
- *   'BB-20'          → 'Bollinger Bands(20)'
- *   'ATR-14'         → 'ATR(14)'
- *   'Stoch-14-3-3'   → 'Stochastic %K'
+ *   'BBANDS-20-2-2'  → 'Bollinger Bands'
+ *   'STOCH-5-3-3'    → 'Stochastic %K'
  *   'candle.close'   → 'candle close'
  *   anything else    → raw id + push gap
  */
@@ -35,34 +35,30 @@ export function translateIndicatorRef(
     return [t(`candle ${channel}`)];
   }
 
-  // RSI-14, MA-50, BB-20, ATR-14 → "{Friendly}({period})"
+  // RSI-14, SMA-50, EMA-20, ADX-14 → "{Friendly}"
   const periodMatch = rawId.match(/^([A-Z]+)-(\d+)$/);
   if (periodMatch) {
     const [, base, period] = periodMatch;
     switch (base) {
       case 'RSI':
         return [t(`RSI(${period})`)];
-      case 'MA':
-        return [t(`the ${period}-period moving average`)];
-      case 'BB':
-        return [t(`Bollinger Bands(${period})`)];
-      case 'ATR':
-        return [t(`ATR(${period})`)];
+      case 'SMA':
+        return [t(`the ${period}-period simple moving average`)];
+      case 'EMA':
+        return [t(`the ${period}-period exponential moving average`)];
+      case 'ADX':
+        return [t(`ADX(${period})`)];
       default:
-        // Falls through to gap below.
+        // Falls through to prefix checks / gap below.
         break;
     }
   }
 
-  // MACD-12-26-9 — multiple periods, just say "MACD line"
-  if (rawId.startsWith('MACD-')) {
-    return [t('MACD line')];
-  }
-
-  // Stoch-14-3-3 — multiple periods, just say "Stochastic %K"
-  if (rawId.startsWith('Stoch-')) {
-    return [t('Stochastic %K')];
-  }
+  // Multi-segment ids — match by prefix (STOCHRSI before STOCH).
+  if (rawId.startsWith('BBANDS-')) return [t('Bollinger Bands')];
+  if (rawId.startsWith('MACD-')) return [t('MACD line')];
+  if (rawId.startsWith('STOCHRSI-')) return [t('Stochastic RSI')];
+  if (rawId.startsWith('STOCH-')) return [t('Stochastic %K')];
 
   // Unknown shape — push gap, render raw with warning tone so user sees it.
   opts.gaps.push({
