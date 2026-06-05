@@ -164,11 +164,6 @@ const KNOWN_DEVIATIONS: Record<string, Known[]> = {
       note: 'Same as sample #1.',
     },
     {
-      path: 'configurations.signals.indicators[0].output',
-      category: 'migration',
-      note: 'Multi-output indicators must send `output` (e.g. "upperband"); FE has no output concept yet.',
-    },
-    {
       path: 'configurations.signals.entry_long.conditions[0].right_indicator',
       category: 'migration',
       note: 'FE emits shorthand "BBANDS-14-2-2"; BE sample uses "BBANDS (Upper Band) - 2.0, 2.0, 14". Tuấn: BE matches by key (name+output), not the exact string — so this is acceptable once name+output are correct.',
@@ -238,6 +233,7 @@ function applySample2Bbands() {
   });
   const bb = makeIndicator('BBANDS');
   bb.parameters = { timeperiod: 14, nbdevup: 2, nbdevdn: 2 };
+  bb.output = 'upperband'; // matches sample's indicators[0].output
   const bbRef = indicatorOutputId(bb);
   s.patchStrategy({
     name: 'mybot2',
