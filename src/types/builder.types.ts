@@ -38,9 +38,12 @@ export type ConditionOp =
 
 export interface IndicatorItem {
   id: string;
-  name: string; // "RSI", "MA", "MACD", "BB", "ATR", "Stochastic"
+  name: string; // "RSI", "SMA", "EMA", "MACD", "BBANDS", "STOCH", ...
   type: 'talib' | 'pandas_ta' | 'custom';
   parameters: Record<string, number | string>;
+  /** Chosen output column for multi-output indicators (e.g. "upperband").
+   *  Unset for single-output indicators. */
+  output?: string;
   timeframe?: string;
 }
 

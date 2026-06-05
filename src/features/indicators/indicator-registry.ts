@@ -100,8 +100,15 @@ export function makeIndicator(name: string): IndicatorItem {
   };
 }
 
+export function isMultiOutput(name: string): boolean {
+  return (INDICATOR_REGISTRY[name]?.outputs.length ?? 0) > 1;
+}
+
 export function indicatorOutputId(item: IndicatorItem): string {
   const def = INDICATOR_REGISTRY[item.name];
   if (!def) return item.name;
-  return def.buildId(item.parameters);
+  const base = def.buildId(item.parameters);
+  if (def.outputs.length <= 1) return base;
+  const output = item.output ?? def.outputs[0];
+  return `${base}.${output}`;
 }
