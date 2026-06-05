@@ -35,10 +35,29 @@ describe('useConditionMetrics', () => {
     const ids = result.current.fullIndicators.map(indicatorOutputId).sort();
     expect(ids).toContain('RSI-14');
     expect(ids).toContain('SMA-20');
-    expect(ids).toContain('BBANDS-20-2-2');
+    expect(ids).toContain('BBANDS-20-2-2.upperband');
     expect(ids).toContain('EMA-20');
     expect(ids.some((id) => id.startsWith('STOCH-'))).toBe(true);
     expect(ids.some((id) => id.startsWith('MACD-'))).toBe(true);
+  });
+
+  it('expands a multi-output indicator into one metric per output', () => {
+    const { result } = renderHook(() => useConditionMetrics());
+    const ids = result.current.fullIndicators.map(indicatorOutputId);
+    expect(ids).toContain('BBANDS-20-2-2.upperband');
+    expect(ids).toContain('BBANDS-20-2-2.middleband');
+    expect(ids).toContain('BBANDS-20-2-2.lowerband');
+    // single-output stays single
+    expect(ids.filter((id) => id.startsWith('RSI-14'))).toEqual(['RSI-14']);
+  });
+
+  it('hides multi-output indicators with templated output strings (SUPERTREND/CHANDELIER_EXIT)', () => {
+    const { result } = renderHook(() => useConditionMetrics());
+    const names = result.current.fullIndicators.map((i) => i.name);
+    expect(names).not.toContain('SUPERTREND');
+    expect(names).not.toContain('CHANDELIER_EXIT');
+    // sanity: a normal multi-output indicator IS present
+    expect(names).toContain('BBANDS');
   });
 
   it('merges custom-param indicators from state, preferring state version', () => {

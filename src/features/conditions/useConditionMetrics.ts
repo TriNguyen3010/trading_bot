@@ -34,10 +34,24 @@ export function useConditionMetrics() {
   const patchStrategy = useBuilderStore((s) => s.patchStrategy);
 
   const fullIndicators = useMemo<IndicatorItem[]>(() => {
-    // Defaults from registry (one per name).
-    const fromRegistry = Object.keys(INDICATOR_REGISTRY).map((name) =>
-      makeIndicator(name),
-    );
+    // Defaults from registry. Multi-output indicators expand to one item per
+    // output so each output is independently pickable. Indicators whose output
+    // strings are TEMPLATED (e.g. SUPERTREND `SUPERT_{length}_{multiplier}`)
+    // are skipped — their resolved wire format isn't confirmed yet (Phase 2C).
+    const fromRegistry: IndicatorItem[] = [];
+    for (const name of Object.keys(INDICATOR_REGISTRY)) {
+      const def = INDICATOR_REGISTRY[name];
+      const base = makeIndicator(name);
+      if (def.outputs.length <= 1) {
+        fromRegistry.push(base);
+      } else if (def.outputs.some((o) => o.includes('{'))) {
+        continue; // templated multi-output (SUPERTREND, CHANDELIER_EXIT) — hide
+      } else {
+        for (const output of def.outputs) {
+          fromRegistry.push({ ...base, id: `${base.id}-${output}`, output });
+        }
+      }
+    }
     // State indicators may have custom params (templates / imports).
     // Merge so both default and custom-param versions appear, dedupe by output id.
     const byId = new Map<string, IndicatorItem>();
