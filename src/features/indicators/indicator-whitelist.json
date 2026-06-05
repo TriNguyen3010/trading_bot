@@ -1,0 +1,383 @@
+{
+  "version": "1.0",
+  "indicators": [
+    {
+      "id": "RSI",
+      "display_name": "Relative Strength Index (RSI)",
+      "category": "Momentum",
+      "talib_key": "RSI",
+      "type": "talib",
+      "inputs": ["close"],
+      "outputs": ["rsi"],
+      "parameters": [
+        {
+          "name": "timeperiod",
+          "display_name": "Period",
+          "default": 14,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods for RSI calculation"
+        }
+      ]
+    },
+    {
+      "id": "SMA",
+      "display_name": "Simple Moving Average (SMA)",
+      "category": "Trend",
+      "talib_key": "SMA",
+      "type": "talib",
+      "inputs": ["close"],
+      "outputs": ["sma"],
+      "parameters": [
+        {
+          "name": "timeperiod",
+          "display_name": "Period",
+          "default": 20,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods for SMA calculation"
+        }
+      ]
+    },
+    {
+      "id": "EMA",
+      "display_name": "Exponential Moving Average (EMA)",
+      "category": "Trend",
+      "talib_key": "EMA",
+      "type": "talib",
+      "inputs": ["close"],
+      "outputs": ["ema"],
+      "parameters": [
+        {
+          "name": "timeperiod",
+          "display_name": "Period",
+          "default": 20,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods for EMA calculation"
+        }
+      ]
+    },
+    {
+      "id": "MACD",
+      "display_name": "Moving Average Convergence/Divergence (MACD)",
+      "category": "Momentum",
+      "talib_key": "MACD",
+      "type": "talib",
+      "inputs": ["close"],
+      "outputs": ["macd", "macdsignal", "macdhist"],
+      "parameters": [
+        {
+          "name": "fastperiod",
+          "display_name": "Fast Period",
+          "default": 12,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods for the fast EMA"
+        },
+        {
+          "name": "slowperiod",
+          "display_name": "Slow Period",
+          "default": 26,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods for the slow EMA"
+        },
+        {
+          "name": "signalperiod",
+          "display_name": "Signal Period",
+          "default": 9,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods for the signal line EMA"
+        }
+      ]
+    },
+    {
+      "id": "ADX",
+      "display_name": "Average Directional Index (ADX)",
+      "category": "Trend",
+      "talib_key": "ADX",
+      "type": "talib",
+      "inputs": ["high", "low", "close"],
+      "outputs": ["adx"],
+      "parameters": [
+        {
+          "name": "timeperiod",
+          "display_name": "Period",
+          "default": 14,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods for ADX calculation"
+        }
+      ]
+    },
+    {
+      "id": "BBANDS",
+      "display_name": "Bollinger Bands",
+      "category": "Volatility",
+      "talib_key": "BBANDS",
+      "type": "talib",
+      "inputs": ["close"],
+      "outputs": ["upperband", "middleband", "lowerband"],
+      "parameters": [
+        {
+          "name": "timeperiod",
+          "display_name": "Period",
+          "default": 20,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods for the middle band SMA"
+        },
+        {
+          "name": "nbdevup",
+          "display_name": "Upper Deviation",
+          "default": 2.0,
+          "min": 0.1,
+          "max": 10.0,
+          "type": "float",
+          "description": "Number of standard deviations for the upper band"
+        },
+        {
+          "name": "nbdevdn",
+          "display_name": "Lower Deviation",
+          "default": 2.0,
+          "min": 0.1,
+          "max": 10.0,
+          "type": "float",
+          "description": "Number of standard deviations for the lower band"
+        }
+      ]
+    },
+    {
+      "id": "STOCH",
+      "display_name": "Stochastic Oscillator",
+      "category": "Momentum",
+      "talib_key": "STOCH",
+      "type": "talib",
+      "inputs": ["high", "low", "close"],
+      "outputs": ["slowk", "slowd"],
+      "parameters": [
+        {
+          "name": "fastk_period",
+          "display_name": "Fast %K Period",
+          "default": 5,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods for the raw %K line"
+        },
+        {
+          "name": "slowk_period",
+          "display_name": "Slow %K Period",
+          "default": 3,
+          "min": 1,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods to smooth %K"
+        },
+        {
+          "name": "slowd_period",
+          "display_name": "Slow %D Period",
+          "default": 3,
+          "min": 1,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods for %D signal line"
+        }
+      ]
+    },
+    {
+      "id": "OBV",
+      "display_name": "On-Balance Volume (OBV)",
+      "category": "Volume",
+      "talib_key": "OBV",
+      "type": "talib",
+      "inputs": ["close", "volume"],
+      "outputs": ["obv"],
+      "parameters": []
+    },
+    {
+      "id": "STOCHRSI",
+      "display_name": "Stochastic RSI",
+      "category": "Momentum",
+      "talib_key": "STOCHRSI",
+      "type": "talib",
+      "inputs": ["close"],
+      "outputs": ["fastk", "fastd"],
+      "parameters": [
+        {
+          "name": "timeperiod",
+          "display_name": "RSI Period",
+          "default": 14,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods for the underlying RSI calculation"
+        },
+        {
+          "name": "fastk_period",
+          "display_name": "Fast %K Period",
+          "default": 5,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods to smooth the %K line"
+        },
+        {
+          "name": "fastd_period",
+          "display_name": "Fast %D Period",
+          "default": 3,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "Number of periods for the %D signal line"
+        }
+      ]
+    },
+    {
+      "id": "SAR",
+      "display_name": "Parabolic SAR",
+      "category": "Trend",
+      "talib_key": "SAR",
+      "type": "talib",
+      "inputs": ["high", "low"],
+      "outputs": ["sar"],
+      "parameters": [
+        {
+          "name": "acceleration",
+          "display_name": "Acceleration Factor",
+          "default": 0.02,
+          "min": 0.001,
+          "max": 1.0,
+          "type": "float",
+          "description": "Acceleration factor step"
+        },
+        {
+          "name": "maximum",
+          "display_name": "Maximum Acceleration",
+          "default": 0.2,
+          "min": 0.01,
+          "max": 1.0,
+          "type": "float",
+          "description": "Maximum acceleration factor"
+        }
+      ]
+    },
+    {
+      "id": "SUPERTREND",
+      "display_name": "SuperTrend",
+      "category": "Trend",
+      "pandas_ta_func": "supertrend",
+      "type": "pandas_ta",
+      "requires_datetime_index": false,
+      "inputs": ["high", "low", "close"],
+      "outputs": [
+        "SUPERT_{length}_{multiplier}",
+        "SUPERTd_{length}_{multiplier}",
+        "SUPERTl_{length}_{multiplier}",
+        "SUPERTs_{length}_{multiplier}"
+      ],
+      "output_labels": {
+        "SUPERT_{length}_{multiplier}": "Line (price level)",
+        "SUPERTd_{length}_{multiplier}": "Direction (1=bull, -1=bear)",
+        "SUPERTl_{length}_{multiplier}": "Long line",
+        "SUPERTs_{length}_{multiplier}": "Short line"
+      },
+      "parameters": [
+        {
+          "name": "length",
+          "display_name": "Length",
+          "default": 7,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "ATR lookback period"
+        },
+        {
+          "name": "multiplier",
+          "display_name": "Multiplier",
+          "default": 3.0,
+          "min": 0.1,
+          "max": 10.0,
+          "type": "float",
+          "description": "ATR multiplier for band width"
+        }
+      ]
+    },
+    {
+      "id": "VWAP",
+      "display_name": "VWAP (Volume Weighted Average Price)",
+      "category": "Volume",
+      "pandas_ta_func": "vwap",
+      "type": "pandas_ta",
+      "requires_datetime_index": true,
+      "inputs": ["high", "low", "close", "volume"],
+      "outputs": ["VWAP_D"],
+      "parameters": []
+    },
+    {
+      "id": "CHANDELIER_EXIT",
+      "display_name": "Chandelier Exit",
+      "category": "Trend",
+      "pandas_ta_func": "chandelier_exit",
+      "type": "pandas_ta",
+      "requires_datetime_index": false,
+      "inputs": ["high", "low", "close"],
+      "outputs": [
+        "CHDLREXTl_{length}_{length}_14_{multiplier}",
+        "CHDLREXTs_{length}_{length}_14_{multiplier}",
+        "CHDLREXTd_{length}_{length}_14_{multiplier}"
+      ],
+      "parameters": [
+        {
+          "name": "length",
+          "display_name": "ATR Length",
+          "default": 22,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "ATR lookback period"
+        },
+        {
+          "name": "multiplier",
+          "display_name": "Multiplier",
+          "default": 3.0,
+          "min": 0.1,
+          "max": 10.0,
+          "type": "float",
+          "description": "ATR multiplier for exit levels"
+        }
+      ]
+    },
+    {
+      "id": "NATR",
+      "display_name": "NATR (Volatility %)",
+      "category": "Volatility",
+      "pandas_ta_func": "natr",
+      "type": "pandas_ta",
+      "requires_datetime_index": false,
+      "inputs": ["high", "low", "close"],
+      "outputs": ["NATR_{timeperiod}"],
+      "parameters": [
+        {
+          "name": "length",
+          "display_name": "Period",
+          "default": 14,
+          "min": 2,
+          "max": 200,
+          "type": "integer",
+          "description": "ATR lookback period for normalized volatility (percentage of price)"
+        }
+      ]
+    }
+  ]
+}
