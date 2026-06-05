@@ -2,7 +2,7 @@
  * High-Freq Scalping — BTC/USDC 1m.
  *
  * 1-minute candles, 20x leverage, two-tier tight TP, very tight SL.
- * RSI oversold + price above MA-20 (a momentum filter) ensures the
+ * RSI oversold + price above SMA-20 (a momentum filter) ensures the
  * dip is a healthy correction, not a falling knife.
  */
 import type { BotTemplate } from '../types';
@@ -14,10 +14,10 @@ export const scalpingBtc1m: BotTemplate = {
   id: ID,
   name: 'High-Freq Scalping — BTC 1m',
   description:
-    '1m timeframe, 20x leverage. RSI<25 + close above MA-20 — fast in, faster out.',
+    '1m timeframe, 20x leverage. RSI<25 + close above SMA-20 — fast in, faster out.',
   longDescription:
     'Aggressive 1-minute scalp. Enters on deep RSI oversold (<25) BUT only when ' +
-    'price is still above the short MA-20 — meaning the dip is a correction inside ' +
+    'price is still above the short SMA-20 — meaning the dip is a correction inside ' +
     'a healthy uptrend, not a top. Tight 0.5% / 1% TP and a hair-trigger 0.3% SL. ' +
     '20x leverage. Not for the faint of heart.',
   tags: ['btc', 'scalping', '1m', 'high-leverage', 'futures', 'advanced'],
@@ -51,9 +51,9 @@ export const scalpingBtc1m: BotTemplate = {
         },
         {
           id: `${ID}-ma20`,
-          name: 'MA',
+          name: 'SMA',
           type: 'talib',
-          parameters: { timeperiod: 20, price: 'close' },
+          parameters: { timeperiod: 20 },
         },
       ],
       entryConditions: {
@@ -78,7 +78,7 @@ export const scalpingBtc1m: BotTemplate = {
                 op: '>',
                 right_type: 'indicator',
                 right_number: null,
-                right_indicator: 'MA-20',
+                right_indicator: 'SMA-20',
                 lookback: 0,
               },
             ],

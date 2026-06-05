@@ -45,9 +45,9 @@ export const multiTfTrendAlts: BotTemplate = {
       indicators: [
         {
           id: `${ID}-ma200`,
-          name: 'MA',
+          name: 'SMA',
           type: 'talib',
-          parameters: { timeperiod: 200, price: 'close' },
+          parameters: { timeperiod: 200 },
         },
         {
           id: `${ID}-rsi`,
@@ -69,7 +69,7 @@ export const multiTfTrendAlts: BotTemplate = {
                 op: '>',
                 right_type: 'indicator',
                 right_number: null,
-                right_indicator: 'MA-200',
+                right_indicator: 'SMA-200',
                 lookback: 0,
               },
               {
