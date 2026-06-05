@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Loader2, Rocket, X } from 'lucide-react';
+import { AlertTriangle, Loader2, Rocket, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatBackendError } from '@/lib/format-error';
 import { backtestApi } from './backtest.api';
 import { useBacktestPoll } from './useBacktestPoll';
 import {
   presetToTimerange,
+  isBacktestFailed,
   extractMetrics,
   extractTrades,
   formatTradeTime,
@@ -84,6 +85,8 @@ export function BacktestDialog({
       setResultTab('summary');
     }
   }, [open, initialBacktestId]);
+
+  const failed = poll.item ? isBacktestFailed(poll.item) : false;
 
   const metrics = useMemo(
     () => (poll.item ? extractMetrics(poll.item) : null),
@@ -275,7 +278,27 @@ export function BacktestDialog({
               </div>
             )}
 
-            {step === 'result' && metrics && (
+            {step === 'result' && failed && (
+              <div className="flex flex-col items-center gap-3 py-10 text-center">
+                <AlertTriangle className="h-10 w-10 text-bearish" />
+                <h3 className="text-lg font-bold text-fg">Backtest thất bại</h3>
+                <p className="max-w-sm text-sm text-fg-secondary">
+                  BE không trả về kết quả cho {bot.pair} · {bot.timeframe} trong
+                  khoảng này. Thường do BE chưa có dữ liệu lịch sử cho cặp/khung
+                  này, hoặc chiến lược không vào lệnh nào. Thử cặp / khung /
+                  khoảng thời gian khác.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setStep('setup')}
+                  className="mt-2 text-xs text-fg-muted underline-offset-4 hover:text-fg hover:underline"
+                >
+                  Thử lại
+                </button>
+              </div>
+            )}
+
+            {step === 'result' && !failed && metrics && (
               <div className="space-y-4">
                 {/* Tab toggle */}
                 <div className="flex gap-1 rounded-lg bg-surface p-0.5">

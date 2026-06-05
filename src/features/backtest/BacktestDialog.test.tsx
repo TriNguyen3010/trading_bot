@@ -149,6 +149,39 @@ describe('BacktestDialog', () => {
     expect(screen.getByText('61.7%')).toBeInTheDocument();
   });
 
+  it('shows a failure message (not an empty 0-trades summary) when status=failed', () => {
+    mockPoll.mockReturnValue({
+      item: {
+        id: 99,
+        bot_id: 42,
+        user_id: 7,
+        strategy_name: 'BollingerBreakout',
+        timeframe: '1h',
+        timerange: '20260604-20260605',
+        status: 'failed',
+        trade_count: 0,
+        total_profit: 0,
+        win_rate: 0,
+        started_at: '2026-06-05T00:00:00Z',
+        completed_at: '2026-06-05T00:01:00Z',
+        results: {},
+      },
+      done: true,
+      error: null,
+    });
+    render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        initialBacktestId={99}
+      />,
+    );
+    // Clear failure callout, not the misleading metric tabs.
+    expect(screen.getByText(/thất bại/i)).toBeInTheDocument();
+    expect(screen.queryByText('Tổng quan')).not.toBeInTheDocument();
+  });
+
   it('cancel during running calls backtestApi.cancel + closes dialog', async () => {
     mockStart.mockResolvedValue({
       job_id: 1,

@@ -23,6 +23,15 @@ export function isBacktestTerminal(
   return /fail|error|cancel/i.test(item.status ?? '');
 }
 
+/** A run that errored out (BE marks `status: failed`, no usable result) — as
+ * opposed to a clean run that simply made 0 trades. Excludes user `cancel`.
+ * BE returns `failed` with no error detail when e.g. it has no OHLCV data for
+ * the pair/timeframe, so the UI must call this out instead of showing an
+ * empty "0 trades" summary that looks like a valid result. */
+export function isBacktestFailed(item: { status?: string | null }): boolean {
+  return /fail|error/i.test(item.status ?? '');
+}
+
 /** Formats the top-level `BacktestHistoryItem.win_rate`, which is a percentage
  * 0-100 (confirmed via sample). Do NOT apply a 0-1→0-100 heuristic here: a
  * legitimate 1% win-rate (v=1.0) would otherwise be inflated to 100%. The

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   presetToTimerange,
   isBacktestTerminal,
+  isBacktestFailed,
   extractMetrics,
   formatWinRate,
   formatTotalProfit,
@@ -63,6 +64,19 @@ describe('isBacktestTerminal', () => {
     expect(
       isBacktestTerminal({ status: 'pending', completed_at: undefined }),
     ).toBe(false);
+  });
+});
+
+describe('isBacktestFailed', () => {
+  it('true when status reads as failed/error (not cancel)', () => {
+    expect(isBacktestFailed({ status: 'failed' })).toBe(true);
+    expect(isBacktestFailed({ status: 'ERROR' })).toBe(true);
+    expect(isBacktestFailed({ status: 'cancelled' })).toBe(false);
+  });
+  it('false for a normal completed/running run', () => {
+    expect(isBacktestFailed({ status: 'completed' })).toBe(false);
+    expect(isBacktestFailed({ status: 'running' })).toBe(false);
+    expect(isBacktestFailed({ status: null })).toBe(false);
   });
 });
 
