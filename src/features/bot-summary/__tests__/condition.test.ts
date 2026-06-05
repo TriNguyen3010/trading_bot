@@ -72,13 +72,13 @@ describe('condition translator — single condition', () => {
           op: 'crosses_above',
           right_type: 'indicator',
           right_number: null,
-          right_indicator: 'MA-50',
+          right_indicator: 'SMA-50',
         }),
       ),
       { verb: 'Buys long when', emptyPhrase: '', section: 'entry', gaps },
     );
     expect(flatten(lines)).toBe(
-      'Buys long when candle close crosses above the 50-period moving average.',
+      'Buys long when candle close crosses above the 50-period simple moving average.',
     );
   });
 
@@ -163,7 +163,7 @@ describe('condition translator — group dispatch', () => {
           op: '>',
           right_type: 'indicator',
           right_number: null,
-          right_indicator: 'MA-50',
+          right_indicator: 'SMA-50',
           operator: 'AND',
         }),
       ),
@@ -173,7 +173,7 @@ describe('condition translator — group dispatch', () => {
     expect(text).toContain('Buys long when all of these are true:');
     expect(text).toContain('• RSI(14) is below 30');
     expect(text).toContain(
-      '• candle close is above the 50-period moving average',
+      '• candle close is above the 50-period simple moving average',
     );
   });
 

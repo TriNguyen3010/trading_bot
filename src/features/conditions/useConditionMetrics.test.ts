@@ -30,28 +30,28 @@ describe('useConditionMetrics', () => {
     ]);
   });
 
-  it('exposes all 6 registry indicators with default params', () => {
+  it('exposes the whitelist registry indicators with default params', () => {
     const { result } = renderHook(() => useConditionMetrics());
     const ids = result.current.fullIndicators.map(indicatorOutputId).sort();
     expect(ids).toContain('RSI-14');
-    expect(ids).toContain('MA-50');
-    expect(ids).toContain('BB-20');
-    expect(ids).toContain('ATR-14');
-    expect(ids.some((id) => id.startsWith('Stoch-'))).toBe(true);
+    expect(ids).toContain('SMA-20');
+    expect(ids).toContain('BBANDS-20-2-2');
+    expect(ids).toContain('EMA-20');
+    expect(ids.some((id) => id.startsWith('STOCH-'))).toBe(true);
     expect(ids.some((id) => id.startsWith('MACD-'))).toBe(true);
   });
 
   it('merges custom-param indicators from state, preferring state version', () => {
-    // Simulate a template that set MA period 12 instead of default 50
+    // Simulate a template that set SMA period 12 instead of default 20
     useBuilderStore.setState((s) => ({
       strategy: {
         ...s.strategy,
         indicators: [
           {
             id: 'ma-template',
-            name: 'MA',
+            name: 'SMA',
             type: 'talib' as const,
-            parameters: { timeperiod: 12, price: 'close' },
+            parameters: { timeperiod: 12 },
           },
         ],
       },
@@ -59,8 +59,8 @@ describe('useConditionMetrics', () => {
 
     const { result } = renderHook(() => useConditionMetrics());
     const ids = result.current.fullIndicators.map(indicatorOutputId);
-    expect(ids).toContain('MA-12'); // from state
-    expect(ids).toContain('MA-50'); // from registry default (coexists)
+    expect(ids).toContain('SMA-12'); // from state
+    expect(ids).toContain('SMA-20'); // from registry default (coexists)
   });
 
   it('wrapOnChange auto-adds candle channel when condition references unselected candle', () => {
@@ -122,14 +122,16 @@ describe('useConditionMetrics', () => {
         op: 'crosses_above',
         right_type: 'indicator',
         right_number: null,
-        right_indicator: 'MA-50',
+        right_indicator: 'SMA-20',
         lookback: 0,
       },
     ]);
     wrapped(t);
 
     const indicators = useBuilderStore.getState().strategy.indicators;
-    expect(indicators.some((i) => indicatorOutputId(i) === 'MA-50')).toBe(true);
+    expect(indicators.some((i) => indicatorOutputId(i) === 'SMA-20')).toBe(
+      true,
+    );
     expect(useBuilderStore.getState().strategy.candlestick).toContain('close');
   });
 

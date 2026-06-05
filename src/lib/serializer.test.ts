@@ -172,7 +172,7 @@ describe('serializer', () => {
     store.patchBotConfig({ pair: 'BTC-USDC', marketType: 'futures' });
     store.patchStrategy({
       name: 'X',
-      indicators: [makeIndicator('BB')],
+      indicators: [makeIndicator('BBANDS')],
       entryConditions: {
         groupConnector: 'AND',
         groups: [
@@ -186,7 +186,7 @@ describe('serializer', () => {
                 op: 'crosses_above',
                 right_type: 'indicator',
                 right_number: null,
-                right_indicator: 'BB-20',
+                right_indicator: 'BBANDS-20-2-2',
                 lookback: 0,
               },
             ],
