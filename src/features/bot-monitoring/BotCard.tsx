@@ -7,6 +7,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { DashboardBotMode } from './bot-list.helpers';
 import type { PresentationalState } from './presentational-state';
 
 export interface BotCardData {
@@ -20,6 +21,9 @@ export interface BotCardData {
   maxOpenTrades: number | null;
   balance: number | null;
   openTrades: number | null;
+  /** Underlying lifecycle mode (from deriveMode) — drives Start/Stop/Fix
+   * actions. `state` is the presentational overlay (badge/empty hints). */
+  mode: DashboardBotMode;
   state: PresentationalState;
   errorMsg: string | null;
   lastBacktest: {
@@ -99,29 +103,19 @@ export function BotCard({
       }}
       className="card-coin98-flat cursor-pointer rounded-2xl p-4 transition hover:brightness-110"
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <span
-            className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-2xs font-bold uppercase ${badgeClass[s]}`}
-          >
-            {badgeLabel[s]}
-          </span>
-          <h3 className="mt-2 truncate text-md font-semibold text-fg">
-            {bot.name}
-          </h3>
-          <div className="text-xs text-fg-muted">
-            {bot.pair} · {bot.timeframe}
-            {bot.createdAt ? ` · created ${bot.createdAt}` : ''}
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={(e) => e.stopPropagation()}
-          className="text-fg-muted hover:text-fg"
-          aria-label="More options"
+      <div className="min-w-0">
+        <span
+          className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-2xs font-bold uppercase ${badgeClass[s]}`}
         >
-          ⋯
-        </button>
+          {badgeLabel[s]}
+        </span>
+        <h3 className="mt-2 truncate text-md font-semibold text-fg">
+          {bot.name}
+        </h3>
+        <div className="text-xs text-fg-muted">
+          {bot.pair} · {bot.timeframe}
+          {bot.createdAt ? ` · created ${bot.createdAt}` : ''}
+        </div>
       </div>
 
       {showsBalance && (
@@ -164,7 +158,7 @@ export function BotCard({
               v={
                 bot.lastBacktest.winRate == null
                   ? '—'
-                  : `${bot.lastBacktest.winRate}%`
+                  : `${bot.lastBacktest.winRate.toFixed(1)}%`
               }
             />
             <MiniStat k="Trades" v={String(bot.lastBacktest.trades ?? '—')} />
@@ -245,12 +239,16 @@ function Actions({
   onBacktest,
 }: Omit<BotCardProps, 'onClick'>) {
   const s = bot.state;
-  if (s === 'STARTING' || s === 'STOPPING') {
+  // Start/Stop/Fix + transition spinner follow the underlying lifecycle MODE,
+  // never the presentational overlay (a LIVE bot running a backtest must still
+  // show Stop, not Start).
+  const m = bot.mode;
+  if (m === 'STARTING' || m === 'STOPPING') {
     return (
       <div className="mt-3" onClick={(e) => e.stopPropagation()}>
         <Button variant="secondary" size="sm" className="w-full" disabled>
           <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          {s === 'STARTING' ? 'Starting…' : 'Stopping…'}
+          {m === 'STARTING' ? 'Starting…' : 'Stopping…'}
         </Button>
       </div>
     );
@@ -275,7 +273,7 @@ function Actions({
             : 'Backtest'}
       </Button>
       <div className="flex gap-1.5">
-        {s === 'ERROR' ? (
+        {m === 'ERROR' ? (
           <Button
             variant="primary"
             size="sm"
@@ -285,7 +283,7 @@ function Actions({
             <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
             Fix connection
           </Button>
-        ) : s === 'LIVE' || s === 'DRY-RUN' ? (
+        ) : m === 'LIVE' || m === 'DRY-RUN' ? (
           <Button
             variant="secondary"
             size="sm"

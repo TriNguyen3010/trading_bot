@@ -19,6 +19,7 @@ const base: BotCardData = {
     netAbs: -36.59,
     status: 'completed',
   },
+  mode: 'DRY-RUN',
   state: 'DRY-RUN',
   errorMsg: null,
 };
@@ -82,8 +83,26 @@ describe('BotCard', () => {
   });
 
   it('shows a spinner + status text while BACKTESTING (no %)', () => {
-    render(<BotCard bot={{ ...base, state: 'BACKTESTING' }} {...handlers} />);
+    render(
+      <BotCard
+        bot={{ ...base, mode: 'PAUSED', state: 'BACKTESTING' }}
+        {...handlers}
+      />,
+    );
     expect(screen.getByText('Backtesting…')).toBeInTheDocument();
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+  });
+
+  it('a running bot in BACKTESTING overlay still shows Stop (action follows mode)', () => {
+    render(
+      <BotCard
+        bot={{ ...base, mode: 'DRY-RUN', state: 'BACKTESTING' }}
+        {...handlers}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /^stop$/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /^start$/i }),
+    ).not.toBeInTheDocument();
   });
 });

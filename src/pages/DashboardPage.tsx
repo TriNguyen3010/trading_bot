@@ -197,6 +197,16 @@ export function DashboardPage() {
         };
       });
     });
+    // Once a bot is no longer running, its cached live balance is stale —
+    // drop it so the card shows "—" instead of the pre-stop balance.
+    if (next.status !== 'running') {
+      setPerfById((prev) => {
+        if (!prev.has(id)) return prev;
+        const m = new Map(prev);
+        m.delete(id);
+        return m;
+      });
+    }
   }, []);
 
   const removeOneBot = useCallback((id: number) => {
@@ -325,6 +335,7 @@ export function DashboardPage() {
         maxOpenTrades: b.maxOpenTrades,
         balance: perf?.balance ?? null,
         openTrades: perf?.openTrades ?? null,
+        mode: b.mode,
         state,
         errorMsg: b.errorMsg,
         lastBacktest:

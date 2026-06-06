@@ -23,8 +23,8 @@ export function computePortfolioStats(
   for (const b of bots) {
     if (!RUNNING.includes(b.mode)) continue;
     const p = perfById.get(b.id);
-    if (p?.balance) capitalDeployed += p.balance;
-    if (p?.openTrades) openTrades += p.openTrades;
+    if (p?.balance != null) capitalDeployed += p.balance;
+    if (p?.openTrades != null) openTrades += p.openTrades;
   }
   return {
     capitalDeployed,
