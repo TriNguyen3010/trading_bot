@@ -31,13 +31,13 @@ export interface StrategyBlock {
   avg_stake_amount?: number;
   total_volume?: number;
   market_change?: number;
-  best_pair?: {
-    winrate?: number;
-    wins?: number;
-    losses?: number;
-    max_drawdown_abs?: number;
-    max_drawdown_account?: number;
-  };
+  // Whole-strategy aggregates (top-level of the strategy block). These cover
+  // ALL pairs — read these, NOT `best_pair` (which is one pair only).
+  winrate?: number;
+  wins?: number;
+  losses?: number;
+  max_drawdown_abs?: number;
+  max_drawdown_account?: number;
   exit_reason_summary?: Array<{
     key: string;
     trades: number;
@@ -100,20 +100,19 @@ const n = (v: number | undefined): number | null =>
   typeof v === 'number' ? v : null;
 
 export function extractBacktestMetrics(block: StrategyBlock): BacktestMetrics {
-  const bp = block.best_pair ?? {};
   return {
     netAbs: n(block.profit_total_abs),
     netPct: pct(block.profit_total),
     trades: n(block.total_trades),
-    winRatePct: pct(bp.winrate),
-    wins: n(bp.wins),
-    losses: n(bp.losses),
+    winRatePct: pct(block.winrate),
+    wins: n(block.wins),
+    losses: n(block.losses),
     profitFactor: n(block.profit_factor),
     sharpe: n(block.sharpe),
     sortino: n(block.sortino),
     expectancy: n(block.expectancy),
-    maxDrawdownAbs: n(bp.max_drawdown_abs),
-    maxDrawdownPct: pct(bp.max_drawdown_account),
+    maxDrawdownAbs: n(block.max_drawdown_abs),
+    maxDrawdownPct: pct(block.max_drawdown_account),
     tradesPerDay: n(block.trades_per_day),
     longCount: n(block.trade_count_long),
     shortCount: n(block.trade_count_short),
