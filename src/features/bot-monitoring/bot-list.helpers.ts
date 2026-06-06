@@ -21,6 +21,11 @@ export interface DashboardBot {
    * transitions (which only return BotStatusOut, no dry_run) can still
    * resolve a running bot to DRY-RUN/LIVE instead of falling back to PAUSED. */
   dryRun: boolean | null;
+  createdAt: string | null;
+  leverage: number | null;
+  stakeAmount: number | null;
+  maxOpenTrades: number | null;
+  tradingMode: string | null;
   errorMsg: string | null;
   pnl: string | null;
   pnlPct: string | null;
@@ -39,7 +44,11 @@ export interface DashboardBot {
 export interface ConfigShape {
   dry_run?: boolean | null;
   timeframe?: string | null;
-  exchange?: { pair_whitelist?: string[] } | null;
+  exchange?: { pair_whitelist?: string[]; name?: string | null } | null;
+  leverage?: number | null;
+  stake_amount?: number | null;
+  max_open_trades?: number | null;
+  trading_mode?: string | null;
 }
 
 export function deriveMode(
@@ -87,6 +96,11 @@ export function zipBotsAndConfigs(
       uptime: null,
       mode: deriveMode(bot, config),
       dryRun: config?.dry_run ?? null,
+      createdAt: bot.created_at ?? null,
+      leverage: config?.leverage ?? null,
+      stakeAmount: config?.stake_amount ?? null,
+      maxOpenTrades: config?.max_open_trades ?? null,
+      tradingMode: config?.trading_mode ?? null,
       errorMsg: bot.error_message ?? null,
       pnl: null,
       pnlPct: null,
