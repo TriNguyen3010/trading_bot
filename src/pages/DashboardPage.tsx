@@ -1,36 +1,23 @@
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import {
-  ArrowRight,
-  FlaskConical,
-  Loader2,
-  Play,
-  RefreshCcw,
-  RefreshCw,
-  Search,
-  StopCircle,
-  Trash2,
-} from 'lucide-react';
+import { ArrowRight, RefreshCw, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { ImportDialog } from '@/features/export-import/ImportDialog';
 import { useRequireWallet } from '@/features/wallet-auth/RequireWalletProvider';
 import { botApi, type BotStatusOut } from '@/features/bot-monitoring/bot.api';
+import type { BotPerformance } from '@/features/bot-monitoring/bot-performance';
 import {
   deriveMode,
   zipBotsAndConfigs,
   type ConfigShape,
   type DashboardBot,
-  type DashboardBotMode,
 } from '@/features/bot-monitoring/bot-list.helpers';
+import { derivePresentationalState } from '@/features/bot-monitoring/presentational-state';
+import { computePortfolioStats } from '@/features/bot-monitoring/portfolio-stats';
+import { BotCard, type BotCardData } from '@/features/bot-monitoring/BotCard';
+import { DashboardEmptyState } from '@/features/bot-monitoring/DashboardEmptyState';
 import { ConfirmActionDialog } from '@/features/bot-monitoring/ConfirmActionDialog';
 import { isTerminal } from '@/features/bot-monitoring/lifecycle-actions';
 import {
@@ -44,93 +31,21 @@ import {
 import { formatBackendError } from '@/lib/format-error';
 import { AppHeader } from './AppHeader';
 
-/** Poll cadence + safety cap for status polling after a lifecycle action.
- * The BE spawns the Freqtrade process asynchronously, so /start returns
- * 'starting' immediately and the row must keep polling until it settles. */
+/** Poll cadence + safety cap for status polling after a lifecycle action. */
 const POLL_INTERVAL_MS = 1_500;
-const POLL_MAX_TRIES = 40; // ~60s; after this a manual Refresh/Sync is needed
+const POLL_MAX_TRIES = 40;
 
-// =============================================================================
-// MOCK DATA — used as visual fallback in the empty state only (real bots = 0).
-// Real bot list is fetched via botApi.list() / botApi.getConfig() per spec
-// docs/superpowers/specs/2026-05-20-dashboard-real-bots-design.md.
-// =============================================================================
+/** Per-bot summary of its most recent backtest history item (top-level fields
+ * only — the `results` blob is intentionally NOT read here). */
+interface LastBacktest {
+  historyCount: number;
+  latestStatus: string | null;
+  winRate: number | null;
+  trades: number | null;
+  netAbs: number | null;
+}
 
-/** Mock variant of DashboardBot used for the empty-state showcase. Same
- * shape as a real DashboardBot but with rich human-readable mock values for
- * fields the BE doesn't yet expose (pnl, trades, sparkline) and `isDemo: true`
- * so the BotCard renders the DEMO pill. */
-type MockBot = Omit<DashboardBot, 'isDemo' | 'uptime'> & {
-  isDemo: true;
-  uptime: string;
-};
-
-const MOCK_BOTS: MockBot[] = [
-  {
-    id: 1,
-    name: 'RSI Momentum Long',
-    pair: 'ETH-USDC',
-    strategyName: null,
-    timeframe: '5m',
-    uptime: '5d 17h',
-    mode: 'LIVE',
-    dryRun: false,
-    pnl: '+$234.10',
-    pnlPct: '+2.34%',
-    pnlDirection: 'up',
-    badge: '7-WIN STREAK',
-    trades: 23,
-    winRate: 78,
-    sharpe: 2.14,
-    sparkline: [42, 40, 32, 36, 24, 18, 8, 4],
-    errorMsg: null,
-    isDemo: true,
-  },
-  {
-    id: 2,
-    name: 'MACD Cross',
-    pair: 'SOL-USDC',
-    strategyName: null,
-    timeframe: '1h',
-    uptime: '12h paper',
-    mode: 'DRY-RUN',
-    dryRun: true,
-    pnl: '+$18.40',
-    pnlPct: '+0.18%',
-    pnlDirection: 'up',
-    trades: 4,
-    winRate: 75,
-    sharpe: 1.42,
-    sparkline: [35, 32, 28, 30, 24, 26, 18, 15],
-    errorMsg: null,
-    isDemo: true,
-  },
-  {
-    id: 4,
-    name: 'ADX Trend Follow',
-    pair: 'AVAX-USDC',
-    strategyName: null,
-    timeframe: '4h',
-    uptime: 'stopped 4m ago',
-    mode: 'ERROR',
-    dryRun: null,
-    pnl: '-$12.30',
-    pnlPct: '-0.12%',
-    pnlDirection: 'down',
-    trades: null,
-    winRate: null,
-    sharpe: null,
-    sparkline: null,
-    errorMsg: 'Hyperliquid rejected the last order signature.',
-    isDemo: true,
-  },
-];
-
-/** Map a loaded real bot to the minimal shape LaunchpadModal needs. The
- * onClick router only invokes this for PAUSED/ERROR bots (LIVE/DRY-RUN/
- * STARTING/STOPPING route to monitor, isDemo routes to /builder), so the
- * mode narrowing cast is safe at runtime — STARTING/STOPPING never reach
- * here. */
+/** Narrow a real bot to the shape LaunchpadModal needs. */
 function toLaunchpadBot(b: DashboardBot): LaunchpadBot {
   return {
     id: b.id,
@@ -151,10 +66,14 @@ export function DashboardPage() {
   const [search, setSearch] = useState('');
   const [importOpen, setImportOpen] = useState(false);
 
-  // Real-bot fetch state. `realBots === null` means "not yet loaded";
-  // empty array means "loaded, user has no bots" (we'll render the demo
-  // fallback). Bump `refreshKey` to force the useEffect to re-run.
+  // `realBots === null` → not yet loaded; `[]` → loaded, user has no bots.
   const [realBots, setRealBots] = useState<DashboardBot[] | null>(null);
+  const [perfById, setPerfById] = useState<Map<number, BotPerformance>>(
+    () => new Map(),
+  );
+  const [btById, setBtById] = useState<Map<number, LastBacktest>>(
+    () => new Map(),
+  );
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -171,6 +90,8 @@ export function DashboardPage() {
 
         if (list.length === 0) {
           setRealBots([]);
+          setPerfById(new Map());
+          setBtById(new Map());
           return;
         }
 
@@ -178,14 +99,47 @@ export function DashboardPage() {
           list.map((b) => botApi.getConfig(b.id)),
         );
         if (cancelled) return;
-
-        // Unwrap BotConfigOut → inner ConfigShape. `botApi.getConfig` returns
-        // `{ config: { dry_run, timeframe, exchange, ... } }` (openapi
-        // BotConfigOut). MyBotsDialog.tsx:217 does the same unwrap.
         const configsOrNull = configs.map((r) =>
           r.status === 'fulfilled' ? (r.value.config as ConfigShape) : null,
         );
-        setRealBots(zipBotsAndConfigs(list, configsOrNull));
+        const zipped = zipBotsAndConfigs(list, configsOrNull);
+        setRealBots(zipped);
+
+        // Enrich: live performance (running bots only) + latest backtest
+        // (every bot, limit=1, top-level fields only) — all in parallel.
+        const running = zipped.filter(
+          (b) => b.mode === 'LIVE' || b.mode === 'DRY-RUN',
+        );
+        const [perfs, hists] = await Promise.all([
+          Promise.allSettled(running.map((b) => botApi.getPerformance(b.id))),
+          Promise.allSettled(
+            zipped.map((b) => botApi.getBacktestHistory(b.id, 1)),
+          ),
+        ]);
+        if (cancelled) return;
+
+        const pMap = new Map<number, BotPerformance>();
+        running.forEach((b, i) => {
+          const r = perfs[i];
+          if (r.status === 'fulfilled') pMap.set(b.id, r.value);
+        });
+        setPerfById(pMap);
+
+        const bMap = new Map<number, LastBacktest>();
+        zipped.forEach((b, i) => {
+          const r = hists[i];
+          if (r.status !== 'fulfilled') return;
+          const items = r.value.items ?? [];
+          const it = items[0];
+          bMap.set(b.id, {
+            historyCount: r.value.total ?? items.length,
+            latestStatus: it?.status ?? null,
+            winRate: it?.win_rate ?? null,
+            trades: it?.trade_count ?? null,
+            netAbs: it?.total_profit ?? null,
+          });
+        });
+        setBtById(bMap);
       } catch (err) {
         if (cancelled) return;
         setFetchError(formatBackendError(err));
@@ -202,27 +156,7 @@ export function DashboardPage() {
 
   const handleRefresh = () => setRefreshKey((k) => k + 1);
 
-  // ── Lifecycle actions (Task 6 — wired to botApi.start/stop/sync/remove) ──
-  const [pendingActionIds, setPendingActionIds] = useState<Set<number>>(
-    () => new Set(),
-  );
-
-  const markPending = useCallback((id: number) => {
-    setPendingActionIds((prev) => {
-      const next = new Set(prev);
-      next.add(id);
-      return next;
-    });
-  }, []);
-
-  const clearPending = useCallback((id: number) => {
-    setPendingActionIds((prev) => {
-      if (!prev.has(id)) return prev;
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-  }, []);
+  // ── Lifecycle actions ──
   const [confirmState, setConfirmState] = useState<null | {
     action: 'stop' | 'remove';
     botId: number;
@@ -234,8 +168,6 @@ export function DashboardPage() {
   );
 
   // After bot creation, ExportDialog routes here with state.launchpadBotId.
-  // Open the Launchpad for that freshly-created bot once it appears in the
-  // refetched list. Consume once so a manual refresh doesn't re-open it.
   useEffect(() => {
     const targetId = (location.state as { launchpadBotId?: number } | null)
       ?.launchpadBotId;
@@ -244,16 +176,12 @@ export function DashboardPage() {
     if (found) {
       consumedLaunchRef.current = true;
       setLaunchBotTarget(toLaunchpadBot(found));
-      // Clear the history state so back/refresh won't re-trigger.
       navigate('/dashboard', { replace: true, state: {} });
     }
   }, [location.state, realBots, navigate]);
 
-  // Splice one bot's mode/errorMsg in `realBots` after a lifecycle response.
-  // BotStatusOut doesn't carry `dry_run`, so we use the dry_run captured from
-  // getConfig at load time (persisted on the row as `dryRun`). Without this a
-  // freshly-started bot would resolve to PAUSED instead of DRY-RUN/LIVE,
-  // because the transient STARTING mode carries no dry_run hint.
+  // Splice one bot's mode/errorMsg after a lifecycle response (dry_run from
+  // the row, since BotStatusOut carries none).
   const updateOneBot = useCallback((id: number, next: BotStatusOut) => {
     setRealBots((prev) => {
       if (!prev) return prev;
@@ -275,12 +203,6 @@ export function DashboardPage() {
     setRealBots((prev) => (prev ? prev.filter((b) => b.id !== id) : prev));
   }, []);
 
-  // Auto-poll a bot's status after a lifecycle action until it settles into a
-  // terminal state. Without this the row shows whatever the action returned
-  // ('starting'/'stopping') forever — the BE spawns/kills the Freqtrade
-  // process async — until a manual Refresh. Bounded so a genuinely stuck
-  // 'starting' BE can't poll forever. Used by stop/sync; the Launchpad launch
-  // navigates to the monitor page (which polls there via useBotStatusPoll).
   const mountedRef = useRef(true);
   const pollTimers = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
   useEffect(() => {
@@ -309,7 +231,7 @@ export function DashboardPage() {
         try {
           next = await botApi.getStatus(id);
         } catch {
-          return; // stop on error — user can Refresh / Sync manually
+          return;
         }
         if (!mountedRef.current || !next?.status) return;
         updateOneBot(id, next);
@@ -320,14 +242,8 @@ export function DashboardPage() {
     [updateOneBot],
   );
 
-  // doStart removed: the only sanctioned start path is launchBot() via the
-  // Launchpad (PR #15 Task 4). A direct botApi.start here would re-open the
-  // Live-mode bypass — see Devin C-1 review of PR #14. The Launchpad's
-  // disableTelegram is wired in launchBot(); launch then navigates to the
-  // monitor page (which polls).
   const doStop = useCallback(
     async (id: number) => {
-      markPending(id);
       try {
         const next = await botApi.stop(id);
         updateOneBot(id, next);
@@ -336,16 +252,14 @@ export function DashboardPage() {
       } catch (err) {
         toast.error(formatBackendError(err));
       } finally {
-        clearPending(id);
         setConfirmState(null);
       }
     },
-    [updateOneBot, markPending, clearPending, pollUntilSettled],
+    [updateOneBot, pollUntilSettled],
   );
 
   const doSync = useCallback(
     async (id: number) => {
-      markPending(id);
       try {
         await botApi.disableTelegram(id);
         const next = await botApi.sync(id);
@@ -354,16 +268,13 @@ export function DashboardPage() {
         if (!isTerminal(next.status)) pollUntilSettled(id);
       } catch (err) {
         toast.error(formatBackendError(err));
-      } finally {
-        clearPending(id);
       }
     },
-    [updateOneBot, markPending, clearPending, pollUntilSettled],
+    [updateOneBot, pollUntilSettled],
   );
 
   const doRemove = useCallback(
     async (id: number) => {
-      markPending(id);
       try {
         await botApi.remove(id);
         removeOneBot(id);
@@ -371,56 +282,78 @@ export function DashboardPage() {
       } catch (err) {
         toast.error(formatBackendError(err));
       } finally {
-        clearPending(id);
         setConfirmState(null);
       }
     },
-    [removeOneBot, markPending, clearPending],
+    [removeOneBot],
   );
-
-  // Show real bots when available; fall back to demo samples when the user
-  // has no bots yet (empty state). Loading/error states render their own
-  // UI below and bypass this entirely.
-  const baseBots: (DashboardBot | MockBot)[] =
-    realBots && realBots.length > 0 ? realBots : MOCK_BOTS;
-
-  const filteredBots = search
-    ? baseBots.filter(
-        (b) =>
-          b.name.toLowerCase().includes(search.toLowerCase()) ||
-          b.pair.toLowerCase().includes(search.toLowerCase()),
-      )
-    : baseBots;
 
   const isEmptyReal = realBots !== null && realBots.length === 0;
   const isLoadedReal = realBots !== null && realBots.length > 0;
 
-  // Hero counts derived from real bots when present; "—" placeholders for
-  // P&L/capital/trades aggregate until the monitoring phase wires those.
-  const portfolioStats = useMemo(() => {
-    const source = realBots ?? [];
-    const active = source.filter(
-      (b) => b.mode === 'LIVE' || b.mode === 'DRY-RUN',
-    ).length;
-    const paused = source.filter((b) => b.mode === 'PAUSED').length;
-    return {
-      activeBots: String(active),
-      totalBots: String(source.length),
-      pausedBots: String(paused),
-      pnl30d: '—',
-      pnl30dPct: '—',
-      capitalDeployed: '—',
-      capitalPairs: '—',
-      tradesToday: '—',
-      tradesNet: '—',
-    };
-  }, [realBots]);
+  const stats = useMemo(
+    () =>
+      computePortfolioStats(
+        (realBots ?? []).map((b) => ({ id: b.id, mode: b.mode })),
+        perfById,
+      ),
+    [realBots, perfById],
+  );
+
+  // Build presentational card data from real bots + perf + last backtest.
+  const realById = useMemo(
+    () => new Map((realBots ?? []).map((b) => [b.id, b])),
+    [realBots],
+  );
+
+  const cards = useMemo<BotCardData[]>(() => {
+    return (realBots ?? []).map((b) => {
+      const bt = btById.get(b.id);
+      const perf = perfById.get(b.id);
+      const state = derivePresentationalState(b.mode, {
+        historyCount: bt?.historyCount ?? 0,
+        latestStatus: bt?.latestStatus ?? null,
+      });
+      return {
+        id: b.id,
+        name: b.name,
+        pair: b.pair,
+        timeframe: b.timeframe,
+        createdAt: b.createdAt ? b.createdAt.slice(0, 10) : null,
+        leverage: b.leverage,
+        stakeAmount: b.stakeAmount,
+        maxOpenTrades: b.maxOpenTrades,
+        balance: perf?.balance ?? null,
+        openTrades: perf?.openTrades ?? null,
+        state,
+        errorMsg: b.errorMsg,
+        lastBacktest:
+          bt && bt.historyCount > 0
+            ? {
+                winRate: bt.winRate,
+                trades: bt.trades,
+                netAbs: bt.netAbs,
+                status: bt.latestStatus ?? 'completed',
+              }
+            : null,
+      };
+    });
+  }, [realBots, perfById, btById]);
+
+  const filtered = search
+    ? cards.filter(
+        (c) =>
+          c.name.toLowerCase().includes(search.toLowerCase()) ||
+          c.pair.toLowerCase().includes(search.toLowerCase()),
+      )
+    : cards;
+
+  const capital = stats.capitalDeployed.toLocaleString('en-US', {
+    maximumFractionDigits: 2,
+  });
 
   return (
     <div className="flex h-screen w-screen flex-col bg-black text-fg">
-      {/* Page-wide subtle yellow glow accents (Coin98 hero halos) —
-          matches BotMonitoringPage exactly so route transitions feel
-          continuous. */}
       <div
         className="pointer-events-none fixed -top-20 left-1/2 z-0 h-[420px] w-[700px] -translate-x-1/2 rounded-full opacity-50 blur-3xl"
         style={{
@@ -429,16 +362,9 @@ export function DashboardPage() {
         }}
         aria-hidden
       />
-      {/* Dot-grid texture — starts at the viewport edge so it sits behind the
-          fixed floating header instead of leaving a black strip. */}
       <DotGridSpotlight
         className="pointer-events-none fixed z-0"
-        style={{
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-        }}
+        style={{ top: 0, left: 0, right: 0, bottom: 0 }}
         dimmed={false}
       />
 
@@ -446,12 +372,11 @@ export function DashboardPage() {
 
       <main className="relative z-10 flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-6xl flex-col gap-5 px-8 py-7">
-          {/* Hero portfolio — mirrors HeroPnL frame on the monitoring page */}
+          {/* Hero portfolio — capital deployed (live balance) */}
           <section
             aria-labelledby="portfolio-label"
-            className="card-coin98-flat relative grid grid-cols-[1fr_auto] gap-6 overflow-hidden rounded-3xl p-8"
+            className="card-coin98-flat relative overflow-hidden rounded-3xl p-8"
           >
-            {/* Yellow halo behind the number — same as HeroPnL */}
             <div
               aria-hidden="true"
               className="pointer-events-none absolute -left-16 -top-24 h-80 w-80 rounded-full opacity-40 blur-2xl"
@@ -460,108 +385,73 @@ export function DashboardPage() {
                   'radial-gradient(circle, rgba(240,185,11,0.25), transparent 70%)',
               }}
             />
-            {/* Bullish-tinted halo on the right (since portfolio is up) */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full opacity-30 blur-2xl"
-              style={{
-                background:
-                  'radial-gradient(circle, var(--color-bullish), transparent 70%)',
-              }}
-            />
-
             <div className="relative">
               <div
                 id="portfolio-label"
                 className="mb-4 flex items-center gap-3 text-2xs uppercase tracking-widest text-fg-muted"
               >
-                <span>Portfolio · 30D</span>
+                <span>Portfolio</span>
                 <span className="inline-flex items-center gap-1.5 text-bullish">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
                   Live
                 </span>
-                {isEmptyReal && (
-                  <>
-                    <span className="text-border-strong">·</span>
-                    <span
-                      className="rounded-sm border border-dashed border-fg-muted/40 px-1.5 py-0.5 text-fg-muted"
-                      title="Hardcoded demo data — not from your wallet"
-                    >
-                      Demo
-                    </span>
-                  </>
-                )}
               </div>
 
               <div
-                className="font-mono text-6xl font-bold tabular-nums tracking-tight text-bullish"
+                className="font-mono text-6xl font-bold tabular-nums tracking-tight text-fg"
                 style={{
-                  textShadow: '0 0 38px rgba(14, 203, 129, 0.45)',
+                  textShadow: '0 0 38px rgba(240,185,11,0.22)',
                   lineHeight: 1.0,
                 }}
               >
-                {portfolioStats.pnl30d}
+                {capital} <span className="text-2xl text-fg-muted">USDC</span>
+              </div>
+              <div className="mt-2 text-2xs uppercase tracking-widest text-fg-muted">
+                Capital deployed · live balance
               </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-secondary">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="text-bullish">▲</span>
                   <span className="font-semibold tabular-nums text-fg">
-                    {portfolioStats.activeBots}
+                    {stats.active}
                   </span>
                   <span className="text-fg-muted">
-                    active · {portfolioStats.totalBots} total
+                    active · {stats.total} total
                   </span>
                 </span>
                 <span className="text-border-strong">·</span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="font-semibold tabular-nums text-fg-muted">
-                    {portfolioStats.pausedBots}
+                    {stats.idle}
                   </span>
-                  <span className="text-fg-muted">paused</span>
+                  <span className="text-fg-muted">idle</span>
+                </span>
+                <span className="text-border-strong">·</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="font-semibold tabular-nums text-brand">
+                    {stats.transitioning}
+                  </span>
+                  <span className="text-fg-muted">transitioning</span>
                 </span>
                 <span className="text-border-strong">·</span>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="font-semibold tabular-nums text-fg">
-                    {portfolioStats.capitalDeployed}
+                    {stats.openTrades}
                   </span>
-                  <span className="text-fg-muted">
-                    deployed across {portfolioStats.capitalPairs}
-                  </span>
+                  <span className="text-fg-muted">open trades</span>
                 </span>
-                <span className="text-border-strong">·</span>
-                <span className="inline-flex items-center gap-1.5 text-fg-muted">
-                  <span className="font-semibold tabular-nums text-fg">
-                    {portfolioStats.tradesToday}
-                  </span>
-                  <span>trades today</span>
-                  <span className="font-semibold tabular-nums text-bullish">
-                    {portfolioStats.tradesNet} net
-                  </span>
-                </span>
-              </div>
-            </div>
-
-            {/* Right summary — 30D return % */}
-            <div className="relative flex w-32 flex-col items-center justify-center">
-              <div className="font-mono text-3xl font-bold tabular-nums text-bullish">
-                {portfolioStats.pnl30dPct}
-              </div>
-              <div className="mt-2 text-2xs uppercase tracking-widest text-fg-muted">
-                30-day return
               </div>
             </div>
           </section>
 
-          {/* My bots — toolbar in header, grid below */}
+          {/* My bots */}
           <section className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-2xs font-semibold uppercase tracking-widest text-fg-muted">
-                My bots · {portfolioStats.totalBots} total
+                My bots · {stats.total} total
               </h2>
               <div className="flex items-center gap-2">
-                {/* Search input only when loaded with real bots — empty/loading/
-                    error states have nothing useful to search. */}
                 {isLoadedReal && (
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
@@ -573,9 +463,6 @@ export function DashboardPage() {
                     />
                   </div>
                 )}
-                {/* Refresh button visible whenever the fetch isn't mid-flight
-                    or errored — including empty state so user can refetch
-                    after creating a bot in another tab. */}
                 {!loading && !fetchError && (
                   <Button
                     variant="ghost"
@@ -587,9 +474,6 @@ export function DashboardPage() {
                     <RefreshCw className="h-3.5 w-3.5" />
                   </Button>
                 )}
-                {/* Both CTAs share min-w-[120px] so they line up at the same
-                    width regardless of label length. The arrow on New bot
-                    nudges right on hover for a subtle motion cue. */}
                 <Button
                   variant="secondary"
                   size="md"
@@ -610,7 +494,6 @@ export function DashboardPage() {
               </div>
             </div>
 
-            {/* Four-state machine: loading / error / loaded-or-empty / search-miss. */}
             {loading ? (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -639,99 +522,54 @@ export function DashboardPage() {
                   Retry
                 </Button>
               </div>
+            ) : isEmptyReal ? (
+              <DashboardEmptyState
+                onCreate={() => requireWalletThen(() => navigate('/builder'))}
+                onImport={() => requireWalletThen(() => setImportOpen(true))}
+              />
             ) : (
               <>
-                {isEmptyReal && (
-                  <div className="rounded-lg border border-info/30 bg-info/5 px-4 py-3 text-xs text-info">
-                    You haven&apos;t built any bots yet. Below is a sample — try{' '}
-                    <strong className="mx-1">New bot</strong> to create your
-                    first one.
-                  </div>
-                )}
-
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  {filteredBots.map((bot) => (
+                  {filtered.map((card) => (
                     <BotCard
-                      key={bot.id}
-                      bot={bot}
-                      busy={pendingActionIds.has(bot.id)}
-                      // Demo cards use mock ids (1/2/4) — navigating to
-                      // /bots/{id} would 404. Route demos to /builder
-                      // instead so the click is a useful conversion. They
-                      // also leave lifecycle props undefined so action
-                      // buttons render disabled (no real backend bot to act
-                      // on).
-                      onClick={
-                        bot.isDemo
-                          ? () => requireWalletThen(() => navigate('/builder'))
-                          : bot.mode === 'LIVE' ||
-                              bot.mode === 'DRY-RUN' ||
-                              bot.mode === 'STARTING' ||
-                              bot.mode === 'STOPPING'
-                            ? () => navigate(`/bots/${bot.id}`)
-                            : () => setLaunchBotTarget(toLaunchpadBot(bot))
+                      key={card.id}
+                      bot={card}
+                      onClick={() => navigate(`/bots/${card.id}`)}
+                      onStart={() => {
+                        const rb = realById.get(card.id);
+                        if (rb) setLaunchBotTarget(toLaunchpadBot(rb));
+                      }}
+                      onStop={() =>
+                        setConfirmState({
+                          action: 'stop',
+                          botId: card.id,
+                          botName: card.name,
+                        })
                       }
-                      onStart={
-                        bot.isDemo
-                          ? undefined
-                          : () => setLaunchBotTarget(toLaunchpadBot(bot))
+                      onSync={() => void doSync(card.id)}
+                      onRemove={() =>
+                        setConfirmState({
+                          action: 'remove',
+                          botId: card.id,
+                          botName: card.name,
+                        })
                       }
-                      onStop={
-                        bot.isDemo
-                          ? undefined
-                          : () =>
-                              setConfirmState({
-                                action: 'stop',
-                                botId: bot.id,
-                                botName: bot.name,
-                              })
-                      }
-                      onSync={
-                        bot.isDemo ? undefined : () => void doSync(bot.id)
-                      }
-                      onRemove={
-                        bot.isDemo
-                          ? undefined
-                          : () =>
-                              setConfirmState({
-                                action: 'remove',
-                                botId: bot.id,
-                                botName: bot.name,
-                              })
-                      }
-                      onBacktest={
-                        bot.isDemo
-                          ? undefined
-                          : () =>
-                              setBacktestBot({
-                                id: bot.id,
-                                name: bot.name,
-                                strategyName: bot.strategyName,
-                                pair: bot.pair,
-                                timeframe: bot.timeframe,
-                              })
-                      }
+                      onBacktest={() => {
+                        const rb = realById.get(card.id);
+                        if (rb)
+                          setBacktestBot({
+                            id: rb.id,
+                            name: rb.name,
+                            strategyName: rb.strategyName,
+                            pair: rb.pair,
+                            timeframe: rb.timeframe,
+                          });
+                      }}
                     />
                   ))}
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      requireWalletThen(() => navigate('/builder'))
-                    }
-                    className="card-coin98-flat flex min-h-[230px] flex-col items-center justify-center rounded-2xl p-4 text-center transition hover:bg-brand-soft"
-                  >
-                    <div className="text-2xl text-fg-muted">＋</div>
-                    <div className="mt-2 text-sm font-semibold text-fg-secondary">
-                      New bot
-                    </div>
-                    <div className="mt-1 text-xs text-fg-muted">
-                      Build from scratch or import
-                    </div>
-                  </button>
                 </div>
 
-                {filteredBots.length === 0 && (
+                {filtered.length === 0 && (
                   <div className="card-coin98-flat rounded-2xl p-10 text-center">
                     <p className="text-sm font-semibold text-fg">
                       No bots match &quot;{search}&quot;
@@ -772,7 +610,6 @@ export function DashboardPage() {
         }
         confirmLabel={confirmState?.action === 'remove' ? 'Delete' : 'Stop'}
         variant="destructive"
-        busy={confirmState != null && pendingActionIds.has(confirmState.botId)}
         onConfirm={() => {
           if (!confirmState) return;
           if (confirmState.action === 'stop') void doStop(confirmState.botId);
@@ -814,377 +651,4 @@ export function DashboardPage() {
       />
     </div>
   );
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// Sub-components
-// ─────────────────────────────────────────────────────────────────────
-
-interface BotCardProps {
-  bot: DashboardBot | MockBot;
-  onClick: () => void;
-  busy?: boolean;
-  /** Lifecycle handlers. Undefined → button disabled (e.g. demo cards). */
-  onStart?: () => void;
-  onStop?: () => void;
-  onSync?: () => void;
-  onRemove?: () => void;
-  /** Analysis entry point. Undefined → no Backtest row (e.g. demo cards). */
-  onBacktest?: () => void;
-}
-
-function BotCard({
-  bot,
-  onClick,
-  busy = false,
-  onStart,
-  onStop,
-  onSync,
-  onRemove,
-  onBacktest,
-}: BotCardProps) {
-  const modeStyle: Record<DashboardBotMode, string> = {
-    LIVE: 'border-bullish/30 bg-bullish-subtle text-bullish',
-    'DRY-RUN': 'border-brand/30 bg-brand-subtle text-brand',
-    PAUSED: 'border-fg-muted/30 bg-fg-muted/10 text-fg-muted',
-    ERROR: 'border-bearish/40 bg-bearish-subtle text-bearish',
-    STARTING: 'border-brand/20 bg-brand/5 text-brand/70',
-    STOPPING: 'border-fg-muted/20 bg-fg-muted/5 text-fg-muted/70',
-  };
-  const modeStyleClass = modeStyle[bot.mode];
-
-  const pnlClass =
-    bot.pnlDirection === 'up'
-      ? 'text-bullish'
-      : bot.pnlDirection === 'down'
-        ? 'text-bearish'
-        : 'text-fg-muted';
-
-  return (
-    <article
-      role="link"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-      className="card-coin98-flat cursor-pointer rounded-2xl p-4 transition hover:brightness-110"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span
-              className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-2xs font-bold uppercase ${modeStyleClass}`}
-            >
-              {bot.mode === 'LIVE' && (
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
-              )}
-              {bot.mode === 'DRY-RUN' && (
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand" />
-              )}
-              {bot.mode === 'ERROR' && <span>!</span>}
-              {bot.mode}
-            </span>
-            {bot.badge && (
-              <span className="rounded-sm bg-bullish-subtle px-1.5 py-0.5 text-2xs font-bold text-bullish">
-                {bot.badge}
-              </span>
-            )}
-            {bot.isDemo && (
-              <span
-                className="rounded-sm border border-dashed border-fg-muted/40 px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wider text-fg-muted"
-                title="Hardcoded demo data — not from your wallet"
-              >
-                Demo
-              </span>
-            )}
-          </div>
-          <h3 className="mt-2 truncate text-md font-semibold text-fg">
-            {bot.name}
-          </h3>
-          <div className="text-xs text-fg-muted">
-            {bot.pair} · {bot.timeframe}
-            {bot.uptime ? ` · ${bot.uptime}` : null}
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={(e) => e.stopPropagation()}
-          className="text-fg-muted hover:text-fg"
-          aria-label="More options"
-        >
-          ⋯
-        </button>
-      </div>
-
-      {/* PnL hero */}
-      <div className="mt-3 flex items-baseline gap-2">
-        <span
-          className={`font-mono text-xl font-bold tabular-nums ${pnlClass}`}
-        >
-          {bot.pnl}
-        </span>
-        <span className={`text-xs ${pnlClass}`}>{bot.pnlPct}</span>
-      </div>
-
-      {/* Sparkline */}
-      {bot.sparkline && bot.sparkline.length >= 2 && (
-        <Sparkline values={bot.sparkline} color={bot.pnlDirection} />
-      )}
-
-      {/* Error message replaces stats */}
-      {bot.mode === 'ERROR' && bot.errorMsg ? (
-        <p className="mt-3 text-xs text-bearish/90">{bot.errorMsg}</p>
-      ) : bot.trades != null ? (
-        <div className="mt-3 grid grid-cols-3 gap-2 text-2xs">
-          <div>
-            <div className="text-fg-muted">Trades</div>
-            <div className="font-mono font-semibold tabular-nums text-fg">
-              {bot.trades}
-            </div>
-          </div>
-          {bot.winRate != null && (
-            <div>
-              <div className="text-fg-muted">Win rate</div>
-              <div className="font-mono font-semibold tabular-nums text-fg">
-                {bot.winRate}%
-              </div>
-            </div>
-          )}
-          {bot.sharpe != null && (
-            <div>
-              <div className="text-fg-muted">Sharpe</div>
-              <div className="font-mono font-semibold tabular-nums text-fg">
-                {bot.sharpe.toFixed(2)}
-              </div>
-            </div>
-          )}
-        </div>
-      ) : null}
-
-      {/* Backtest action — analysis row, separate from lifecycle row below
-          so the lifecycle row's sizing/tap targets stay intact. Demo cards
-          pass undefined → row not rendered.
-          Intentionally stays visible in ERROR mode: backtest is pure strategy
-          analysis (reads BotOut.strategy_name, runs Freqtrade against history)
-          and works regardless of live process health — independent of the
-          "Fix connection" lifecycle button. Only hidden during STARTING/STOPPING
-          since the lifecycle row is mid-transition and renders a non-interactive
-          spinner. */}
-      {onBacktest && bot.mode !== 'STARTING' && bot.mode !== 'STOPPING' && (
-        <div className="mt-3 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex-1 border border-border-subtle text-fg-secondary hover:text-fg"
-            onClick={onBacktest}
-          >
-            <FlaskConical className="mr-1.5 h-3.5 w-3.5" />
-            Backtest
-          </Button>
-        </div>
-      )}
-
-      {/* Actions — mode-driven. STARTING/STOPPING show a non-clickable
-          spinner; ERROR offers Sync + Delete; PAUSED offers Start + Delete;
-          LIVE/DRY-RUN offer Stop + Delete. Demo cards (no handlers) render
-          the same controls disabled. */}
-      <div className="mt-3 flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-        {bot.mode === 'STARTING' || bot.mode === 'STOPPING' ? (
-          <Button variant="secondary" size="sm" className="flex-1" disabled>
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            {bot.mode === 'STARTING' ? 'Starting…' : 'Stopping…'}
-          </Button>
-        ) : bot.mode === 'ERROR' ? (
-          <>
-            <Button
-              variant="primary"
-              size="sm"
-              className="flex-1"
-              disabled={busy || !onSync}
-              onClick={onSync}
-            >
-              {busy ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              Fix connection
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="px-2 text-bearish hover:bg-bearish-subtle"
-              aria-label="Delete bot"
-              disabled={busy || !onRemove}
-              onClick={onRemove}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </>
-        ) : bot.mode === 'PAUSED' ? (
-          <>
-            <Button
-              variant="primary"
-              size="sm"
-              className="flex-1"
-              disabled={busy || !onStart}
-              onClick={onStart}
-            >
-              {busy ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Play className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              Start
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="px-2 text-bearish hover:bg-bearish-subtle"
-              aria-label="Delete bot"
-              disabled={busy || !onRemove}
-              onClick={onRemove}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </>
-        ) : (
-          /* LIVE or DRY-RUN */
-          <>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="flex-1"
-              disabled={busy || !onStop}
-              onClick={onStop}
-            >
-              {busy ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <StopCircle className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              Stop
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="px-2 text-bearish hover:bg-bearish-subtle"
-              aria-label="Delete bot"
-              disabled={busy || !onRemove}
-              onClick={onRemove}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </>
-        )}
-      </div>
-    </article>
-  );
-}
-
-interface SparklineProps {
-  values: number[];
-  color: 'up' | 'down' | 'flat';
-}
-
-function Sparkline({ values, color }: SparklineProps) {
-  const id = useId().replace(/:/g, '');
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const range = max - min || 1;
-
-  const points = values.map((v, i) => {
-    const x = (i / (values.length - 1)) * 200;
-    const y = 50 - ((v - min) / range) * 42 - 2;
-    return { x, y };
-  });
-
-  const curve = buildRoundedSparklinePath(points);
-  const area = `${curve} L 200,50 L 0,50 Z`;
-  const end = points[points.length - 1];
-
-  const stroke =
-    color === 'up' ? '#0ECB81' : color === 'down' ? '#F6465D' : '#848e9c';
-  const glow =
-    color === 'up'
-      ? 'rgba(14,203,129,0.42)'
-      : color === 'down'
-        ? 'rgba(246,70,93,0.42)'
-        : 'rgba(132,142,156,0.34)';
-  const fillStop =
-    color === 'up'
-      ? 'rgba(14,203,129,0.24)'
-      : color === 'down'
-        ? 'rgba(246,70,93,0.22)'
-        : 'rgba(132,142,156,0.14)';
-
-  return (
-    <svg
-      viewBox="0 0 200 50"
-      className="mt-2 h-10 w-full overflow-visible"
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id={`${id}-area`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={fillStop} />
-          <stop offset="100%" stopColor={stroke} stopOpacity="0" />
-        </linearGradient>
-        <filter id={`${id}-glow`} x="-20%" y="-60%" width="140%" height="220%">
-          <feGaussianBlur stdDeviation="1.6" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-      <path d={area} fill={`url(#${id}-area)`} stroke="none" />
-      <path
-        d={curve}
-        fill="none"
-        stroke={stroke}
-        strokeWidth={2.2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        filter={`url(#${id}-glow)`}
-      />
-      <circle cx={end.x} cy={end.y} r="5.5" fill={stroke} opacity="0.16" />
-      <circle
-        cx={end.x}
-        cy={end.y}
-        r="2.4"
-        fill="white"
-        stroke={stroke}
-        strokeWidth="1.6"
-        style={{ filter: `drop-shadow(0 0 5px ${glow})` }}
-      />
-    </svg>
-  );
-}
-
-function buildRoundedSparklinePath(points: { x: number; y: number }[]) {
-  if (points.length < 2) return '';
-
-  const d = [`M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`];
-  const tension = 0.5;
-
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[Math.max(0, i - 1)];
-    const p1 = points[i];
-    const p2 = points[i + 1];
-    const p3 = points[Math.min(points.length - 1, i + 2)];
-    const cp1x = p1.x + ((p2.x - p0.x) / 6) * tension;
-    const cp1y = p1.y + ((p2.y - p0.y) / 6) * tension;
-    const cp2x = p2.x - ((p3.x - p1.x) / 6) * tension;
-    const cp2y = p2.y - ((p3.y - p1.y) / 6) * tension;
-
-    d.push(
-      `C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`,
-    );
-  }
-
-  return d.join(' ');
 }

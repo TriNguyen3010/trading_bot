@@ -11,6 +11,8 @@ vi.mock('@/features/bot-monitoring/bot.api', () => ({
     list: vi.fn(),
     getConfig: vi.fn(),
     getStatus: vi.fn(),
+    getPerformance: vi.fn(),
+    getBacktestHistory: vi.fn(),
     disableTelegram: vi.fn(),
     start: vi.fn(),
     stop: vi.fn(),
@@ -32,6 +34,41 @@ vi.mock('sonner', async () => {
   };
 });
 
+/** Default enrichment mocks so the dashboard's perf + backtest fetches resolve.
+ * A single completed backtest item → PAUSED bots show the "Paused" badge
+ * (not "New"). */
+function setEnrichmentDefaults() {
+  vi.mocked(botApi.getPerformance).mockResolvedValue({
+    balance: 1000,
+    openTrades: 1,
+  });
+  vi.mocked(botApi.getBacktestHistory).mockResolvedValue({
+    items: [
+      {
+        id: 1,
+        status: 'completed',
+        win_rate: 50,
+        trade_count: 10,
+        total_profit: 5,
+      },
+    ],
+    total: 1,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any);
+}
+
+function setWallet() {
+  useWalletStore.setState({
+    address: '0xabc',
+    nonce: 'n',
+    signature: 's',
+    status: 'ready',
+    user: null,
+    error: null,
+    signingMessage: null,
+  });
+}
+
 function renderPage() {
   return render(
     <MemoryRouter>
@@ -44,22 +81,13 @@ function renderPage() {
 
 describe('DashboardPage', () => {
   beforeEach(() => {
-    // resetAllMocks (not clearAllMocks) — also resets implementations set via
-    // mockReturnValue, preventing leak between tests.
     vi.resetAllMocks();
-    useWalletStore.setState({
-      address: '0xabc',
-      nonce: 'n',
-      signature: 's',
-      status: 'ready',
-      user: null,
-      error: null,
-      signingMessage: null,
-    });
+    setWallet();
+    setEnrichmentDefaults();
   });
 
   it('shows skeleton cards while loading', () => {
-    vi.mocked(botApi.list).mockReturnValue(new Promise(() => {})); // never resolves
+    vi.mocked(botApi.list).mockReturnValue(new Promise(() => {}));
     renderPage();
     const skeletons = document.querySelectorAll('.animate-pulse');
     expect(skeletons.length).toBeGreaterThanOrEqual(3);
@@ -89,21 +117,52 @@ describe('DashboardPage', () => {
     await waitFor(() =>
       expect(screen.getByText('My ETH bot')).toBeInTheDocument(),
     );
-    expect(screen.getByText('LIVE')).toBeInTheDocument();
+    // "Live" appears in the hero indicator + the card badge → at least one.
+    expect(screen.getAllByText('Live').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/ETH-USDT/)).toBeInTheDocument();
   });
 
-  it('shows empty banner + demo samples when list is empty', async () => {
+  it('shows capital deployed from running bots performance', async () => {
+    vi.mocked(botApi.list).mockResolvedValueOnce([
+      {
+        id: 86,
+        bot_name: 'Gamma',
+        status: 'running',
+        desired_status: null,
+        error_message: null,
+        strategy_name: 'Gamma',
+      },
+    ]);
+    vi.mocked(botApi.getConfig).mockResolvedValueOnce({
+      config: {
+        dry_run: true,
+        timeframe: '5m',
+        exchange: { pair_whitelist: ['BTC/USDC:USDC'] },
+        leverage: 10,
+        stake_amount: 100,
+        max_open_trades: 10,
+      },
+    });
+    vi.mocked(botApi.getPerformance).mockResolvedValue({
+      balance: 967.94,
+      openTrades: 1,
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Gamma')).toBeInTheDocument());
+    // hero capital deployed + card balance both show 967.94
+    expect(screen.getAllByText(/967\.94/).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows empty state (no demo bots) when list is empty', async () => {
     vi.mocked(botApi.list).mockResolvedValueOnce([]);
     renderPage();
 
     await waitFor(() =>
-      expect(
-        screen.getByText(/haven't built any bots yet/i),
-      ).toBeInTheDocument(),
+      expect(screen.getByText(/No bots yet/i)).toBeInTheDocument(),
     );
-    const demoPills = screen.getAllByText('Demo');
-    expect(demoPills.length).toBeGreaterThan(0);
+    expect(screen.queryByText('My ETH bot')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Demo/)).not.toBeInTheDocument();
   });
 
   it('shows error state with retry button when list fails', async () => {
@@ -129,9 +188,7 @@ describe('DashboardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
 
     await waitFor(() =>
-      expect(
-        screen.getByText(/haven't built any bots yet/i),
-      ).toBeInTheDocument(),
+      expect(screen.getByText(/No bots yet/i)).toBeInTheDocument(),
     );
   });
 
@@ -153,18 +210,45 @@ describe('DashboardPage', () => {
     await waitFor(() =>
       expect(screen.getByText('Orphan bot')).toBeInTheDocument(),
     );
-    // Pair shows '?' because config failed
-    expect(screen.getByText(/\?/)).toBeInTheDocument();
+    // Pair + timeframe both fall back to '?' when config fails.
+    expect(screen.getAllByText(/\?/).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('clicking a card navigates to the bot detail page', async () => {
+    vi.mocked(botApi.list).mockResolvedValueOnce([
+      {
+        id: 55,
+        bot_name: 'Routed bot',
+        status: 'stopped',
+        desired_status: null,
+        error_message: null,
+        strategy_name: 'X',
+      },
+    ]);
+    vi.mocked(botApi.getConfig).mockResolvedValueOnce({
+      config: {
+        dry_run: true,
+        timeframe: '1h',
+        exchange: { pair_whitelist: ['BTC/USDT'] },
+      },
+    });
+
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText('Routed bot')).toBeInTheDocument(),
+    );
+    // Even a PAUSED bot's card is a clickable link → routes to /bots/{id}.
+    expect(
+      screen.getByText('Routed bot').closest('[role="link"]'),
+    ).not.toBeNull();
   });
 
   it('Refresh button triggers a refetch', async () => {
-    // First load returns empty; second load returns 1 bot — clicking
-    // Refresh between them must show the new bot.
     vi.mocked(botApi.list).mockResolvedValueOnce([]);
     renderPage();
 
     await waitFor(() =>
-      expect(screen.getByText(/haven't built any bots/i)).toBeInTheDocument(),
+      expect(screen.getByText(/No bots yet/i)).toBeInTheDocument(),
     );
 
     vi.mocked(botApi.list).mockResolvedValueOnce([
@@ -190,13 +274,10 @@ describe('DashboardPage', () => {
     await waitFor(() =>
       expect(screen.getByText('Fresh bot')).toBeInTheDocument(),
     );
-    expect(
-      screen.queryByText(/haven't built any bots/i),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/No bots yet/i)).not.toBeInTheDocument();
   });
 
   it('Refresh button is hidden during loading / error states', async () => {
-    // Loading: never-resolving list → refresh hidden
     vi.mocked(botApi.list).mockReturnValue(new Promise(() => {}));
     const { unmount } = renderPage();
     expect(
@@ -204,17 +285,9 @@ describe('DashboardPage', () => {
     ).not.toBeInTheDocument();
     unmount();
 
-    // Error: list rejects → refresh hidden (Retry inside card replaces it)
     vi.resetAllMocks();
-    useWalletStore.setState({
-      address: '0xabc',
-      nonce: 'n',
-      signature: 's',
-      status: 'ready',
-      user: null,
-      error: null,
-      signingMessage: null,
-    });
+    setWallet();
+    setEnrichmentDefaults();
     vi.mocked(botApi.list).mockRejectedValueOnce(new Error('boom'));
     renderPage();
     await waitFor(() =>
@@ -226,28 +299,19 @@ describe('DashboardPage', () => {
   });
 
   it('Search input is hidden in empty / error / loading states', async () => {
-    // Empty
     vi.mocked(botApi.list).mockResolvedValueOnce([]);
     const { unmount } = renderPage();
     await waitFor(() =>
-      expect(screen.getByText(/haven't built any bots/i)).toBeInTheDocument(),
+      expect(screen.getByText(/No bots yet/i)).toBeInTheDocument(),
     );
     expect(
       screen.queryByPlaceholderText(/search bots/i),
     ).not.toBeInTheDocument();
     unmount();
 
-    // Error
     vi.resetAllMocks();
-    useWalletStore.setState({
-      address: '0xabc',
-      nonce: 'n',
-      signature: 's',
-      status: 'ready',
-      user: null,
-      error: null,
-      signingMessage: null,
-    });
+    setWallet();
+    setEnrichmentDefaults();
     vi.mocked(botApi.list).mockRejectedValueOnce(new Error('x'));
     renderPage();
     await waitFor(() =>
@@ -258,13 +322,7 @@ describe('DashboardPage', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('unmount during fetch does not produce a stale state update or crash', async () => {
-    // React 18 removed the "setState on unmounted" warning (facebook/react#22114),
-    // so this test can't assert on console.error. Instead we (a) confirm we get
-    // to the loading state, (b) unmount, (c) resolve the in-flight fetch AFTER
-    // unmount, and (d) assert no exception escapes the microtask queue. If the
-    // cancelled flag is removed, React will still tolerate the late setState
-    // silently in v18, but this test documents the intent.
+  it('unmount during fetch does not crash', async () => {
     let resolveList!: (value: BotOut[]) => void;
     vi.mocked(botApi.list).mockReturnValueOnce(
       new Promise((res) => {
@@ -285,19 +343,12 @@ describe('DashboardPage', () => {
   });
 });
 
-// ── Task 6: lifecycle actions wired on BotCard ─────────────────────────
+// ── lifecycle actions wired on BotCard ─────────────────────────
 describe('DashboardPage — lifecycle actions', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    useWalletStore.setState({
-      address: '0xabc',
-      nonce: 'n',
-      signature: 's',
-      status: 'ready',
-      user: null,
-      error: null,
-      signingMessage: null,
-    });
+    setWallet();
+    setEnrichmentDefaults();
   });
 
   function loadOne(over: Partial<BotOut> = {}, dryRun = true) {
@@ -330,9 +381,6 @@ describe('DashboardPage — lifecycle actions', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /^start$/i }));
 
-    // C-1 (R5 Critical): the Start button must open the Launchpad mode-gate,
-    // never fire botApi.start directly — otherwise a PAUSED ex-Live bot
-    // (dry_run=false) restarts in LIVE mode without picking a mode.
     expect(botApi.start).not.toHaveBeenCalled();
     await waitFor(() =>
       expect(
@@ -351,7 +399,6 @@ describe('DashboardPage — lifecycle actions', () => {
       is_process_running: true,
       error_message: null,
     });
-    // The BE reports stopped on the next status poll.
     vi.mocked(botApi.getStatus).mockResolvedValue({
       id: 7,
       bot_name: 'Lifecycle bot',
@@ -366,16 +413,18 @@ describe('DashboardPage — lifecycle actions', () => {
       expect(screen.getByText('Lifecycle bot')).toBeInTheDocument(),
     );
 
-    // Stop → confirm dialog → confirm (the inner Stop button).
     fireEvent.click(screen.getByRole('button', { name: /^stop$/i }));
     const stopButtons = screen.getAllByRole('button', { name: /^stop$/i });
     fireEvent.click(stopButtons[stopButtons.length - 1]);
     expect(botApi.stop).toHaveBeenCalledWith(7);
 
-    // Auto-poll flips the card to PAUSED (stopped) on its own.
-    await waitFor(() => expect(screen.getByText('PAUSED')).toBeInTheDocument(), {
-      timeout: 4000,
-    });
+    // Auto-poll flips the card to the stopped "Paused" badge on its own.
+    await waitFor(
+      () => expect(screen.getByText('Paused')).toBeInTheDocument(),
+      {
+        timeout: 4000,
+      },
+    );
     expect(botApi.getStatus).toHaveBeenCalledWith(7);
   });
 
@@ -395,11 +444,9 @@ describe('DashboardPage — lifecycle actions', () => {
       expect(screen.getByText('Lifecycle bot')).toBeInTheDocument(),
     );
 
-    // Click the Stop button on the card → confirm dialog opens.
     fireEvent.click(screen.getByRole('button', { name: /^stop$/i }));
     expect(screen.getByText(/Stop "Lifecycle bot"\?/)).toBeInTheDocument();
 
-    // Click the Stop button INSIDE the dialog (it's the last "Stop" on screen).
     const stopButtons = screen.getAllByRole('button', { name: /^stop$/i });
     fireEvent.click(stopButtons[stopButtons.length - 1]);
     expect(botApi.stop).toHaveBeenCalledWith(7);
@@ -450,20 +497,15 @@ describe('DashboardPage — lifecycle actions', () => {
     ).toBeLessThan(vi.mocked(botApi.sync).mock.invocationCallOrder[0]);
   });
 
-  it('demo cards do not call real lifecycle endpoints', async () => {
-    vi.mocked(botApi.list).mockResolvedValueOnce([]); // empty → demos render
+  it('empty state shows a create CTA and fires no lifecycle calls', async () => {
+    vi.mocked(botApi.list).mockResolvedValueOnce([]);
     renderPage();
     await waitFor(() =>
-      expect(
-        screen.getByText(/haven't built any bots yet/i),
-      ).toBeInTheDocument(),
+      expect(screen.getByText(/No bots yet/i)).toBeInTheDocument(),
     );
-    // The demo cards render the action UI in disabled state. Even if the
-    // user clicks Start, no real botApi call should fire.
-    const startBtns = screen.queryAllByRole('button', { name: /^start$/i });
-    for (const b of startBtns) {
-      fireEvent.click(b);
-    }
+    expect(
+      screen.getByRole('button', { name: /Create your first bot/i }),
+    ).toBeInTheDocument();
     expect(botApi.start).not.toHaveBeenCalled();
   });
 });
