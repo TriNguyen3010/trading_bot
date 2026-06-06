@@ -1,11 +1,14 @@
 import { http } from '@/lib/http';
 import type { components } from '@/types/api';
 import type { BotWalletRotationResponse } from '@/types/api-helpers';
+import { parseBotPerformance, type BotPerformance } from './bot-performance';
 
 export type BotOut = components['schemas']['BotOut'];
 export type BotConfigOut = components['schemas']['BotConfigOut'];
 export type BotStatusOut = components['schemas']['BotStatusOut'];
 export type BotConfigUpdate = components['schemas']['BotConfigUpdate'];
+export type BacktestHistoryItem = components['schemas']['BacktestHistoryItem'];
+export type BacktestHistoryList = components['schemas']['BacktestHistoryList'];
 
 const DISABLE_TELEGRAM_PATCH = {
   optional: {
@@ -41,4 +44,15 @@ export const botApi = {
   /** Rotate the active agent wallet into all owner bots (update config + restart running bots). */
   rotateWallet: () =>
     http<BotWalletRotationResponse>('POST', '/bot/rotate-wallet'),
+  /** Live balance + open-trades count. openapi response is untyped (None) →
+   * parsed defensively; PnL/win-rate are NOT read (BE returns N/A). */
+  getPerformance: (id: number): Promise<BotPerformance> =>
+    http<unknown>('GET', `/bot/${id}/performance`).then(parseBotPerformance),
+  getBacktestHistory: (botId: number, limit = 20) =>
+    http<BacktestHistoryList>(
+      'GET',
+      `/backtest/history?bot_id=${botId}&limit=${limit}`,
+    ),
+  getBacktest: (backtestId: number) =>
+    http<BacktestHistoryItem>('GET', `/backtest/${backtestId}`),
 };
