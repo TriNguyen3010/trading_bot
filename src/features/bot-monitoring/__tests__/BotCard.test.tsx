@@ -16,7 +16,7 @@ const base: BotCardData = {
   lastBacktest: {
     winRate: 44.2,
     trades: 104,
-    netPct: -3.66,
+    netAbs: -36.59,
     status: 'completed',
   },
   state: 'DRY-RUN',

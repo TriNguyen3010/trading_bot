@@ -25,7 +25,9 @@ export interface BotCardData {
   lastBacktest: {
     winRate: number | null;
     trades: number | null;
-    netPct: number | null;
+    /** absolute net profit (USDC) from BacktestHistoryItem.total_profit —
+     * history does not carry a % (would need the full results blob). */
+    netAbs: number | null;
     status: string;
   } | null;
 }
@@ -169,12 +171,12 @@ export function BotCard({
             <MiniStat
               k="Net"
               v={
-                bot.lastBacktest.netPct == null
+                bot.lastBacktest.netAbs == null
                   ? '—'
-                  : `${bot.lastBacktest.netPct}%`
+                  : `${bot.lastBacktest.netAbs >= 0 ? '+' : ''}${bot.lastBacktest.netAbs.toFixed(2)}`
               }
               cls={
-                (bot.lastBacktest.netPct ?? 0) >= 0
+                (bot.lastBacktest.netAbs ?? 0) >= 0
                   ? 'text-bullish'
                   : 'text-bearish'
               }
