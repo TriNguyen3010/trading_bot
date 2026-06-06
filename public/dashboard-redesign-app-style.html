@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard Redesign · App-faithful (Coin98 design system)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<style>
+  /* ===== Tokens copied verbatim from src/styles/tokens.css ===== */
+  :root {
+    color-scheme: dark;
+    --color-bg-canvas:#0a0a0b; --color-bg-base:#0b0e11;
+    --color-bg-surface:#14181f; --color-bg-surface-hover:#1f1f23; --color-bg-surface-active:#2b3139;
+    --color-bg-elevated:#1e2329; --color-bg-input:#181c22;
+    --color-border-subtle:#1e2329; --color-border-default:#2b3139; --color-border-strong:#474d57;
+    --color-text-primary:#eaecef; --color-text-secondary:#b7bdc6; --color-text-muted:#848e9c;
+    --color-text-disabled:#5e6673; --color-text-inverse:#0b0e11;
+    --brand-primary:#f0b90b; --brand-hover:#fcd535; --brand-active:#d9a400; --brand-subtle:rgba(240,185,11,0.1);
+    --color-bullish:#0ecb81; --color-bullish-subtle:rgba(14,203,129,0.12);
+    --color-bearish:#f6465d; --color-bearish-subtle:rgba(246,70,93,0.12);
+    --color-info:#3b82f6;
+    --radius-sm:4px; --radius-md:6px; --radius-lg:8px; --radius-xl:12px;
+    --font-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --font-mono:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;
+    --fx-dot-color:rgba(255,210,80,0.14);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { background:#000; color:var(--color-text-primary); }
+  body { font-family:var(--font-sans); -webkit-font-smoothing:antialiased; min-height:100vh; padding-bottom:90px; }
+
+  /* dot-grid + halos (mirrors DotGridSpotlight + hero halos) */
+  .bg-fx { position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image: radial-gradient(var(--fx-dot-color) 1px, transparent 1px);
+    background-size:17px 17px; }
+  .halo-top { position:fixed; top:-80px; left:50%; transform:translateX(-50%); width:700px; height:420px;
+    border-radius:9999px; opacity:.5; filter:blur(64px); z-index:0; pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(240,185,11,0.12), transparent 70%); }
+
+  .surface { background:linear-gradient(180deg,#16161a 0%,#0c0c0e 100%); }
+
+  /* card-coin98-flat */
+  .card { background:linear-gradient(180deg,#16161a 0%,#0c0c0e 100%); border-radius:16px; }
+  .card-hover { transition:filter .2s; cursor:pointer; }
+  .card-hover:hover { filter:brightness(1.10); }
+
+  /* text utils */
+  .t-fg{color:var(--color-text-primary)} .t-2{color:var(--color-text-secondary)} .t-mut{color:var(--color-text-muted)}
+  .t-bull{color:var(--color-bullish)} .t-bear{color:var(--color-bearish)} .t-brand{color:var(--brand-primary)} .t-info{color:var(--color-info)}
+  .mono{font-family:var(--font-mono); font-variant-numeric:tabular-nums;}
+  .upp{text-transform:uppercase; letter-spacing:.12em;}
+  .t2xs{font-size:10px;line-height:14px} .txs{font-size:11px;line-height:16px} .tsm{font-size:12px;line-height:18px}
+  .tbase{font-size:14px;line-height:20px} .tmd{font-size:15px;line-height:24px} .tlg{font-size:18px}
+  .txl{font-size:20px} .t2xl{font-size:24px} .t3xl{font-size:32px} .t6xl{font-size:60px}
+  .fw5{font-weight:500}.fw6{font-weight:600}.fw7{font-weight:700}
+
+  /* layout */
+  .page { position:relative; z-index:10; max-width:1152px; margin:0 auto; padding:26px 32px; display:flex; flex-direction:column; gap:20px; }
+  .row{display:flex;align-items:center;} .gap2{gap:8px}.gap3{gap:12px}.gap4{gap:16px}
+  .between{justify-content:space-between} .wrap{flex-wrap:wrap}
+
+  /* floating pill header (app-header-pill) */
+  .header { position:sticky; top:16px; z-index:20; margin:16px auto 0; max-width:1152px; padding:0 32px; }
+  .pill { display:flex; align-items:center; justify-content:space-between; height:64px; padding:0 20px; border-radius:9999px;
+    background:linear-gradient(180deg,rgba(22,22,26,0.94),rgba(12,12,14,0.9));
+    border:1px solid rgba(255,255,255,0.08);
+    box-shadow:0 8px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.05);
+    backdrop-filter:blur(28px) saturate(140%); }
+  .brandmark { font-family:'Press Start 2P'; font-size:11px; color:var(--brand-primary); }
+  .chip { display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 12px; border-radius:9999px;
+    border:1px solid var(--color-border-default); background:var(--color-bg-surface); font-size:12px; color:var(--color-text-secondary); }
+
+  /* buttons */
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; white-space:nowrap;
+    border-radius:6px; font-weight:500; border:1px solid transparent; cursor:pointer; transition:background .15s,filter .15s; }
+  .btn.sm{height:28px;padding:0 12px;font-size:11px} .btn.md{height:36px;padding:0 16px;font-size:12px}
+  .btn-primary{background:var(--brand-primary);color:var(--color-text-inverse);} .btn-primary:hover{background:var(--brand-hover)}
+  .btn-secondary{background:var(--color-bg-surface);color:var(--color-text-primary);border-color:var(--color-border-default);} .btn-secondary:hover{background:var(--color-bg-surface-hover)}
+  .btn-ghost{color:var(--color-text-primary);} .btn-ghost:hover{background:var(--color-bg-surface-hover)}
+  .btn[disabled]{opacity:.5;pointer-events:none}
+  .btn-bord{border:1px solid var(--color-border-subtle);color:var(--color-text-secondary);background:transparent}
+  .btn-bord:hover{color:var(--color-text-primary)}
+  .ic{width:14px;height:14px;display:inline-block}
+
+  /* badges (mode) — exact BotCard modeStyle */
+  .badge{display:inline-flex;align-items:center;gap:4px;border-radius:4px;border:1px solid;padding:2px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+  .b-live{border-color:rgba(14,203,129,.3);background:var(--color-bullish-subtle);color:var(--color-bullish)}
+  .b-dry{border-color:rgba(240,185,11,.3);background:var(--brand-subtle);color:var(--brand-primary)}
+  .b-paused{border-color:rgba(132,142,156,.3);background:rgba(132,142,156,.1);color:var(--color-text-muted)}
+  .b-error{border-color:rgba(246,70,93,.4);background:var(--color-bearish-subtle);color:var(--color-bearish)}
+  .b-transit{border-color:rgba(240,185,11,.2);background:rgba(240,185,11,.05);color:rgba(240,185,11,.7)}
+  .b-bt{border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.1);color:var(--color-info)}
+  .b-new{border-color:rgba(240,185,11,.35);border-style:dashed;background:rgba(240,185,11,.06);color:var(--brand-primary)}
+  .b-demo{border:1px dashed rgba(132,142,156,.4);border-radius:4px;padding:2px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted)}
+  .dotpulse{width:6px;height:6px;border-radius:50%;animation:pulse 1.5s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 currentColor;opacity:1}50%{box-shadow:0 0 0 4px transparent;opacity:.6}}
+
+  .needbe{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 5px;border-radius:4px;background:rgba(240,185,11,.1);color:var(--brand-primary);}
+
+  /* hero */
+  .hero{position:relative;overflow:hidden;border-radius:24px;padding:32px;display:grid;grid-template-columns:1fr auto;gap:24px;}
+  .hero .halo1{position:absolute;left:-64px;top:-96px;width:320px;height:320px;border-radius:9999px;opacity:.4;filter:blur(40px);
+    background:radial-gradient(circle,rgba(240,185,11,.25),transparent 70%);pointer-events:none}
+  .hero .halo2{position:absolute;right:-96px;top:-96px;width:288px;height:288px;border-radius:9999px;opacity:.3;filter:blur(40px);
+    background:radial-gradient(circle,var(--color-bullish),transparent 70%);pointer-events:none}
+  .heroglow{text-shadow:0 0 38px rgba(14,203,129,.45);line-height:1}
+
+  /* grid */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+
+  .botcard{padding:16px;display:flex;flex-direction:column;gap:0}
+  .mstat{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .mstat .l{font-size:10px;color:var(--color-text-muted)} .mstat .v{font-size:13px;font-weight:600;margin-top:1px}
+  .btstrip{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--color-border-subtle);
+    border-radius:8px;padding:8px 10px;background:rgba(0,0,0,.18)}
+  .btstrip .k{font-size:9px;color:var(--color-text-muted)} .btstrip .vv{font-size:12px;font-weight:600}
+  .errline{font-size:11px;color:rgba(246,70,93,.9);margin-top:12px;line-height:1.45}
+  .divider{height:1px;background:var(--color-border-subtle);margin:12px 0}
+  .progress{height:6px;border-radius:4px;background:var(--color-border-default);overflow:hidden;margin-top:6px}
+  .progress>i{display:block;height:100%;background:var(--color-info)}
+  .searchbox{position:relative}
+  .searchbox input{height:36px;width:176px;border-radius:6px;border:1px solid var(--color-border-default);background:var(--color-bg-input);
+    padding:0 12px 0 30px;font-size:12px;color:var(--color-text-primary)}
+  .searchbox input::placeholder{color:var(--color-text-muted)}
+  .searchbox .sic{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--color-text-muted)}
+
+  /* detail */
+  .dgrid{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+  @media(max-width:900px){.dgrid{grid-template-columns:1fr}}
+  .panel{border-radius:12px;border:1px solid var(--color-border-subtle);background:linear-gradient(180deg,#15151a 0%,#0d0d10 100%)}
+  .panel-h{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--color-border-subtle)}
+  .panel-h .t{font-size:12px;font-weight:700}
+  .panel-b{padding:16px}
+  .kv{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--color-border-subtle);font-size:12px}
+  .kv:last-child{border-bottom:none} .kv .k{color:var(--color-text-secondary)}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--color-border-default)}
+  td{padding:9px 10px;border-bottom:1px solid var(--color-border-subtle);font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:none}
+  .side{font-weight:700;font-size:10px;padding:2px 6px;border-radius:4px;font-family:var(--font-sans)}
+  .side.long{background:var(--color-bullish-subtle);color:var(--color-bullish)}
+  .side.short{background:var(--color-bearish-subtle);color:var(--color-bearish)}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .metric{border:1px solid var(--color-border-subtle);border-radius:8px;padding:11px 12px;background:rgba(0,0,0,.18)}
+  .metric .l{font-size:10px;color:var(--color-text-muted)} .metric .v{font-size:17px;font-weight:700;margin-top:5px}
+  .pill-tag{font-size:11px;padding:4px 9px;border-radius:9999px;background:var(--color-bg-surface);border:1px solid var(--color-border-subtle);color:var(--color-text-secondary)}
+  .exitrow{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:12px}
+  .exitbar{height:6px;border-radius:4px;background:var(--color-border-default);flex:1;overflow:hidden}
+
+  /* empty states */
+  .empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:60px 24px}
+  .empty .h{font-size:18px;font-weight:700;margin-top:16px}
+  .empty .p{font-size:13px;color:var(--color-text-secondary);margin-top:8px;max-width:420px;line-height:1.6}
+  .steps{display:flex;gap:8px;margin-top:26px;flex-wrap:wrap;justify-content:center;align-items:center}
+  .step{display:flex;align-items:center;gap:8px;background:var(--color-bg-surface);border:1px solid var(--color-border-subtle);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--color-text-secondary)}
+  .step .n{width:20px;height:20px;border-radius:50%;background:var(--color-bg-elevated);border:1px solid var(--color-border-default);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:10px;color:var(--brand-primary)}
+  .pempty{text-align:center;padding:30px 18px;color:var(--color-text-muted);font-size:12px;line-height:1.6}
+  .pempty .ph{color:var(--color-text-secondary);font-weight:600}
+
+  .view{display:none} .view.on{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* demo switcher (NOT part of design) */
+  .switcher{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:6px;
+    padding:8px 10px;border-radius:9999px;background:rgba(13,15,19,.94);border:1px solid var(--color-border-default);
+    backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .switcher .lab{font-size:9.5px;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.1em;padding:0 6px}
+  .swbtn{font-size:11px;font-weight:600;color:var(--color-text-secondary);padding:6px 11px;border-radius:9999px;cursor:pointer;border:1px solid transparent;white-space:nowrap}
+  .swbtn:hover{background:var(--color-bg-surface)} .swbtn.on{background:var(--brand-primary);color:var(--color-text-inverse)}
+  .swbtn.demo-note{cursor:default;color:var(--color-text-muted);font-weight:400}
+</style>
+</head>
+<body>
+<div class="bg-fx"></div>
+<div class="halo-top"></div>
+
+<!-- floating pill header (faithful to AppHeader) -->
+<div class="header"><div class="pill">
+  <div class="row gap4">
+    <span class="brandmark">COIN98</span>
+    <span class="t-mut tsm">Trading Bots</span>
+  </div>
+  <div class="row gap2">
+    <span class="chip"><span class="dotpulse t-bull" style="color:var(--color-bullish)"></span>0x1a2…9f3</span>
+  </div>
+</div></div>
+
+<!-- ============================ DASHBOARD ============================ -->
+<div class="view on" id="view-dash"><div class="page">
+  <!-- HERO -->
+  <section class="card hero">
+    <div class="halo1"></div><div class="halo2"></div>
+    <div style="position:relative">
+      <div class="row gap3 t2xs upp t-mut" style="margin-bottom:16px">
+        <span>Portfolio · 30D</span>
+        <span class="row gap2 t-bull" style="gap:6px"><span class="dotpulse" style="color:var(--color-bullish);background:var(--color-bullish)"></span>Live</span>
+      </div>
+      <!-- redesign: lead with REAL capital deployed instead of empty 30D PnL -->
+      <div class="mono t6xl fw7 t-fg heroglow" style="color:var(--color-text-primary);text-shadow:0 0 38px rgba(240,185,11,.25)">5,788<span class="t2xl t-mut"> USDC</span></div>
+      <div class="t2xs upp t-mut" style="margin-top:6px;letter-spacing:.16em">Capital deployed · live balance</div>
+
+      <div class="row wrap" style="margin-top:18px;gap:6px 16px;font-size:12px;color:var(--color-text-secondary)">
+        <span class="row gap2"><span class="t-bull">▲</span><b class="mono t-fg">2</b><span class="t-mut">active · 9 total</span></span>
+        <span class="t-mut" style="color:var(--color-border-strong)">·</span>
+        <span class="row gap2"><b class="mono t-mut">3</b><span class="t-mut">idle</span></span>
+        <span class="t-mut" style="color:var(--color-border-strong)">·</span>
+        <span class="row gap2"><b class="mono t-brand">2</b><span class="t-mut">transitioning</span></span>
+        <span class="t-mut" style="color:var(--color-border-strong)">·</span>
+        <span class="row gap2"><b class="mono t-fg">3</b><span class="t-mut">open trades across 2 pairs</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOOLBAR -->
+  <section style="display:flex;flex-direction:column;gap:12px">
+    <div class="row between wrap gap3">
+      <h2 class="t2xs fw6 upp t-mut">My bots · 9 total</h2>
+      <div class="row gap2">
+        <div class="searchbox"><span class="sic ic">⌕</span><input placeholder="Search bots…" /></div>
+        <button class="btn md btn-ghost" title="Refresh">↻</button>
+        <button class="btn md btn-secondary" style="min-width:120px">Import</button>
+        <button class="btn md btn-primary" style="min-width:120px">New bot →</button>
+      </div>
+    </div>
+
+    <div class="grid">
+
+      <!-- 1 · GAMMA · running · dry-run (REAL) -->
+      <article class="card card-hover botcard">
+        <div class="row between gap2">
+          <div class="row gap2"><span class="badge b-dry"><span class="dotpulse" style="background:var(--brand-primary)"></span>Dry-run</span></div>
+          <span class="t-mut" style="cursor:pointer">⋯</span>
+        </div>
+        <h3 class="tmd fw6 t-fg" style="margin-top:8px">Gamma</h3>
+        <div class="txs t-mut">BTC/USDC:USDC · 5m · created 2026-05-15</div>
+        <div class="mono txl fw7 t-fg" style="margin-top:10px">967.94 <span class="txs t-mut">USDC</span></div>
+        <div class="mstat" style="margin-top:12px">
+          <div><div class="l">Open</div><div class="v mono t-fg">1/10</div></div>
+          <div><div class="l">Lev</div><div class="v mono t-fg">10×</div></div>
+          <div><div class="l">Stake</div><div class="v mono t-fg">100</div></div>
+          <div><div class="l">Mode</div><div class="v t-info" style="font-size:12px">futures</div></div>
+        </div>
+        <div class="btstrip" style="margin-top:12px">
+          <span class="txs t-mut">Last backtest</span>
+          <div class="row" style="gap:14px">
+            <div style="text-align:right"><div class="k">Win</div><div class="vv mono t-fg">44.2%</div></div>
+            <div style="text-align:right"><div class="k">Trades</div><div class="vv mono t-fg">104</div></div>
+            <div style="text-align:right"><div class="k">Net</div><div class="vv mono t-bear">−3.66%</div></div>
+          </div>
+        </div>
+        <div class="row gap2" style="margin-top:12px">
+          <button class="btn sm btn-bord" style="flex:1">🧪 Backtest</button>
+        </div>
+        <div class="row gap2" style="margin-top:8px">
+          <button class="btn sm btn-secondary" style="flex:1">◼ Stop</button>
+          <button class="btn sm btn-ghost t-bear" style="padding:0 8px">🗑</button>
+        </div>
+      </article>
+
+      <!-- 2 · LIVE real money -->
+      <article class="card card-hover botcard">
+        <div class="row between gap2">
+          <div class="row gap2"><span class="badge b-live"><span class="dotpulse" style="background:var(--color-bullish)"></span>Live</span><span class="b-demo">demo</span></div>
+          <span class="t-mut" style="cursor:pointer">⋯</span>
+        </div>
+        <h3 class="tmd fw6 t-fg" style="margin-top:8px">Momentum-BTC</h3>
+        <div class="txs t-mut">BTC/USDC:USDC · 15m · created 2026-05-24</div>
+        <div class="mono txl fw7 t-fg" style="margin-top:10px">4,820.11 <span class="txs t-mut">USDC</span></div>
+        <div class="mstat" style="margin-top:12px">
+          <div><div class="l">Open</div><div class="v mono t-fg">2/8</div></div>
+          <div><div class="l">Lev</div><div class="v mono t-fg">5×</div></div>
+          <div><div class="l">Stake</div><div class="v mono t-fg">500</div></div>
+          <div><div class="l">Mode</div><div class="v t-info" style="font-size:12px">futures</div></div>
+        </div>
+        <div class="btstrip" style="margin-top:12px">
+          <span class="txs t-mut">Last backtest</span>
+          <div class="row" style="gap:14px">
+            <div style="text-align:right"><div class="k">Win</div><div class="vv mono t-fg">58.0%</div></div>
+            <div style="text-align:right"><div class="k">Trades</div><div class="vv mono t-fg">37</div></div>
+            <div style="text-align:right"><div class="k">Net</div><div class="vv mono t-bull">+6.20%</div></div>
+          </div>
+        </div>
+        <div class="row gap2" style="margin-top:12px"><button class="btn sm btn-bord" style="flex:1">🧪 Backtest</button></div>
+        <div class="row gap2" style="margin-top:8px">
+          <button class="btn sm btn-secondary" style="flex:1">◼ Stop</button>
+          <button class="btn sm btn-ghost t-bear" style="padding:0 8px">🗑</button>
+        </div>
+      </article>
+
+      <!-- 3 · STARTING -->
+      <article class="card botcard">
+        <div class="row between gap2">
+          <div class="row gap2"><span class="badge b-transit">Starting…</span><span class="b-demo">demo</span></div>
+          <span class="t-mut">⋯</span>
+        </div>
+        <h3 class="tmd fw6 t-fg" style="margin-top:8px">Apex-SOL</h3>
+        <div class="txs t-mut">SOL/USDC:USDC · 5m</div>
+        <div class="mstat" style="margin-top:14px">
+          <div><div class="l">Open</div><div class="v mono t-fg">0/6</div></div>
+          <div><div class="l">Lev</div><div class="v mono t-fg">8×</div></div>
+          <div><div class="l">Stake</div><div class="v mono t-fg">200</div></div>
+          <div><div class="l">Balance</div><div class="v mono t-mut">…</div></div>
+        </div>
+        <div class="pempty" style="padding:14px 0 4px;font-size:11px">desired_status=running · is_process_running=false</div>
+        <div class="row gap2" style="margin-top:8px"><button class="btn sm btn-secondary" style="flex:1" disabled>⟳ Starting…</button></div>
+      </article>
+
+      <!-- 4 · STOPPING -->
+      <article class="card botcard">
+        <div class="row between gap2">
+          <div class="row gap2"><span class="badge b-paused">Stopping…</span><span class="b-demo">demo</span></div>
+          <span class="t-mut">⋯</span>
+        </div>
+        <h3 class="tmd fw6 t-fg" style="margin-top:8px">MeanRev-ETH</h3>
+        <div class="txs t-mut">ETH/USDC:USDC · 1h</div>
+        <div class="mstat" style="margin-top:14px">
+          <div><div class="l">Open</div><div class="v mono t-fg">0/4</div></div>
+          <div><div class="l">Lev</div><div class="v mono t-fg">2×</div></div>
+          <div><div class="l">Stake</div><div class="v mono t-fg">250</div></div>
+          <div><div class="l">Balance</div><div class="v mono t-fg">1,002</div></div>
+        </div>
+        <div class="pempty" style="padding:14px 0 4px;font-size:11px">desired_status=stopped · is_process_running=true</div>
+        <div class="row gap2" style="margin-top:8px"><button class="btn sm btn-secondary" style="flex:1" disabled>⟳ Stopping…</button></div>
+      </article>
+
+      <!-- 5 · BACKTESTING -->
+      <article class="card botcard">
+        <div class="row between gap2">
+          <div class="row gap2"><span class="badge b-bt"><span class="dotpulse" style="background:var(--color-info)"></span>Backtesting</span><span class="b-demo">demo</span></div>
+          <span class="t-mut">⋯</span>
+        </div>
+        <h3 class="tmd fw6 t-fg" style="margin-top:8px">Grid-SOL</h3>
+        <div class="txs t-mut">SOL/USDC:USDC · 5m</div>
+        <div class="mstat" style="margin-top:14px">
+          <div><div class="l">State</div><div class="v t-mut" style="font-size:12px">stopped</div></div>
+          <div><div class="l">Lev</div><div class="v mono t-fg">10×</div></div>
+          <div><div class="l">Stake</div><div class="v mono t-fg">100</div></div>
+          <div><div class="l">Open</div><div class="v mono t-fg">0/6</div></div>
+        </div>
+        <div class="row gap2" style="margin-top:12px;font-size:12px;color:var(--color-info)">
+          <span class="dotpulse" style="background:var(--color-info)"></span> Backtesting… <span class="t-mut">(status: running)</span>
+        </div>
+        <div class="row gap2" style="margin-top:12px"><button class="btn sm btn-bord" style="flex:1" disabled>🧪 Running…</button></div>
+      </article>
+
+      <!-- 6 · NEW · nothing yet -->
+      <article class="card card-hover botcard">
+        <div class="row between gap2">
+          <div class="row gap2"><span class="badge b-new">New</span><span class="b-demo">demo</span></div>
+          <span class="t-mut">⋯</span>
+        </div>
+        <h3 class="tmd fw6 t-fg" style="margin-top:8px">My First Bot</h3>
+        <div class="txs t-mut">BTC/USDC:USDC · 1h · created today</div>
+        <div class="mstat" style="margin-top:14px">
+          <div><div class="l">Open</div><div class="v mono t-fg">0/5</div></div>
+          <div><div class="l">Lev</div><div class="v mono t-fg">3×</div></div>
+          <div><div class="l">Stake</div><div class="v mono t-fg">100</div></div>
+          <div><div class="l">Balance</div><div class="v mono t-mut">—</div></div>
+        </div>
+        <div class="pempty" style="padding:14px 0 8px;font-size:11px">No backtest yet · run one before going live ↓</div>
+        <div class="row gap2"><button class="btn sm btn-primary" style="flex:1">🧪 Run first backtest</button></div>
+      </article>
+
+      <!-- 7 · PAUSED with history -->
+      <article class="card card-hover botcard">
+        <div class="row between gap2">
+          <div class="row gap2"><span class="badge b-paused">Paused</span><span class="b-demo">demo</span></div>
+          <span class="t-mut">⋯</span>
+        </div>
+        <h3 class="tmd fw6 t-fg" style="margin-top:8px">SteadyDCA</h3>
+        <div class="txs t-mut">BTC/USDC:USDC · 1h · created May 28</div>
+        <div class="mono txl fw7 t-fg" style="margin-top:10px">503.20 <span class="txs t-mut">USDC</span></div>
+        <div class="mstat" style="margin-top:12px">
+          <div><div class="l">Open</div><div class="v mono t-fg">0/5</div></div>
+          <div><div class="l">Lev</div><div class="v mono t-fg">3×</div></div>
+          <div><div class="l">Stake</div><div class="v mono t-fg">50</div></div>
+          <div><div class="l">Mode</div><div class="v t-info" style="font-size:12px">futures</div></div>
+        </div>
+        <div class="btstrip" style="margin-top:12px">
+          <span class="txs t-mut">Last backtest</span>
+          <div class="row" style="gap:14px">
+            <div style="text-align:right"><div class="k">Win</div><div class="vv mono t-fg">51.0%</div></div>
+            <div style="text-align:right"><div class="k">Trades</div><div class="vv mono t-fg">62</div></div>
+            <div style="text-align:right"><div class="k">Net</div><div class="vv mono t-bull">+4.10%</div></div>
+          </div>
+        </div>
+        <div class="row gap2" style="margin-top:12px"><button class="btn sm btn-bord" style="flex:1">🧪 Backtest</button></div>
+        <div class="row gap2" style="margin-top:8px">
+          <button class="btn sm btn-primary" style="flex:1">▶ Start</button>
+          <button class="btn sm btn-ghost t-bear" style="padding:0 8px">🗑</button>
+        </div>
+      </article>
+
+      <!-- 8 · BACKTEST FAILED -->
+      <article class="card card-hover botcard">
+        <div class="row between gap2">
+          <div class="row gap2"><span class="badge b-paused">Paused</span><span class="b-demo">demo</span></div>
+          <span class="t-mut">⋯</span>
+        </div>
+        <h3 class="tmd fw6 t-fg" style="margin-top:8px">Donchian-AVAX</h3>
+        <div class="txs t-mut">AVAX/USDC:USDC · 5m · never run live</div>
+        <div class="mstat" style="margin-top:12px">
+          <div><div class="l">Open</div><div class="v mono t-fg">0/5</div></div>
+          <div><div class="l">Lev</div><div class="v mono t-fg">5×</div></div>
+          <div><div class="l">Stake</div><div class="v mono t-fg">100</div></div>
+          <div><div class="l">Balance</div><div class="v mono t-mut">—</div></div>
+        </div>
+        <div class="errline"><b>Backtest #305 failed:</b> no candle data for AVAX in the selected range.</div>
+        <div class="row gap2" style="margin-top:12px">
+          <button class="btn sm btn-bord" style="flex:1">🧪 Retry backtest</button>
+          <button class="btn sm btn-ghost t-bear" style="padding:0 8px">🗑</button>
+        </div>
+      </article>
+
+      <!-- 9 · ERROR -->
+      <article class="card card-hover botcard">
+        <div class="row between gap2">
+          <div class="row gap2"><span class="badge b-error">! Error</span><span class="b-demo">demo</span></div>
+          <span class="t-mut">⋯</span>
+        </div>
+        <h3 class="tmd fw6 t-fg" style="margin-top:8px">Scalper-ETH</h3>
+        <div class="txs t-mut">ETH/USDC:USDC · 5m · last heartbeat 2h ago</div>
+        <div class="errline"><b>error_message:</b> Insufficient agent allowance on Hyperliquid.</div>
+        <div class="row gap2" style="margin-top:12px">
+          <button class="btn sm btn-primary" style="flex:1">↻ Fix connection</button>
+          <button class="btn sm btn-ghost t-bear" style="padding:0 8px">🗑</button>
+        </div>
+      </article>
+
+    </div>
+  </section>
+</div></div>
+
+<!-- ============================ DASHBOARD · EMPTY ============================ -->
+<div class="view" id="view-dash-empty"><div class="page">
+  <section class="card hero">
+    <div class="halo1" style="opacity:.18"></div>
+    <div style="position:relative">
+      <div class="row gap3 t2xs upp t-mut" style="margin-bottom:16px">
+        <span>Portfolio · 30D</span>
+        <span class="t-mut">· no bots yet</span>
+      </div>
+      <div class="mono t6xl fw7 t-mut" style="line-height:1">0<span class="t2xl t-mut"> USDC</span></div>
+      <div class="t2xs upp t-mut" style="margin-top:6px;letter-spacing:.16em">Capital deployed</div>
+      <div class="row wrap" style="margin-top:18px;gap:6px 16px;font-size:12px;color:var(--color-text-muted)">
+        <span class="row gap2"><b class="mono t-mut">0</b><span>active · 0 total</span></span>
+        <span style="color:var(--color-border-strong)">·</span>
+        <span class="row gap2"><b class="mono t-mut">0</b><span>open trades</span></span>
+        <span style="color:var(--color-border-strong)">·</span>
+        <span class="row gap2"><b class="mono t-mut">0</b><span>strategies</span></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" style="padding:0">
+    <div class="empty">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+        <rect x="7" y="7" width="50" height="50" rx="13" stroke="#474d57" stroke-width="2" stroke-dasharray="5 6"/>
+        <path d="M32 23V41M23 32H41" stroke="#f0b90b" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <div class="h t-fg">No bots yet</div>
+      <div class="p">Build your first trading bot — pick a pair, indicators and entry/exit rules. No Python required.</div>
+      <div class="row gap2" style="margin-top:22px">
+        <button class="btn md btn-primary">＋ Create your first bot</button>
+        <button class="btn md btn-secondary">Import from JSON</button>
+      </div>
+      <div class="steps">
+        <div class="step"><span class="n">1</span>Build strategy</div><span class="t-mut">→</span>
+        <div class="step"><span class="n">2</span>Backtest it</div><span class="t-mut">→</span>
+        <div class="step"><span class="n">3</span>Dry-run / Go live</div>
+      </div>
+    </div>
+  </section>
+</div></div>
+
+<!-- ============================ BOT DETAIL ============================ -->
+<div class="view" id="view-detail"><div class="page">
+  <div class="row gap2 tsm t-mut" style="cursor:pointer" data-view="dash">← Dashboard</div>
+
+  <section class="card hero" style="grid-template-columns:1fr auto">
+    <div class="halo1"></div><div class="halo2"></div>
+    <div style="position:relative">
+      <div class="row gap3" style="gap:10px">
+        <span class="t2xl fw7 t-fg">Gamma</span>
+        <span class="badge b-dry"><span class="dotpulse" style="background:var(--brand-primary)"></span>Dry-run</span>
+        <span class="row gap2 tsm t-bull"><span class="dotpulse" style="background:var(--color-bullish)"></span>Running</span>
+      </div>
+      <div class="row wrap t2" style="gap:6px 14px;margin-top:8px;font-size:12px">
+        <span><b class="t-fg">BTC/USDC:USDC</b></span><span>5m</span><span>hyperliquid</span>
+        <span>futures · isolated</span><span class="t-mut">created 2026-05-15</span>
+      </div>
+      <div class="row" style="gap:22px;margin-top:22px">
+        <div><div class="t2xs upp t-mut">Balance</div><div class="mono t3xl fw7 t-fg" style="margin-top:4px">967.94 <span class="tbase t-mut">USDC</span></div></div>
+        <div><div class="t2xs upp t-mut">Open trades</div><div class="mono t3xl fw7 t-fg" style="margin-top:4px">1<span class="tbase t-mut">/10</span></div></div>
+        <div><div class="t2xs upp t-mut">Win rate (bt)</div><div class="mono t3xl fw7 t-fg" style="margin-top:4px">44.2%</div></div>
+        <div><div class="t2xs upp t-mut">Net (bt)</div><div class="mono t3xl fw7 t-bear" style="margin-top:4px">−3.66%</div></div>
+      </div>
+    </div>
+    <div style="position:relative;display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+      <button class="btn md btn-secondary">↻ Sync</button>
+      <button class="btn md btn-secondary">⟳ Restart</button>
+      <button class="btn md btn-primary" style="background:var(--color-bg-surface);color:var(--color-text-primary);border:1px solid var(--color-border-default)">◼ Stop</button>
+    </div>
+  </section>
+
+  <div class="dgrid">
+    <!-- LEFT -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <!-- backtest performance -->
+      <div class="panel">
+        <div class="panel-h"><div class="t row gap2"><span class="badge b-bt" style="padding:1px 5px">Backtest</span>Performance · run #200</div>
+          <div class="txs t-mut">Apr 27 → May 27 2026 · 5m</div></div>
+        <div class="panel-b">
+          <div class="row between" style="align-items:baseline;margin-bottom:8px">
+            <div class="t2xs upp t-mut">Equity curve · 104 trades cumulative</div>
+            <div class="mono tsm"><span class="t-bull">peak +17.4</span> · <span class="t-bear">trough −79.5</span></div>
+          </div>
+          <svg id="equity" viewBox="0 0 720 150" preserveAspectRatio="none" style="width:100%;height:150px;display:block"></svg>
+          <div class="metrics" style="margin-top:20px">
+            <div class="metric"><div class="l">Net profit</div><div class="v mono t-bear">−36.59</div></div>
+            <div class="metric"><div class="l">Win rate</div><div class="v mono t-fg">44.2%</div></div>
+            <div class="metric"><div class="l">Trades</div><div class="v mono t-fg">104</div></div>
+            <div class="metric"><div class="l">Profit factor</div><div class="v mono t-bear">0.87</div></div>
+            <div class="metric"><div class="l">Sharpe</div><div class="v mono t-bear">−3.42</div></div>
+            <div class="metric"><div class="l">Sortino</div><div class="v mono t-bear">−5.08</div></div>
+            <div class="metric"><div class="l">Max drawdown</div><div class="v mono t-bear">96.93 <span class="txs t-mut">(9.5%)</span></div></div>
+            <div class="metric"><div class="l">Trades/day</div><div class="v mono t-fg">3.47</div></div>
+          </div>
+          <div class="row wrap" style="gap:8px;margin-top:14px">
+            <span class="pill-tag">Long 51 · Short 53</span>
+            <span class="pill-tag">Wins 46 / Losses 58</span>
+            <span class="pill-tag">Avg stake 99.96</span>
+            <span class="pill-tag">Volume 208,020</span>
+            <span class="pill-tag">Expectancy −0.35</span>
+            <span class="pill-tag">vs Market −3.67%</span>
+          </div>
+          <div class="t2xs upp t-mut" style="margin:22px 0 8px">Exit reasons</div>
+          <div class="exitrow"><span style="width:150px">duration_6.0_hours</span>
+            <div class="exitbar"><div style="height:100%;width:99%;background:var(--color-bearish)"></div></div>
+            <span style="width:130px;text-align:right" class="mono t-2">103 · −51.58</span></div>
+          <div class="exitrow"><span style="width:150px">exit_signal</span>
+            <div class="exitbar"><div style="height:100%;width:6%;background:var(--color-bullish)"></div></div>
+            <span style="width:130px;text-align:right" class="mono t-2">1 · +14.99</span></div>
+        </div>
+      </div>
+
+      <!-- recent trades -->
+      <div class="panel">
+        <div class="panel-h"><div class="t">Recent trades</div><div class="txs t-mut">from backtest results.trades</div></div>
+        <table>
+          <thead><tr><th>Pair</th><th>Side</th><th>Entry</th><th>Exit</th><th>Lev</th><th>PnL</th><th>%</th><th>Funding</th></tr></thead>
+          <tbody>
+            <tr><td>BTC/USDC:USDC</td><td><span class="side long">LONG</span></td><td>78,938</td><td>79,088</td><td>10×</td><td class="t-bull">+0.98</td><td class="t-bull">+0.98%</td><td>−0.020</td></tr>
+            <tr><td>BTC/USDC:USDC</td><td><span class="side short">SHORT</span></td><td>77,716</td><td>76,662</td><td>10×</td><td class="t-bull">+12.71</td><td class="t-bull">+12.72%</td><td>+0.047</td></tr>
+            <tr><td>BTC/USDC:USDC</td><td><span class="side long">LONG</span></td><td>76,882</td><td>77,177</td><td>10×</td><td class="t-bull">+2.94</td><td class="t-bull">+2.94%</td><td>+0.011</td></tr>
+            <tr><td>BTC/USDC:USDC</td><td><span class="side long">LONG</span></td><td>77,042</td><td>76,182</td><td>10×</td><td class="t-bear">−11.99</td><td class="t-bear">−12.00%</td><td>+0.056</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="panel"><div class="panel-h"><div class="t">Status &amp; process</div></div>
+        <div class="panel-b" style="padding-top:6px">
+          <div class="kv"><span class="k">State</span><span class="mono fw6 t-bull">running</span></div>
+          <div class="kv"><span class="k">Desired status</span><span class="mono fw6 t-fg">running</span></div>
+          <div class="kv"><span class="k">Process</span><span class="mono fw6 t-bull">up</span></div>
+          <div class="kv"><span class="k">Last heartbeat</span><span class="mono fw6 t-fg">12s ago</span></div>
+          <div class="kv"><span class="k">Error</span><span class="mono fw6 t-mut">—</span></div>
+        </div>
+      </div>
+      <div class="panel"><div class="panel-h"><div class="t">Configuration</div><span class="txs t-mut">/config</span></div>
+        <div class="panel-b" style="padding-top:6px">
+          <div class="kv"><span class="k">Exchange</span><span class="mono fw6 t-fg">hyperliquid</span></div>
+          <div class="kv"><span class="k">Stake currency</span><span class="mono fw6 t-fg">USDC</span></div>
+          <div class="kv"><span class="k">Stake amount</span><span class="mono fw6 t-fg">100.0</span></div>
+          <div class="kv"><span class="k">Max open trades</span><span class="mono fw6 t-fg">10</span></div>
+          <div class="kv"><span class="k">Trading mode</span><span class="mono fw6 t-fg">futures</span></div>
+          <div class="kv"><span class="k">Margin mode</span><span class="mono fw6 t-fg">isolated</span></div>
+          <div class="kv"><span class="k">Leverage</span><span class="mono fw6 t-fg">10×</span></div>
+          <div class="kv"><span class="k">Stoploss</span><span class="mono fw6 t-bear">−10%</span></div>
+          <div class="kv"><span class="k">Dry-run wallet</span><span class="mono fw6 t-fg">1000</span></div>
+        </div>
+      </div>
+      <div class="panel"><div class="panel-h"><div class="t">Activity log</div><span class="txs t-mut">/audit_logs</span></div>
+        <div class="panel-b" style="padding-top:6px">
+          <div class="kv"><span class="k">▶ start · user</span><span class="txs t-mut">95h ago</span></div>
+          <div class="kv"><span class="k">↻ sync · system</span><span class="txs t-mut">2h ago</span></div>
+          <div class="kv"><span class="k">✎ config · user</span><span class="txs t-mut">3d ago</span></div>
+          <div class="kv"><span class="k">🧪 backtest · user</span><span class="txs t-mut">May 27</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<!-- ============================ BOT DETAIL · EMPTY ============================ -->
+<div class="view" id="view-detail-empty"><div class="page">
+  <div class="row gap2 tsm t-mut" style="cursor:pointer" data-view="dash-empty">← Dashboard</div>
+  <section class="card hero" style="grid-template-columns:1fr auto">
+    <div class="halo1" style="opacity:.2"></div>
+    <div style="position:relative">
+      <div class="row gap3" style="gap:10px">
+        <span class="t2xl fw7 t-fg">My First Bot</span>
+        <span class="badge b-new">New</span>
+        <span class="row gap2 tsm t-mut"><span class="dotpulse" style="background:var(--color-text-muted)"></span>Not started</span>
+      </div>
+      <div class="row wrap t2" style="gap:6px 14px;margin-top:8px;font-size:12px">
+        <span><b class="t-fg">BTC/USDC:USDC</b></span><span>1h</span><span>hyperliquid</span>
+        <span>futures · isolated</span><span class="t-mut">created today</span>
+      </div>
+      <div class="row" style="gap:22px;margin-top:22px">
+        <div><div class="t2xs upp t-mut">Balance</div><div class="mono t3xl fw7 t-mut" style="margin-top:4px">—</div></div>
+        <div><div class="t2xs upp t-mut">Open trades</div><div class="mono t3xl fw7 t-mut" style="margin-top:4px">0</div></div>
+        <div><div class="t2xs upp t-mut">Win rate (bt)</div><div class="mono t3xl fw7 t-mut" style="margin-top:4px">—</div></div>
+        <div><div class="t2xs upp t-mut">Net (bt)</div><div class="mono t3xl fw7 t-mut" style="margin-top:4px">—</div></div>
+      </div>
+    </div>
+    <div style="position:relative;display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+      <button class="btn md btn-secondary">🧪 Backtest</button>
+      <button class="btn md btn-primary">▶ Start (dry-run)</button>
+    </div>
+  </section>
+
+  <div class="dgrid">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="panel">
+        <div class="panel-h"><div class="t">Performance</div></div>
+        <div class="pempty">
+          <svg width="52" height="52" viewBox="0 0 64 64" fill="none" style="margin-bottom:14px">
+            <path d="M10 44 L24 32 L34 38 L52 18" stroke="#474d57" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 5"/>
+            <circle cx="52" cy="18" r="3.5" fill="#f0b90b"/>
+          </svg>
+          <div class="ph">No backtest yet</div>
+          <div style="margin-top:6px">Run a backtest to see the equity curve, win rate, Sharpe and drawdown on historical data before committing real funds.</div>
+          <div style="margin-top:16px"><button class="btn md btn-primary">🧪 Run first backtest</button></div>
+        </div>
+      </div>
+      <div class="panel"><div class="panel-h"><div class="t">Recent trades</div></div>
+        <div class="pempty"><div class="ph">No trades yet</div><div style="margin-top:6px">Trade history shows up here once the bot runs or a backtest completes.</div></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="panel"><div class="panel-h"><div class="t">Status &amp; process</div></div>
+        <div class="panel-b" style="padding-top:6px">
+          <div class="kv"><span class="k">State</span><span class="mono fw6 t-mut">stopped</span></div>
+          <div class="kv"><span class="k">Desired status</span><span class="mono fw6 t-mut">stopped</span></div>
+          <div class="kv"><span class="k">Process</span><span class="mono fw6 t-mut">down</span></div>
+          <div class="kv"><span class="k">Last heartbeat</span><span class="mono fw6 t-mut">—</span></div>
+          <div class="kv"><span class="k">Error</span><span class="mono fw6 t-mut">—</span></div>
+        </div>
+      </div>
+      <div class="panel"><div class="panel-h"><div class="t">Configuration</div><span class="txs t-mut">/config</span></div>
+        <div class="panel-b" style="padding-top:6px">
+          <div class="kv"><span class="k">Exchange</span><span class="mono fw6 t-fg">hyperliquid</span></div>
+          <div class="kv"><span class="k">Stake currency</span><span class="mono fw6 t-fg">USDC</span></div>
+          <div class="kv"><span class="k">Stake amount</span><span class="mono fw6 t-fg">100.0</span></div>
+          <div class="kv"><span class="k">Max open trades</span><span class="mono fw6 t-fg">5</span></div>
+          <div class="kv"><span class="k">Trading mode</span><span class="mono fw6 t-fg">futures</span></div>
+          <div class="kv"><span class="k">Leverage</span><span class="mono fw6 t-fg">3×</span></div>
+          <div class="kv"><span class="k">Stoploss</span><span class="mono fw6 t-bear">−8%</span></div>
+          <div class="kv"><span class="k">Dry-run wallet</span><span class="mono fw6 t-fg">1000</span></div>
+        </div>
+      </div>
+      <div class="panel"><div class="panel-h"><div class="t">Activity log</div><span class="txs t-mut">/audit_logs</span></div>
+        <div class="panel-b" style="padding-top:6px">
+          <div class="kv"><span class="k">✎ bot created · user</span><span class="txs t-mut">today</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<!-- demo switcher -->
+<div class="switcher">
+  <span class="lab">Demo views</span>
+  <span class="swbtn on" data-view="dash">Dashboard</span>
+  <span class="swbtn" data-view="dash-empty">Dashboard · empty</span>
+  <span class="swbtn" data-view="detail">Bot detail</span>
+  <span class="swbtn" data-view="detail-empty">Detail · empty</span>
+  <span class="lab" style="border-left:1px solid var(--color-border-default);margin-left:4px;padding-left:10px">100% field BE đang có</span>
+</div>
+
+<script>
+  function show(v){
+    document.querySelectorAll('.view').forEach(el=>el.classList.toggle('on', el.id==='view-'+v));
+    document.querySelectorAll('.swbtn').forEach(el=>el.classList.toggle('on', el.dataset.view===v));
+    window.scrollTo({top:0});
+  }
+  document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();show(el.dataset.view);}));
+
+  // real equity curve from backtest #200 (cumulative profit_abs)
+  const curve=[0.979,17.44,-2.592,-15.487,-24.92,-37.709,-46.182,-59.708,-75.077,-40.264,-45.484,-53.862,-54.358,-44.078,-45.749,-54.651,-49.138,-45.771,-39.131,-43.613,-30.013,-58.017,-51.201,-38.819,-45.993,-45.365,-57.935,-69.197,-71.491,-75.901,-72.021,-50.164,-43.343,-47.486,-40.884,-36.59];
+  (function(){
+    const W=720,H=150,p=8,min=Math.min(...curve),max=Math.max(...curve);
+    const x=i=>p+i*(W-2*p)/(curve.length-1), y=v=>p+(max-v)*(H-2*p)/(max-min), zero=y(0);
+    const line=curve.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+    const area=line+` L${x(curve.length-1).toFixed(1)} ${zero.toFixed(1)} L${x(0).toFixed(1)} ${zero.toFixed(1)} Z`;
+    document.getElementById('equity').innerHTML=`
+      <defs><linearGradient id="eg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="rgba(246,70,93,0.26)"/><stop offset="100%" stop-color="rgba(246,70,93,0)"/>
+      </linearGradient></defs>
+      <line x1="${p}" y1="${zero}" x2="${W-p}" y2="${zero}" stroke="#2b3139" stroke-dasharray="3 3"/>
+      <path d="${area}" fill="url(#eg)"/>
+      <path d="${line}" fill="none" stroke="#f6465d" stroke-width="2" stroke-linejoin="round"/>`;
+  })();
+</script>
+</body>
+</html>
