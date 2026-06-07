@@ -36,12 +36,14 @@ export function RecentTradesPanel({ trades }: { trades: BacktestTrade[] }) {
             </tr>
           </thead>
           <tbody className="font-mono">
-            {rows.map((t) => {
+            {rows.map((t, i) => {
               const up = (t.profit_abs ?? 0) >= 0;
               const pnlCls = up ? 'text-bullish' : 'text-bearish';
               return (
                 <tr
-                  key={t.close_timestamp}
+                  // multi-pair runs can close two trades on the same candle →
+                  // qualify by pair (+ index tiebreaker) so keys stay unique.
+                  key={`${t.pair ?? ''}-${t.close_timestamp}-${i}`}
                   className="border-t border-border-subtle"
                 >
                   <Td>{t.pair ?? '—'}</Td>

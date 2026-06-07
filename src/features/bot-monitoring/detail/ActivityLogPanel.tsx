@@ -1,18 +1,5 @@
 import type { BotAuditLogOut } from '../bot.api';
-import { Panel } from './panel-kit';
-
-/** Compact relative time; falls back to the raw timestamp on parse failure. */
-function relTime(ts: string): string {
-  const t = Date.parse(ts);
-  if (Number.isNaN(t)) return ts;
-  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
-  if (s < 60) return `${s}s ago`;
-  const m = Math.round(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.round(m / 60);
-  if (h < 48) return `${h}h ago`;
-  return `${Math.round(h / 24)}d ago`;
-}
+import { Panel, relTime } from './panel-kit';
 
 export function ActivityLogPanel({ logs }: { logs: BotAuditLogOut[] }) {
   return (

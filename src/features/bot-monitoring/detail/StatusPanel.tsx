@@ -1,5 +1,5 @@
 import type { BotStatusOut } from '../bot.api';
-import { Panel, KV } from './panel-kit';
+import { Panel, KV, relTime } from './panel-kit';
 
 const v = (x: unknown) => (x == null || x === '' ? '—' : String(x));
 
@@ -18,7 +18,10 @@ export function StatusPanel({ status }: { status: BotStatusOut | null }) {
         v={status?.is_process_running ? 'up' : 'down'}
         accent={status?.is_process_running ? 'bull' : undefined}
       />
-      <KV k="Last heartbeat" v={v(status?.last_heartbeat)} />
+      <KV
+        k="Last heartbeat"
+        v={status?.last_heartbeat ? relTime(status.last_heartbeat) : '—'}
+      />
       <KV
         k="Error"
         v={v(status?.error_message)}

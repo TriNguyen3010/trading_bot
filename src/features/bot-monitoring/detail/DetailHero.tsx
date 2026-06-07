@@ -115,7 +115,9 @@ export function DetailHero({
           label="Open trades"
           value={`${bot.openTrades ?? '—'}`}
           unit={
-            bot.maxOpenTrades != null ? `/ ${bot.maxOpenTrades}` : undefined
+            bot.openTrades != null && bot.maxOpenTrades != null
+              ? `/ ${bot.maxOpenTrades}`
+              : undefined
           }
         />
         <Kpi

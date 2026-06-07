@@ -168,4 +168,36 @@ describe('BotMonitoringPage', () => {
     );
     expect(botApi.start).not.toHaveBeenCalled();
   });
+
+  it('does NOT fetch the full backtest when the latest run is not completed', async () => {
+    vi.mocked(botApi.getBacktestHistory).mockResolvedValue({
+      // failed run → results blob must not be fetched
+      items: [{ id: 305, status: 'failed', strategy_name: 'X' }],
+      total: 1,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    wrap(86);
+    // wait until the page has settled (a panel that always renders)
+    expect(await screen.findByText('Configuration')).toBeInTheDocument();
+    expect(botApi.getBacktest).not.toHaveBeenCalled();
+  });
+
+  it('Stop confirms then calls botApi.stop', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(botApi.stop).mockResolvedValue({
+      id: 86,
+      status: 'stopping',
+      desired_status: 'stopped',
+      is_process_running: true,
+      error_message: null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    wrap(86);
+    fireEvent.click(await screen.findByRole('button', { name: /^stop$/i }));
+    expect(screen.getByText(/Stop this bot\?/i)).toBeInTheDocument();
+    // confirm button inside the dialog is the last "Stop" on screen
+    const stops = screen.getAllByRole('button', { name: /^stop$/i });
+    fireEvent.click(stops[stops.length - 1]);
+    expect(botApi.stop).toHaveBeenCalledWith(86);
+  });
 });
