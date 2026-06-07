@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { BotMonitoringPage } from '../BotMonitoringPage';
 import { botApi } from '../bot.api';
@@ -12,6 +12,7 @@ vi.mock('../bot.api', () => ({
     getBacktestHistory: vi.fn(),
     getBacktest: vi.fn(),
     getAuditLogs: vi.fn(),
+    start: vi.fn(),
     stop: vi.fn(),
     sync: vi.fn(),
     restart: vi.fn(),
@@ -36,6 +37,7 @@ function wrap(id: number) {
     <MemoryRouter initialEntries={[`/bots/${id}`]}>
       <Routes>
         <Route path="/bots/:id" element={<BotMonitoringPage />} />
+        <Route path="/dashboard" element={<div>dashboard-launchpad</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -43,7 +45,7 @@ function wrap(id: number) {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   vi.mocked(botApi.getStatus).mockResolvedValue({
     id: 86,
     status: 'running',
@@ -112,7 +114,6 @@ describe('BotMonitoringPage', () => {
   });
 
   it('renders the no-backtest empty state for a not-started bot', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(botApi.getStatus).mockResolvedValue({
       id: 9,
       status: 'stopped',
@@ -129,5 +130,29 @@ describe('BotMonitoringPage', () => {
     } as any);
     wrap(9);
     expect(await screen.findByText(/No backtest yet/i)).toBeInTheDocument();
+  });
+
+  it('a stopped bot Start routes to the Launchpad and never calls botApi.start', async () => {
+    vi.mocked(botApi.getStatus).mockResolvedValue({
+      id: 9,
+      status: 'stopped',
+      desired_status: 'stopped',
+      is_process_running: false,
+      error_message: null,
+      last_heartbeat: null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    vi.mocked(botApi.getBacktestHistory).mockResolvedValue({
+      items: [],
+      total: 0,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    wrap(9);
+    const startBtn = await screen.findByRole('button', { name: /start/i });
+    fireEvent.click(startBtn);
+    await waitFor(() =>
+      expect(screen.getByText('dashboard-launchpad')).toBeInTheDocument(),
+    );
+    expect(botApi.start).not.toHaveBeenCalled();
   });
 });
