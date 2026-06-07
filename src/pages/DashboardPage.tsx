@@ -544,7 +544,11 @@ export function DashboardPage() {
                     <BotCard
                       key={card.id}
                       bot={card}
-                      onClick={() => navigate(`/bots/${card.id}`)}
+                      onClick={() =>
+                        navigate(`/bots/${card.id}`, {
+                          state: { createdAt: card.createdAt, name: card.name },
+                        })
+                      }
                       onStart={() => {
                         const rb = realById.get(card.id);
                         if (rb) setLaunchBotTarget(toLaunchpadBot(rb));

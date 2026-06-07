@@ -5,8 +5,10 @@ export function BacktestEquityChart({ curve }: { curve: number[] }) {
   const W = 720,
     H = 150,
     p = 8;
-  const min = Math.min(...curve),
-    max = Math.max(...curve);
+  // Always include 0 in the range so the zero baseline (and the area fill to
+  // it) stays inside the viewport even for all-positive / all-negative curves.
+  const min = Math.min(0, ...curve),
+    max = Math.max(0, ...curve);
   const span = max - min || 1;
   const x = (i: number) => p + (i * (W - 2 * p)) / (curve.length - 1);
   const y = (v: number) => p + ((max - v) * (H - 2 * p)) / span;
@@ -19,11 +21,14 @@ export function BacktestEquityChart({ curve }: { curve: number[] }) {
   const stroke = up ? '#0ecb81' : '#f6465d';
   const fillTop = up ? 'rgba(14,203,129,0.26)' : 'rgba(246,70,93,0.26)';
   const fillBottom = up ? 'rgba(14,203,129,0)' : 'rgba(246,70,93,0)';
+  const end = curve[curve.length - 1];
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
       className="block h-[150px] w-full"
+      role="img"
+      aria-label={`Backtest equity curve, ending ${up ? 'up' : 'down'} at ${end.toFixed(2)}`}
     >
       <defs>
         <linearGradient id="eq-grad" x1="0" y1="0" x2="0" y2="1">

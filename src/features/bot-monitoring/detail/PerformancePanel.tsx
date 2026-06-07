@@ -95,6 +95,13 @@ export function PerformancePanel({
           />
           <Pill text={`Wins ${m.wins ?? '—'} / Losses ${m.losses ?? '—'}`} />
           <Pill text={`Avg stake ${f(m.avgStake)}`} />
+          <Pill
+            text={`Volume ${
+              m.volume == null
+                ? '—'
+                : m.volume.toLocaleString('en-US', { maximumFractionDigits: 0 })
+            }`}
+          />
           <Pill text={`Expectancy ${f(m.expectancy)}`} />
           {m.marketChangePct != null && (
             <Pill text={`vs Market ${m.marketChangePct}%`} />

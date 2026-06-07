@@ -14,7 +14,11 @@ export function RecentTradesPanel({ trades }: { trades: BacktestTrade[] }) {
       </Panel>
     );
   }
-  const rows = trades.slice(0, 8);
+  // backtest results.trades is ascending by close_timestamp → show the most
+  // recent first, not the oldest.
+  const rows = [...trades]
+    .sort((a, b) => b.close_timestamp - a.close_timestamp)
+    .slice(0, 8);
   return (
     <Panel title="Recent trades" hint="backtest results.trades">
       <div className="overflow-x-auto">
@@ -32,11 +36,14 @@ export function RecentTradesPanel({ trades }: { trades: BacktestTrade[] }) {
             </tr>
           </thead>
           <tbody className="font-mono">
-            {rows.map((t, i) => {
+            {rows.map((t) => {
               const up = (t.profit_abs ?? 0) >= 0;
               const pnlCls = up ? 'text-bullish' : 'text-bearish';
               return (
-                <tr key={i} className="border-t border-border-subtle">
+                <tr
+                  key={t.close_timestamp}
+                  className="border-t border-border-subtle"
+                >
                   <Td>{t.pair ?? '—'}</Td>
                   <Td>
                     <span

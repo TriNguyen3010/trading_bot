@@ -22,6 +22,8 @@ export interface DetailHeroData {
 
 export interface DetailHeroProps {
   bot: DetailHeroData;
+  /** True while a lifecycle request is in flight — disables action buttons. */
+  pending?: boolean;
   onSync: () => void;
   onRestart: () => void;
   onStop: () => void;
@@ -55,6 +57,7 @@ const f = (n: number | null, d = 2) => (n == null ? '—' : n.toFixed(d));
 
 export function DetailHero({
   bot,
+  pending = false,
   onSync,
   onRestart,
   onStop,
@@ -94,6 +97,7 @@ export function DetailHero({
         </div>
         <Actions
           mode={m}
+          pending={pending}
           onSync={onSync}
           onRestart={onRestart}
           onStop={onStop}
@@ -102,7 +106,11 @@ export function DetailHero({
       </div>
 
       <div className="relative mt-6 grid grid-cols-2 gap-5 sm:grid-cols-4">
-        <Kpi label="Balance" value={`${f(bot.balance)}`} unit="USDC" />
+        <Kpi
+          label="Balance"
+          value={`${f(bot.balance)}`}
+          unit={bot.balance == null ? undefined : 'USDC'}
+        />
         <Kpi
           label="Open trades"
           value={`${bot.openTrades ?? '—'}`}
@@ -162,12 +170,14 @@ function Kpi({
 
 function Actions({
   mode,
+  pending,
   onSync,
   onRestart,
   onStop,
   onStart,
 }: {
   mode: DashboardBotMode;
+  pending: boolean;
   onSync: () => void;
   onRestart: () => void;
   onStop: () => void;
@@ -181,19 +191,35 @@ function Actions({
       </Button>
     );
   }
+  const spin = <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />;
   if (mode === 'LIVE' || mode === 'DRY-RUN') {
     return (
       <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" size="md" onClick={onSync}>
-          <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={onSync}
+          disabled={pending}
+        >
+          {pending ? spin : <RefreshCw className="mr-1.5 h-3.5 w-3.5" />}
           Sync
         </Button>
-        <Button variant="secondary" size="md" onClick={onRestart}>
-          <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={onRestart}
+          disabled={pending}
+        >
+          {pending ? spin : <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />}
           Restart
         </Button>
-        <Button variant="secondary" size="md" onClick={onStop}>
-          <StopCircle className="mr-1.5 h-3.5 w-3.5" />
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={onStop}
+          disabled={pending}
+        >
+          {pending ? spin : <StopCircle className="mr-1.5 h-3.5 w-3.5" />}
           Stop
         </Button>
       </div>
@@ -201,15 +227,15 @@ function Actions({
   }
   if (mode === 'ERROR') {
     return (
-      <Button variant="primary" size="md" onClick={onSync}>
-        <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
+      <Button variant="primary" size="md" onClick={onSync} disabled={pending}>
+        {pending ? spin : <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />}
         Fix connection
       </Button>
     );
   }
   return (
-    <Button variant="primary" size="md" onClick={onStart}>
-      <Play className="mr-1.5 h-3.5 w-3.5" />
+    <Button variant="primary" size="md" onClick={onStart} disabled={pending}>
+      {pending ? spin : <Play className="mr-1.5 h-3.5 w-3.5" />}
       Start
     </Button>
   );

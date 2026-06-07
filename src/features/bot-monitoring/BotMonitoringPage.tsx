@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
@@ -42,6 +42,14 @@ interface LastBacktestSummary {
 export function BotMonitoringPage() {
   const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  // The dashboard card passes created_at + name via navigation state (no
+  // per-bot endpoint returns created_at; see spec §6). Falls back gracefully
+  // when the page is opened directly by URL.
+  const navState = (location.state ?? null) as {
+    createdAt?: string | null;
+    name?: string | null;
+  } | null;
   const botIdNum = id ? Number(id) : null;
   const safeBotId =
     botIdNum != null && !Number.isNaN(botIdNum) ? botIdNum : null;
@@ -87,6 +95,7 @@ export function BotMonitoringPage() {
 
         if (cfgR.status === 'fulfilled')
           setConfig((cfgR.value.config ?? {}) as Record<string, unknown>);
+        else setLoadError(formatBackendError(cfgR.reason));
         if (perfR.status === 'fulfilled') setPerf(perfR.value);
         if (auditR.status === 'fulfilled') setAuditLogs(auditR.value ?? []);
 
@@ -238,6 +247,7 @@ export function BotMonitoringPage() {
             bot={{
               name:
                 liveStatus?.bot_name ??
+                navState?.name ??
                 (config?.bot_name as string | undefined) ??
                 `Bot #${safeBotId ?? ''}`,
               mode,
@@ -246,7 +256,7 @@ export function BotMonitoringPage() {
               timeframe: deriveTimeframe(cfgShape),
               exchange: exchangeName,
               tradingMode: (config?.trading_mode as string | undefined) ?? null,
-              createdAt: null,
+              createdAt: navState?.createdAt ?? null,
               balance: running ? (perf?.balance ?? null) : null,
               openTrades: running ? (perf?.openTrades ?? null) : null,
               maxOpenTrades:
@@ -256,6 +266,7 @@ export function BotMonitoringPage() {
                   ? { winRate: history.winRate, netAbs: history.netAbs }
                   : null,
             }}
+            pending={pending}
             onSync={doSync}
             onRestart={doRestart}
             onStop={() => setConfirmStop(true)}
