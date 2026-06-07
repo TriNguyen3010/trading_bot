@@ -9,6 +9,7 @@ export type BotStatusOut = components['schemas']['BotStatusOut'];
 export type BotConfigUpdate = components['schemas']['BotConfigUpdate'];
 export type BacktestHistoryItem = components['schemas']['BacktestHistoryItem'];
 export type BacktestHistoryList = components['schemas']['BacktestHistoryList'];
+export type BotAuditLogOut = components['schemas']['BotAuditLogOut'];
 
 const DISABLE_TELEGRAM_PATCH = {
   optional: {
@@ -55,4 +56,6 @@ export const botApi = {
     ),
   getBacktest: (backtestId: number) =>
     http<BacktestHistoryItem>('GET', `/backtest/${backtestId}`),
+  getAuditLogs: (id: number, limit = 50) =>
+    http<BotAuditLogOut[]>('GET', `/bot/${id}/audit_logs?limit=${limit}`),
 };
