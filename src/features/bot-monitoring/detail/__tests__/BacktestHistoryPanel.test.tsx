@@ -62,6 +62,18 @@ describe('BacktestHistoryPanel', () => {
     expect(selected).toHaveAttribute('aria-current', 'true');
   });
 
+  it('surfaces the cap: shows "N of total" when total exceeds loaded runs', () => {
+    render(
+      <BacktestHistoryPanel
+        runs={runs}
+        total={53}
+        selectedId={200}
+        onSelect={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/2 of 53/)).toBeInTheDocument();
+  });
+
   it('renders an empty hint when there are no runs', () => {
     render(
       <BacktestHistoryPanel runs={[]} selectedId={null} onSelect={vi.fn()} />,

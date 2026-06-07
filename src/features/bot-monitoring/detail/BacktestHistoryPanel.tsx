@@ -10,15 +10,23 @@ const statusClass: Record<string, string> = {
 
 export function BacktestHistoryPanel({
   runs,
+  total,
   selectedId,
   onSelect,
 }: {
   runs: BacktestRunSummary[];
+  /** total runs the BE reports — shown when it exceeds the loaded window so
+   * the 10-run cap is visible, not silently hiding older runs. */
+  total?: number;
   selectedId: number | null;
   onSelect: (id: number) => void;
 }) {
+  const hint =
+    total != null && total > runs.length
+      ? `${runs.length} of ${total}`
+      : `${runs.length} run(s)`;
   return (
-    <Panel title="Backtest history" hint={`${runs.length} run(s)`}>
+    <Panel title="Backtest history" hint={hint}>
       {runs.length === 0 ? (
         <p className="py-6 text-center text-xs text-fg-muted">
           No backtests yet — run one to see results here.
@@ -41,7 +49,7 @@ export function BacktestHistoryPanel({
               <button
                 key={r.id}
                 type="button"
-                aria-current={active}
+                aria-current={active ? 'true' : undefined}
                 onClick={() => onSelect(r.id)}
                 className={`flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left transition ${
                   active

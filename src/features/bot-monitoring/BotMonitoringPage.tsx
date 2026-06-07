@@ -37,12 +37,6 @@ import { StatusPanel } from './detail/StatusPanel';
 import { ConfigPanel } from './detail/ConfigPanel';
 import { ActivityLogPanel } from './detail/ActivityLogPanel';
 
-/** id of the latest run by id (for the bot-state badge). */
-function latestRunId(runs: BacktestRunSummary[]): number | null {
-  if (runs.length === 0) return null;
-  return runs.reduce((m, r) => (r.id > m ? r.id : m), runs[0].id);
-}
-
 export function BotMonitoringPage() {
   const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -67,6 +61,7 @@ export function BotMonitoringPage() {
   const [config, setConfig] = useState<Record<string, unknown> | null>(null);
   const [perf, setPerf] = useState<BotPerformance | null>(null);
   const [runs, setRuns] = useState<BacktestRunSummary[]>([]);
+  const [historyTotal, setHistoryTotal] = useState(0);
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [backtest, setBacktest] = useState<BacktestHistoryItem | null>(null);
   const [auditLogs, setAuditLogs] = useState<BotAuditLogOut[]>([]);
@@ -100,6 +95,7 @@ export function BotMonitoringPage() {
         if (histR.status === 'fulfilled') {
           const summaries = summarizeHistory(histR.value.items ?? []);
           setRuns(summaries);
+          setHistoryTotal(histR.value.total ?? summaries.length);
           setSelectedRunId(pickDefaultRunId(summaries));
         }
       } catch (err) {
@@ -123,6 +119,9 @@ export function BotMonitoringPage() {
       setBacktest(null);
       return;
     }
+    // Clear the previous run's results immediately so switching runs never
+    // shows the old run's equity/trades under the newly-selected run.
+    setBacktest(null);
     let cancelled = false;
     void (async () => {
       try {
@@ -195,8 +194,9 @@ export function BotMonitoringPage() {
     },
     cfgShape,
   );
-  // Bot-state badge tracks the LATEST run's status (not the one being viewed).
-  const latestRun = runs.find((r) => r.id === latestRunId(runs)) ?? null;
+  // runs are newest-first (summarizeHistory sorts id desc), so runs[0] is the
+  // latest. The bot-state badge tracks it (not the run being viewed).
+  const latestRun = runs[0] ?? null;
   const state = derivePresentationalState(mode, {
     historyCount: runs.length,
     latestStatus: latestRun?.status ?? null,
@@ -293,6 +293,7 @@ export function BotMonitoringPage() {
               {runs.length > 0 && (
                 <BacktestHistoryPanel
                   runs={runs}
+                  total={historyTotal}
                   selectedId={selectedRunId}
                   onSelect={setSelectedRunId}
                 />
