@@ -45,4 +45,24 @@ describe('botApi dashboard methods', () => {
     await botApi.getBacktest(200);
     expect(fetchMock.mock.calls[0][0]).toContain('/backtest/200');
   });
+
+  it('getBacktestCandles hits /backtest/{id}/candles', async () => {
+    fetchMock.mockImplementationOnce(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            backtest_id: 200,
+            pair: 'BTC/USDC:USDC',
+            timeframe: '5m',
+            range_start: 0,
+            range_end: 0,
+            candles: [],
+          }),
+      } as Response),
+    );
+    await botApi.getBacktestCandles(200);
+    expect(fetchMock.mock.calls[0][0]).toContain('/backtest/200/candles');
+  });
 });
