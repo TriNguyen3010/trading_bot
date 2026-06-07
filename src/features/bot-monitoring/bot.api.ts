@@ -39,6 +39,7 @@ export const botApi = {
   getStatus: (id: number) => http<BotStatusOut>('GET', `/bot/${id}/status`),
   start: (id: number) => http<BotStatusOut>('POST', `/bot/${id}/start`),
   stop: (id: number) => http<BotStatusOut>('POST', `/bot/${id}/stop`),
+  restart: (id: number) => http<BotStatusOut>('POST', `/bot/${id}/restart`),
   sync: (id: number) => http<BotStatusOut>('POST', `/bot/${id}/sync`),
   // `remove` (not `delete` — reserved word in some lint configs)
   remove: (id: number) => http<void>('DELETE', `/bot/${id}`),
