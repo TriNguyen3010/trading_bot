@@ -330,7 +330,6 @@ export function DashboardPage() {
         pair: b.pair,
         timeframe: b.timeframe,
         createdAt: b.createdAt ? b.createdAt.slice(0, 10) : null,
-        leverage: b.leverage,
         stakeAmount: b.stakeAmount,
         maxOpenTrades: b.maxOpenTrades,
         balance: perf?.balance ?? null,

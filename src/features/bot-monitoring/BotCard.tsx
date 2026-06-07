@@ -16,7 +16,6 @@ export interface BotCardData {
   pair: string;
   timeframe: string;
   createdAt: string | null;
-  leverage: number | null;
   stakeAmount: number | null;
   maxOpenTrades: number | null;
   balance: number | null;
@@ -125,12 +124,11 @@ export function BotCard({
       )}
 
       {s !== 'ERROR' && (
-        <div className="mt-3 grid grid-cols-4 gap-2 text-2xs">
+        <div className="mt-3 grid grid-cols-3 gap-2 text-2xs">
           <Stat
             label="Open"
             value={`${bot.openTrades ?? 0}/${bot.maxOpenTrades ?? '—'}`}
           />
-          <Stat label="Lev" value={bot.leverage ? `${bot.leverage}×` : '—'} />
           <Stat label="Stake" value={fmt(bot.stakeAmount, 0)} />
           <Stat label="TF" value={bot.timeframe} />
         </div>

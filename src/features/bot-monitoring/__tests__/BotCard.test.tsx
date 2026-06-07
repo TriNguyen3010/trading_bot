@@ -8,7 +8,6 @@ const base: BotCardData = {
   pair: 'BTC/USDC:USDC',
   timeframe: '5m',
   createdAt: '2026-05-15',
-  leverage: 10,
   stakeAmount: 100,
   maxOpenTrades: 10,
   balance: 967.94,
