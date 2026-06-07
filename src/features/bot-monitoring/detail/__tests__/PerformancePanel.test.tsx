@@ -1,6 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { PerformancePanel } from '../PerformancePanel';
+
+// Stub the chart so the panel test doesn't touch lightweight-charts/canvas.
+vi.mock('../BacktestChart', () => ({
+  BacktestChart: ({ backtestId }: { backtestId: number }) => (
+    <div>chart-for-{backtestId}</div>
+  ),
+}));
 
 const ITEM = {
   id: 200,
@@ -58,5 +65,16 @@ describe('PerformancePanel', () => {
     const onRun = vi.fn();
     render(<PerformancePanel item={null} onRunBacktest={onRun} />);
     expect(screen.getByText(/No backtest yet/i)).toBeInTheDocument();
+  });
+
+  it('toggles Equity ↔ Price; Price shows the chart for the run; metrics stay', () => {
+    render(<PerformancePanel item={ITEM} onRunBacktest={vi.fn()} />);
+    // default = equity (metrics + curve)
+    expect(screen.getByText('104')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^price$/i }));
+    expect(screen.getByText(/chart-for-200/)).toBeInTheDocument();
+    expect(screen.getByText('104')).toBeInTheDocument(); // metrics remain in both views
+    fireEvent.click(screen.getByRole('button', { name: /^equity$/i }));
+    expect(screen.queryByText(/chart-for-200/)).not.toBeInTheDocument();
   });
 });

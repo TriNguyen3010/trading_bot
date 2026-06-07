@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   extractStrategyBlock,
@@ -7,6 +8,7 @@ import {
   type BacktestHistoryItem,
 } from '../backtest-results';
 import { BacktestEquityChart } from './BacktestEquityChart';
+import { BacktestChart } from './BacktestChart';
 
 const f = (n: number | null, d = 2, suffix = '') =>
   n == null ? '—' : `${n.toFixed(d)}${suffix}`;
@@ -18,6 +20,8 @@ export function PerformancePanel({
   item: BacktestHistoryItem | null;
   onRunBacktest: () => void;
 }) {
+  const [view, setView] = useState<'equity' | 'price'>('equity');
+  const [showExits, setShowExits] = useState(true);
   const block = item ? extractStrategyBlock(item) : null;
 
   if (!item || !block) {
@@ -66,12 +70,49 @@ export function PerformancePanel({
         <span className="text-sm font-bold text-fg">
           Performance · run #{item.id}
         </span>
-        <span className="text-xs text-fg-muted">
-          {item.timerange} · {item.timeframe}
-        </span>
+        <div className="flex items-center gap-3">
+          <div className="flex overflow-hidden rounded-md border border-border">
+            {(['equity', 'price'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={view === v}
+                onClick={() => setView(v)}
+                className={`px-2.5 py-1 text-2xs font-semibold capitalize ${
+                  view === v
+                    ? 'bg-brand text-fg-inverse'
+                    : 'text-fg-muted hover:text-fg'
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          <span className="text-xs text-fg-muted">
+            {item.timerange} · {item.timeframe}
+          </span>
+        </div>
       </div>
       <div className="p-4">
-        <BacktestEquityChart curve={curve} />
+        {view === 'equity' ? (
+          <BacktestEquityChart curve={curve} />
+        ) : (
+          <>
+            <label className="mb-2 flex w-fit items-center gap-1.5 text-2xs text-fg-muted">
+              <input
+                type="checkbox"
+                checked={showExits}
+                onChange={(e) => setShowExits(e.target.checked)}
+              />
+              Show exits
+            </label>
+            <BacktestChart
+              backtestId={item.id}
+              trades={block.trades}
+              showExits={showExits}
+            />
+          </>
+        )}
 
         <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {cells.map(([l, v, neg]) => (
