@@ -118,7 +118,41 @@ describe('BotMonitoringPage', () => {
   it('renders detail with balance + backtest performance', async () => {
     wrap(86);
     expect(await screen.findByText(/967\.94/)).toBeInTheDocument();
-    expect(await screen.findByText('104')).toBeInTheDocument();
+    // performance panel for the default-selected run (unique header)
+    expect(await screen.findByText(/run #200/i)).toBeInTheDocument();
+  });
+
+  it('selecting another backtest run loads its results', async () => {
+    vi.mocked(botApi.getBacktestHistory).mockResolvedValue({
+      items: [
+        {
+          id: 200,
+          status: 'completed',
+          strategy_name: 'Gamma',
+          win_rate: 44.23,
+          total_profit: -36.59,
+          timerange: '20260427-20260527',
+          timeframe: '5m',
+        },
+        {
+          id: 150,
+          status: 'completed',
+          strategy_name: 'Gamma',
+          win_rate: 60,
+          total_profit: 12.5,
+          timerange: '20260301-20260401',
+          timeframe: '5m',
+        },
+      ],
+      total: 2,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    wrap(86);
+    // default = latest completed (id 200)
+    expect(await screen.findByText(/run #200/i)).toBeInTheDocument();
+    // pick the older run #150 from the history list
+    fireEvent.click(screen.getByText(/#150/));
+    await waitFor(() => expect(botApi.getBacktest).toHaveBeenCalledWith(150));
   });
 
   it('renders the no-backtest empty state for a not-started bot', async () => {

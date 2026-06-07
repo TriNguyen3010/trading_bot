@@ -24,19 +24,23 @@ import {
 } from './bot-list.helpers';
 import { derivePresentationalState } from './presentational-state';
 import { extractStrategyBlock } from './backtest-results';
+import {
+  summarizeHistory,
+  pickDefaultRunId,
+  type BacktestRunSummary,
+} from './backtest-history';
 import { DetailHero } from './detail/DetailHero';
 import { PerformancePanel } from './detail/PerformancePanel';
+import { BacktestHistoryPanel } from './detail/BacktestHistoryPanel';
 import { RecentTradesPanel } from './detail/RecentTradesPanel';
 import { StatusPanel } from './detail/StatusPanel';
 import { ConfigPanel } from './detail/ConfigPanel';
 import { ActivityLogPanel } from './detail/ActivityLogPanel';
 
-interface LastBacktestSummary {
-  count: number;
-  latestStatus: string | null;
-  winRate: number | null;
-  netAbs: number | null;
-  strategyName: string | null;
+/** id of the latest run by id (for the bot-state badge). */
+function latestRunId(runs: BacktestRunSummary[]): number | null {
+  if (runs.length === 0) return null;
+  return runs.reduce((m, r) => (r.id > m ? r.id : m), runs[0].id);
 }
 
 export function BotMonitoringPage() {
@@ -62,23 +66,17 @@ export function BotMonitoringPage() {
 
   const [config, setConfig] = useState<Record<string, unknown> | null>(null);
   const [perf, setPerf] = useState<BotPerformance | null>(null);
+  const [runs, setRuns] = useState<BacktestRunSummary[]>([]);
+  const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [backtest, setBacktest] = useState<BacktestHistoryItem | null>(null);
-  const [history, setHistory] = useState<LastBacktestSummary>({
-    count: 0,
-    latestStatus: null,
-    winRate: null,
-    netAbs: null,
-    strategyName: null,
-  });
   const [auditLogs, setAuditLogs] = useState<BotAuditLogOut[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [confirmStop, setConfirmStop] = useState(false);
   const [backtestOpen, setBacktestOpen] = useState(false);
 
-  // Load config + performance + latest backtest + audit logs (parallel,
-  // best-effort). The full backtest results blob is fetched only when the
-  // latest run completed.
+  // Load config + performance + backtest history (last 10) + audit logs
+  // (parallel, best-effort). Default-selects the latest completed run.
   useEffect(() => {
     if (safeBotId == null) return;
     let cancelled = false;
@@ -88,7 +86,7 @@ export function BotMonitoringPage() {
         const [cfgR, perfR, histR, auditR] = await Promise.allSettled([
           lifecycleApi.getConfig(safeBotId),
           lifecycleApi.getPerformance(safeBotId),
-          lifecycleApi.getBacktestHistory(safeBotId, 1),
+          lifecycleApi.getBacktestHistory(safeBotId, 10),
           lifecycleApi.getAuditLogs(safeBotId, 20),
         ]);
         if (cancelled) return;
@@ -100,23 +98,9 @@ export function BotMonitoringPage() {
         if (auditR.status === 'fulfilled') setAuditLogs(auditR.value ?? []);
 
         if (histR.status === 'fulfilled') {
-          const items = histR.value.items ?? [];
-          const it = items[0];
-          setHistory({
-            count: histR.value.total ?? items.length,
-            latestStatus: it?.status ?? null,
-            winRate: it?.win_rate ?? null,
-            netAbs: it?.total_profit ?? null,
-            strategyName: it?.strategy_name ?? null,
-          });
-          if (it && it.status === 'completed') {
-            try {
-              const full = await lifecycleApi.getBacktest(it.id);
-              if (!cancelled) setBacktest(full);
-            } catch {
-              /* full results optional — panel falls back to empty */
-            }
-          }
+          const summaries = summarizeHistory(histR.value.items ?? []);
+          setRuns(summaries);
+          setSelectedRunId(pickDefaultRunId(summaries));
         }
       } catch (err) {
         if (!cancelled) setLoadError(formatBackendError(err));
@@ -126,6 +110,32 @@ export function BotMonitoringPage() {
       cancelled = true;
     };
   }, [safeBotId]);
+
+  // Fetch the full results blob for the selected run (only when completed —
+  // a failed/running run has no results, so the Performance panel stays empty).
+  useEffect(() => {
+    if (selectedRunId == null) {
+      setBacktest(null);
+      return;
+    }
+    const run = runs.find((r) => r.id === selectedRunId);
+    if (!run || run.status !== 'completed') {
+      setBacktest(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const full = await lifecycleApi.getBacktest(selectedRunId);
+        if (!cancelled) setBacktest(full);
+      } catch {
+        if (!cancelled) setBacktest(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedRunId, runs]);
 
   // Start must route through the Launchpad mode-gate (never lifecycleApi.start
   // directly) — a PAUSED ex-Live bot would otherwise restart in LIVE.
@@ -185,9 +195,11 @@ export function BotMonitoringPage() {
     },
     cfgShape,
   );
+  // Bot-state badge tracks the LATEST run's status (not the one being viewed).
+  const latestRun = runs.find((r) => r.id === latestRunId(runs)) ?? null;
   const state = derivePresentationalState(mode, {
-    historyCount: history.count,
-    latestStatus: history.latestStatus,
+    historyCount: runs.length,
+    latestStatus: latestRun?.status ?? null,
   });
   const running = mode === 'LIVE' || mode === 'DRY-RUN';
   const exchangeName =
@@ -195,6 +207,12 @@ export function BotMonitoringPage() {
     (config?.exchange_name as string | undefined) ??
     null;
   const tradeBlock = backtest ? extractStrategyBlock(backtest) : null;
+  // Hero Win/Net reflect the SELECTED run (consistent with the shown perf).
+  const selectedRun = runs.find((r) => r.id === selectedRunId) ?? null;
+  const heroBacktest =
+    selectedRun && selectedRun.status === 'completed'
+      ? { winRate: selectedRun.winRatePct, netAbs: selectedRun.netAbs }
+      : null;
 
   const notLoaded =
     config === null && liveStatus === null && !loadError && statusLoading;
@@ -261,10 +279,7 @@ export function BotMonitoringPage() {
               openTrades: running ? (perf?.openTrades ?? null) : null,
               maxOpenTrades:
                 (config?.max_open_trades as number | undefined) ?? null,
-              lastBacktest:
-                history.count > 0
-                  ? { winRate: history.winRate, netAbs: history.netAbs }
-                  : null,
+              lastBacktest: heroBacktest,
             }}
             pending={pending}
             onSync={doSync}
@@ -275,6 +290,13 @@ export function BotMonitoringPage() {
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
             <div className="flex flex-col gap-5">
+              {runs.length > 0 && (
+                <BacktestHistoryPanel
+                  runs={runs}
+                  selectedId={selectedRunId}
+                  onSelect={setSelectedRunId}
+                />
+              )}
               <PerformancePanel
                 item={backtest}
                 onRunBacktest={() => setBacktestOpen(true)}
@@ -313,7 +335,7 @@ export function BotMonitoringPage() {
                   liveStatus?.bot_name ??
                   (config?.bot_name as string | undefined) ??
                   `Bot #${safeBotId}`,
-                strategyName: history.strategyName,
+                strategyName: backtest?.strategy_name ?? null,
                 pair: derivePair(cfgShape),
                 timeframe: deriveTimeframe(cfgShape),
               } satisfies BacktestBot)
