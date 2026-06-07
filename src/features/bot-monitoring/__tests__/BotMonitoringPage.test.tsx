@@ -1,8 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { BotMonitoringPage } from '../BotMonitoringPage';
 import { botApi } from '../bot.api';
+
+/** Stand-in for the dashboard route: surfaces the navigation state so the
+ * Start-via-Launchpad guard can assert the launchpadBotId is carried. */
+function LaunchTarget() {
+  const loc = useLocation();
+  const s = loc.state as { launchpadBotId?: number } | null;
+  return <div>launchpad:{s?.launchpadBotId ?? 'none'}</div>;
+}
 
 vi.mock('../bot.api', () => ({
   botApi: {
@@ -37,7 +45,7 @@ function wrap(id: number) {
     <MemoryRouter initialEntries={[`/bots/${id}`]}>
       <Routes>
         <Route path="/bots/:id" element={<BotMonitoringPage />} />
-        <Route path="/dashboard" element={<div>dashboard-launchpad</div>} />
+        <Route path="/dashboard" element={<LaunchTarget />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -130,6 +138,9 @@ describe('BotMonitoringPage', () => {
     } as any);
     wrap(9);
     expect(await screen.findByText(/No backtest yet/i)).toBeInTheDocument();
+    // Core invariant: a non-running bot must NOT show a (stale) live balance,
+    // even though getPerformance still returns 967.94 in the mock.
+    expect(screen.queryByText(/967\.94/)).not.toBeInTheDocument();
   });
 
   it('a stopped bot Start routes to the Launchpad and never calls botApi.start', async () => {
@@ -150,8 +161,10 @@ describe('BotMonitoringPage', () => {
     wrap(9);
     const startBtn = await screen.findByRole('button', { name: /start/i });
     fireEvent.click(startBtn);
+    // Must navigate to the dashboard Launchpad WITH this bot's id in state —
+    // that state is the whole reason Start doesn't call botApi.start directly.
     await waitFor(() =>
-      expect(screen.getByText('dashboard-launchpad')).toBeInTheDocument(),
+      expect(screen.getByText('launchpad:9')).toBeInTheDocument(),
     );
     expect(botApi.start).not.toHaveBeenCalled();
   });

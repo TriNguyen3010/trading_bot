@@ -29,6 +29,8 @@ describe('info panels', () => {
   it('StatusPanel renders dashes for a null status', () => {
     render(<StatusPanel status={null} />);
     expect(screen.getByText('down')).toBeInTheDocument();
+    // State / Desired status / Last heartbeat / Error all fall back to '—'.
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(3);
   });
 
   it('ConfigPanel renders only keys present in the raw config', () => {

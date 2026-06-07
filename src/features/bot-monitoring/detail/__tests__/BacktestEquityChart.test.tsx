@@ -14,4 +14,16 @@ describe('BacktestEquityChart', () => {
     const { container } = render(<BacktestEquityChart curve={[]} />);
     expect(container.querySelector('path')).toBeNull();
   });
+
+  it('keeps the zero baseline inside the viewport for an all-positive curve', () => {
+    const { container } = render(
+      <BacktestEquityChart curve={[5, 12, 20, 33]} />,
+    );
+    const zeroLine = container.querySelector('line');
+    expect(zeroLine).not.toBeNull();
+    const y1 = Number(zeroLine!.getAttribute('y1'));
+    // viewBox height is 150 — the zero line must not fall outside it.
+    expect(y1).toBeGreaterThanOrEqual(0);
+    expect(y1).toBeLessThanOrEqual(150);
+  });
 });

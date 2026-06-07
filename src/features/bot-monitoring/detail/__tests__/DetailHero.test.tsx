@@ -32,6 +32,8 @@ describe('DetailHero', () => {
   it('shows win rate + net from last backtest, no live-PnL / needs-BE', () => {
     render(<DetailHero bot={base} {...h} />);
     expect(screen.getByText(/44\.2%/)).toBeInTheDocument();
+    // Net is ABSOLUTE (history total_profit), not a %, and keeps its sign.
+    expect(screen.getByText('-36.59')).toBeInTheDocument();
     expect(screen.queryByText(/PnL today/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/needs BE/i)).not.toBeInTheDocument();
   });
