@@ -12,6 +12,7 @@ export interface BacktestTrade {
   exit_reason?: string;
   funding_fees?: number;
   trade_duration?: number;
+  open_timestamp?: number; // present in real /backtest data; needed for entry markers
   close_timestamp: number;
   pair?: string;
 }
