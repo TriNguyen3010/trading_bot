@@ -81,7 +81,23 @@ describe('BacktestChart', () => {
       new HttpError(404, JSON.stringify({ detail: 'run not found' })),
     );
     render(<BacktestChart backtestId={999} trades={[] as never} showExits />);
-    expect(await screen.findByText(/run not found/i)).toBeInTheDocument();
+    // formatBackendError prefixes the status → "404: run not found"
+    expect(await screen.findByText(/404.*run not found/i)).toBeInTheDocument();
+  });
+
+  it('re-applies markers (entry-only) when Show-exits toggles off', async () => {
+    const { rerender } = render(
+      <BacktestChart backtestId={200} trades={trades} showExits />,
+    );
+    await waitFor(() =>
+      expect(candleSeries.setMarkers.mock.calls.at(-1)?.[0]).toHaveLength(2),
+    );
+    rerender(
+      <BacktestChart backtestId={200} trades={trades} showExits={false} />,
+    );
+    await waitFor(() =>
+      expect(candleSeries.setMarkers.mock.calls.at(-1)?.[0]).toHaveLength(1),
+    );
   });
 
   it('removes the chart on unmount (no leak)', async () => {
