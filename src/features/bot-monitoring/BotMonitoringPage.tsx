@@ -335,7 +335,11 @@ export function BotMonitoringPage() {
                   liveStatus?.bot_name ??
                   (config?.bot_name as string | undefined) ??
                   `Bot #${safeBotId}`,
-                strategyName: backtest?.strategy_name ?? null,
+                strategyName:
+                  selectedRun?.strategyName ??
+                  latestRun?.strategyName ??
+                  backtest?.strategy_name ??
+                  null,
                 pair: derivePair(cfgShape),
                 timeframe: deriveTimeframe(cfgShape),
               } satisfies BacktestBot)

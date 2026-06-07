@@ -14,21 +14,29 @@ export interface BacktestRunSummary {
   netAbs: number | null;
   /** completed_at, or started_at while still running/failed. */
   date: string | null;
+  /** strategy_name is a required field on every history item. */
+  strategyName: string | null;
 }
 
 export function summarizeHistory(
   items: BacktestHistoryItem[],
 ): BacktestRunSummary[] {
-  return items.map((it) => ({
-    id: it.id,
-    timerange: it.timerange,
-    timeframe: it.timeframe,
-    status: it.status,
-    trades: it.trade_count ?? null,
-    winRatePct: it.win_rate ?? null,
-    netAbs: it.total_profit ?? null,
-    date: it.completed_at ?? it.started_at ?? null,
-  }));
+  // Newest-first by id (the BE list order isn't a documented guarantee) so the
+  // panel renders deterministically and latest/default derivation is stable
+  // regardless of the returned window's order.
+  return [...items]
+    .sort((a, b) => b.id - a.id)
+    .map((it) => ({
+      id: it.id,
+      timerange: it.timerange,
+      timeframe: it.timeframe,
+      status: it.status,
+      trades: it.trade_count ?? null,
+      winRatePct: it.win_rate ?? null,
+      netAbs: it.total_profit ?? null,
+      date: it.completed_at ?? it.started_at ?? null,
+      strategyName: it.strategy_name ?? null,
+    }));
 }
 
 /** Default selection: the most recent COMPLETED run (highest id), so the

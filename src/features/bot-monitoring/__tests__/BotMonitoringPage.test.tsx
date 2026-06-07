@@ -216,6 +216,17 @@ describe('BotMonitoringPage', () => {
     expect(botApi.getBacktest).not.toHaveBeenCalled();
   });
 
+  it('does NOT fetch the full backtest when the default-selected run is running', async () => {
+    vi.mocked(botApi.getBacktestHistory).mockResolvedValue({
+      items: [{ id: 312, status: 'running', strategy_name: 'X' }],
+      total: 1,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    wrap(86);
+    expect(await screen.findByText('Configuration')).toBeInTheDocument();
+    expect(botApi.getBacktest).not.toHaveBeenCalled();
+  });
+
   it('Stop confirms then calls botApi.stop', async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(botApi.stop).mockResolvedValue({

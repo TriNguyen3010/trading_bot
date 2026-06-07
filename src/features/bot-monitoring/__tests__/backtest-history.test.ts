@@ -5,6 +5,7 @@ const items = [
   {
     id: 200,
     status: 'completed',
+    strategy_name: 'Gamma',
     timerange: '20260427-20260527',
     timeframe: '5m',
     trade_count: 104,
@@ -39,7 +40,7 @@ const items = [
 ] as any;
 
 describe('summarizeHistory', () => {
-  it('maps each item to a row summary; date = completed_at ?? started_at', () => {
+  it('maps each item to a row summary; date = completed_at ?? started_at; carries strategyName', () => {
     const rows = summarizeHistory(items);
     expect(rows).toHaveLength(3);
     const r200 = rows.find((r) => r.id === 200)!;
@@ -48,9 +49,14 @@ describe('summarizeHistory', () => {
     expect(r200.winRatePct).toBe(44.23);
     expect(r200.netAbs).toBe(-36.59);
     expect(r200.date).toBe('2026-05-27T07:28:05Z'); // completed_at
+    expect(r200.strategyName).toBe('Gamma');
     const r305 = rows.find((r) => r.id === 305)!;
     expect(r305.date).toBe('2026-06-01T00:00:00Z'); // started_at fallback
     expect(r305.trades).toBeNull();
+  });
+
+  it('returns rows newest-first by id', () => {
+    expect(summarizeHistory(items).map((r) => r.id)).toEqual([312, 305, 200]);
   });
 });
 

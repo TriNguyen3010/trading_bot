@@ -13,16 +13,20 @@ const runs: BacktestRunSummary[] = [
     winRatePct: 44.23,
     netAbs: -36.59,
     date: '2026-05-27T07:28:05Z',
+    strategyName: 'Gamma',
   },
   {
     id: 305,
     timerange: '20260401-20260501',
     timeframe: '5m',
     status: 'failed',
-    trades: null,
-    winRatePct: null,
-    netAbs: null,
+    // non-null metrics here would be WRONG to show — the panel must hide them
+    // for non-completed runs.
+    trades: 7,
+    winRatePct: 99,
+    netAbs: 1.23,
     date: '2026-06-01T00:00:00Z',
+    strategyName: 'Gamma',
   },
 ];
 
@@ -36,6 +40,9 @@ describe('BacktestHistoryPanel', () => {
     expect(screen.getByText(/-36\.59/)).toBeInTheDocument();
     // failed run shows a status badge
     expect(screen.getByText(/failed/i)).toBeInTheDocument();
+    // …but NOT its metrics (only completed runs show win/trades/net)
+    expect(screen.queryByText('99.0%')).not.toBeInTheDocument();
+    expect(screen.queryByText(/\+1\.23/)).not.toBeInTheDocument();
   });
 
   it('fires onSelect with the run id when a row is clicked', () => {
