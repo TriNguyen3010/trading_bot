@@ -237,9 +237,6 @@ export function PortfolioHero({
         <h2 className="text-2xs font-semibold uppercase tracking-wider text-fg-muted">
           Your portfolio
         </h2>
-        <span className="font-mono text-2xs tabular-nums text-fg-muted">
-          <LiveTick label="" /> last update just now
-        </span>
       </div>
       {!agentLoading && !agent && <GoLiveBanner onCreate={onCreateAgent} />}
       <section className="card-coin98 relative grid grid-cols-1 gap-6 overflow-hidden rounded-3xl p-8 md:grid-cols-[1fr_auto]">
