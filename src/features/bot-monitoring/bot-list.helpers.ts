@@ -67,7 +67,11 @@ export function deriveMode(
     if (config?.dry_run === false) return 'LIVE';
     if (config?.dry_run === true) return 'DRY-RUN';
   }
-  if (bot.error_message) return 'ERROR';
+  // A failed launch reads as ERROR off EITHER signal: BE may report
+  // status:"error" with error_message still null (no captured reason). Keying
+  // ERROR off error_message alone let such a bot fall through to PAUSED — which
+  // then renders as the misleading "NEW" badge for a 0-history bot.
+  if (bot.status === 'error' || bot.error_message) return 'ERROR';
   return 'PAUSED';
 }
 

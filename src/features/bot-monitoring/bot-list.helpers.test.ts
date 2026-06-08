@@ -110,6 +110,22 @@ describe('deriveMode', () => {
       ),
     ).toBe('ERROR');
   });
+  it('returns ERROR when status is "error" even if error_message is null', () => {
+    // BE reports a failed launch as status:"error" but sometimes leaves
+    // error_message null (no captured reason). The bot still failed, so it
+    // must read as ERROR — not fall through to PAUSED (which then renders as
+    // the misleading "NEW" badge for a bot with no backtest history).
+    expect(
+      deriveMode(
+        makeBot({ status: 'error', error_message: null }),
+        makeConfig(),
+      ),
+    ).toBe('ERROR');
+    // also with null config (config fetch failed)
+    expect(
+      deriveMode(makeBot({ status: 'error', error_message: null }), null),
+    ).toBe('ERROR');
+  });
 });
 
 describe('derivePair', () => {
