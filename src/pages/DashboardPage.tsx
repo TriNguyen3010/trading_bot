@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, RefreshCw, Search } from 'lucide-react';
+import { ArrowRight, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
@@ -11,6 +11,14 @@ import { type DashboardBot } from '@/features/bot-monitoring/bot-list.helpers';
 import { derivePresentationalState } from '@/features/bot-monitoring/presentational-state';
 import { usePortfolioOverview } from '@/features/bot-monitoring/usePortfolioOverview';
 import { BotCard, type BotCardData } from '@/features/bot-monitoring/BotCard';
+import { PortfolioBar } from '@/features/bot-monitoring/PortfolioBar';
+import { StatusFilterChips } from '@/features/bot-monitoring/StatusFilterChips';
+import { sortCards } from '@/features/bot-monitoring/bot-sort';
+import {
+  filterByCategory,
+  countByCategory,
+  type FilterCategory,
+} from '@/features/bot-monitoring/bot-filter';
 import { DashboardEmptyState } from '@/features/bot-monitoring/DashboardEmptyState';
 import { ConfirmActionDialog } from '@/features/bot-monitoring/ConfirmActionDialog';
 import { isTerminal } from '@/features/bot-monitoring/lifecycle-actions';
@@ -48,6 +56,7 @@ export function DashboardPage() {
   const consumedLaunchRef = useRef(false);
   const { requireWalletThen } = useRequireWallet();
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<FilterCategory>('all');
   const [importOpen, setImportOpen] = useState(false);
 
   const {
@@ -199,17 +208,19 @@ export function DashboardPage() {
     });
   }, [realBots, perfById, btById]);
 
-  const filtered = search
-    ? cards.filter(
-        (c) =>
-          c.name.toLowerCase().includes(search.toLowerCase()) ||
-          c.pair.toLowerCase().includes(search.toLowerCase()),
-      )
-    : cards;
+  const counts = useMemo(() => countByCategory(cards), [cards]);
 
-  const capital = stats.capitalDeployed.toLocaleString('en-US', {
-    maximumFractionDigits: 2,
-  });
+  // Sort (triage-first) → filter by status chip → filter by search.
+  const filtered = useMemo(() => {
+    const sorted = sortCards(cards);
+    const byCat = filterByCategory(sorted, filter);
+    if (!search) return byCat;
+    const q = search.toLowerCase();
+    return byCat.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) || c.pair.toLowerCase().includes(q),
+    );
+  }, [cards, filter, search]);
 
   return (
     <div className="flex h-screen w-screen flex-col bg-black text-fg">
@@ -230,224 +241,168 @@ export function DashboardPage() {
       <AppHeader />
 
       <main className="relative z-10 flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-6xl flex-col gap-5 px-8 py-7">
-          {/* Hero portfolio — capital deployed (live balance) */}
-          <section
-            aria-labelledby="portfolio-label"
-            className="card-coin98-flat relative overflow-hidden rounded-3xl p-8"
-          >
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute -left-16 -top-24 h-80 w-80 rounded-full opacity-40 blur-2xl"
-              style={{
-                background:
-                  'radial-gradient(circle, rgba(240,185,11,0.25), transparent 70%)',
-              }}
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-8 py-7">
+          {isEmptyReal ? (
+            <DashboardEmptyState
+              onCreate={() => requireWalletThen(() => navigate('/builder'))}
+              onImport={() => requireWalletThen(() => setImportOpen(true))}
             />
-            <div className="relative">
-              <div
-                id="portfolio-label"
-                className="mb-4 flex items-center gap-3 text-2xs uppercase tracking-widest text-fg-muted"
-              >
-                <span>Portfolio</span>
-                <span className="inline-flex items-center gap-1.5 text-bullish">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
-                  Live
-                </span>
-              </div>
-
-              <div
-                className="font-mono text-6xl font-bold tabular-nums tracking-tight text-fg"
-                style={{
-                  textShadow: '0 0 38px rgba(240,185,11,0.22)',
-                  lineHeight: 1.0,
-                }}
-              >
-                {capital} <span className="text-2xl text-fg-muted">USDC</span>
-              </div>
-              <div className="mt-2 text-2xs uppercase tracking-widest text-fg-muted">
-                Capital deployed · live balance
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-secondary">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="text-bullish">▲</span>
-                  <span className="font-semibold tabular-nums text-fg">
-                    {stats.active}
-                  </span>
-                  <span className="text-fg-muted">
-                    active · {stats.total} total
-                  </span>
-                </span>
-                <span className="text-border-strong">·</span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="font-semibold tabular-nums text-fg-muted">
-                    {stats.idle}
-                  </span>
-                  <span className="text-fg-muted">idle</span>
-                </span>
-                <span className="text-border-strong">·</span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="font-semibold tabular-nums text-brand">
-                    {stats.transitioning}
-                  </span>
-                  <span className="text-fg-muted">transitioning</span>
-                </span>
-                <span className="text-border-strong">·</span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="font-semibold tabular-nums text-fg">
-                    {stats.openTrades}
-                  </span>
-                  <span className="text-fg-muted">open trades</span>
-                </span>
-              </div>
-            </div>
-          </section>
-
-          {/* My bots */}
-          <section className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-2xs font-semibold uppercase tracking-widest text-fg-muted">
-                My bots · {stats.total} total
-              </h2>
-              <div className="flex items-center gap-2">
-                {isLoadedReal && (
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search bots…"
-                      className="h-9 w-44 rounded-md border border-border bg-input pl-8 pr-3 text-sm text-fg placeholder:text-fg-muted focus:border-brand focus:outline-none"
-                    />
-                  </div>
-                )}
-                {!loading && !fetchError && (
-                  <Button
-                    variant="ghost"
-                    size="md"
-                    onClick={handleRefresh}
-                    aria-label="Refresh bots"
-                    title="Refresh"
-                  >
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-                <Button
-                  variant="secondary"
-                  size="md"
-                  className="min-w-[120px]"
-                  onClick={() => requireWalletThen(() => setImportOpen(true))}
-                >
-                  Import
-                </Button>
-                <Button
-                  variant="primary"
-                  size="md"
-                  className="group min-w-[120px]"
-                  onClick={() => requireWalletThen(() => navigate('/builder'))}
-                >
-                  New bot
-                  <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
-                </Button>
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="card-coin98-flat min-h-[230px] animate-pulse rounded-2xl p-4"
-                  >
-                    <div className="h-4 w-16 rounded bg-fg-muted/15" />
-                    <div className="mt-3 h-6 w-3/4 rounded bg-fg-muted/15" />
-                    <div className="mt-2 h-3 w-1/2 rounded bg-fg-muted/15" />
-                    <div className="mt-6 h-8 w-2/3 rounded bg-fg-muted/15" />
-                  </div>
-                ))}
-              </div>
-            ) : fetchError ? (
-              <div className="card-coin98-flat rounded-2xl p-10 text-center">
-                <p className="text-sm font-semibold text-bearish">
-                  Couldn&apos;t load your bots
-                </p>
-                <p className="mt-1 text-xs text-fg-muted">{fetchError}</p>
-                <Button
-                  variant="secondary"
-                  className="mt-4"
-                  onClick={handleRefresh}
-                >
-                  Retry
-                </Button>
-              </div>
-            ) : isEmptyReal ? (
-              <DashboardEmptyState
-                onCreate={() => requireWalletThen(() => navigate('/builder'))}
-                onImport={() => requireWalletThen(() => setImportOpen(true))}
+          ) : (
+            <>
+              <PortfolioBar
+                stats={stats}
+                loading={loading}
+                onRefresh={handleRefresh}
               />
-            ) : (
-              <>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  {filtered.map((card) => (
-                    <BotCard
-                      key={card.id}
-                      bot={card}
+
+              <section className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h2 className="text-2xs font-semibold uppercase tracking-widest text-fg-muted">
+                      My bots · {stats.total}
+                    </h2>
+                    {isLoadedReal && (
+                      <StatusFilterChips
+                        counts={counts}
+                        active={filter}
+                        onChange={setFilter}
+                      />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isLoadedReal && (
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
+                        <input
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          placeholder="Search bots…"
+                          className="h-9 w-44 rounded-md border border-border bg-input pl-8 pr-3 text-sm text-fg placeholder:text-fg-muted focus:border-brand focus:outline-none"
+                        />
+                      </div>
+                    )}
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      className="min-w-[120px]"
                       onClick={() =>
-                        navigate(`/bots/${card.id}`, {
-                          state: { createdAt: card.createdAt, name: card.name },
-                        })
+                        requireWalletThen(() => setImportOpen(true))
                       }
-                      onStart={() => {
-                        const rb = realById.get(card.id);
-                        if (rb) setLaunchBotTarget(toLaunchpadBot(rb));
-                      }}
-                      onStop={() =>
-                        setConfirmState({
-                          action: 'stop',
-                          botId: card.id,
-                          botName: card.name,
-                        })
+                    >
+                      Import
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="md"
+                      className="group min-w-[120px]"
+                      onClick={() =>
+                        requireWalletThen(() => navigate('/builder'))
                       }
-                      onRemove={() =>
-                        setConfirmState({
-                          action: 'remove',
-                          botId: card.id,
-                          botName: card.name,
-                        })
-                      }
-                      onBacktest={() => {
-                        const rb = realById.get(card.id);
-                        if (rb)
-                          setBacktestBot({
-                            id: rb.id,
-                            name: rb.name,
-                            strategyName: rb.strategyName,
-                            pair: rb.pair,
-                            timeframe: rb.timeframe,
-                          });
-                      }}
-                    />
-                  ))}
+                    >
+                      New bot
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+                    </Button>
+                  </div>
                 </div>
 
-                {filtered.length === 0 && (
-                  <div className="card-coin98-flat rounded-2xl p-10 text-center">
-                    <p className="text-sm font-semibold text-fg">
-                      No bots match &quot;{search}&quot;
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setSearch('')}
-                      className="mt-2 text-xs text-brand hover:underline"
-                    >
-                      Clear search
-                    </button>
+                {loading ? (
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="card-coin98-flat min-h-[230px] animate-pulse rounded-2xl p-4"
+                      >
+                        <div className="h-4 w-16 rounded bg-fg-muted/15" />
+                        <div className="mt-3 h-6 w-3/4 rounded bg-fg-muted/15" />
+                        <div className="mt-2 h-3 w-1/2 rounded bg-fg-muted/15" />
+                        <div className="mt-6 h-8 w-2/3 rounded bg-fg-muted/15" />
+                      </div>
+                    ))}
                   </div>
+                ) : fetchError ? (
+                  <div className="card-coin98-flat rounded-2xl p-10 text-center">
+                    <p className="text-sm font-semibold text-bearish">
+                      Couldn&apos;t load your bots
+                    </p>
+                    <p className="mt-1 text-xs text-fg-muted">{fetchError}</p>
+                    <Button
+                      variant="secondary"
+                      className="mt-4"
+                      onClick={handleRefresh}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
+                      {filtered.map((card) => (
+                        <BotCard
+                          key={card.id}
+                          bot={card}
+                          onClick={() =>
+                            navigate(`/bots/${card.id}`, {
+                              state: {
+                                createdAt: card.createdAt,
+                                name: card.name,
+                              },
+                            })
+                          }
+                          onStart={() => {
+                            const rb = realById.get(card.id);
+                            if (rb) setLaunchBotTarget(toLaunchpadBot(rb));
+                          }}
+                          onStop={() =>
+                            setConfirmState({
+                              action: 'stop',
+                              botId: card.id,
+                              botName: card.name,
+                            })
+                          }
+                          onRemove={() =>
+                            setConfirmState({
+                              action: 'remove',
+                              botId: card.id,
+                              botName: card.name,
+                            })
+                          }
+                          onBacktest={() => {
+                            const rb = realById.get(card.id);
+                            if (rb)
+                              setBacktestBot({
+                                id: rb.id,
+                                name: rb.name,
+                                strategyName: rb.strategyName,
+                                pair: rb.pair,
+                                timeframe: rb.timeframe,
+                              });
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    {filtered.length === 0 && (
+                      <div className="card-coin98-flat rounded-2xl p-10 text-center">
+                        <p className="text-sm font-semibold text-fg">
+                          No bots match your filter
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearch('');
+                            setFilter('all');
+                          }}
+                          className="mt-2 text-xs text-brand hover:underline"
+                        >
+                          Clear filter
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-          </section>
+              </section>
+            </>
+          )}
         </div>
       </main>
 

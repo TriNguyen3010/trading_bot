@@ -244,13 +244,8 @@ describe('DashboardPage', () => {
   });
 
   it('Refresh button triggers a refetch', async () => {
-    vi.mocked(botApi.list).mockResolvedValueOnce([]);
-    renderPage();
-
-    await waitFor(() =>
-      expect(screen.getByText(/No bots yet/i)).toBeInTheDocument(),
-    );
-
+    // Refresh lives in the KPI bar, which is only shown once bots exist —
+    // so drive the refetch from a populated state (empty state has no toolbar).
     vi.mocked(botApi.list).mockResolvedValueOnce([
       {
         id: 7,
@@ -261,28 +256,50 @@ describe('DashboardPage', () => {
         strategy_name: 'X',
       },
     ]);
-    vi.mocked(botApi.getConfig).mockResolvedValueOnce({
+    vi.mocked(botApi.getConfig).mockResolvedValue({
       config: {
         dry_run: true,
         timeframe: '1h',
         exchange: { pair_whitelist: ['BTC/USDT'] },
       },
     });
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText('Fresh bot')).toBeInTheDocument(),
+    );
+
+    // A second fetch returns an extra bot; refresh should surface it.
+    vi.mocked(botApi.list).mockResolvedValueOnce([
+      {
+        id: 7,
+        bot_name: 'Fresh bot',
+        status: 'stopped',
+        desired_status: null,
+        error_message: null,
+        strategy_name: 'X',
+      },
+      {
+        id: 8,
+        bot_name: 'Second bot',
+        status: 'stopped',
+        desired_status: null,
+        error_message: null,
+        strategy_name: 'Y',
+      },
+    ]);
 
     fireEvent.click(screen.getByRole('button', { name: /refresh/i }));
 
     await waitFor(() =>
-      expect(screen.getByText('Fresh bot')).toBeInTheDocument(),
+      expect(screen.getByText('Second bot')).toBeInTheDocument(),
     );
-    expect(screen.queryByText(/No bots yet/i)).not.toBeInTheDocument();
   });
 
-  it('Refresh button is hidden during loading / error states', async () => {
+  it('Refresh stays in the KPI bar — disabled while loading, available on error', async () => {
     vi.mocked(botApi.list).mockReturnValue(new Promise(() => {}));
     const { unmount } = renderPage();
-    expect(
-      screen.queryByRole('button', { name: /refresh/i }),
-    ).not.toBeInTheDocument();
+    // The KPI bar (with Refresh) stays mounted during load; refresh is disabled.
+    expect(screen.getByRole('button', { name: /refresh/i })).toBeDisabled();
     unmount();
 
     vi.resetAllMocks();
@@ -293,9 +310,10 @@ describe('DashboardPage', () => {
     await waitFor(() =>
       expect(screen.getByText(/couldn't load your bots/i)).toBeInTheDocument(),
     );
+    // On error the bar remains, so Refresh is available (alongside Retry).
     expect(
-      screen.queryByRole('button', { name: /refresh/i }),
-    ).not.toBeInTheDocument();
+      screen.getByRole('button', { name: /refresh/i }),
+    ).toBeInTheDocument();
   });
 
   it('Search input is hidden in empty / error / loading states', async () => {
@@ -340,6 +358,46 @@ describe('DashboardPage', () => {
     await new Promise((r) => setTimeout(r, 0));
 
     expect(vi.mocked(botApi.list)).toHaveBeenCalledOnce();
+  });
+
+  it('filters the grid when a status chip is clicked', async () => {
+    vi.mocked(botApi.list).mockResolvedValueOnce([
+      {
+        id: 1,
+        bot_name: 'Live bot',
+        status: 'running',
+        desired_status: null,
+        error_message: null,
+        strategy_name: 'S1',
+      },
+      {
+        id: 2,
+        bot_name: 'Broken bot',
+        status: 'error',
+        desired_status: null,
+        error_message: 'boom',
+        strategy_name: 'S2',
+      },
+    ]);
+    vi.mocked(botApi.getConfig).mockResolvedValue({
+      config: {
+        dry_run: false,
+        timeframe: '1h',
+        exchange: { pair_whitelist: ['BTC/USDT'] },
+      },
+    });
+
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText('Live bot')).toBeInTheDocument(),
+    );
+    expect(screen.getByText('Broken bot')).toBeInTheDocument();
+
+    // "Needs attention" = ERROR/BACKTEST_FAILED/NEW → only the ERROR bot stays.
+    fireEvent.click(screen.getByRole('button', { name: /Needs attention/ }));
+
+    expect(screen.queryByText('Live bot')).not.toBeInTheDocument();
+    expect(screen.getByText('Broken bot')).toBeInTheDocument();
   });
 });
 
@@ -418,14 +476,11 @@ describe('DashboardPage — lifecycle actions', () => {
     fireEvent.click(stopButtons[stopButtons.length - 1]);
     expect(botApi.stop).toHaveBeenCalledWith(7);
 
-    // Auto-poll flips the card to the stopped "Paused" badge on its own.
-    await waitFor(
-      () => expect(screen.getByText('Paused')).toBeInTheDocument(),
-      {
-        timeout: 4000,
-      },
-    );
-    expect(botApi.getStatus).toHaveBeenCalledWith(7);
+    // Auto-poll calls getStatus on its own (no manual refresh) until it settles.
+    // (Assert the poll directly — "Paused" now also matches the filter chip.)
+    await waitFor(() => expect(botApi.getStatus).toHaveBeenCalledWith(7), {
+      timeout: 4000,
+    });
   });
 
   it('Stop button shows confirm dialog and calls botApi.stop on confirm', async () => {
