@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<!--
+=====================================================================
+  DIRECTION: "C · Status Board" — bold, vibrant, kanban-by-status
+  Coin98 Trading Bot Builder — Dashboard / portfolio overview (v2)
+  -------------------------------------------------------------------
+  KEY ASSUMPTIONS
+  - Desktop-first ~1440px; degrades to ~1024px (board scrolls
+    horizontally below ~1180px, hero KPI chips wrap).
+  - Dark theme only. Brand-yellow (#f0b90b) is the primary accent;
+    green/red/blue strictly carry STATUS semantics, never decoration.
+  - Triage-first IA: bots grouped into status columns so a user can
+    answer "what needs attention?" at a glance.
+  - No interactivity beyond a demo Refresh pulse + hover/focus states;
+    this is a visual design exploration, not a wired app.
+
+  DATA PROVENANCE
+  - REAL backend fields (rendered as authoritative):
+      per-bot { name, pair, timeframe, state, balance, openTrades,
+                maxOpenTrades, stakeAmount, lastBacktest{winRate,
+                trades, netProfit, status} }
+      portfolio { capitalDeployed, active, total, idle,
+                  transitioning, error, openTrades }
+  - ASPIRATIONAL / MOCK — flagged "demo" in the UI (no backend yet):
+      * Hero equity area chart (illustrative trend)
+      * 24h change %  (KPI chip tagged DEMO)
+      * total realized P&L  (KPI chip tagged DEMO)
+      * per-bot sparklines (tagged DEMO in card)
+    A persistent legend tag near the board explains the DEMO marker.
+=====================================================================
+-->
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Coin98 Bot Builder · Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* brand */
+    --brand: #f0b90b;
+    --brand-hover: #fcd535;
+    --brand-active: #d9a400;
+    --brand-subtle: rgba(240, 185, 11, 0.10);
+    --brand-glow: rgba(240, 185, 11, 0.28);
+
+    /* status */
+    --green: #0ecb81;
+    --green-subtle: rgba(14, 203, 129, 0.12);
+    --red: #f6465d;
+    --red-subtle: rgba(246, 70, 93, 0.12);
+    --blue: #3b82f6;
+    --blue-subtle: rgba(59, 130, 246, 0.12);
+
+    /* text */
+    --t-primary: #eaecef;
+    --t-secondary: #b7bdc6;
+    --t-muted: #848e9c;
+    --t-disabled: #5e6673;
+
+    /* bg */
+    --canvas: #0a0a0b;
+    --surface: #14181f;
+    --elevated: #1e2329;
+    --input: #181c22;
+
+    /* border */
+    --b-subtle: #1e2329;
+    --b-default: #2b3139;
+    --b-strong: #474d57;
+
+    --card-grad: linear-gradient(180deg, #16161a, #0c0c0e);
+
+    --r-card: 18px;
+    --r-ctrl: 10px;
+
+    --sans: 'Inter', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --pixel: 'Press Start 2P', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 18% -10%, rgba(240, 185, 11, 0.06), transparent 60%),
+      var(--canvas);
+    color: var(--t-primary);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    line-height: 1.4;
+    min-height: 100vh;
+  }
+
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  ::selection { background: var(--brand); color: #0a0a0b; }
+
+  a { color: inherit; text-decoration: none; }
+
+  button {
+    font-family: var(--sans);
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand-hover);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* ---------- TOP APP BAR ---------- */
+  .appbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    height: 64px;
+    padding: 0 28px;
+    background: rgba(10, 10, 11, 0.82);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--b-subtle);
+  }
+
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    white-space: nowrap;
+  }
+  .wordmark .glyph {
+    width: 30px; height: 30px;
+    display: grid; place-items: center;
+    border-radius: 8px;
+    background: var(--brand);
+    color: #0a0a0b;
+    font-family: var(--pixel);
+    font-size: 11px;
+  }
+  .wordmark .name {
+    font-family: var(--pixel);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--t-primary);
+  }
+  .wordmark .name b { color: var(--brand); }
+
+  .nav { display: flex; align-items: center; gap: 4px; }
+  .nav a {
+    padding: 8px 14px;
+    border-radius: var(--r-ctrl);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--t-muted);
+    transition: color .15s, background .15s;
+  }
+  .nav a:hover { color: var(--t-secondary); background: var(--b-subtle); }
+  .nav a.active { color: var(--t-primary); background: var(--brand-subtle); }
+  .nav a.active::after {
+    content: ''; display: block; height: 2px; margin-top: 6px;
+    border-radius: 2px; background: var(--brand);
+  }
+
+  .appbar .spacer { flex: 1; }
+
+  .search {
+    display: flex; align-items: center; gap: 8px;
+    height: 38px; padding: 0 12px;
+    width: 220px;
+    background: var(--input);
+    border: 1px solid var(--b-default);
+    border-radius: var(--r-ctrl);
+    color: var(--t-muted);
+    transition: border-color .15s;
+  }
+  .search:focus-within { border-color: var(--b-strong); }
+  .search input {
+    background: none; border: none; outline: none;
+    color: var(--t-primary); font-size: 13px; width: 100%;
+    font-family: var(--sans);
+  }
+  .search input::placeholder { color: var(--t-disabled); }
+
+  .iconbtn {
+    width: 38px; height: 38px;
+    display: grid; place-items: center;
+    border-radius: var(--r-ctrl);
+    background: var(--input);
+    border: 1px solid var(--b-default);
+    color: var(--t-secondary);
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .iconbtn:hover { border-color: var(--b-strong); color: var(--t-primary); }
+  .iconbtn.spinning svg { animation: spin .7s linear; }
+
+  .wallet-chip {
+    display: flex; align-items: center; gap: 8px;
+    height: 38px; padding: 0 12px;
+    background: var(--input);
+    border: 1px solid var(--b-default);
+    border-radius: 999px;
+    font-size: 13px; font-weight: 600;
+    color: var(--t-secondary);
+    font-family: var(--mono);
+  }
+  .wallet-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 38px; padding: 0 16px;
+    border-radius: var(--r-ctrl);
+    background: var(--brand);
+    color: #0a0a0b;
+    font-size: 14px; font-weight: 700;
+    transition: background .15s, transform .1s, box-shadow .15s;
+    box-shadow: 0 2px 14px rgba(240, 185, 11, 0.22);
+  }
+  .btn-primary:hover { background: var(--brand-hover); }
+  .btn-primary:active { background: var(--brand-active); transform: translateY(1px); }
+
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 38px; padding: 0 14px;
+    border-radius: var(--r-ctrl);
+    background: var(--input);
+    border: 1px solid var(--b-default);
+    color: var(--t-secondary);
+    font-size: 14px; font-weight: 600;
+    transition: border-color .15s, color .15s;
+  }
+  .btn-ghost:hover { border-color: var(--b-strong); color: var(--t-primary); }
+
+  /* ---------- LAYOUT ---------- */
+  .page { max-width: 1480px; margin: 0 auto; padding: 26px 28px 60px; }
+
+  /* ---------- HERO BAND ---------- */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+    border: 1px solid var(--b-default);
+    background:
+      radial-gradient(900px 380px at 78% 120%, rgba(240, 185, 11, 0.10), transparent 70%),
+      var(--card-grad);
+    padding: 30px 34px 34px;
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+  }
+  .hero .equity-bg {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 78%;
+    width: 100%;
+    pointer-events: none;
+    opacity: 0.9;
+  }
+  .hero .equity-bg svg { width: 100%; height: 100%; display: block; }
+
+  .hero-content { position: relative; z-index: 2; }
+
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--pixel);
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--brand);
+    margin-bottom: 14px;
+  }
+
+  .hero-title {
+    font-size: 46px;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    line-height: 1;
+    margin: 0 0 18px;
+    text-wrap: pretty;
+  }
+  .hero-title .accent { color: var(--brand); }
+
+  .capital-row { display: flex; align-items: flex-end; gap: 18px; flex-wrap: wrap; }
+  .capital-label {
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--t-muted);
+    margin-bottom: 8px;
+  }
+  .capital {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 64px;
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -2px;
+    color: var(--t-primary);
+    text-shadow: 0 0 38px rgba(240, 185, 11, 0.10);
+  }
+  .capital .ccy { font-size: 26px; color: var(--t-muted); font-weight: 600; margin-left: 8px; letter-spacing: 0; }
+  .capital .cents { color: var(--t-secondary); }
+
+  .kpis {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    margin-top: 26px;
+  }
+  .kpi {
+    position: relative;
+    min-width: 160px;
+    flex: 1 1 160px;
+    background: rgba(20, 24, 31, 0.72);
+    border: 1px solid var(--b-default);
+    border-radius: 14px;
+    padding: 14px 16px;
+    backdrop-filter: blur(4px);
+  }
+  .kpi .k-label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--t-muted);
+    margin-bottom: 9px;
+  }
+  .kpi .k-value {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 24px; font-weight: 700;
+    color: var(--t-primary);
+    line-height: 1;
+  }
+  .kpi .k-value.pos { color: var(--green); }
+  .kpi .k-sub { font-size: 12px; color: var(--t-muted); margin-top: 6px; }
+  .kpi .k-sub .mono { color: var(--t-secondary); }
+
+  .demo-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--brand);
+    background: var(--brand-subtle);
+    border: 1px solid rgba(240, 185, 11, 0.3);
+    border-radius: 5px;
+    padding: 2px 5px;
+  }
+
+  /* ---------- BOARD SECTION HEADER ---------- */
+  .board-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 34px 2px 16px;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .board-head h2 {
+    font-size: 20px; font-weight: 800; margin: 0;
+    letter-spacing: -0.4px;
+  }
+  .board-head .sub { font-size: 13px; color: var(--t-muted); margin-top: 4px; }
+  .legend {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--t-muted);
+  }
+
+  /* ---------- KANBAN BOARD ---------- */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(258px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+
+  .column {
+    background: rgba(20, 24, 31, 0.45);
+    border: 1px solid var(--b-subtle);
+    border-radius: var(--r-card);
+    padding: 12px;
+    min-height: 120px;
+  }
+
+  .col-head {
+    display: flex; align-items: center; gap: 9px;
+    padding: 6px 8px 12px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--b-subtle);
+  }
+  .col-head .accent-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    flex: none;
+  }
+  .col-head .col-name {
+    font-size: 13px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.7px;
+  }
+  .col-head .col-count {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    color: var(--t-secondary);
+    background: var(--b-subtle);
+    border-radius: 7px;
+    padding: 2px 8px;
+  }
+
+  /* column accent variants */
+  .col-live   .accent-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .col-live   .col-name { color: var(--green); }
+  .col-dry    .accent-dot { background: var(--blue); box-shadow: 0 0 8px var(--blue); }
+  .col-dry    .col-name { color: var(--blue); }
+  .col-work   .accent-dot { background: var(--brand); box-shadow: 0 0 8px var(--brand); }
+  .col-work   .col-name { color: var(--brand); }
+  .col-idle   .accent-dot { background: var(--t-muted); }
+  .col-idle   .col-name { color: var(--t-secondary); }
+  .col-error  .accent-dot { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .col-error  .col-name { color: var(--red); }
+
+  .col-error { background: rgba(246, 70, 93, 0.05); border-color: rgba(246, 70, 93, 0.22); }
+
+  .col-stack { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
+
+  .col-empty {
+    text-align: center;
+    color: var(--t-disabled);
+    font-size: 12px;
+    padding: 22px 8px;
+  }
+
+  /* ---------- BOT CARD ---------- */
+  .card {
+    position: relative;
+    background: var(--card-grad);
+    border: 1px solid var(--b-default);
+    border-radius: 14px;
+    padding: 0 0 13px;
+    overflow: hidden;
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: var(--b-strong);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+  }
+
+  /* status header band (top accent, not left-border cliche) */
+  .card-band {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 14px 10px;
+    border-bottom: 1px solid var(--b-subtle);
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 22px; padding: 0 9px;
+    border-radius: 7px;
+    font-size: 10px; font-weight: 800;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+  }
+  .badge .bd { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge-live   { color: var(--green); background: var(--green-subtle); }
+  .badge-dry    { color: var(--blue);  background: var(--blue-subtle); }
+  .badge-paused { color: var(--t-muted); background: var(--b-subtle); border: 1px solid var(--b-default); }
+  .badge-work   { color: var(--brand); background: var(--brand-subtle); }
+  .badge-new    { color: var(--t-muted); background: transparent; border: 1px dashed var(--b-strong); }
+  .badge-error  { color: var(--red);  background: var(--red-subtle); }
+
+  .badge .pulse {
+    width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  .spinner {
+    width: 11px; height: 11px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+
+  .card-band .open-pill {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--t-secondary);
+    background: var(--b-subtle);
+    border-radius: 6px;
+    padding: 3px 7px;
+  }
+
+  .card-body { padding: 12px 14px 0; }
+
+  .bot-name {
+    font-size: 16px; font-weight: 800;
+    letter-spacing: -0.3px;
+    margin: 0 0 5px;
+    text-wrap: pretty;
+  }
+  .bot-meta {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12px; color: var(--t-muted);
+    margin-bottom: 13px;
+  }
+  .bot-meta .pair { font-weight: 600; color: var(--t-secondary); }
+  .bot-meta .sep { color: var(--b-strong); }
+  .bot-meta .tf {
+    font-family: var(--mono);
+    background: var(--b-subtle);
+    border-radius: 5px; padding: 1px 6px;
+    color: var(--t-secondary);
+  }
+
+  .balance-row {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 10px; margin-bottom: 12px;
+  }
+  .balance .bl-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--t-muted); margin-bottom: 4px; }
+  .balance .bl-value {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 21px; font-weight: 700;
+    color: var(--t-primary);
+    line-height: 1;
+  }
+  .balance .bl-value.muted { color: var(--t-disabled); font-weight: 600; }
+  .balance .bl-ccy { font-size: 12px; color: var(--t-muted); }
+
+  .spark { width: 78px; height: 32px; flex: none; }
+  .spark svg { width: 100%; height: 100%; display: block; }
+
+  /* backtest mini-stats */
+  .bt {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--b-subtle);
+    border: 1px solid var(--b-subtle);
+    border-radius: 9px;
+    overflow: hidden;
+    margin-bottom: 13px;
+  }
+  .bt .cell { background: var(--surface); padding: 8px 9px; }
+  .bt .cell .lab { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--t-muted); margin-bottom: 3px; }
+  .bt .cell .val { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 700; color: var(--t-secondary); }
+  .bt .cell .val.pos { color: var(--green); }
+  .bt .cell .val.neg { color: var(--red); }
+
+  .bt-none {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface);
+    border: 1px dashed var(--b-default);
+    border-radius: 9px;
+    padding: 10px 11px;
+    margin-bottom: 13px;
+    font-size: 12px; color: var(--t-muted);
+  }
+
+  .bt-running {
+    display: flex; align-items: center; gap: 9px;
+    background: var(--brand-subtle);
+    border: 1px solid rgba(240, 185, 11, 0.25);
+    border-radius: 9px;
+    padding: 10px 11px;
+    margin-bottom: 13px;
+    font-size: 12px; font-weight: 600;
+    color: var(--brand);
+  }
+
+  /* error note */
+  .err-note {
+    display: flex; align-items: flex-start; gap: 8px;
+    background: var(--red-subtle);
+    border: 1px solid rgba(246, 70, 93, 0.28);
+    border-radius: 9px;
+    padding: 10px 11px;
+    margin-bottom: 13px;
+    font-size: 12px;
+    color: #ffb3bd;
+    line-height: 1.35;
+  }
+  .err-note svg { flex: none; margin-top: 1px; color: var(--red); }
+
+  /* actions */
+  .actions { display: flex; align-items: center; gap: 8px; padding: 0 14px; }
+  .act {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 34px; padding: 0 12px;
+    border-radius: 9px;
+    font-size: 13px; font-weight: 700;
+    border: 1px solid var(--b-default);
+    background: var(--input);
+    color: var(--t-secondary);
+    transition: border-color .15s, color .15s, background .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .act:hover { border-color: var(--b-strong); color: var(--t-primary); }
+  .act:active { transform: translateY(1px); }
+  .act.flex { flex: 1; }
+  .act.start  { background: var(--green); border-color: var(--green); color: #06281c; }
+  .act.start:hover { background: #16d68c; }
+  .act.stop   { background: transparent; border-color: rgba(246, 70, 93, 0.45); color: #ff8593; }
+  .act.stop:hover { background: var(--red-subtle); color: var(--red); }
+  .act.primary { background: var(--brand); border-color: var(--brand); color: #0a0a0b; }
+  .act.primary:hover { background: var(--brand-hover); }
+  .act.icon { width: 34px; padding: 0; flex: none; }
+  .act.danger:hover { border-color: var(--red); color: var(--red); }
+  .act.disabled { opacity: .55; cursor: not-allowed; pointer-events: none; }
+
+  /* working card subtle pulse */
+  .card.working {
+    border-color: rgba(240, 185, 11, 0.32);
+    animation: cardpulse 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.7); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes cardpulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(240, 185, 11, 0.0); }
+    50% { box-shadow: 0 0 0 3px rgba(240, 185, 11, 0.07); }
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 1180px) {
+    .board {
+      display: flex;
+      overflow-x: auto;
+      padding-bottom: 14px;
+      scroll-snap-type: x proximity;
+    }
+    .column { flex: 0 0 290px; scroll-snap-align: start; }
+    .search { width: 150px; }
+  }
+  @media (max-width: 1024px) {
+    .capital { font-size: 48px; }
+    .hero-title { font-size: 36px; }
+    .nav a:not(.active) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== TOP APP BAR ===================== -->
+<header class="appbar">
+  <div class="wordmark">
+    <span class="glyph">C98</span>
+    <span class="name">BOT<b>·</b>BUILDER</span>
+  </div>
+
+  <nav class="nav">
+    <a href="#" class="active">Dashboard</a>
+    <a href="#">Builder</a>
+    <a href="#">Docs</a>
+  </nav>
+
+  <div class="spacer"></div>
+
+  <label class="search" aria-label="Search bots">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="text" placeholder="Search bots…" />
+  </label>
+
+  <button class="iconbtn" id="refreshBtn" title="Refresh" aria-label="Refresh data">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+  </button>
+
+  <button class="btn-ghost" title="Import bot">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+    Import
+  </button>
+
+  <button class="btn-primary" title="Create a new bot">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+    New bot
+  </button>
+
+  <span class="wallet-chip" title="Connected wallet"><span class="dot"></span>0x12…aB3f</span>
+</header>
+
+<main class="page">
+
+  <!-- ===================== HERO BAND ===================== -->
+  <section class="hero" aria-label="Portfolio overview">
+    <!-- aspirational equity area chart backdrop (DEMO) -->
+    <div class="equity-bg" aria-hidden="true">
+      <svg viewBox="0 0 1200 320" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="equityFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(240,185,11,0.32)"/>
+            <stop offset="55%" stop-color="rgba(240,185,11,0.08)"/>
+            <stop offset="100%" stop-color="rgba(240,185,11,0)"/>
+          </linearGradient>
+          <linearGradient id="equityLine" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#d9a400"/>
+            <stop offset="100%" stop-color="#fcd535"/>
+          </linearGradient>
+          <filter id="glow" x="-20%" y="-60%" width="140%" height="220%">
+            <feGaussianBlur stdDeviation="6" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <!-- area fill -->
+        <path fill="url(#equityFill)" d="M0,250 L0,238 C40,232 70,244 110,228 C150,212 180,222 220,200 C260,178 300,196 340,184 C380,172 410,150 450,158 C490,166 520,140 560,150 C600,160 640,126 680,134 C720,142 750,108 790,118 C830,128 860,96 900,104 C940,112 980,70 1020,84 C1060,98 1100,58 1140,66 C1170,72 1190,50 1200,46 L1200,320 L0,320 Z"/>
+        <!-- line -->
+        <path fill="none" stroke="url(#equityLine)" stroke-width="2.5" filter="url(#glow)" d="M0,238 C40,232 70,244 110,228 C150,212 180,222 220,200 C260,178 300,196 340,184 C380,172 410,150 450,158 C490,166 520,140 560,150 C600,160 640,126 680,134 C720,142 750,108 790,118 C830,128 860,96 900,104 C940,112 980,70 1020,84 C1060,98 1100,58 1140,66 C1170,72 1190,50 1200,46"/>
+      </svg>
+    </div>
+
+    <div class="hero-content">
+      <span class="hero-eyebrow">C · STATUS BOARD</span>
+      <h1 class="hero-title">Portfolio <span class="accent">overview</span></h1>
+
+      <div class="capital-row">
+        <div>
+          <div class="capital-label">Capital deployed</div>
+          <div class="capital mono">12,480<span class="cents">.50</span><span class="ccy">USDC</span></div>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <div class="k-label">24h change <span class="demo-tag">demo</span></div>
+          <div class="k-value pos mono">+2.4%</div>
+          <div class="k-sub">vs. yesterday</div>
+        </div>
+        <div class="kpi">
+          <div class="k-label">Total P&amp;L <span class="demo-tag">demo</span></div>
+          <div class="k-value pos mono">+2,251.05</div>
+          <div class="k-sub">realized · <span class="mono">USDC</span></div>
+        </div>
+        <div class="kpi">
+          <div class="k-label">Active / total</div>
+          <div class="k-value mono">4 <span style="color:var(--t-disabled);font-weight:600">/ 9</span></div>
+          <div class="k-sub">1 idle · 1 transitioning · <span style="color:#ff8593">1 error</span></div>
+        </div>
+        <div class="kpi">
+          <div class="k-label">Open trades</div>
+          <div class="k-value mono">6</div>
+          <div class="k-sub">across live bots</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== BOARD HEADER ===================== -->
+  <div class="board-head">
+    <div>
+      <h2>Bots by status</h2>
+      <div class="sub">Triage at a glance — grouped by what each bot is doing right now.</div>
+    </div>
+    <div class="legend">
+      <span class="demo-tag">demo</span>
+      <span>= illustrative, not yet backed by a live API (sparklines, P&amp;L, equity)</span>
+    </div>
+  </div>
+
+  <!-- ===================== KANBAN BOARD ===================== -->
+  <div class="board">
+
+    <!-- ============ COLUMN: LIVE ============ -->
+    <section class="column col-live" aria-label="Live bots">
+      <div class="col-head">
+        <span class="accent-dot"></span>
+        <span class="col-name">Live</span>
+        <span class="col-count">3</span>
+      </div>
+      <div class="col-stack">
+
+        <!-- BTC Momentum -->
+        <article class="card">
+          <div class="card-band">
+            <span class="badge badge-live"><span class="bd"></span>Live</span>
+            <span class="open-pill">3 / 5 open</span>
+          </div>
+          <div class="card-body">
+            <h3 class="bot-name">BTC Momentum</h3>
+            <div class="bot-meta"><span class="pair">BTC/USDC</span><span class="sep">·</span><span class="tf">1h</span></div>
+            <div class="balance-row">
+              <div class="balance">
+                <div class="bl-label">Balance</div>
+                <div class="bl-value mono">5,240.18 <span class="bl-ccy">USDC</span></div>
+              </div>
+              <div class="spark" title="Illustrative · demo">
+                <svg viewBox="0 0 80 32" preserveAspectRatio="none"><polyline fill="none" stroke="#0ecb81" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="0,24 12,21 22,25 33,16 44,18 55,10 66,12 80,4"/></svg>
+              </div>
+            </div>
+            <div class="bt">
+              <div class="cell"><div class="lab">Win</div><div class="val">62%</div></div>
+              <div class="cell"><div class="lab">Trades</div><div class="val">148</div></div>
+              <div class="cell"><div class="lab">Net</div><div class="val pos">+1,240.50</div></div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="act flex">Backtest</button>
+            <button class="act stop flex">Stop</button>
+            <button class="act icon danger" title="Delete" aria-label="Delete bot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+          </div>
+        </article>
+
+        <!-- ETH Scalper -->
+        <article class="card">
+          <div class="card-band">
+            <span class="badge badge-live"><span class="bd"></span>Live</span>
+            <span class="open-pill">2 / 4 open</span>
+          </div>
+          <div class="card-body">
+            <h3 class="bot-name">ETH Scalper</h3>
+            <div class="bot-meta"><span class="pair">ETH/USDC</span><span class="sep">·</span><span class="tf">5m</span></div>
+            <div class="balance-row">
+              <div class="balance">
+                <div class="bl-label">Balance</div>
+                <div class="bl-value mono">3,100.00 <span class="bl-ccy">USDC</span></div>
+              </div>
+              <div class="spark" title="Illustrative · demo">
+                <svg viewBox="0 0 80 32" preserveAspectRatio="none"><polyline fill="none" stroke="#0ecb81" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="0,18 12,14 22,20 33,15 44,22 55,17 66,11 80,13"/></svg>
+              </div>
+            </div>
+            <div class="bt">
+              <div class="cell"><div class="lab">Win</div><div class="val">55%</div></div>
+              <div class="cell"><div class="lab">Trades</div><div class="val">312</div></div>
+              <div class="cell"><div class="lab">Net</div><div class="val pos">+480.20</div></div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="act flex">Backtest</button>
+            <button class="act stop flex">Stop</button>
+            <button class="act icon danger" title="Delete" aria-label="Delete bot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+          </div>
+        </article>
+
+        <!-- SOL Breakout -->
+        <article class="card">
+          <div class="card-band">
+            <span class="badge badge-live"><span class="bd"></span>Live</span>
+            <span class="open-pill">1 / 3 open</span>
+          </div>
+          <div class="card-body">
+            <h3 class="bot-name">SOL Breakout</h3>
+            <div class="bot-meta"><span class="pair">SOL/USDC</span><span class="sep">·</span><span class="tf">15m</span></div>
+            <div class="balance-row">
+              <div class="balance">
+                <div class="bl-label">Balance</div>
+                <div class="bl-value mono">2,890.32 <span class="bl-ccy">USDC</span></div>
+              </div>
+              <div class="spark" title="Illustrative · demo">
+                <svg viewBox="0 0 80 32" preserveAspectRatio="none"><polyline fill="none" stroke="#0ecb81" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="0,22 12,18 22,19 33,12 44,15 55,8 66,14 80,6"/></svg>
+              </div>
+            </div>
+            <div class="bt">
+              <div class="cell"><div class="lab">Win</div><div class="val">58%</div></div>
+              <div class="cell"><div class="lab">Trades</div><div class="val">96</div></div>
+              <div class="cell"><div class="lab">Net</div><div class="val pos">+615.75</div></div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="act flex">Backtest</button>
+            <button class="act stop flex">Stop</button>
+            <button class="act icon danger" title="Delete" aria-label="Delete bot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ============ COLUMN: DRY-RUN ============ -->
+    <section class="column col-dry" aria-label="Dry-run bots">
+      <div class="col-head">
+        <span class="accent-dot"></span>
+        <span class="col-name">Dry-run</span>
+        <span class="col-count">1</span>
+      </div>
+      <div class="col-stack">
+
+        <!-- HYPE Grid -->
+        <article class="card">
+          <div class="card-band">
+            <span class="badge badge-dry"><span class="bd"></span>Dry-run</span>
+            <span class="open-pill">0 / 2 open</span>
+          </div>
+          <div class="card-body">
+            <h3 class="bot-name">HYPE Grid</h3>
+            <div class="bot-meta"><span class="pair">HYPE/USDC</span><span class="sep">·</span><span class="tf">1h</span></div>
+            <div class="balance-row">
+              <div class="balance">
+                <div class="bl-label">Balance (paper)</div>
+                <div class="bl-value mono">1,250.00 <span class="bl-ccy">USDC</span></div>
+              </div>
+              <div class="spark" title="Illustrative · demo">
+                <svg viewBox="0 0 80 32" preserveAspectRatio="none"><polyline fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="0,14 12,18 22,15 33,20 44,16 55,21 66,18 80,22"/></svg>
+              </div>
+            </div>
+            <div class="bt">
+              <div class="cell"><div class="lab">Win</div><div class="val">49%</div></div>
+              <div class="cell"><div class="lab">Trades</div><div class="val">64</div></div>
+              <div class="cell"><div class="lab">Net</div><div class="val neg">−85.40</div></div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="act flex">Backtest</button>
+            <button class="act stop flex">Stop</button>
+            <button class="act icon danger" title="Delete" aria-label="Delete bot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ============ COLUMN: WORKING ============ -->
+    <section class="column col-work" aria-label="Working bots">
+      <div class="col-head">
+        <span class="accent-dot"></span>
+        <span class="col-name">Working</span>
+        <span class="col-count">2</span>
+      </div>
+      <div class="col-stack">
+
+        <!-- AVAX RSI — starting -->
+        <article class="card working">
+          <div class="card-band">
+            <span class="badge badge-work"><span class="pulse"></span>Starting</span>
+          </div>
+          <div class="card-body">
+            <h3 class="bot-name">AVAX RSI</h3>
+            <div class="bot-meta"><span class="pair">AVAX/USDC</span><span class="sep">·</span><span class="tf">1h</span></div>
+            <div class="balance-row">
+              <div class="balance">
+                <div class="bl-label">Stake</div>
+                <div class="bl-value mono">100.00 <span class="bl-ccy">USDC</span></div>
+              </div>
+              <div class="spark" title="Illustrative · demo">
+                <svg viewBox="0 0 80 32" preserveAspectRatio="none"><polyline fill="none" stroke="#f0b90b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="0,20 12,17 22,21 33,15 44,18 55,12 66,16 80,11"/></svg>
+              </div>
+            </div>
+            <div class="bt">
+              <div class="cell"><div class="lab">Win</div><div class="val">51%</div></div>
+              <div class="cell"><div class="lab">Trades</div><div class="val">80</div></div>
+              <div class="cell"><div class="lab">Net</div><div class="val pos">+95.00</div></div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="act flex disabled" aria-disabled="true"><span class="spinner"></span>Starting…</button>
+            <button class="act icon danger disabled" title="Delete" aria-label="Delete bot" aria-disabled="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+          </div>
+        </article>
+
+        <!-- LINK Swing — backtesting -->
+        <article class="card working">
+          <div class="card-band">
+            <span class="badge badge-work"><span class="spinner"></span>Backtesting</span>
+          </div>
+          <div class="card-body">
+            <h3 class="bot-name">LINK Swing</h3>
+            <div class="bot-meta"><span class="pair">LINK/USDC</span><span class="sep">·</span><span class="tf">2h</span></div>
+            <div class="balance-row">
+              <div class="balance">
+                <div class="bl-label">Stake</div>
+                <div class="bl-value mono">100.00 <span class="bl-ccy">USDC</span></div>
+              </div>
+            </div>
+            <div class="bt-running">
+              <span class="spinner"></span>
+              Backtest in progress…
+            </div>
+          </div>
+          <div class="actions">
+            <button class="act flex disabled" aria-disabled="true"><span class="spinner"></span>Running…</button>
+            <button class="act icon danger" title="Delete" aria-label="Delete bot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ============ COLUMN: IDLE & NEW ============ -->
+    <section class="column col-idle" aria-label="Idle and new bots">
+      <div class="col-head">
+        <span class="accent-dot"></span>
+        <span class="col-name">Idle &amp; New</span>
+        <span class="col-count">2</span>
+      </div>
+      <div class="col-stack">
+
+        <!-- ARB Mean Reversion — paused -->
+        <article class="card">
+          <div class="card-band">
+            <span class="badge badge-paused"><span class="bd"></span>Paused</span>
+          </div>
+          <div class="card-body">
+            <h3 class="bot-name">ARB Mean Reversion</h3>
+            <div class="bot-meta"><span class="pair">ARB/USDC</span><span class="sep">·</span><span class="tf">30m</span></div>
+            <div class="balance-row">
+              <div class="balance">
+                <div class="bl-label">Balance</div>
+                <div class="bl-value mono muted">— <span class="bl-ccy" style="color:var(--t-disabled)">stake 100</span></div>
+              </div>
+              <div class="spark" title="Illustrative · demo">
+                <svg viewBox="0 0 80 32" preserveAspectRatio="none"><polyline fill="none" stroke="#5e6673" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="0,16 12,19 22,15 33,18 44,14 55,17 66,15 80,16"/></svg>
+              </div>
+            </div>
+            <div class="bt">
+              <div class="cell"><div class="lab">Win</div><div class="val">53%</div></div>
+              <div class="cell"><div class="lab">Trades</div><div class="val">120</div></div>
+              <div class="cell"><div class="lab">Net</div><div class="val pos">+210.00</div></div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="act flex">Backtest</button>
+            <button class="act start flex"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Start</button>
+            <button class="act icon danger" title="Delete" aria-label="Delete bot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+          </div>
+        </article>
+
+        <!-- DOGE Trend — new -->
+        <article class="card">
+          <div class="card-band">
+            <span class="badge badge-new"><span class="bd"></span>New</span>
+          </div>
+          <div class="card-body">
+            <h3 class="bot-name">DOGE Trend</h3>
+            <div class="bot-meta"><span class="pair">DOGE/USDC</span><span class="sep">·</span><span class="tf">4h</span></div>
+            <div class="balance-row">
+              <div class="balance">
+                <div class="bl-label">Stake</div>
+                <div class="bl-value mono">80.00 <span class="bl-ccy">USDC</span></div>
+              </div>
+            </div>
+            <div class="bt-none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+              No backtest yet — validate before going live.
+            </div>
+          </div>
+          <div class="actions">
+            <button class="act primary flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18M19 3v18M5 7h14M5 17h14"/></svg>Run first backtest</button>
+            <button class="act icon danger" title="Delete" aria-label="Delete bot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ============ COLUMN: NEEDS ATTENTION ============ -->
+    <section class="column col-error" aria-label="Bots needing attention">
+      <div class="col-head">
+        <span class="accent-dot"></span>
+        <span class="col-name">Needs attention</span>
+        <span class="col-count">1</span>
+      </div>
+      <div class="col-stack">
+
+        <!-- PEPE Volatility — error -->
+        <article class="card">
+          <div class="card-band">
+            <span class="badge badge-error"><span class="bd"></span>Error</span>
+          </div>
+          <div class="card-body">
+            <h3 class="bot-name">PEPE Volatility</h3>
+            <div class="bot-meta"><span class="pair">PEPE/USDC</span><span class="sep">·</span><span class="tf">15m</span></div>
+            <div class="balance-row">
+              <div class="balance">
+                <div class="bl-label">Stake</div>
+                <div class="bl-value mono">60.00 <span class="bl-ccy">USDC</span></div>
+              </div>
+            </div>
+            <div class="err-note">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg>
+              Exchange connection timeout (Hyperliquid agent expired)
+            </div>
+          </div>
+          <div class="actions">
+            <button class="act flex">Backtest</button>
+            <button class="act start flex"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Start</button>
+            <button class="act icon danger" title="Delete" aria-label="Delete bot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+  // Demo-only: spin the refresh icon once on click (no data is fetched).
+  (function () {
+    var btn = document.getElementById('refreshBtn');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      btn.classList.remove('spinning');
+      // force reflow so the animation can restart
+      void btn.offsetWidth;
+      btn.classList.add('spinning');
+    });
+  })();
+</script>
+
+</body>
+</html>
