@@ -7,15 +7,9 @@ import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
 import { ImportDialog } from '@/features/export-import/ImportDialog';
 import { useRequireWallet } from '@/features/wallet-auth/RequireWalletProvider';
 import { botApi, type BotStatusOut } from '@/features/bot-monitoring/bot.api';
-import type { BotPerformance } from '@/features/bot-monitoring/bot-performance';
-import {
-  deriveMode,
-  zipBotsAndConfigs,
-  type ConfigShape,
-  type DashboardBot,
-} from '@/features/bot-monitoring/bot-list.helpers';
+import { type DashboardBot } from '@/features/bot-monitoring/bot-list.helpers';
 import { derivePresentationalState } from '@/features/bot-monitoring/presentational-state';
-import { computePortfolioStats } from '@/features/bot-monitoring/portfolio-stats';
+import { usePortfolioOverview } from '@/features/bot-monitoring/usePortfolioOverview';
 import { BotCard, type BotCardData } from '@/features/bot-monitoring/BotCard';
 import { DashboardEmptyState } from '@/features/bot-monitoring/DashboardEmptyState';
 import { ConfirmActionDialog } from '@/features/bot-monitoring/ConfirmActionDialog';
@@ -34,16 +28,6 @@ import { AppHeader } from './AppHeader';
 /** Poll cadence + safety cap for status polling after a lifecycle action. */
 const POLL_INTERVAL_MS = 1_500;
 const POLL_MAX_TRIES = 40;
-
-/** Per-bot summary of its most recent backtest history item (top-level fields
- * only — the `results` blob is intentionally NOT read here). */
-interface LastBacktest {
-  historyCount: number;
-  latestStatus: string | null;
-  winRate: number | null;
-  trades: number | null;
-  netAbs: number | null;
-}
 
 /** Narrow a real bot to the shape LaunchpadModal needs. */
 function toLaunchpadBot(b: DashboardBot): LaunchpadBot {
@@ -66,95 +50,17 @@ export function DashboardPage() {
   const [search, setSearch] = useState('');
   const [importOpen, setImportOpen] = useState(false);
 
-  // `realBots === null` → not yet loaded; `[]` → loaded, user has no bots.
-  const [realBots, setRealBots] = useState<DashboardBot[] | null>(null);
-  const [perfById, setPerfById] = useState<Map<number, BotPerformance>>(
-    () => new Map(),
-  );
-  const [btById, setBtById] = useState<Map<number, LastBacktest>>(
-    () => new Map(),
-  );
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const run = async () => {
-      setLoading(true);
-      setFetchError(null);
-      try {
-        const list = await botApi.list();
-        if (cancelled) return;
-
-        if (list.length === 0) {
-          setRealBots([]);
-          setPerfById(new Map());
-          setBtById(new Map());
-          return;
-        }
-
-        const configs = await Promise.allSettled(
-          list.map((b) => botApi.getConfig(b.id)),
-        );
-        if (cancelled) return;
-        const configsOrNull = configs.map((r) =>
-          r.status === 'fulfilled' ? (r.value.config as ConfigShape) : null,
-        );
-        const zipped = zipBotsAndConfigs(list, configsOrNull);
-        setRealBots(zipped);
-
-        // Enrich: live performance (running bots only) + latest backtest
-        // (every bot, limit=1, top-level fields only) — all in parallel.
-        const running = zipped.filter(
-          (b) => b.mode === 'LIVE' || b.mode === 'DRY-RUN',
-        );
-        const [perfs, hists] = await Promise.all([
-          Promise.allSettled(running.map((b) => botApi.getPerformance(b.id))),
-          Promise.allSettled(
-            zipped.map((b) => botApi.getBacktestHistory(b.id, 1)),
-          ),
-        ]);
-        if (cancelled) return;
-
-        const pMap = new Map<number, BotPerformance>();
-        running.forEach((b, i) => {
-          const r = perfs[i];
-          if (r.status === 'fulfilled') pMap.set(b.id, r.value);
-        });
-        setPerfById(pMap);
-
-        const bMap = new Map<number, LastBacktest>();
-        zipped.forEach((b, i) => {
-          const r = hists[i];
-          if (r.status !== 'fulfilled') return;
-          const items = r.value.items ?? [];
-          const it = items[0];
-          bMap.set(b.id, {
-            historyCount: r.value.total ?? items.length,
-            latestStatus: it?.status ?? null,
-            winRate: it?.win_rate ?? null,
-            trades: it?.trade_count ?? null,
-            netAbs: it?.total_profit ?? null,
-          });
-        });
-        setBtById(bMap);
-      } catch (err) {
-        if (cancelled) return;
-        setFetchError(formatBackendError(err));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [refreshKey]);
-
-  const handleRefresh = () => setRefreshKey((k) => k + 1);
+  const {
+    bots: realBots,
+    perfById,
+    btById,
+    stats,
+    loading,
+    error: fetchError,
+    refresh: handleRefresh,
+    updateOneBot,
+    removeOneBot,
+  } = usePortfolioOverview();
 
   // ── Lifecycle actions ──
   const [confirmState, setConfirmState] = useState<null | {
@@ -179,39 +85,6 @@ export function DashboardPage() {
       navigate('/dashboard', { replace: true, state: {} });
     }
   }, [location.state, realBots, navigate]);
-
-  // Splice one bot's mode/errorMsg after a lifecycle response (dry_run from
-  // the row, since BotStatusOut carries none).
-  const updateOneBot = useCallback((id: number, next: BotStatusOut) => {
-    setRealBots((prev) => {
-      if (!prev) return prev;
-      return prev.map((b) => {
-        if (b.id !== id) return b;
-        return {
-          ...b,
-          mode: deriveMode(
-            { status: next.status, error_message: next.error_message ?? null },
-            { dry_run: b.dryRun },
-          ),
-          errorMsg: next.error_message ?? null,
-        };
-      });
-    });
-    // Once a bot is no longer running, its cached live balance is stale —
-    // drop it so the card shows "—" instead of the pre-stop balance.
-    if (next.status !== 'running') {
-      setPerfById((prev) => {
-        if (!prev.has(id)) return prev;
-        const m = new Map(prev);
-        m.delete(id);
-        return m;
-      });
-    }
-  }, []);
-
-  const removeOneBot = useCallback((id: number) => {
-    setRealBots((prev) => (prev ? prev.filter((b) => b.id !== id) : prev));
-  }, []);
 
   const mountedRef = useRef(true);
   const pollTimers = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
@@ -285,15 +158,6 @@ export function DashboardPage() {
 
   const isEmptyReal = realBots !== null && realBots.length === 0;
   const isLoadedReal = realBots !== null && realBots.length > 0;
-
-  const stats = useMemo(
-    () =>
-      computePortfolioStats(
-        (realBots ?? []).map((b) => ({ id: b.id, mode: b.mode })),
-        perfById,
-      ),
-    [realBots, perfById],
-  );
 
   // Build presentational card data from real bots + perf + last backtest.
   const realById = useMemo(
