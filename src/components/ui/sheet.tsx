@@ -62,7 +62,7 @@ export const SheetContent = React.forwardRef<
         ref={ref}
         style={{ width }}
         className={cn(
-          'card-coin98 fixed inset-y-0 right-0 z-50 flex flex-col rounded-l-3xl shadow-2xl',
+          'card-coin98-flat fixed inset-y-0 right-0 z-50 flex flex-col rounded-l-3xl shadow-2xl',
           'data-[state=open]:animate-slide-in-right',
           'data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right',
           className,
