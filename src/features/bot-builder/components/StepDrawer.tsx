@@ -31,6 +31,15 @@ import { DrawerProgressGlow } from './DrawerProgressGlow';
 import { DrawerProgressIndicator } from './DrawerProgressIndicator';
 import type { DrawerTab, StepId } from '@/types/builder.types';
 
+const DRAWER_FLOATING_LAYER_SELECTOR =
+  '[data-drawer-floating-layer], [data-radix-popper-content-wrapper]';
+
+function isInDrawerFloatingLayer(target: Node) {
+  const element =
+    target instanceof Element ? target : (target.parentElement ?? null);
+  return Boolean(element?.closest(DRAWER_FLOATING_LAYER_SELECTOR));
+}
+
 export interface StepContentMap {
   setup: ReactNode;
   configure: ReactNode;
@@ -173,6 +182,7 @@ export function StepDrawer({
       const target = event.target;
       if (!(target instanceof Node)) return;
       if (drawerContentRef.current?.contains(target)) return;
+      if (isInDrawerFloatingLayer(target)) return;
       onManualClose();
     };
 

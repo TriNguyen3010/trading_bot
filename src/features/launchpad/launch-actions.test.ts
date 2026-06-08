@@ -2,7 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { botStrategyApi } from '@/features/bot-builder/bot-strategy.api';
 import { botApi } from '@/features/bot-monitoring/bot.api';
 import { agentApi } from '@/features/agent-wallet/agent.api';
-import { launchBot, AgentNotActiveError } from './launch-actions';
+import {
+  launchBot,
+  AgentNotActiveError,
+  AgentAddressMismatchError,
+} from './launch-actions';
 
 vi.mock('@/features/bot-builder/bot-strategy.api', () => ({
   botStrategyApi: { update: vi.fn() },
@@ -71,6 +75,25 @@ describe('launchBot', () => {
     expect(mockUpdate).toHaveBeenCalledWith(42, { dry_run: false });
     expect(mockDisableTelegram).toHaveBeenCalledWith(42);
     expect(mockStart).toHaveBeenCalledWith(42);
+  });
+
+  it('live + expected agent address matching active agent → starts', async () => {
+    await launchBot(42, 'live', undefined, {
+      expectedAgentAddress: '0xAGENT',
+    });
+    expect(mockUpdate).toHaveBeenCalledWith(42, { dry_run: false });
+    expect(mockStart).toHaveBeenCalledWith(42);
+  });
+
+  it('live + expected agent address mismatch → blocks before mutating config', async () => {
+    await expect(
+      launchBot(42, 'live', undefined, {
+        expectedAgentAddress: '0xother',
+      }),
+    ).rejects.toThrow(AgentAddressMismatchError);
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockDisableTelegram).not.toHaveBeenCalled();
+    expect(mockStart).not.toHaveBeenCalled();
   });
 
   it('live + no agent (active() resolves null) → throws AgentNotActiveError and does NOT call update/disableTelegram/start', async () => {

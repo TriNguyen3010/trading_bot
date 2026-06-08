@@ -42,6 +42,8 @@ const bot: LaunchpadBot = {
   errorMsg: null,
 };
 
+const API_WALLET_ADDRESS = '0x1234567890abcdef1234567890abcdef12345678';
+
 beforeEach(() => {
   mockLaunch
     .mockReset()
@@ -140,7 +142,7 @@ describe('LaunchpadModal', () => {
     expect(mockLaunch).toHaveBeenNthCalledWith(2, 42, 'live');
   });
 
-  it('hides Telegram dev section when VITE_TELEGRAM_DEV is off', () => {
+  it('renders Live settings inputs by default', () => {
     render(
       <LaunchpadModal
         open
@@ -150,11 +152,12 @@ describe('LaunchpadModal', () => {
         onLaunched={() => {}}
       />,
     );
-    expect(screen.queryByLabelText(/bot token/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/api wallet address/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/telegram bot token/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/telegram chat id/i)).toBeInTheDocument();
   });
 
-  it('passes telegram config when both dev fields are filled', async () => {
-    vi.stubEnv('VITE_TELEGRAM_DEV', 'true');
+  it('Go Live passes API wallet address and telegram config when filled', async () => {
     render(
       <LaunchpadModal
         open
@@ -164,23 +167,30 @@ describe('LaunchpadModal', () => {
         onLaunched={() => {}}
       />,
     );
-    fireEvent.change(screen.getByLabelText(/bot token/i), {
+    fireEvent.change(screen.getByLabelText(/api wallet address/i), {
+      target: { value: API_WALLET_ADDRESS },
+    });
+    fireEvent.change(screen.getByLabelText(/telegram bot token/i), {
       target: { value: '123:abc' },
     });
-    fireEvent.change(screen.getByLabelText(/chat id/i), {
+    fireEvent.change(screen.getByLabelText(/telegram chat id/i), {
       target: { value: '99' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /start dry-run/i }));
+    fireEvent.click(screen.getByRole('button', { name: /go live/i }));
     await waitFor(() =>
-      expect(mockLaunch).toHaveBeenCalledWith(42, 'dry-run', {
-        token: '123:abc',
-        chat_id: '99',
-      }),
+      expect(mockLaunch).toHaveBeenCalledWith(
+        42,
+        'live',
+        {
+          token: '123:abc',
+          chat_id: '99',
+        },
+        { expectedAgentAddress: API_WALLET_ADDRESS },
+      ),
     );
   });
 
   it('blocks launch + shows error when only one telegram field is filled', async () => {
-    vi.stubEnv('VITE_TELEGRAM_DEV', 'true');
     render(
       <LaunchpadModal
         open
@@ -190,11 +200,29 @@ describe('LaunchpadModal', () => {
         onLaunched={() => {}}
       />,
     );
-    fireEvent.change(screen.getByLabelText(/bot token/i), {
+    fireEvent.change(screen.getByLabelText(/telegram bot token/i), {
       target: { value: '123:abc' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /start dry-run/i }));
+    fireEvent.click(screen.getByRole('button', { name: /go live/i }));
     expect(await screen.findByText(/cần nhập cả/i)).toBeInTheDocument();
+    expect(mockLaunch).not.toHaveBeenCalled();
+  });
+
+  it('blocks Go Live when API wallet address is malformed', async () => {
+    render(
+      <LaunchpadModal
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        onBacktest={() => {}}
+        onLaunched={() => {}}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/api wallet address/i), {
+      target: { value: 'not-an-address' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /go live/i }));
+    expect(await screen.findByText(/0x hợp lệ/i)).toBeInTheDocument();
     expect(mockLaunch).not.toHaveBeenCalled();
   });
 

@@ -21,6 +21,8 @@ import {
   AgentNotActiveError,
 } from './launch-actions';
 
+const ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
+
 export interface LaunchpadBot {
   id: number;
   name: string;
@@ -50,8 +52,9 @@ export function LaunchpadModal({
   const [error, setError] = useState<string | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [manageAgentsOpen, setManageAgentsOpen] = useState(false);
-  const TELEGRAM_DEV = import.meta.env.VITE_TELEGRAM_DEV === 'true';
-  const [tgToken, setTgToken] = useState('');
+  const telegramTokenDefault = import.meta.env.VITE_TELEGRAM_BOT_TOKEN ?? '';
+  const [apiWalletAddress, setApiWalletAddress] = useState('');
+  const [tgToken, setTgToken] = useState(telegramTokenDefault);
   const [tgChatId, setTgChatId] = useState('');
 
   useEffect(() => {
@@ -60,17 +63,26 @@ export function LaunchpadModal({
       setError(null);
       setOnboardingOpen(false);
       setManageAgentsOpen(false);
-      setTgToken('');
+      setApiWalletAddress('');
+      setTgToken(telegramTokenDefault);
       setTgChatId('');
     }
-  }, [open]);
+  }, [open, telegramTokenDefault]);
 
   if (!bot) return null;
 
   const doLaunch = async (mode: LaunchMode) => {
     if (busy) return; // guard against a concurrent launch (e.g. double-click / relaunch race)
     let telegramArg: { token: string; chat_id: string } | undefined;
-    if (TELEGRAM_DEV) {
+    let expectedAgentAddress: string | undefined;
+    if (mode === 'live') {
+      const address = apiWalletAddress.trim();
+      if (address && !ADDRESS_RE.test(address)) {
+        setError('API wallet address phải là địa chỉ 0x hợp lệ.');
+        return;
+      }
+      expectedAgentAddress = address || undefined;
+
       const token = tgToken.trim();
       const chat_id = tgChatId.trim();
       if (Boolean(token) !== Boolean(chat_id)) {
@@ -84,8 +96,11 @@ export function LaunchpadModal({
     setBusy(mode);
     setError(null);
     try {
-      if (telegramArg) {
-        await launchBot(bot.id, mode, telegramArg);
+      const launchOpts = expectedAgentAddress
+        ? { expectedAgentAddress }
+        : undefined;
+      if (telegramArg || launchOpts) {
+        await launchBot(bot.id, mode, telegramArg, launchOpts);
       } else {
         await launchBot(bot.id, mode);
       }
@@ -203,49 +218,63 @@ export function LaunchpadModal({
                 />
               </div>
 
-              {TELEGRAM_DEV && (
-                <div className="mt-5 rounded-2xl border border-dashed border-border-subtle bg-surface/30 p-4">
-                  <p className="mb-3 font-mono text-2xs uppercase tracking-wider text-fg-muted">
-                    Telegram (dev test)
-                  </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <label
-                        htmlFor="tg-token"
-                        className="block text-xs font-medium text-fg-muted"
-                      >
-                        Bot token
-                      </label>
-                      <Input
-                        id="tg-token"
-                        value={tgToken}
-                        onChange={(e) => setTgToken(e.target.value)}
-                        placeholder="123456:ABC-xyz"
-                        autoComplete="off"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label
-                        htmlFor="tg-chat"
-                        className="block text-xs font-medium text-fg-muted"
-                      >
-                        Chat ID
-                      </label>
-                      <Input
-                        id="tg-chat"
-                        value={tgChatId}
-                        onChange={(e) => setTgChatId(e.target.value)}
-                        placeholder="e.g. 123456789"
-                        autoComplete="off"
-                      />
-                    </div>
+              <div className="mt-5 rounded-2xl border border-bearish/30 bg-bearish/5 p-4">
+                <p className="mb-3 font-mono text-2xs uppercase tracking-wider text-fg-muted">
+                  Live settings
+                </p>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="space-y-1.5 md:col-span-3">
+                    <label
+                      htmlFor="api-wallet-address"
+                      className="block text-xs font-medium text-fg-muted"
+                    >
+                      API wallet address
+                    </label>
+                    <Input
+                      id="api-wallet-address"
+                      value={apiWalletAddress}
+                      onChange={(e) => setApiWalletAddress(e.target.value)}
+                      placeholder="0x..."
+                      autoComplete="off"
+                    />
                   </div>
-                  <p className="mt-2 text-2xs text-fg-muted">
-                    Điền cả hai để bot khởi động với Telegram bật (test
-                    /status). Để trống = tắt như cũ.
-                  </p>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label
+                      htmlFor="tg-token"
+                      className="block text-xs font-medium text-fg-muted"
+                    >
+                      Telegram bot token
+                    </label>
+                    <Input
+                      id="tg-token"
+                      value={tgToken}
+                      onChange={(e) => setTgToken(e.target.value)}
+                      placeholder="123456:ABC-xyz"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="tg-chat"
+                      className="block text-xs font-medium text-fg-muted"
+                    >
+                      Telegram Chat ID
+                    </label>
+                    <Input
+                      id="tg-chat"
+                      value={tgChatId}
+                      onChange={(e) => setTgChatId(e.target.value)}
+                      placeholder="e.g. 6041589302"
+                      autoComplete="off"
+                    />
+                  </div>
                 </div>
-              )}
+                <p className="mt-2 text-2xs text-fg-muted">
+                  Chỉ dùng khi Go Live. API wallet address phải khớp active
+                  agent mà backend đang giữ private key. Điền token + Chat ID để
+                  bot khởi động với Telegram bật; để trống cả hai = tắt.
+                </p>
+              </div>
             </div>
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>

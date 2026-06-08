@@ -1,6 +1,10 @@
 import { useCallback, useState } from 'react';
 import { agentApi } from './agent.api';
-import { eip712Sign, extractNonceFromSignPayload } from './agent-helpers';
+import {
+  eip712Sign,
+  extractNonceFromSignPayload,
+  formatAgentFlowError,
+} from './agent-helpers';
 import {
   detectCoin98,
   UserRejectedError,
@@ -85,9 +89,7 @@ export function useAgentSignFlow(): UseAgentSignFlowResult {
               // NoProviderError on a falsy provider argument.
               noProvider
               ? 'Không tìm thấy ví — vui lòng cài Coin98'
-              : err instanceof Error
-                ? err.message
-                : 'Unknown error',
+              : formatAgentFlowError(err),
           userRejected,
         });
       }

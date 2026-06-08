@@ -5,6 +5,17 @@ import {
 } from '@/features/wallet-auth/wallet.provider';
 import { HttpError } from '@/lib/http';
 
+const KNOWN_CHAIN_LABELS: Record<number, string> = {
+  42161: 'Arbitrum One',
+};
+
+export class WalletChainError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WalletChainError';
+  }
+}
+
 /** EIP-712 sign_payload từ BE là object opaque. Parse nonce defensively. */
 export function extractNonceFromSignPayload(payload: unknown): number {
   if (payload !== null && typeof payload === 'object' && 'message' in payload) {
@@ -37,10 +48,95 @@ export function formatSpendingLimit(v: number | null | undefined): string {
  * (case-insensitive). Handles HttpError (checks .body) and plain Error (.message).
  * Returns false for any non-Error value. */
 export function isAgentCapFull(err: unknown): boolean {
-  if (!(err instanceof Error)) return false;
-  const text = err instanceof HttpError ? err.body : err.message;
+  const text = getErrorText(err);
+  if (!text) return false;
   const lower = text.toLowerCase();
   return lower.includes('too many') && lower.includes('agent');
+}
+
+function getErrorText(err: unknown): string {
+  if (!(err instanceof Error)) return '';
+  return err instanceof HttpError ? err.body : err.message;
+}
+
+function getBackendDetail(err: unknown): string {
+  const text = getErrorText(err);
+  if (!text) return '';
+  try {
+    const parsed = JSON.parse(text) as { detail?: unknown };
+    return typeof parsed.detail === 'string' ? parsed.detail : text;
+  } catch {
+    return text;
+  }
+}
+
+export function isHyperliquidDepositRequired(err: unknown): boolean {
+  const lower = getBackendDetail(err).toLowerCase();
+  return (
+    lower.includes('must deposit before performing actions') ||
+    lower.includes('requires a deposit before creating an agent wallet')
+  );
+}
+
+export function formatAgentFlowError(err: unknown): string {
+  if (isHyperliquidDepositRequired(err)) {
+    const detail = getBackendDetail(err);
+    const user = /\bUser:\s*(0x[a-fA-F0-9]{40})\b/.exec(detail)?.[1];
+    const suffix = user ? ` cho ví ${user}` : '';
+    return `Hyperliquid yêu cầu account đã deposit trước khi tạo API/agent wallet. Hãy deposit USDC vào Hyperliquid${suffix}, chờ tiền được credit vào perps/cross margin, rồi thử Generate & Sign lại.`;
+  }
+  return getBackendDetail(err) || 'Unknown error';
+}
+
+function parseChainId(raw: unknown): number | null {
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  if (typeof raw !== 'string' || raw.trim() === '') return null;
+  const text = raw.trim();
+  const parsed = text.startsWith('0x')
+    ? Number.parseInt(text, 16)
+    : Number.parseInt(text, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatChain(chainId: number | null): string {
+  if (chainId == null) return 'unknown chain';
+  const label = KNOWN_CHAIN_LABELS[chainId];
+  return label ? `${label} (${chainId})` : `chain ${chainId}`;
+}
+
+function toHexChainId(chainId: number): string {
+  return `0x${chainId.toString(16)}`;
+}
+
+export function extractEip712ChainId(typedData: unknown): number | null {
+  if (typedData === null || typeof typedData !== 'object') return null;
+  const domain = (typedData as Record<string, unknown>).domain;
+  if (domain === null || typeof domain !== 'object') return null;
+  return parseChainId((domain as Record<string, unknown>).chainId);
+}
+
+async function ensureTypedDataChain(
+  provider: EthereumProvider,
+  typedData: unknown,
+): Promise<void> {
+  const requiredChainId = extractEip712ChainId(typedData);
+  if (requiredChainId == null) return;
+
+  const activeChainId = parseChainId(
+    await provider.request({ method: 'eth_chainId' }),
+  );
+  if (activeChainId === requiredChainId) return;
+
+  try {
+    await provider.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: toHexChainId(requiredChainId) }],
+    });
+  } catch {
+    throw new WalletChainError(
+      `Ví đang ở ${formatChain(activeChainId)}, nhưng chữ ký Hyperliquid cần ${formatChain(requiredChainId)}. Vui lòng switch network sang ${formatChain(requiredChainId)} rồi thử lại.`,
+    );
+  }
 }
 
 /** Wrap EIP-712 sign request to the wallet provider (Coin98 / window.ethereum).
@@ -52,6 +148,7 @@ export async function eip712Sign(
   typedData: unknown,
 ): Promise<string> {
   if (!provider) throw new NoProviderError();
+  await ensureTypedDataChain(provider, typedData);
   try {
     return (await provider.request({
       method: 'eth_signTypedData_v4',

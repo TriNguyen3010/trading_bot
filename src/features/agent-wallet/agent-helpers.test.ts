@@ -4,6 +4,10 @@ import {
   formatSpendingLimit,
   eip712Sign,
   isAgentCapFull,
+  isHyperliquidDepositRequired,
+  formatAgentFlowError,
+  extractEip712ChainId,
+  WalletChainError,
 } from './agent-helpers';
 import {
   UserRejectedError,
@@ -47,6 +51,61 @@ describe('eip712Sign', () => {
     expect(sig).toBe('0xsignature');
   });
 
+  it('does not switch chain when EIP-712 domain chainId matches the active chain', async () => {
+    const typedData = { domain: { chainId: 42161 }, message: {} };
+    const request = vi.fn(async ({ method }: { method: string }) => {
+      if (method === 'eth_chainId') return '0xa4b1';
+      if (method === 'eth_signTypedData_v4') return '0xsignature';
+      throw new Error(`unexpected method ${method}`);
+    });
+    const provider = { request } as never;
+
+    await expect(eip712Sign(provider, '0xuser', typedData)).resolves.toBe(
+      '0xsignature',
+    );
+    expect(request).not.toHaveBeenCalledWith(
+      expect.objectContaining({ method: 'wallet_switchEthereumChain' }),
+    );
+  });
+
+  it('switches to the EIP-712 domain chain before signing when wallet is on another chain', async () => {
+    const typedData = { domain: { chainId: 42161 }, message: {} };
+    const request = vi.fn(async ({ method }: { method: string }) => {
+      if (method === 'eth_chainId') return '0x58';
+      if (method === 'wallet_switchEthereumChain') return null;
+      if (method === 'eth_signTypedData_v4') return '0xsignature';
+      throw new Error(`unexpected method ${method}`);
+    });
+    const provider = { request } as never;
+
+    await expect(eip712Sign(provider, '0xuser', typedData)).resolves.toBe(
+      '0xsignature',
+    );
+    expect(request.mock.calls.map(([arg]) => arg.method)).toEqual([
+      'eth_chainId',
+      'wallet_switchEthereumChain',
+      'eth_signTypedData_v4',
+    ]);
+    expect(request).toHaveBeenCalledWith({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: '0xa4b1' }],
+    });
+  });
+
+  it('throws a clear chain error when wallet cannot switch to the EIP-712 domain chain', async () => {
+    const typedData = { domain: { chainId: 42161 }, message: {} };
+    const request = vi.fn(async ({ method }: { method: string }) => {
+      if (method === 'eth_chainId') return '0x58';
+      if (method === 'wallet_switchEthereumChain') throw new Error('nope');
+      throw new Error(`unexpected method ${method}`);
+    });
+    const provider = { request } as never;
+
+    await expect(eip712Sign(provider, '0xuser', typedData)).rejects.toThrow(
+      WalletChainError,
+    );
+  });
+
   it('throws UserRejectedError when provider rejects with code 4001', async () => {
     const request = vi.fn().mockRejectedValue({ code: 4001 });
     const provider = { request } as never;
@@ -71,6 +130,20 @@ describe('eip712Sign', () => {
     await expect(
       eip712Sign(null as never, '0xuser', {}),
     ).rejects.toBeInstanceOf(NoProviderError);
+  });
+});
+
+describe('extractEip712ChainId', () => {
+  it('reads numeric, decimal-string, and hex-string domain chainId values', () => {
+    expect(extractEip712ChainId({ domain: { chainId: 42161 } })).toBe(42161);
+    expect(extractEip712ChainId({ domain: { chainId: '42161' } })).toBe(42161);
+    expect(extractEip712ChainId({ domain: { chainId: '0xa4b1' } })).toBe(42161);
+  });
+
+  it('returns null when typed data has no parseable domain chainId', () => {
+    expect(extractEip712ChainId({})).toBeNull();
+    expect(extractEip712ChainId({ domain: {} })).toBeNull();
+    expect(extractEip712ChainId(null)).toBeNull();
   });
 });
 
@@ -112,5 +185,30 @@ describe('isAgentCapFull', () => {
     expect(isAgentCapFull('too many agents')).toBe(false);
     expect(isAgentCapFull(null)).toBe(false);
     expect(isAgentCapFull(undefined)).toBe(false);
+  });
+});
+
+describe('Hyperliquid deposit-required error helpers', () => {
+  it('detects Hyperliquid must-deposit errors from BE JSON detail', () => {
+    const err = new HttpError(
+      400,
+      '{"detail":"Hyperliquid requires a deposit before creating an agent wallet. Please deposit funds to your Hyperliquid account and try again. (Hyperliquid: Must deposit before performing actions. User: 0x718efe21485ba7a7fadd62ce49d8465b80905142)"}',
+    );
+    expect(isHyperliquidDepositRequired(err)).toBe(true);
+  });
+
+  it('formats deposit-required errors as actionable Vietnamese copy', () => {
+    const err = new HttpError(
+      400,
+      '{"detail":"Hyperliquid requires a deposit before creating an agent wallet. Please deposit funds to your Hyperliquid account and try again. (Hyperliquid: Must deposit before performing actions. User: 0x718efe21485ba7a7fadd62ce49d8465b80905142)"}',
+    );
+    expect(formatAgentFlowError(err)).toBe(
+      'Hyperliquid yêu cầu account đã deposit trước khi tạo API/agent wallet. Hãy deposit USDC vào Hyperliquid cho ví 0x718efe21485ba7a7fadd62ce49d8465b80905142, chờ tiền được credit vào perps/cross margin, rồi thử Generate & Sign lại.',
+    );
+  });
+
+  it('falls back to backend detail for other JSON HttpError bodies', () => {
+    const err = new HttpError(400, '{"detail":"BE 500"}');
+    expect(formatAgentFlowError(err)).toBe('BE 500');
   });
 });

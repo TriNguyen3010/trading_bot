@@ -15,6 +15,7 @@ export const PopoverContent = React.forwardRef<
       ref={ref}
       align={align}
       sideOffset={sideOffset}
+      data-drawer-floating-layer=""
       className={cn(
         'z-50 w-72 rounded-lg border border-border bg-surface-elevated p-3 text-fg shadow-lg outline-none',
         'data-[state=open]:animate-fade-in',

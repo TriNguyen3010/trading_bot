@@ -2,6 +2,10 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { StepDrawer, type StepContentMap } from './StepDrawer';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import {
+  MetricCombobox,
+  type MetricOption,
+} from '@/features/conditions/MetricCombobox';
 import type { StepId } from '@/types/builder.types';
 
 const CONTENT: Record<StepId, StepContentMap> = {
@@ -36,6 +40,11 @@ const CONTENT: Record<StepId, StepContentMap> = {
 };
 
 const noop = () => {};
+
+const METRIC_OPTIONS: MetricOption[] = [
+  { value: 'candle.close', label: 'candle.close', category: 'Candle' },
+  { value: 'RSI-14', label: 'RSI-14', category: 'Momentum' },
+];
 
 const baseProps = {
   contentByStep: CONTENT,
@@ -128,5 +137,31 @@ describe('StepDrawer integration', () => {
     await waitFor(() => {
       expect(useBuilderStore.getState().openStep).toBeNull();
     });
+  });
+
+  it('keeps the side panel open when clicking a portaled popover option', async () => {
+    useBuilderStore.getState().setOpenStep('entry-strategy');
+    render(
+      <StepDrawer
+        {...baseProps}
+        onManualClose={() => useBuilderStore.getState().setOpenStep(null)}
+        strategyCompositeContent={
+          <MetricCombobox
+            value="candle.close"
+            onChange={() => {}}
+            options={METRIC_OPTIONS}
+            ariaLabel="Metric"
+          />
+        }
+        strategyHeader={{ title: 'Strategy', description: 'merged' }}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Metric' }));
+    const option = screen.getByRole('option', { name: /RSI-14/i });
+
+    fireEvent.mouseDown(option);
+
+    expect(useBuilderStore.getState().openStep).toBe('entry-strategy');
   });
 });

@@ -70,14 +70,17 @@ describe('BotConfigSetup pair → stake currency', () => {
   });
 });
 
-describe('BotConfigConfigure — dry-run wallet always visible', () => {
+describe('BotConfigConfigure — dry-run wallet not exposed at build time', () => {
   beforeEach(() => {
     useBuilderStore.getState().resetAll();
   });
 
-  it('renders the Dry-run wallet field regardless of any mode state', () => {
+  it('does not render a Dry-run wallet field (sim wallet is fixed at create, set per-run later)', () => {
     render(<BotConfigConfigure />);
-    // The label "Dry-run wallet" must always appear now that the mode toggle is gone
-    expect(screen.getByText(/dry-run wallet/i)).toBeInTheDocument();
+    expect(screen.queryByText(/dry-run wallet/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps the default dryRunWallet of 1000 in store so the payload still matches BE', () => {
+    expect(useBuilderStore.getState().botConfig.dryRunWallet).toBe(1000);
   });
 });

@@ -124,7 +124,7 @@ export function BotConfigSetup() {
  */
 function LockedChip({ value }: { value: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-canvas/40 px-4 py-2 text-sm text-fg">
+    <div className="cursor-not-allowed rounded-2xl border border-border bg-canvas/40 px-4 py-2 text-sm text-fg-muted opacity-60">
       {value}
     </div>
   );
@@ -207,17 +207,12 @@ export function BotConfigConfigure() {
           />
         </FormField>
       </div>
-
-      {/* Dry-run wallet is always visible — mode is set at launch time, not build time. */}
-      <FormField label="Dry-run wallet" help={HELP.dryRunWallet}>
-        <NumberInput
-          value={config.dryRunWallet}
-          onValueChange={(v) => patch({ dryRunWallet: Math.max(0, v ?? 0) })}
-          min={0}
-          step={100}
-          suffix={config.stakeCurrency}
-        />
-      </FormField>
+      {/*
+        Dry-run wallet input intentionally removed from build time: at create
+        the bot is always dry_run with a fixed 1000 sim wallet (store default),
+        which matches the BE source-of-truth payload. The simulated wallet size
+        is chosen later — per-run in BacktestDialog.
+      */}
     </>
   );
 }

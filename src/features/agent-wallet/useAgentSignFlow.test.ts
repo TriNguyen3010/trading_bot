@@ -5,6 +5,7 @@ import { agentApi } from './agent.api';
 import { eip712Sign } from './agent-helpers';
 import { detectCoin98 } from '@/features/wallet-auth/wallet.provider';
 import { useWalletStore } from '@/features/wallet-auth/wallet.store';
+import { HttpError } from '@/lib/http';
 
 vi.mock('./agent.api', () => ({
   agentApi: { create: vi.fn(), confirm: vi.fn() },
@@ -162,6 +163,40 @@ describe('useAgentSignFlow', () => {
     expect(result.current.state.stage).toBe('error');
     if (result.current.state.stage === 'error') {
       expect(result.current.state.message).toBe('BE 500');
+      expect(result.current.state.userRejected).toBe(false);
+    }
+  });
+
+  it('reports a friendly deposit-required error when Hyperliquid rejects agent confirm', async () => {
+    vi.mocked(detectCoin98).mockReturnValue({ request: vi.fn() } as never);
+    vi.mocked(agentApi.create).mockResolvedValue({
+      agent_address: '0xagent',
+      label: null,
+      spending_limit_usd: null,
+      sign_payload: { message: { nonce: 42 } },
+    });
+    vi.mocked(eip712Sign).mockResolvedValue('0xsig');
+    vi.mocked(agentApi.confirm).mockRejectedValue(
+      new HttpError(
+        400,
+        '{"detail":"Hyperliquid requires a deposit before creating an agent wallet. Please deposit funds to your Hyperliquid account and try again. (Hyperliquid: Must deposit before performing actions. User: 0x718efe21485ba7a7fadd62ce49d8465b80905142)"}',
+      ),
+    );
+
+    const { result } = renderHook(() => useAgentSignFlow());
+    await act(async () => {
+      await result.current.run({});
+    });
+
+    expect(result.current.state.stage).toBe('error');
+    if (result.current.state.stage === 'error') {
+      expect(result.current.state.message).toContain(
+        'Hyperliquid yêu cầu account đã deposit',
+      );
+      expect(result.current.state.message).toContain(
+        '0x718efe21485ba7a7fadd62ce49d8465b80905142',
+      );
+      expect(result.current.state.message).not.toContain('{"detail"');
       expect(result.current.state.userRejected).toBe(false);
     }
   });
