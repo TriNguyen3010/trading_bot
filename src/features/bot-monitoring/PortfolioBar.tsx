@@ -13,10 +13,12 @@ function Kpi({
   label,
   children,
   tone,
+  loading,
 }: {
   label: string;
   children: React.ReactNode;
   tone?: 'brand' | 'bearish';
+  loading?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-0.5">
@@ -26,11 +28,11 @@ function Kpi({
       <span
         className={cn(
           'font-mono text-lg font-semibold tabular-nums text-fg',
-          tone === 'brand' && 'text-brand',
-          tone === 'bearish' && 'text-bearish',
+          !loading && tone === 'brand' && 'text-brand',
+          !loading && tone === 'bearish' && 'text-bearish',
         )}
       >
-        {children}
+        {loading ? '—' : children}
       </span>
     </div>
   );
@@ -62,18 +64,27 @@ export function PortfolioBar({ stats, loading, onRefresh }: PortfolioBarProps) {
 
       <div className="h-8 w-px bg-border-subtle" aria-hidden />
 
-      <Kpi label="Active / Total">
+      <Kpi label="Active / Total" loading={loading}>
         {stats.active} / {stats.total}
       </Kpi>
-      <Kpi label="Open trades">{stats.openTrades}</Kpi>
-      <Kpi label="Idle">{stats.idle}</Kpi>
+      <Kpi label="Open trades" loading={loading}>
+        {stats.openTrades}
+      </Kpi>
+      <Kpi label="Idle" loading={loading}>
+        {stats.idle}
+      </Kpi>
       <Kpi
         label="Transitioning"
+        loading={loading}
         tone={stats.transitioning > 0 ? 'brand' : undefined}
       >
         {stats.transitioning}
       </Kpi>
-      <Kpi label="Errors" tone={stats.error > 0 ? 'bearish' : undefined}>
+      <Kpi
+        label="Errors"
+        loading={loading}
+        tone={stats.error > 0 ? 'bearish' : undefined}
+      >
         {stats.error}
       </Kpi>
 
