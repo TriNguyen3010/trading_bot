@@ -1,14 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import {
-  Download,
-  FlaskConical,
-  List,
-  LogOut,
-  Upload,
-  User,
-} from 'lucide-react';
+import { List, LogOut, Rocket, Upload, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { dropInItem, dropInStagger } from '@/lib/motion';
 import {
@@ -70,7 +63,7 @@ export function HeaderToolbar() {
     return () => window.clearInterval(id);
   }, []);
 
-  // Ctrl/Cmd + E → Export, Ctrl/Cmd + I → Import.
+  // Ctrl/Cmd + E → Create bot, Ctrl/Cmd + I → Import.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey)) return;
@@ -191,28 +184,11 @@ export function HeaderToolbar() {
               </motion.div>
             </div>
 
-            {/* Right cluster: bundle-IO actions in build → ship order:
-             * Backtest · Import · Export (Export keeps the primary glow on
-             * the far right since it's the terminal action). */}
+            {/* Right cluster: Import · Create bot. "Create bot" keeps the
+             * primary glow on the far right since it's the terminal action —
+             * it opens the review/confirm dialog that saves the bot, from
+             * which dry-run / backtest / live are chosen later. */}
             <div className="flex items-center gap-1.5 pr-1">
-              <motion.div variants={dropInItem} className="inline-flex">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="h-10 rounded-full px-3"
-                      disabled
-                    >
-                      <FlaskConical className="h-3.5 w-3.5" />
-                      {strings.header.backtest}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Backtest will arrive in Phase 2.
-                  </TooltipContent>
-                </Tooltip>
-              </motion.div>
               <motion.div variants={dropInItem} className="inline-flex">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -241,8 +217,8 @@ export function HeaderToolbar() {
                         onClick={() => setExportOpen(true)}
                         className="h-10 rounded-full px-4 shadow-[0_0_16px_rgba(240,185,11,0.35)]"
                       >
-                        <Download className="h-3.5 w-3.5" />
-                        {strings.header.export}
+                        <Rocket className="h-3.5 w-3.5" />
+                        {strings.header.createBot}
                         {!canExport ? (
                           <span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-fg-inverse/20 px-1 text-2xs">
                             {issues.length}
@@ -253,7 +229,7 @@ export function HeaderToolbar() {
                   </TooltipTrigger>
                   <TooltipContent>
                     {canExport
-                      ? 'Export the bundle JSON (Ctrl+E)'
+                      ? 'Review setup and create the bot (Ctrl+E)'
                       : `${issues.length} issue${issues.length === 1 ? '' : 's'} to fix.`}
                   </TooltipContent>
                 </Tooltip>

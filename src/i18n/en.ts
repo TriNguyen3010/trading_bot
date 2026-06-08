@@ -9,8 +9,7 @@ export const strings = {
   },
   header: {
     botNamePlaceholder: 'Bot Basic',
-    backtest: 'Backtest',
-    export: 'Export',
+    createBot: 'Create bot',
     saved: 'Saved',
     saving: 'Saving…',
     secondsAgo: (s: number) => `${s}s ago`,
