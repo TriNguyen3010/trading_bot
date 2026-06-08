@@ -17,7 +17,6 @@ import { useExportDialogStore } from '@/features/export-import/export-dialog.sto
 import { ImportDialog } from '@/features/export-import/ImportDialog';
 import { validateBuilder } from '@/lib/validator';
 import { strings } from '@/i18n/en';
-import { cn } from '@/lib/utils';
 import { useWalletStore } from '@/features/wallet-auth/wallet.store';
 import {
   Popover,
@@ -30,18 +29,7 @@ function shortenAddress(addr: string | null | undefined): string {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
-function relativeTime(ts: number | null) {
-  if (!ts) return null;
-  const seconds = Math.max(0, Math.round((Date.now() - ts) / 1000));
-  if (seconds < 5) return strings.header.saved;
-  if (seconds < 60)
-    return `${strings.header.saved} · ${strings.header.secondsAgo(seconds)}`;
-  const minutes = Math.round(seconds / 60);
-  return `${strings.header.saved} · ${minutes}m ago`;
-}
-
 export function HeaderToolbar() {
-  const lastSavedAt = useBuilderStore((s) => s.lastSavedAt);
   const state = useBuilderStore();
 
   const exportOpen = useExportDialogStore((s) => s.open);
@@ -55,13 +43,6 @@ export function HeaderToolbar() {
 
   const issues = useMemo(() => validateBuilder(state), [state]);
   const canExport = issues.length === 0;
-
-  // Tick once a second so "Saved 12s ago" stays fresh.
-  const [, setNow] = useState(Date.now());
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
 
   // Ctrl/Cmd + E → Create bot, Ctrl/Cmd + I → Import.
   useEffect(() => {
@@ -97,9 +78,9 @@ export function HeaderToolbar() {
             initial="hidden"
             animate="visible"
           >
-            {/* Left cluster: identity (logo + saved) followed by the
-             * navigation/account controls (User, Create new bot, My bots).
-             * Order per user request: Logo · User · Create new bot · My bots. */}
+            {/* Left cluster: identity + nav — Logo · wallet · Dashboard.
+             * (Saved status moved under Add Strategy; "New" moved into the
+             * right-side segmented group.) */}
             <div className="flex items-center gap-1.5 pl-1">
               <button
                 type="button"
@@ -114,15 +95,6 @@ export function HeaderToolbar() {
                   draggable={false}
                 />
               </button>
-              <motion.span
-                variants={dropInItem}
-                className={cn(
-                  'mr-2 text-xs text-fg-muted',
-                  !lastSavedAt && 'invisible',
-                )}
-              >
-                {relativeTime(lastSavedAt)}
-              </motion.span>
               <motion.div variants={dropInItem} className="inline-flex">
                 <Popover>
                   <PopoverTrigger asChild>
@@ -162,9 +134,6 @@ export function HeaderToolbar() {
                 </Popover>
               </motion.div>
               <motion.div variants={dropInItem} className="inline-flex">
-                <CreateNewBotButton />
-              </motion.div>
-              <motion.div variants={dropInItem} className="inline-flex">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -184,27 +153,35 @@ export function HeaderToolbar() {
               </motion.div>
             </div>
 
-            {/* Right cluster: Import · Create bot. "Create bot" keeps the
-             * primary glow on the far right since it's the terminal action —
-             * it opens the review/confirm dialog that saves the bot, from
-             * which dry-run / backtest / live are chosen later. */}
-            <div className="flex items-center gap-1.5 pr-1">
+            {/* Right cluster: segmented [New · Import] secondary group, then
+             * the primary "Create bot" (terminal action — opens the
+             * review/confirm dialog that saves the bot, from which dry-run /
+             * backtest / live are chosen later). */}
+            <div className="flex items-center gap-2 pr-1">
               <motion.div variants={dropInItem} className="inline-flex">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setImportOpen(true)}
-                      className="h-10 rounded-full px-3"
-                      aria-label="Import bundle"
-                    >
-                      <Upload className="h-3.5 w-3.5" />
-                      Import
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Import a bundle JSON (Ctrl+I)</TooltipContent>
-                </Tooltip>
+                <div className="flex items-center gap-0.5 rounded-full border border-border bg-surface p-0.5">
+                  <CreateNewBotButton
+                    variant="ghost"
+                    className="h-9 rounded-full px-3"
+                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setImportOpen(true)}
+                        className="h-9 rounded-full px-3"
+                        aria-label="Import bundle"
+                      >
+                        <Upload className="h-3.5 w-3.5" />
+                        Import
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Import a bundle JSON (Ctrl+I)
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </motion.div>
               <motion.div variants={dropInItem} className="inline-flex">
                 <Tooltip>

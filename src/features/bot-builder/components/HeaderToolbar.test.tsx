@@ -4,16 +4,14 @@ import { MemoryRouter } from 'react-router-dom';
 import { HeaderToolbar } from './HeaderToolbar';
 
 describe('HeaderToolbar', () => {
-  it('renders a "Create new bot" button', () => {
+  it('renders a "New" (reset) button', () => {
     render(
       <MemoryRouter>
         <HeaderToolbar />
       </MemoryRouter>,
     );
 
-    expect(
-      screen.getByRole('button', { name: /Create new bot/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^New$/i })).toBeInTheDocument();
   });
 
   it('keeps the header fixed and uses the shared app header pill', () => {

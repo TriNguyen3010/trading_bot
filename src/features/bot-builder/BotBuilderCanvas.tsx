@@ -11,6 +11,7 @@ import { StrategyCard } from './components/StrategyCard';
 import { StrategyDrawerContent } from './components/StrategyDrawerContent';
 import { BotConfigDrawerContent } from './components/BotConfigDrawerContent';
 import { AddStrategyButton } from './components/AddStrategyButton';
+import { SavedIndicator } from './components/SavedIndicator';
 import { BotSummaryCard } from '@/features/bot-summary/BotSummaryCard';
 import { BotConfigSetup, BotConfigConfigure } from './steps/BotConfigStep';
 import { EntryStrategySetup } from './steps/EntryStrategyStep';
@@ -242,6 +243,7 @@ export function BotBuilderCanvas() {
       >
         <StrategyCard />
         <AddStrategyButton />
+        <SavedIndicator />
       </motion.li>
     </motion.ol>
   );

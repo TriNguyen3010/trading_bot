@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,7 +16,13 @@ import { abortAllScripts } from './script/script-runner';
 import { runGreeting } from './script/greeting.script';
 import { strings } from '@/i18n/en';
 
-export function CreateNewBotButton() {
+export function CreateNewBotButton({
+  variant = 'secondary',
+  className = 'h-10 rounded-full px-3',
+}: {
+  variant?: ComponentProps<typeof Button>['variant'];
+  className?: string;
+} = {}) {
   const [open, setOpen] = useState(false);
 
   const handleConfirm = () => {
@@ -39,10 +45,10 @@ export function CreateNewBotButton() {
   return (
     <>
       <Button
-        variant="secondary"
+        variant={variant}
         size="sm"
         onClick={() => setOpen(true)}
-        className="h-10 rounded-full px-3"
+        className={className}
       >
         <RotateCcw className="h-3.5 w-3.5" />
         {strings.cypheus.createNewBot}
