@@ -399,6 +399,55 @@ describe('DashboardPage', () => {
     expect(screen.queryByText('Live bot')).not.toBeInTheDocument();
     expect(screen.getByText('Broken bot')).toBeInTheDocument();
   });
+
+  it('auto-resets an active filter when its bucket empties after refresh', async () => {
+    vi.mocked(botApi.list).mockResolvedValueOnce([
+      {
+        id: 1,
+        bot_name: 'Live bot',
+        status: 'running',
+        desired_status: null,
+        error_message: null,
+        strategy_name: 'S1',
+      },
+    ]);
+    vi.mocked(botApi.getConfig).mockResolvedValue({
+      config: {
+        dry_run: false,
+        timeframe: '1h',
+        exchange: { pair_whitelist: ['BTC/USDT'] },
+      },
+    });
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText('Live bot')).toBeInTheDocument(),
+    );
+
+    // Filter to Live → only the live bot shows.
+    fireEvent.click(screen.getByRole('button', { name: /Live/ }));
+    expect(screen.getByText('Live bot')).toBeInTheDocument();
+
+    // Refresh: live bot gone, replaced by an ERROR bot → Live count → 0.
+    vi.mocked(botApi.list).mockResolvedValueOnce([
+      {
+        id: 2,
+        bot_name: 'Broken bot',
+        status: 'error',
+        desired_status: null,
+        error_message: 'boom',
+        strategy_name: 'S2',
+      },
+    ]);
+    fireEvent.click(screen.getByRole('button', { name: /refresh/i }));
+
+    // Filter auto-falls back to "all"; the error bot shows, no empty-state.
+    await waitFor(() =>
+      expect(screen.getByText('Broken bot')).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByText(/No bots match your filter/i),
+    ).not.toBeInTheDocument();
+  });
 });
 
 // ── lifecycle actions wired on BotCard ─────────────────────────

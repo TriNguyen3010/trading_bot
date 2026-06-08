@@ -210,6 +210,12 @@ export function DashboardPage() {
 
   const counts = useMemo(() => countByCategory(cards), [cards]);
 
+  // If the active filter's bucket empties (after a refresh/poll), fall back to
+  // "all" so the user isn't stranded on a now-disabled chip + empty grid.
+  useEffect(() => {
+    if (filter !== 'all' && counts[filter] === 0) setFilter('all');
+  }, [counts, filter]);
+
   // Sort (triage-first) → filter by status chip → filter by search.
   const filtered = useMemo(() => {
     const sorted = sortCards(cards);
