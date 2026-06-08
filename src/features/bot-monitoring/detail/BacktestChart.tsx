@@ -59,6 +59,7 @@ export function BacktestChart({
   useEffect(() => {
     if (status !== 'ready' || !series || !elRef.current) return;
     const chart: IChartApi = createChart(elRef.current, {
+      autoSize: true, // track container width (no manual ResizeObserver)
       height: 360,
       layout: { background: { color: 'transparent' }, textColor: '#848e9c' },
       grid: {
@@ -87,13 +88,7 @@ export function BacktestChart({
     volSeries.setData(series.volumes);
     chart.timeScale().fitContent();
 
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width;
-      if (w) chart.applyOptions({ width: w });
-    });
-    ro.observe(elRef.current);
     return () => {
-      ro.disconnect();
       chart.remove();
       candleSeriesRef.current = null;
     };
@@ -123,5 +118,12 @@ export function BacktestChart({
         {error ?? "Couldn't load candles"}
       </div>
     );
-  return <div ref={elRef} className="w-full" />;
+  return (
+    <div
+      ref={elRef}
+      className="w-full"
+      role="img"
+      aria-label="Backtest price chart with trade entry (B) and exit (S) markers"
+    />
+  );
 }
