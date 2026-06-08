@@ -20,4 +20,12 @@ describe('OpenTradesGauge', () => {
     expect(screen.getByText('1/10')).toBeInTheDocument();
     expect(container.querySelectorAll('[data-pip]')).toHaveLength(8);
   });
+
+  it('lights at least one pip when open > 0 even if max is large', () => {
+    const { container } = render(<OpenTradesGauge open={1} max={20} />);
+    expect(screen.getByText('1/20')).toBeInTheDocument();
+    expect(
+      container.querySelectorAll('[data-pip="on"]').length,
+    ).toBeGreaterThanOrEqual(1);
+  });
 });

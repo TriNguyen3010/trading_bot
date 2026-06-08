@@ -12,8 +12,14 @@ export function OpenTradesGauge({
   const total = max ?? 0;
   const filled = open ?? 0;
   const pipCount = Math.min(total, MAX_PIPS);
+  // When capped (max > MAX_PIPS), keep ≥1 pip lit if any trade is open so the
+  // gauge never reads "empty" while the numeric says otherwise.
   const filledPips =
-    total <= MAX_PIPS ? filled : Math.round((filled / total) * MAX_PIPS);
+    total <= MAX_PIPS
+      ? filled
+      : filled > 0
+        ? Math.max(1, Math.round((filled / total) * MAX_PIPS))
+        : 0;
 
   return (
     <div className="flex items-center gap-2">
