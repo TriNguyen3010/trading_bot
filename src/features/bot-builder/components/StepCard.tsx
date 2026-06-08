@@ -101,7 +101,7 @@ export function StepCard({ stepId, index, icon: Icon, title }: StepCardProps) {
       onClick={handleClick}
       aria-pressed={isOpen}
       className={cn(
-        'glass-card group relative flex w-full flex-col items-stretch rounded-3xl text-left',
+        'card-coin98-flat group relative flex w-full flex-col items-stretch rounded-3xl text-left',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-black',
         // 3-state frame ring:
         //   normal   — ring-1 white/15  (default)

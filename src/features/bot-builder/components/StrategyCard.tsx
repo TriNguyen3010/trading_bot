@@ -121,7 +121,7 @@ export function StrategyCard() {
         // Variant C — unified shell with StepCard (rounded-3xl + glow when
         // selected) while keeping the square `Layers` icon below to carry
         // the "composite stack" semantics that distinguish this from Phase 1.
-        'glass-card group relative flex w-full flex-col items-stretch overflow-hidden rounded-3xl text-left',
+        'card-coin98-flat group relative flex w-full flex-col items-stretch overflow-hidden rounded-3xl text-left',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-black',
         // 2-state frame ring (matches StepCard):
         //   normal   — ring-1 white/15
