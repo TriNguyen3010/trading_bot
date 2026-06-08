@@ -29,6 +29,9 @@ export interface BacktestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   bot: BacktestBot | null;
+  /** Fired once when a run terminates (success or fail) — the bot's backtest
+   * history has changed, so callers can refetch instead of forcing a reload. */
+  onComplete?: () => void;
   /** Test-only seam: mount straight into the running/result phase. */
   initialBacktestId?: number | null;
 }
@@ -46,6 +49,7 @@ export function BacktestDialog({
   open,
   onOpenChange,
   bot,
+  onComplete,
   initialBacktestId = null,
 }: BacktestDialogProps) {
   const [days, setDays] = useState<number>(7);
@@ -72,8 +76,11 @@ export function BacktestDialog({
       } else {
         setStep('result');
       }
+      // The run terminated — its result is now in the bot's backtest history.
+      // Let the parent refetch so the detail screen updates without a reload.
+      onComplete?.();
     }
-  }, [step, poll.done, poll.error]);
+  }, [step, poll.done, poll.error, onComplete]);
 
   // Reset to a clean setup state each time the dialog re-opens.
   useEffect(() => {
