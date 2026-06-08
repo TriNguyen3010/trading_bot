@@ -28,7 +28,6 @@ const handlers = {
   onClick: noop,
   onStart: noop,
   onStop: noop,
-  onSync: noop,
   onRemove: noop,
   onBacktest: noop,
 };
@@ -65,6 +64,22 @@ describe('BotCard', () => {
     expect(
       screen.getByText(/Insufficient agent allowance/),
     ).toBeInTheDocument();
+  });
+
+  it('shows Start (not Fix connection) for an ERROR bot', () => {
+    // ERROR offers a relaunch via Start (Launchpad mode picker), not a Sync.
+    render(
+      <BotCard
+        bot={{ ...base, mode: 'ERROR', state: 'ERROR', errorMsg: 'boom' }}
+        {...handlers}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: /^start$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /fix connection/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('renders backtest-failed message', () => {

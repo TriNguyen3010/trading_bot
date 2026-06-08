@@ -58,4 +58,16 @@ describe('DetailHero', () => {
     );
     expect(screen.getByRole('button', { name: /start/i })).toBeInTheDocument();
   });
+
+  it('shows Start (not Fix connection) for an ERROR bot', () => {
+    // An errored bot offers a relaunch via Start (routes to the Launchpad mode
+    // picker) — re-syncing alone could not recover a process-level failure.
+    render(
+      <DetailHero bot={{ ...base, mode: 'ERROR', state: 'ERROR' }} {...h} />,
+    );
+    expect(screen.getByRole('button', { name: /start/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /fix connection/i }),
+    ).not.toBeInTheDocument();
+  });
 });

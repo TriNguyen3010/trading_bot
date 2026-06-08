@@ -1,11 +1,4 @@
-import {
-  FlaskConical,
-  Play,
-  StopCircle,
-  RefreshCcw,
-  Trash2,
-  Loader2,
-} from 'lucide-react';
+import { FlaskConical, Play, StopCircle, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { DashboardBotMode } from './bot-list.helpers';
 import type { PresentationalState } from './presentational-state';
@@ -20,7 +13,7 @@ export interface BotCardData {
   maxOpenTrades: number | null;
   balance: number | null;
   openTrades: number | null;
-  /** Underlying lifecycle mode (from deriveMode) — drives Start/Stop/Fix
+  /** Underlying lifecycle mode (from deriveMode) — drives Start/Stop
    * actions. `state` is the presentational overlay (badge/empty hints). */
   mode: DashboardBotMode;
   state: PresentationalState;
@@ -40,7 +33,6 @@ export interface BotCardProps {
   onClick: () => void;
   onStart: () => void;
   onStop: () => void;
-  onSync: () => void;
   onRemove: () => void;
   onBacktest: () => void;
 }
@@ -76,7 +68,6 @@ export function BotCard({
   onClick,
   onStart,
   onStop,
-  onSync,
   onRemove,
   onBacktest,
 }: BotCardProps) {
@@ -192,7 +183,6 @@ export function BotCard({
         bot={bot}
         onStart={onStart}
         onStop={onStop}
-        onSync={onSync}
         onRemove={onRemove}
         onBacktest={onBacktest}
       />
@@ -232,12 +222,11 @@ function Actions({
   bot,
   onStart,
   onStop,
-  onSync,
   onRemove,
   onBacktest,
 }: Omit<BotCardProps, 'onClick'>) {
   const s = bot.state;
-  // Start/Stop/Fix + transition spinner follow the underlying lifecycle MODE,
+  // Start/Stop + transition spinner follow the underlying lifecycle MODE,
   // never the presentational overlay (a LIVE bot running a backtest must still
   // show Stop, not Start).
   const m = bot.mode;
@@ -271,17 +260,7 @@ function Actions({
             : 'Backtest'}
       </Button>
       <div className="flex gap-1.5">
-        {m === 'ERROR' ? (
-          <Button
-            variant="primary"
-            size="sm"
-            className="flex-1"
-            onClick={onSync}
-          >
-            <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
-            Fix connection
-          </Button>
-        ) : m === 'LIVE' || m === 'DRY-RUN' ? (
+        {m === 'LIVE' || m === 'DRY-RUN' ? (
           <Button
             variant="secondary"
             size="sm"

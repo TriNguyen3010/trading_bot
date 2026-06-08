@@ -268,21 +268,6 @@ export function DashboardPage() {
     [updateOneBot, pollUntilSettled],
   );
 
-  const doSync = useCallback(
-    async (id: number) => {
-      try {
-        await botApi.disableTelegram(id);
-        const next = await botApi.sync(id);
-        updateOneBot(id, next);
-        toast.message('Connection settings fixed and status re-synced');
-        if (!isTerminal(next.status)) pollUntilSettled(id);
-      } catch (err) {
-        toast.error(formatBackendError(err));
-      }
-    },
-    [updateOneBot, pollUntilSettled],
-  );
-
   const doRemove = useCallback(
     async (id: number) => {
       try {
@@ -560,7 +545,6 @@ export function DashboardPage() {
                           botName: card.name,
                         })
                       }
-                      onSync={() => void doSync(card.id)}
                       onRemove={() =>
                         setConfirmState({
                           action: 'remove',

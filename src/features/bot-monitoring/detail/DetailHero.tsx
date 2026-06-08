@@ -227,14 +227,8 @@ function Actions({
       </div>
     );
   }
-  if (mode === 'ERROR') {
-    return (
-      <Button variant="primary" size="md" onClick={onSync} disabled={pending}>
-        {pending ? spin : <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />}
-        Fix connection
-      </Button>
-    );
-  }
+  // ERROR falls through to Start: an errored bot recovers by relaunching
+  // through the Launchpad mode picker, not by a status re-sync.
   return (
     <Button variant="primary" size="md" onClick={onStart} disabled={pending}>
       {pending ? spin : <Play className="mr-1.5 h-3.5 w-3.5" />}

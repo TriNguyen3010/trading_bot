@@ -471,30 +471,27 @@ describe('DashboardPage — lifecycle actions', () => {
     );
   });
 
-  it('Sync button visible only in ERROR mode', async () => {
-    loadOne({ status: 'stopped', error_message: 'Process crashed' });
-    vi.mocked(botApi.sync).mockResolvedValueOnce({
-      id: 7,
-      bot_name: 'Lifecycle bot',
-      status: 'stopped',
-      desired_status: null,
-      is_process_running: false,
-      error_message: null,
-    });
+  it('ERROR bot shows Start (not Fix connection) and routes through the Launchpad', async () => {
+    loadOne({ status: 'error', error_message: 'Process crashed' });
 
     renderPage();
     await waitFor(() =>
+      expect(screen.getByText('Lifecycle bot')).toBeInTheDocument(),
+    );
+    // The Sync / "Fix connection" affordance is gone from the card — an errored
+    // bot recovers by relaunching through the Launchpad mode picker.
+    expect(
+      screen.queryByRole('button', { name: /fix connection/i }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^start$/i }));
+    expect(botApi.start).not.toHaveBeenCalled();
+    expect(botApi.sync).not.toHaveBeenCalled();
+    await waitFor(() =>
       expect(
-        screen.getByRole('button', { name: /fix connection/i }),
+        screen.getByRole('button', { name: /start dry-run/i }),
       ).toBeInTheDocument(),
     );
-
-    fireEvent.click(screen.getByRole('button', { name: /fix connection/i }));
-    expect(botApi.disableTelegram).toHaveBeenCalledWith(7);
-    await waitFor(() => expect(botApi.sync).toHaveBeenCalledWith(7));
-    expect(
-      vi.mocked(botApi.disableTelegram).mock.invocationCallOrder[0],
-    ).toBeLessThan(vi.mocked(botApi.sync).mock.invocationCallOrder[0]);
   });
 
   it('empty state shows a create CTA and fires no lifecycle calls', async () => {
