@@ -4,6 +4,7 @@ import type { BotPerformance } from './bot-performance';
 import {
   deriveMode,
   zipBotsAndConfigs,
+  RUNNING_MODES,
   type ConfigShape,
   type DashboardBot,
 } from './bot-list.helpers';
@@ -89,9 +90,7 @@ export function usePortfolioOverview(
         const zipped = zipBotsAndConfigs(list, configsOrNull);
         setBots(zipped);
 
-        const running = zipped.filter(
-          (b) => b.mode === 'LIVE' || b.mode === 'DRY-RUN',
-        );
+        const running = zipped.filter((b) => RUNNING_MODES.includes(b.mode));
         const [perfs, hists] = await Promise.all([
           Promise.allSettled(running.map((b) => botApi.getPerformance(b.id))),
           Promise.allSettled(

@@ -1,4 +1,4 @@
-import type { DashboardBotMode } from './bot-list.helpers';
+import { RUNNING_MODES, type DashboardBotMode } from './bot-list.helpers';
 import type { BotPerformance } from './bot-performance';
 
 export interface PortfolioStats {
@@ -11,7 +11,6 @@ export interface PortfolioStats {
   error: number;
 }
 
-const RUNNING: DashboardBotMode[] = ['LIVE', 'DRY-RUN'];
 const TRANSIT: DashboardBotMode[] = ['STARTING', 'STOPPING'];
 
 export function computePortfolioStats(
@@ -21,7 +20,7 @@ export function computePortfolioStats(
   let capitalDeployed = 0;
   let openTrades = 0;
   for (const b of bots) {
-    if (!RUNNING.includes(b.mode)) continue;
+    if (!RUNNING_MODES.includes(b.mode)) continue;
     const p = perfById.get(b.id);
     if (p?.balance != null) capitalDeployed += p.balance;
     if (p?.openTrades != null) openTrades += p.openTrades;
@@ -30,7 +29,7 @@ export function computePortfolioStats(
     capitalDeployed,
     openTrades,
     total: bots.length,
-    active: bots.filter((b) => RUNNING.includes(b.mode)).length,
+    active: bots.filter((b) => RUNNING_MODES.includes(b.mode)).length,
     transitioning: bots.filter((b) => TRANSIT.includes(b.mode)).length,
     idle: bots.filter((b) => b.mode === 'PAUSED').length,
     error: bots.filter((b) => b.mode === 'ERROR').length,

@@ -9,6 +9,11 @@ export type DashboardBotMode =
   | 'STARTING'
   | 'STOPPING';
 
+/** Modes that count as "running" (have live balance + deploy capital).
+ * Single source of truth — reused by portfolio-stats, the overview hook,
+ * and the top-bots picker so the definition can't drift. */
+export const RUNNING_MODES: DashboardBotMode[] = ['LIVE', 'DRY-RUN'];
+
 export interface DashboardBot {
   id: number;
   name: string;

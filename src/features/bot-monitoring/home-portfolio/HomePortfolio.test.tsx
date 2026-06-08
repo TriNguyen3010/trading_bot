@@ -120,6 +120,18 @@ describe('HomePortfolio state machine', () => {
     expect(screen.getByTestId('portfolio-skeleton')).toBeInTheDocument();
   });
 
+  it('connect race (bots=null, !loading, !error) → skeleton, never empty flash', () => {
+    // After the wallet connects, there is a render where `enabled` just flipped
+    // true but the fetch effect has not run yet: loading is stale-false and
+    // bots is still null. Must show the skeleton, not a $0.00 empty state.
+    mockOverview.mockReturnValue(
+      baseOverview({ bots: null, loading: false, error: null }),
+    );
+    render(<HomePortfolio {...props} />);
+    expect(screen.getByTestId('portfolio-skeleton')).toBeInTheDocument();
+    expect(screen.queryByTestId('portfolio-empty')).not.toBeInTheDocument();
+  });
+
   it('G · error → error card', () => {
     mockOverview.mockReturnValue(baseOverview({ bots: null, error: 'boom' }));
     render(<HomePortfolio {...props} />);
