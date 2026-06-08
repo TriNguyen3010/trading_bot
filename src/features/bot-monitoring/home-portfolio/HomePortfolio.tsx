@@ -38,9 +38,11 @@ export function HomePortfolio({
   const walletAddress = useWalletStore((s) => s.address);
   const { bots, perfById, stats, loading, error, refresh } =
     usePortfolioOverview({ enabled: isConnected });
-  const { agent, refresh: refreshAgent } = useActiveAgent({
-    enabled: isConnected,
-  });
+  const {
+    agent,
+    loading: agentLoading,
+    refresh: refreshAgent,
+  } = useActiveAgent({ enabled: isConnected });
   const [onboardOpen, setOnboardOpen] = useState(false);
 
   const openOnboard = () => setOnboardOpen(true);
@@ -67,6 +69,7 @@ export function HomePortfolio({
     body = (
       <PortfolioEmpty
         agent={agent}
+        agentLoading={agentLoading}
         walletAddress={walletAddress}
         onBuild={onBuild}
         onImport={onImport}
@@ -80,6 +83,7 @@ export function HomePortfolio({
         <PortfolioHero
           stats={stats}
           agent={agent}
+          agentLoading={agentLoading}
           walletAddress={walletAddress}
           onCreateAgent={openOnboard}
         />

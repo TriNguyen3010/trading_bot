@@ -148,12 +148,16 @@ export function PortfolioError({ onRetry }: { onRetry: () => void }) {
 
 export function PortfolioEmpty({
   agent,
+  agentLoading,
   walletAddress,
   onBuild,
   onImport,
   onCreateAgent,
 }: {
   agent: AgentInfoResponse | null;
+  /** While the agent status is still loading, suppress the nudge to avoid a
+   * flash for users who DO have an agent (spec §6). */
+  agentLoading: boolean;
   walletAddress: string | null;
   onBuild: () => void;
   onImport: () => void;
@@ -169,7 +173,7 @@ export function PortfolioEmpty({
           {truncateAddr(walletAddress)}
         </span>
       </div>
-      {!agent && <GoLiveBanner onCreate={onCreateAgent} />}
+      {!agentLoading && !agent && <GoLiveBanner onCreate={onCreateAgent} />}
       <section className="card-coin98 relative overflow-hidden rounded-3xl p-10 text-center">
         <div
           aria-hidden
@@ -215,11 +219,14 @@ export function PortfolioEmpty({
 export function PortfolioHero({
   stats,
   agent,
+  agentLoading,
   walletAddress,
   onCreateAgent,
 }: {
   stats: PortfolioStats;
   agent: AgentInfoResponse | null;
+  /** Suppress the nudge while agent status is still loading (spec §6). */
+  agentLoading: boolean;
   walletAddress: string | null;
   onCreateAgent: () => void;
 }) {
@@ -234,7 +241,7 @@ export function PortfolioHero({
           <LiveTick label="" /> last update just now
         </span>
       </div>
-      {!agent && <GoLiveBanner onCreate={onCreateAgent} />}
+      {!agentLoading && !agent && <GoLiveBanner onCreate={onCreateAgent} />}
       <section className="card-coin98 relative grid grid-cols-1 gap-6 overflow-hidden rounded-3xl p-8 md:grid-cols-[1fr_auto]">
         <div
           aria-hidden
@@ -266,7 +273,7 @@ export function PortfolioHero({
             <span className="text-2xl text-fg-muted">USDC</span>
           </div>
 
-          {zeroDeployed && (
+          {zeroDeployed && stats.idle > 0 && (
             <div className="mt-2 text-sm text-fg-muted">
               Nothing deployed — {stats.idle} bot
               {stats.idle === 1 ? '' : 's'} paused. Resume one to put capital to

@@ -160,6 +160,54 @@ describe('HomePortfolio state machine', () => {
     expect(within(hero).getByText(/1,284\.55/)).toBeInTheDocument();
   });
 
+  it('agent still loading → no go-live banner (avoid flicker, spec §6)', () => {
+    mockAgent.mockReturnValue({ agent: null, loading: true, refresh: vi.fn() });
+    mockOverview.mockReturnValue(baseOverview({ bots: [] }));
+    render(<HomePortfolio {...props} />);
+    expect(
+      screen.queryByText(/Create a Hyperliquid trading wallet/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it('F · bots paused (idle>0), zero deployed → shows resume nudge', () => {
+    mockOverview.mockReturnValue(
+      baseOverview({
+        bots: [mkBot(1, 'PAUSED'), mkBot(2, 'PAUSED')],
+        stats: {
+          capitalDeployed: 0,
+          openTrades: 0,
+          total: 2,
+          active: 0,
+          transitioning: 0,
+          idle: 2,
+          error: 0,
+        },
+      }),
+    );
+    render(<HomePortfolio {...props} />);
+    expect(screen.getByText(/2 bots paused/i)).toBeInTheDocument();
+  });
+
+  it('zero deployed but no paused bots (all ERROR) → no false "paused" line', () => {
+    mockOverview.mockReturnValue(
+      baseOverview({
+        bots: [mkBot(1, 'ERROR')],
+        stats: {
+          capitalDeployed: 0,
+          openTrades: 0,
+          total: 1,
+          active: 0,
+          transitioning: 0,
+          idle: 0,
+          error: 1,
+        },
+      }),
+    );
+    render(<HomePortfolio {...props} />);
+    expect(screen.getByTestId('portfolio-hero')).toBeInTheDocument();
+    expect(screen.queryByText(/bots? paused/i)).not.toBeInTheDocument();
+  });
+
   it('E · agent active → no go-live banner', () => {
     mockAgent.mockReturnValue({
       agent: ACTIVE_AGENT,
