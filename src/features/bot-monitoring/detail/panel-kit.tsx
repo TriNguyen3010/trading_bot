@@ -24,7 +24,7 @@ export function Panel({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-border-subtle bg-surface/40">
+    <div className="card-coin98-flat rounded-xl border border-border-subtle">
       <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
         <span className="text-sm font-bold text-fg">{title}</span>
         {hint && <span className="text-xs text-fg-muted">{hint}</span>}
