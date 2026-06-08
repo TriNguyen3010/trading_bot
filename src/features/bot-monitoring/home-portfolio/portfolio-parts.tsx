@@ -4,12 +4,12 @@ import type { BotPerformance } from '../bot-performance';
 import type { PortfolioStats } from '../portfolio-stats';
 import type { AgentInfoResponse } from '@/types/api-helpers';
 
-export function truncateAddr(addr: string | null | undefined): string {
+function truncateAddr(addr: string | null | undefined): string {
   if (!addr || addr.length < 12) return addr || '—';
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
-export function fmtUsd(n: number): string {
+function fmtUsd(n: number): string {
   return n.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
