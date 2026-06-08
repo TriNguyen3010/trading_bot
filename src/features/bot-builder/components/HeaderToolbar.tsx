@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { List, LogOut, Rocket, Upload, User } from 'lucide-react';
+import { List, Rocket, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { dropInItem, dropInStagger } from '@/lib/motion';
 import {
@@ -17,17 +17,7 @@ import { useExportDialogStore } from '@/features/export-import/export-dialog.sto
 import { ImportDialog } from '@/features/export-import/ImportDialog';
 import { validateBuilder } from '@/lib/validator';
 import { strings } from '@/i18n/en';
-import { useWalletStore } from '@/features/wallet-auth/wallet.store';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-
-function shortenAddress(addr: string | null | undefined): string {
-  if (!addr) return 'Wallet';
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
-}
+import { WalletChip } from '@/features/wallet-auth/WalletChip';
 
 export function HeaderToolbar() {
   const state = useBuilderStore();
@@ -38,8 +28,6 @@ export function HeaderToolbar() {
   const [importOpen, setImportOpen] = useState(false);
 
   const navigate = useNavigate();
-  const user = useWalletStore((s) => s.user);
-  const disconnect = useWalletStore((s) => s.disconnect);
 
   const issues = useMemo(() => validateBuilder(state), [state]);
   const canExport = issues.length === 0;
@@ -96,42 +84,7 @@ export function HeaderToolbar() {
                 />
               </button>
               <motion.div variants={dropInItem} className="inline-flex">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-10 rounded-full px-3"
-                    >
-                      <User className="h-3.5 w-3.5" />
-                      <span className="max-w-[120px] truncate font-mono text-xs tabular-nums">
-                        {shortenAddress(user?.wallet_address)}
-                      </span>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="w-56 p-2">
-                    <div className="mb-2 border-b border-border px-2 pb-2">
-                      <p className="font-mono text-sm font-medium tabular-nums text-fg">
-                        {shortenAddress(user?.wallet_address)}
-                      </p>
-                      <p className="text-xs text-fg-muted">
-                        {user?.is_admin ? 'Admin' : 'Member'}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start text-bearish"
-                      onClick={async () => {
-                        await disconnect();
-                        navigate('/', { replace: true });
-                      }}
-                    >
-                      <LogOut className="h-3.5 w-3.5" />
-                      Disconnect
-                    </Button>
-                  </PopoverContent>
-                </Popover>
+                <WalletChip triggerVariant="ghost" redirectOnDisconnect="/" />
               </motion.div>
               <motion.div variants={dropInItem} className="inline-flex">
                 <Tooltip>
