@@ -1,0 +1,179 @@
+<!doctype html>
+<!--
+  Dashboard redesign v2 — direction chooser
+  Three full-page mockups of the redesigned Dashboard (portfolio overview).
+  Same mock dataset (9 bots, all states) across all three so they compare fairly.
+  Aspirational widgets (equity curve, 24h %, total P&L, allocation donut, sparklines)
+  are labeled "demo" inside each mockup — real BE fields are balance, openTrades,
+  per-bot backtest stats, and the portfolio counters.
+-->
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard redesign v2 — pick a direction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --brand: #f0b90b; --brand-hover: #fcd535; --brand-subtle: rgba(240,185,11,0.1);
+      --green: #0ecb81; --red: #f6465d; --blue: #3b82f6;
+      --text: #eaecef; --text-2: #b7bdc6; --muted: #848e9c;
+      --canvas: #0a0a0b; --surface: #14181f; --elevated: #1e2329;
+      --border: #2b3139; --border-subtle: #1e2329;
+      --card-grad: linear-gradient(180deg,#16161a 0%,#0c0c0e 100%);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      background:
+        radial-gradient(900px 500px at 80% -10%, rgba(240,185,11,0.07), transparent 60%),
+        var(--canvas);
+      color: var(--text);
+      font-family: Inter, -apple-system, system-ui, sans-serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 72px 32px 96px; }
+    .eyebrow {
+      font-family: "Press Start 2P", monospace; font-size: 11px; letter-spacing: .12em;
+      color: var(--brand); margin: 0 0 22px;
+    }
+    h1 { font-size: 40px; line-height: 1.1; font-weight: 700; margin: 0 0 14px; letter-spacing: -0.02em; text-wrap: balance; }
+    .lede { font-size: 16px; line-height: 1.6; color: var(--text-2); max-width: 60ch; margin: 0; text-wrap: pretty; }
+    .lede b { color: var(--text); font-weight: 600; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 28px; }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    .allcta {
+      margin-top: 30px; display: inline-flex; align-items: center; gap: 9px;
+      background: var(--brand); color: #1a1300; text-decoration: none; font-weight: 600;
+      font-size: 14px; padding: 11px 18px; border-radius: 11px;
+      transition: background .15s ease, transform .15s ease;
+    }
+    .allcta:hover { background: var(--brand-hover); transform: translateY(-1px); }
+    .allcta:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+    .allcta .k { font-family: "JetBrains Mono", monospace; font-size: 11px; opacity: .6; }
+    .card {
+      display: flex; flex-direction: column; gap: 14px;
+      background: var(--card-grad); border: 1px solid var(--border-subtle);
+      border-radius: 18px; padding: 22px; text-decoration: none; color: inherit;
+      transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+    }
+    .card:hover { border-color: var(--brand); transform: translateY(-3px); box-shadow: 0 18px 40px -24px rgba(240,185,11,0.5); }
+    .card:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+    .tag {
+      align-self: flex-start; font-family: "JetBrains Mono", monospace; font-size: 11px;
+      letter-spacing: .08em; color: var(--brand); background: var(--brand-subtle);
+      border: 1px solid rgba(240,185,11,0.25); border-radius: 999px; padding: 4px 10px;
+    }
+    .card h2 { font-size: 20px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+    .card p { font-size: 13.5px; line-height: 1.55; color: var(--text-2); margin: 0; text-wrap: pretty; }
+    .best { font-size: 12px; color: var(--muted); margin: 0; }
+    .best b { color: var(--text-2); font-weight: 600; }
+    .open {
+      margin-top: auto; font-family: "JetBrains Mono", monospace; font-size: 12px;
+      color: var(--brand); display: inline-flex; align-items: center; gap: 6px;
+    }
+    .thumb {
+      height: 88px; border-radius: 12px; border: 1px solid var(--border-subtle);
+      display: grid; gap: 4px; padding: 12px; overflow: hidden; background: rgba(0,0,0,0.25);
+    }
+    .row { display: flex; gap: 4px; }
+    .blk { border-radius: 3px; height: 100%; }
+    .note {
+      margin-top: 40px; font-size: 12.5px; color: var(--muted); line-height: 1.6;
+      border-top: 1px solid var(--border-subtle); padding-top: 20px; text-wrap: pretty;
+    }
+    .note code { font-family: "JetBrains Mono", monospace; color: var(--text-2); background: var(--elevated); padding: 1px 6px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <p class="eyebrow">COIN98 · TRADING BOT</p>
+    <h1>Dashboard redesign — pick a direction</h1>
+    <p class="lede">Ba hướng thiết kế lại màn <b>Dashboard (Portfolio overview)</b>, cùng một bộ
+      mock data (9 bot, phủ hết trạng thái) để so sánh công bằng. Mở từng cái, chọn 1 hướng — tôi
+      sẽ tinh chỉnh sâu hướng anh thích.</p>
+
+    <a class="allcta" href="dashboard-v2-all.html"><span class="k">⌥</span>Mở cả 4 trong 1 file (tab A/B/C/D) →</a>
+
+    <div class="grid">
+      <a class="card" href="dashboard-v2-terminal.html">
+        <span class="tag">A · TERMINAL</span>
+        <div class="thumb" aria-hidden="true">
+          <div class="row"><span class="blk" style="flex:2;background:var(--brand)"></span><span class="blk" style="flex:1;background:#2b3139"></span><span class="blk" style="flex:1;background:#2b3139"></span><span class="blk" style="flex:1;background:#2b3139"></span></div>
+          <div class="row" style="flex:1"><span class="blk" style="flex:1;background:#1e2329"></span></div>
+          <div class="row" style="flex:1"><span class="blk" style="flex:1;background:#181c22"></span></div>
+          <div class="row" style="flex:1"><span class="blk" style="flex:1;background:#1e2329"></span></div>
+        </div>
+        <h2>Trading Terminal</h2>
+        <p>Đậm đặc dữ liệu, bảng pro kiểu Bloomberg/Hyperliquid. KPI strip gọn + bảng bot sortable, filter theo trạng thái.</p>
+        <p class="best"><b>Hợp khi:</b> nhiều bot, cần scan nhanh, dân pro.</p>
+        <span class="open">Mở hướng A →</span>
+      </a>
+
+      <a class="card" href="dashboard-v2-command.html">
+        <span class="tag">B · COMMAND</span>
+        <div class="thumb" aria-hidden="true">
+          <div class="row" style="height:100%">
+            <span class="blk" style="flex:1;background:#1e2329"></span>
+            <div style="flex:2;display:grid;gap:4px">
+              <span class="blk" style="background:var(--brand)"></span>
+              <span class="blk" style="background:#1e2329"></span>
+              <span class="blk" style="background:#1e2329"></span>
+            </div>
+          </div>
+        </div>
+        <h2>Command Center</h2>
+        <p>2 cột, nhiều khoảng thở, premium minimal kiểu Mercury/Linear. Panel portfolio bên trái + card bot thoáng bên phải.</p>
+        <p class="best"><b>Hợp khi:</b> ưu tiên rõ ràng, cao cấp, ít bot.</p>
+        <span class="open">Mở hướng B →</span>
+      </a>
+
+      <a class="card" href="dashboard-v2-bold.html">
+        <span class="tag">C · STATUS BOARD</span>
+        <div class="thumb" aria-hidden="true">
+          <div class="row"><span class="blk" style="flex:1;background:var(--brand)"></span></div>
+          <div class="row" style="flex:1">
+            <span class="blk" style="flex:1;background:var(--green);opacity:.5"></span>
+            <span class="blk" style="flex:1;background:var(--blue);opacity:.5"></span>
+            <span class="blk" style="flex:1;background:var(--brand);opacity:.5"></span>
+            <span class="blk" style="flex:1;background:var(--red);opacity:.5"></span>
+          </div>
+        </div>
+        <h2>Status Board</h2>
+        <p>Hero lớn + equity chart, bố cục kanban theo trạng thái (Live / Dry-run / Working / Idle / Needs attention). Bold & màu mạnh.</p>
+        <p class="best"><b>Hợp khi:</b> triage nhanh "cái nào cần xử lý".</p>
+        <span class="open">Mở hướng C →</span>
+      </a>
+
+      <a class="card" href="dashboard-v2-cards.html">
+        <span class="tag">D · CARD GRID</span>
+        <div class="thumb" aria-hidden="true">
+          <div class="row" style="flex:1">
+            <span class="blk" style="flex:1;background:#1e2329"></span>
+            <span class="blk" style="flex:1;background:#1e2329"></span>
+            <span class="blk" style="flex:1;background:#1e2329"></span>
+          </div>
+          <div class="row" style="flex:1">
+            <span class="blk" style="flex:1;background:#1e2329"></span>
+            <span class="blk" style="flex:1;background:var(--brand)"></span>
+            <span class="blk" style="flex:1;background:#1e2329"></span>
+          </div>
+        </div>
+        <h2>Card Grid</h2>
+        <p>Lưới card đồng nhất full-width: KPI bar trên + grid card đều nhau, mỗi card là 1 mini-dashboard (gauge open trades, sparkline, backtest, actions). Tiến hoá từ grid hiện tại nhưng polish kỹ.</p>
+        <p class="best"><b>Hợp khi:</b> quen thuộc, ship nhanh, mọi bot đối xứng.</p>
+        <span class="open">Mở hướng D →</span>
+      </a>
+    </div>
+
+    <p class="note">
+      Mock data thật/giả: <b style="color:var(--text-2)">thật</b> = balance, open trades, backtest stats, các counter portfolio.
+      <b style="color:var(--text-2)">demo (chưa có API)</b> = equity curve, 24h %, total P&amp;L, allocation donut, sparkline — đã gắn nhãn trong mỗi mockup.
+      Files: <code>public/dashboard-v2-terminal.html</code>, <code>…-command.html</code>, <code>…-bold.html</code>.
+    </p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+  DIRECTION: "B · Command Center" — calm, spacious, premium minimal
+  Coin98 Trading Bot Builder — Dashboard / portfolio overview (design exploration)
+
+  KEY ASSUMPTIONS
+  • Two-column app shell: sticky LEFT portfolio panel (~340px) + scrollable RIGHT
+    bot list as breathing cards (single column on ≤1024px, 2-wide ≥1280px).
+  • Premium fintech calm (Mercury / Linear). Single yellow accent; green/red ONLY
+    for P&L + status. Generous negative space, restrained dividers, strong type
+    hierarchy. All numerals = JetBrains Mono, tabular-nums.
+  • Per-bot action set adapts to state (Start vs Stop, Run-first-backtest for NEW,
+    disabled spinner for transitioning/backtesting). Buttons are understated ghost
+    controls, fully visible (no hover-only hiding — clarity over cleverness).
+  • Pixel "Press Start 2P" used for the wordmark only.
+
+  DATA PROVENANCE  (honest — this is a real product)
+  ─ REAL backend fields (rendered as authoritative):
+      per-bot { name, pair, timeframe, state, balance, openTrades, maxOpenTrades,
+                stakeAmount, lastBacktest{winRate, trades, netProfit, status} }
+      portfolio { capitalDeployed, activeCount, totalCount, idleCount,
+                  transitioningCount, errorCount, openTradesCount }
+  ─ DEMO / ASPIRATIONAL (no backend yet — visibly tagged "demo" in the UI):
+      • equity / P&L-over-time            → not built
+      • 24h change %                      → not built
+      • total realized P&L                → not built
+      • allocation donut + legend         → derived illustration of capital split
+      • per-bot sparklines                → synthetic, not market data
+    Every such widget carries a small "demo" tag and the left panel has a legend.
+
+  STATIC MOCKUP. Buttons are non-functional (cosmetic hover/focus only). All
+  numbers come from the shared mock dataset in the brief.
+═══════════════════════════════════════════════════════════════════════════════
+-->
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Command Center · Coin98 Trading Bot Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* brand */
+    --brand: #f0b90b;
+    --brand-hover: #fcd535;
+    --brand-active: #d9a400;
+    --brand-subtle: rgba(240, 185, 11, 0.10);
+    --brand-line: rgba(240, 185, 11, 0.22);
+    /* semantic */
+    --green: #0ecb81;
+    --green-subtle: rgba(14, 203, 129, 0.12);
+    --red: #f6465d;
+    --red-subtle: rgba(246, 70, 93, 0.12);
+    --blue: #3b82f6;
+    --blue-subtle: rgba(59, 130, 246, 0.12);
+    /* text */
+    --t-primary: #eaecef;
+    --t-secondary: #b7bdc6;
+    --t-muted: #848e9c;
+    --t-disabled: #5e6673;
+    /* surfaces */
+    --canvas: #0a0a0b;
+    --surface: #14181f;
+    --elevated: #1e2329;
+    --input: #181c22;
+    /* borders */
+    --b-subtle: #1e2329;
+    --b-default: #2b3139;
+    --b-strong: #474d57;
+    /* type */
+    --sans: 'Inter', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --pixel: 'Press Start 2P', monospace;
+    /* radii */
+    --r-card: 20px;
+    --r-ctrl: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--canvas);
+    color: var(--t-primary);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  ::selection { background: var(--brand-subtle); }
+
+  /* gentle ambient wash, not a gradient cliché — a soft radial that fades */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(1100px 540px at 78% -8%, rgba(240, 185, 11, 0.045), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  button { font-family: inherit; cursor: pointer; }
+
+  a { color: inherit; text-decoration: none; }
+
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* ───────────────────────── TOP BAR ───────────────────────── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 0 28px;
+    background: rgba(10, 10, 11, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--b-subtle);
+  }
+
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    flex-shrink: 0;
+  }
+  .wordmark .glyph {
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    background: var(--brand);
+    color: #1a1300;
+    display: grid;
+    place-items: center;
+    font-family: var(--pixel);
+    font-size: 10px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.2) inset;
+  }
+  .wordmark .name {
+    font-family: var(--pixel);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--t-primary);
+  }
+  .wordmark .name .accent { color: var(--brand); }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .nav a {
+    padding: 7px 13px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--t-muted);
+    transition: color .16s ease, background .16s ease;
+  }
+  .nav a:hover { color: var(--t-secondary); background: var(--surface); }
+  .nav a.active { color: var(--t-primary); background: var(--surface); }
+
+  .topbar-spacer { flex: 1; }
+
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+  .wallet-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: var(--r-ctrl);
+    border: 1px solid var(--b-default);
+    background: var(--surface);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--t-secondary);
+    transition: border-color .16s ease;
+  }
+  .wallet-chip:hover { border-color: var(--b-strong); }
+  .wallet-chip .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 3px var(--green-subtle);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: var(--r-ctrl);
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    transition: background .16s ease, border-color .16s ease, color .16s ease, opacity .16s ease;
+    white-space: nowrap;
+  }
+  .btn svg { width: 15px; height: 15px; }
+
+  .btn-primary {
+    background: var(--brand);
+    color: #1a1300;
+  }
+  .btn-primary:hover { background: var(--brand-hover); }
+  .btn-primary:active { background: var(--brand-active); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--t-secondary);
+    border-color: var(--b-default);
+  }
+  .btn-ghost:hover { background: var(--surface); color: var(--t-primary); border-color: var(--b-strong); }
+
+  .icon-btn {
+    width: 36px; height: 36px;
+    display: grid; place-items: center;
+    border-radius: var(--r-ctrl);
+    background: transparent;
+    color: var(--t-secondary);
+    border: 1px solid var(--b-default);
+    transition: background .16s ease, color .16s ease, border-color .16s ease;
+  }
+  .icon-btn:hover { background: var(--surface); color: var(--t-primary); border-color: var(--b-strong); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* ───────────────────────── SHELL ───────────────────────── */
+  .shell {
+    position: relative;
+    z-index: 1;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 36px 28px 80px;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 36px;
+    align-items: start;
+  }
+
+  /* ═══════════════ LEFT · PORTFOLIO PANEL ═══════════════ */
+  .portfolio {
+    position: sticky;
+    top: 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .panel-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--t-muted);
+  }
+
+  /* capital block */
+  .capital {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .capital-figure {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    margin-top: 6px;
+  }
+  .capital-figure .amount {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 38px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--t-primary);
+  }
+  .capital-figure .unit {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--t-muted);
+  }
+
+  .capital-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-top: 4px;
+  }
+  .perf-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 11px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+  .perf-chip.up { background: var(--green-subtle); color: var(--green); }
+  .perf-chip svg { width: 13px; height: 13px; }
+  .perf-chip .label {
+    font-family: var(--sans);
+    font-weight: 500;
+    color: var(--t-muted);
+    margin-right: 1px;
+  }
+
+  /* the "demo" provenance tag */
+  .demo-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 17px;
+    padding: 0 6px;
+    border-radius: 5px;
+    border: 1px dashed var(--b-strong);
+    font-family: var(--sans);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--t-disabled);
+    background: transparent;
+    vertical-align: middle;
+  }
+  .demo-tag::before {
+    content: '';
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--t-disabled);
+  }
+
+  .divider { height: 1px; background: var(--b-subtle); border: 0; }
+
+  /* allocation */
+  .alloc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .alloc-body {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+  .donut-wrap { position: relative; flex-shrink: 0; }
+  .donut-wrap .center {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-align: center;
+  }
+  .donut-wrap .center .k {
+    font-size: 10px;
+    color: var(--t-muted);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .donut-wrap .center .v {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--t-primary);
+    margin-top: 2px;
+  }
+  .legend { display: flex; flex-direction: column; gap: 11px; flex: 1; min-width: 0; }
+  .legend-row { display: flex; align-items: center; gap: 9px; }
+  .legend-row .swatch { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+  .legend-row .lname {
+    font-size: 12.5px;
+    color: var(--t-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
+  .legend-row .lpct {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--t-muted);
+  }
+
+  /* counters */
+  .counters { display: flex; flex-direction: column; }
+  .counter-row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--b-subtle);
+  }
+  .counter-row:last-child { border-bottom: 0; }
+  .counter-row .swatch {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .counter-row .clabel {
+    flex: 1;
+    font-size: 13px;
+    color: var(--t-secondary);
+  }
+  .counter-row .cval {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--t-primary);
+  }
+  .sw-green  { background: var(--green); }
+  .sw-muted  { background: var(--t-disabled); }
+  .sw-yellow { background: var(--brand); }
+  .sw-red    { background: var(--red); }
+  .sw-blue   { background: var(--blue); }
+
+  /* ═══════════════ RIGHT · BOT LIST ═══════════════ */
+  .main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .toolbar h1 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--t-primary);
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+  }
+  .toolbar h1 .count {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--t-muted);
+  }
+  .toolbar-spacer { flex: 1; }
+
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    height: 36px;
+    width: 240px;
+    padding: 0 12px;
+    border-radius: var(--r-ctrl);
+    background: var(--input);
+    border: 1px solid var(--b-default);
+    transition: border-color .16s ease;
+  }
+  .search:focus-within { border-color: var(--b-strong); }
+  .search svg { width: 15px; height: 15px; color: var(--t-muted); flex-shrink: 0; }
+  .search input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    color: var(--t-primary);
+    font-family: var(--sans);
+    font-size: 13px;
+  }
+  .search input::placeholder { color: var(--t-disabled); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 1280px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ─── BOT CARD ─── */
+  .card {
+    position: relative;
+    background: linear-gradient(180deg, #16161a, #0c0c0e);
+    border: 1px solid var(--b-subtle);
+    border-radius: var(--r-card);
+    padding: 22px 22px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+  }
+  .card:hover {
+    border-color: var(--b-default);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 28px -14px rgba(0,0,0,0.6);
+  }
+  .card.is-error { border-color: rgba(246,70,93,0.28); }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .card-id { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .card-name {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--t-primary);
+    text-wrap: pretty;
+  }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    color: var(--t-muted);
+  }
+  .card-meta .sep { color: var(--b-strong); }
+
+  /* status badge */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 7px;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .badge .led { width: 6px; height: 6px; border-radius: 50%; }
+  .badge.live   { color: var(--green); background: var(--green-subtle); }
+  .badge.live .led { background: var(--green); box-shadow: 0 0 0 3px var(--green-subtle); }
+  .badge.dry    { color: var(--blue); background: var(--blue-subtle); }
+  .badge.dry .led { background: var(--blue); }
+  .badge.paused { color: var(--t-muted); background: rgba(132,142,156,0.10); }
+  .badge.paused .led { background: var(--t-muted); }
+  .badge.new    { color: var(--t-muted); background: transparent; border: 1px solid var(--b-default); }
+  .badge.new .led { background: var(--t-disabled); }
+  .badge.error  { color: var(--red); background: var(--red-subtle); }
+  .badge.error .led { background: var(--red); }
+  .badge.work   { color: var(--brand); background: var(--brand-subtle); }
+  .badge.work .led { background: var(--brand); }
+
+  /* pulsing led for transitioning */
+  .badge.work .led.pulse { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--brand-subtle); }
+    50%      { opacity: 0.45; box-shadow: 0 0 0 4px var(--brand-subtle); }
+  }
+  .spinner {
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    border: 1.6px solid var(--brand-line);
+    border-top-color: var(--brand);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* balance + sparkline row */
+  .card-figures {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .balance-block { display: flex; flex-direction: column; gap: 3px; }
+  .balance-label {
+    font-size: 11px;
+    color: var(--t-muted);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+  .balance-val {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .balance-val .amt {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--t-primary);
+  }
+  .balance-val .amt.em { color: var(--t-disabled); font-weight: 500; }
+  .balance-val .ccy {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--t-muted);
+  }
+  .open-trades {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 11.5px;
+    color: var(--t-muted);
+    margin-top: 4px;
+  }
+  .open-trades b { color: var(--t-secondary); font-weight: 600; }
+
+  .spark-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  .spark { display: block; }
+
+  /* state-specific note (NEW / ERROR / BACKTESTING) */
+  .card-note {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 11px 13px;
+    border-radius: var(--r-ctrl);
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+  .card-note svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .card-note.neutral { background: var(--surface); color: var(--t-secondary); }
+  .card-note.neutral svg { color: var(--t-muted); }
+  .card-note.error { background: var(--red-subtle); color: #ffb3bd; }
+  .card-note.error svg { color: var(--red); }
+  .card-note.work { background: var(--brand-subtle); color: #f7d877; }
+
+  /* backtest footer */
+  .card-bt {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--b-subtle);
+  }
+  .bt-stat { display: flex; flex-direction: column; gap: 2px; }
+  .bt-stat .k {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--t-disabled);
+  }
+  .bt-stat .v {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--t-secondary);
+  }
+  .bt-stat .v.pos { color: var(--green); }
+  .bt-stat .v.neg { color: var(--red); }
+  .bt-spacer { flex: 1; }
+
+  /* card actions */
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid var(--b-subtle);
+  }
+  .card-actions .grow { flex: 1; }
+
+  .abtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 9px;
+    font-size: 12.5px;
+    font-weight: 600;
+    background: transparent;
+    color: var(--t-secondary);
+    border: 1px solid var(--b-default);
+    transition: background .15s ease, color .15s ease, border-color .15s ease, opacity .15s ease;
+  }
+  .abtn svg { width: 14px; height: 14px; }
+  .abtn:hover { background: var(--surface); color: var(--t-primary); border-color: var(--b-strong); }
+
+  .abtn.primary { color: var(--brand); border-color: var(--brand-line); }
+  .abtn.primary:hover { background: var(--brand-subtle); color: var(--brand-hover); border-color: var(--brand); }
+
+  .abtn.start { color: var(--green); border-color: rgba(14,203,129,0.28); }
+  .abtn.start:hover { background: var(--green-subtle); color: var(--green); border-color: var(--green); }
+
+  .abtn.stop { color: var(--t-secondary); }
+  .abtn.stop:hover { color: var(--red); border-color: rgba(246,70,93,0.4); background: var(--red-subtle); }
+
+  .abtn.danger { color: var(--t-muted); }
+  .abtn.danger:hover { color: var(--red); border-color: rgba(246,70,93,0.4); background: var(--red-subtle); }
+
+  .abtn:disabled, .abtn[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    color: var(--t-muted);
+  }
+  .abtn:disabled:hover { background: transparent; border-color: var(--b-default); color: var(--t-muted); }
+
+  /* footer note */
+  .foot {
+    position: relative;
+    z-index: 1;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 28px 40px;
+    font-size: 11.5px;
+    color: var(--t-disabled);
+    line-height: 1.6;
+  }
+  .foot .demo-tag { margin-right: 4px; }
+
+  /* ───────────────── RESPONSIVE ───────────────── */
+  @media (max-width: 1080px) {
+    .shell {
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+    .portfolio {
+      position: static;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px 32px;
+    }
+    .portfolio .capital { grid-column: 1 / -1; }
+    .portfolio .divider { display: none; }
+  }
+  @media (max-width: 720px) {
+    .nav { display: none; }
+    .portfolio { grid-template-columns: 1fr; }
+    .search { width: 160px; }
+    .topbar { gap: 14px; padding: 0 16px; }
+    .shell { padding: 24px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ───────────────────────── TOP BAR ───────────────────────── -->
+<header class="topbar">
+  <div class="wordmark">
+    <div class="glyph">C</div>
+    <div class="name">COIN98<span class="accent">·</span>BOT</div>
+  </div>
+  <nav class="nav" aria-label="Primary">
+    <a href="#" class="active" aria-current="page">Dashboard</a>
+    <a href="#">Builder</a>
+    <a href="#">Docs</a>
+  </nav>
+  <div class="topbar-spacer"></div>
+  <div class="topbar-right">
+    <button class="wallet-chip" type="button" title="Connected wallet">
+      <span class="dot"></span>
+      <span>0x12…aB3f</span>
+    </button>
+    <button class="icon-btn" type="button" title="Import bot" aria-label="Import bot">
+      <!-- download / import -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+    </button>
+    <button class="btn btn-primary" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      New bot
+    </button>
+  </div>
+</header>
+
+<!-- ───────────────────────── SHELL ───────────────────────── -->
+<div class="shell">
+
+  <!-- ═══════ LEFT · PORTFOLIO PANEL ═══════ -->
+  <aside class="portfolio">
+
+    <!-- capital -->
+    <section class="capital">
+      <div class="panel-eyebrow">Capital deployed</div>
+      <div class="capital-figure">
+        <span class="amount">12,480.50</span>
+        <span class="unit">USDC</span>
+      </div>
+      <div class="capital-chips">
+        <span class="perf-chip up" title="Aspirational metric — no backend yet">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 17 5-5 3 3 5-6"/><path d="M19 9V5h-4"/></svg>
+          <span class="label">24h</span> +2.40%
+        </span>
+        <span class="perf-chip up" title="Aspirational metric — no backend yet">
+          <span class="label">P&amp;L</span> +2,251.05
+        </span>
+        <span class="demo-tag" title="These two metrics are not backed by a real API yet">demo</span>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- allocation donut -->
+    <section class="allocation">
+      <div class="alloc-head">
+        <div class="panel-eyebrow">Allocation</div>
+        <span class="demo-tag" title="Illustrative split derived from capital — not a live API">demo</span>
+      </div>
+      <div class="alloc-body">
+        <div class="donut-wrap" aria-hidden="true">
+          <!-- donut: 4 running bots, capital split of 12,480.50 USDC.
+               BTC 5240.18=41.99% · ETH 3100=24.84% · SOL 2890.32=23.16% · HYPE 1250=10.02%
+               circumference (r=52) = 326.73; dasharray "<seg> <rest>", offset = -(running sum) -->
+          <svg width="124" height="124" viewBox="0 0 124 124">
+            <circle cx="62" cy="62" r="52" fill="none" stroke="#1e2329" stroke-width="13"/>
+            <g transform="rotate(-90 62 62)" fill="none" stroke-width="13" stroke-linecap="butt">
+              <!-- BTC 41.99% -->
+              <circle cx="62" cy="62" r="52" stroke="#f0b90b"
+                      stroke-dasharray="137.18 189.55" stroke-dashoffset="0"/>
+              <!-- ETH 24.84% -->
+              <circle cx="62" cy="62" r="52" stroke="#0ecb81"
+                      stroke-dasharray="81.15 245.58" stroke-dashoffset="-137.18"/>
+              <!-- SOL 23.16% -->
+              <circle cx="62" cy="62" r="52" stroke="#3b82f6"
+                      stroke-dasharray="75.67 251.06" stroke-dashoffset="-218.34"/>
+              <!-- HYPE 10.02% -->
+              <circle cx="62" cy="62" r="52" stroke="#b7bdc6"
+                      stroke-dasharray="32.72 294.01" stroke-dashoffset="-294.00"/>
+            </g>
+          </svg>
+          <div class="center">
+            <div class="k">Running</div>
+            <div class="v">4 bots</div>
+          </div>
+        </div>
+        <div class="legend">
+          <div class="legend-row">
+            <span class="swatch" style="background:#f0b90b"></span>
+            <span class="lname">BTC Momentum</span>
+            <span class="lpct">42%</span>
+          </div>
+          <div class="legend-row">
+            <span class="swatch" style="background:#0ecb81"></span>
+            <span class="lname">ETH Scalper</span>
+            <span class="lpct">25%</span>
+          </div>
+          <div class="legend-row">
+            <span class="swatch" style="background:#3b82f6"></span>
+            <span class="lname">SOL Breakout</span>
+            <span class="lpct">23%</span>
+          </div>
+          <div class="legend-row">
+            <span class="swatch" style="background:#b7bdc6"></span>
+            <span class="lname">HYPE Grid</span>
+            <span class="lpct">10%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- counters -->
+    <section class="counters-section">
+      <div class="panel-eyebrow" style="margin-bottom:6px">Fleet status</div>
+      <div class="counters">
+        <div class="counter-row">
+          <span class="swatch sw-green"></span>
+          <span class="clabel">Active</span>
+          <span class="cval num">4</span>
+        </div>
+        <div class="counter-row">
+          <span class="swatch sw-muted"></span>
+          <span class="clabel">Idle</span>
+          <span class="cval num">1</span>
+        </div>
+        <div class="counter-row">
+          <span class="swatch sw-yellow"></span>
+          <span class="clabel">Transitioning</span>
+          <span class="cval num">1</span>
+        </div>
+        <div class="counter-row">
+          <span class="swatch sw-red"></span>
+          <span class="clabel">Errors</span>
+          <span class="cval num">1</span>
+        </div>
+        <div class="counter-row">
+          <span class="swatch sw-blue"></span>
+          <span class="clabel">Open trades</span>
+          <span class="cval num">6</span>
+        </div>
+      </div>
+    </section>
+  </aside>
+
+  <!-- ═══════ RIGHT · BOT LIST ═══════ -->
+  <main class="main">
+
+    <!-- toolbar -->
+    <div class="toolbar">
+      <h1>My bots <span class="count">· 9</span></h1>
+      <div class="toolbar-spacer"></div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" placeholder="Search bots…" aria-label="Search bots" />
+      </div>
+      <button class="icon-btn" type="button" title="Refresh" aria-label="Refresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+      </button>
+      <button class="btn btn-ghost" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        Import
+      </button>
+    </div>
+
+    <!-- cards -->
+    <div class="grid">
+
+      <!-- 1 · BTC Momentum · LIVE -->
+      <article class="card">
+        <div class="card-top">
+          <div class="card-id">
+            <div class="card-name">BTC Momentum</div>
+            <div class="card-meta"><span>BTC/USDC</span><span class="sep">·</span><span>1h</span></div>
+          </div>
+          <span class="badge live"><span class="led"></span>Live</span>
+        </div>
+        <div class="card-figures">
+          <div class="balance-block">
+            <div class="balance-label">Balance</div>
+            <div class="balance-val"><span class="amt">5,240.18</span><span class="ccy">USDC</span></div>
+            <div class="open-trades">Open <b>3/5</b> · stake 200</div>
+          </div>
+          <div class="spark-wrap">
+            <svg class="spark" width="116" height="38" viewBox="0 0 116 38" fill="none" aria-hidden="true">
+              <polyline points="2,30 14,28 26,31 38,24 50,26 62,18 74,20 86,12 98,14 110,6" stroke="#0ecb81" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="demo-tag" title="Synthetic sparkline — not market data">demo</span>
+          </div>
+        </div>
+        <div class="card-bt">
+          <div class="bt-stat"><span class="k">Win</span><span class="v">62%</span></div>
+          <div class="bt-stat"><span class="k">Trades</span><span class="v">148</span></div>
+          <div class="bt-stat"><span class="k">Net</span><span class="v pos">+1,240.50</span></div>
+          <div class="bt-spacer"></div>
+        </div>
+        <div class="card-actions">
+          <button class="abtn primary" type="button">Backtest</button>
+          <div class="grow"></div>
+          <button class="abtn stop" type="button">
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="7" width="10" height="10" rx="1.6"/></svg>
+            Stop
+          </button>
+          <button class="abtn danger" type="button" title="Delete" aria-label="Delete bot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/></svg>
+          </button>
+        </div>
+      </article>
+
+      <!-- 2 · ETH Scalper · LIVE -->
+      <article class="card">
+        <div class="card-top">
+          <div class="card-id">
+            <div class="card-name">ETH Scalper</div>
+            <div class="card-meta"><span>ETH/USDC</span><span class="sep">·</span><span>5m</span></div>
+          </div>
+          <span class="badge live"><span class="led"></span>Live</span>
+        </div>
+        <div class="card-figures">
+          <div class="balance-block">
+            <div class="balance-label">Balance</div>
+            <div class="balance-val"><span class="amt">3,100.00</span><span class="ccy">USDC</span></div>
+            <div class="open-trades">Open <b>2/4</b> · stake 150</div>
+          </div>
+          <div class="spark-wrap">
+            <svg class="spark" width="116" height="38" viewBox="0 0 116 38" fill="none" aria-hidden="true">
+              <polyline points="2,20 14,22 26,16 38,19 50,14 62,17 74,11 86,15 98,9 110,12" stroke="#0ecb81" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="demo-tag" title="Synthetic sparkline — not market data">demo</span>
+          </div>
+        </div>
+        <div class="card-bt">
+          <div class="bt-stat"><span class="k">Win</span><span class="v">55%</span></div>
+          <div class="bt-stat"><span class="k">Trades</span><span class="v">312</span></div>
+          <div class="bt-stat"><span class="k">Net</span><span class="v pos">+480.20</span></div>
+          <div class="bt-spacer"></div>
+        </div>
+        <div class="card-actions">
+          <button class="abtn primary" type="button">Backtest</button>
+          <div class="grow"></div>
+          <button class="abtn stop" type="button">
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="7" width="10" height="10" rx="1.6"/></svg>
+            Stop
+          </button>
+          <button class="abtn danger" type="button" title="Delete" aria-label="Delete bot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/></svg>
+          </button>
+        </div>
+      </article>
+
+      <!-- 3 · SOL Breakout · LIVE -->
+      <article class="card">
+        <div class="card-top">
+          <div class="card-id">
+            <div class="card-name">SOL Breakout</div>
+            <div class="card-meta"><span>SOL/USDC</span><span class="sep">·</span><span>15m</span></div>
+          </div>
+          <span class="badge live"><span class="led"></span>Live</span>
+        </div>
+        <div class="card-figures">
+          <div class="balance-block">
+            <div class="balance-label">Balance</div>
+            <div class="balance-val"><span class="amt">2,890.32</span><span class="ccy">USDC</span></div>
+            <div class="open-trades">Open <b>1/3</b> · stake 120</div>
+          </div>
+          <div class="spark-wrap">
+            <svg class="spark" width="116" height="38" viewBox="0 0 116 38" fill="none" aria-hidden="true">
+              <polyline points="2,14 14,18 26,12 38,20 50,16 62,24 74,18 86,22 98,16 110,19" stroke="#0ecb81" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="demo-tag" title="Synthetic sparkline — not market data">demo</span>
+          </div>
+        </div>
+        <div class="card-bt">
+          <div class="bt-stat"><span class="k">Win</span><span class="v">58%</span></div>
+          <div class="bt-stat"><span class="k">Trades</span><span class="v">96</span></div>
+          <div class="bt-stat"><span class="k">Net</span><span class="v pos">+615.75</span></div>
+          <div class="bt-spacer"></div>
+        </div>
+        <div class="card-actions">
+          <button class="abtn primary" type="button">Backtest</button>
+          <div class="grow"></div>
+          <button class="abtn stop" type="button">
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="7" width="10" height="10" rx="1.6"/></svg>
+            Stop
+          </button>
+          <button class="abtn danger" type="button" title="Delete" aria-label="Delete bot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/></svg>
+          </button>
+        </div>
+      </article>
+
+      <!-- 4 · HYPE Grid · DRY-RUN -->
+      <article class="card">
+        <div class="card-top">
+          <div class="card-id">
+            <div class="card-name">HYPE Grid</div>
+            <div class="card-meta"><span>HYPE/USDC</span><span class="sep">·</span><span>1h</span></div>
+          </div>
+          <span class="badge dry"><span class="led"></span>Dry-run</span>
+        </div>
+        <div class="card-figures">
+          <div class="balance-block">
+            <div class="balance-label">Paper balance</div>
+            <div class="balance-val"><span class="amt">1,250.00</span><span class="ccy">USDC</span></div>
+            <div class="open-trades">Open <b>0/2</b> · stake 100</div>
+          </div>
+          <div class="spark-wrap">
+            <svg class="spark" width="116" height="38" viewBox="0 0 116 38" fill="none" aria-hidden="true">
+              <polyline points="2,18 14,17 26,20 38,16 50,21 62,18 74,23 86,19 98,22 110,20" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="demo-tag" title="Synthetic sparkline — not market data">demo</span>
+          </div>
+        </div>
+        <div class="card-bt">
+          <div class="bt-stat"><span class="k">Win</span><span class="v">49%</span></div>
+          <div class="bt-stat"><span class="k">Trades</span><span class="v">64</span></div>
+          <div class="bt-stat"><span class="k">Net</span><span class="v neg">−85.40</span></div>
+          <div class="bt-spacer"></div>
+        </div>
+        <div class="card-actions">
+          <button class="abtn primary" type="button">Backtest</button>
+          <div class="grow"></div>
+          <button class="abtn stop" type="button">
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="7" width="10" height="10" rx="1.6"/></svg>
+            Stop
+          </button>
+          <button class="abtn danger" type="button" title="Delete" aria-label="Delete bot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/></svg>
+          </button>
+        </div>
+      </article>
+
+      <!-- 5 · ARB Mean Reversion · PAUSED -->
+      <article class="card">
+        <div class="card-top">
+          <div class="card-id">
+            <div class="card-name">ARB Mean Reversion</div>
+            <div class="card-meta"><span>ARB/USDC</span><span class="sep">·</span><span>30m</span></div>
+          </div>
+          <span class="badge paused"><span class="led"></span>Paused</span>
+        </div>
+        <div class="card-figures">
+          <div class="balance-block">
+            <div class="balance-label">Balance</div>
+            <div class="balance-val"><span class="amt em">—</span></div>
+            <div class="open-trades">Idle · stake 100</div>
+          </div>
+          <div class="spark-wrap">
+            <svg class="spark" width="116" height="38" viewBox="0 0 116 38" fill="none" aria-hidden="true">
+              <line x1="2" y1="19" x2="110" y2="19" stroke="#2b3139" stroke-width="1.8" stroke-dasharray="3 4" stroke-linecap="round"/>
+            </svg>
+            <span class="demo-tag" title="No live series while paused">demo</span>
+          </div>
+        </div>
+        <div class="card-bt">
+          <div class="bt-stat"><span class="k">Win</span><span class="v">53%</span></div>
+          <div class="bt-stat"><span class="k">Trades</span><span class="v">120</span></div>
+          <div class="bt-stat"><span class="k">Net</span><span class="v pos">+210.00</span></div>
+          <div class="bt-spacer"></div>
+        </div>
+        <div class="card-actions">
+          <button class="abtn primary" type="button">Backtest</button>
+          <div class="grow"></div>
+          <button class="abtn start" type="button">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>
+            Start
+          </button>
+          <button class="abtn danger" type="button" title="Delete" aria-label="Delete bot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/></svg>
+          </button>
+        </div>
+      </article>
+
+      <!-- 6 · AVAX RSI · STARTING (transitioning) -->
+      <article class="card">
+        <div class="card-top">
+          <div class="card-id">
+            <div class="card-name">AVAX RSI</div>
+            <div class="card-meta"><span>AVAX/USDC</span><span class="sep">·</span><span>1h</span></div>
+          </div>
+          <span class="badge work"><span class="led pulse"></span>Starting</span>
+        </div>
+        <div class="card-figures">
+          <div class="balance-block">
+            <div class="balance-label">Balance</div>
+            <div class="balance-val"><span class="amt em">—</span></div>
+            <div class="open-trades">Spinning up · stake 100</div>
+          </div>
+          <div class="spark-wrap">
+            <svg class="spark" width="116" height="38" viewBox="0 0 116 38" fill="none" aria-hidden="true">
+              <line x1="2" y1="19" x2="110" y2="19" stroke="#2b3139" stroke-width="1.8" stroke-dasharray="3 4" stroke-linecap="round"/>
+            </svg>
+            <span class="demo-tag" title="No series yet">demo</span>
+          </div>
+        </div>
+        <div class="card-note work">
+          <span class="spinner"></span>
+          Starting bot — connecting to Hyperliquid…
+        </div>
+        <div class="card-actions">
+          <button class="abtn primary" type="button">Backtest</button>
+          <div class="grow"></div>
+          <button class="abtn" type="button" aria-disabled="true" disabled>
+            <span class="spinner"></span>
+            Starting…
+          </button>
+          <button class="abtn danger" type="button" aria-disabled="true" disabled title="Delete unavailable while transitioning" aria-label="Delete bot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/></svg>
+          </button>
+        </div>
+      </article>
+
+      <!-- 7 · DOGE Trend · NEW (no backtest) -->
+      <article class="card">
+        <div class="card-top">
+          <div class="card-id">
+            <div class="card-name">DOGE Trend</div>
+            <div class="card-meta"><span>DOGE/USDC</span><span class="sep">·</span><span>4h</span></div>
+          </div>
+          <span class="badge new"><span class="led"></span>New</span>
+        </div>
+        <div class="card-figures">
+          <div class="balance-block">
+            <div class="balance-label">Balance</div>
+            <div class="balance-val"><span class="amt em">—</span></div>
+            <div class="open-trades">Not deployed · stake 80</div>
+          </div>
+          <div class="spark-wrap">
+            <svg class="spark" width="116" height="38" viewBox="0 0 116 38" fill="none" aria-hidden="true">
+              <line x1="2" y1="19" x2="110" y2="19" stroke="#2b3139" stroke-width="1.8" stroke-dasharray="3 4" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="card-note neutral">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          No backtest yet — run one before going live.
+        </div>
+        <div class="card-actions">
+          <button class="abtn primary" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>
+            Run first backtest
+          </button>
+          <div class="grow"></div>
+          <button class="abtn danger" type="button" title="Delete" aria-label="Delete bot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/></svg>
+          </button>
+        </div>
+      </article>
+
+      <!-- 8 · LINK Swing · BACKTESTING -->
+      <article class="card">
+        <div class="card-top">
+          <div class="card-id">
+            <div class="card-name">LINK Swing</div>
+            <div class="card-meta"><span>LINK/USDC</span><span class="sep">·</span><span>2h</span></div>
+          </div>
+          <span class="badge work"><span class="spinner"></span>Backtesting</span>
+        </div>
+        <div class="card-figures">
+          <div class="balance-block">
+            <div class="balance-label">Balance</div>
+            <div class="balance-val"><span class="amt em">—</span></div>
+            <div class="open-trades">Not deployed · stake 100</div>
+          </div>
+          <div class="spark-wrap">
+            <svg class="spark" width="116" height="38" viewBox="0 0 116 38" fill="none" aria-hidden="true">
+              <line x1="2" y1="19" x2="110" y2="19" stroke="#2b3139" stroke-width="1.8" stroke-dasharray="3 4" stroke-linecap="round"/>
+            </svg>
+            <span class="demo-tag" title="No series yet">demo</span>
+          </div>
+        </div>
+        <div class="card-note work">
+          <span class="spinner"></span>
+          Backtesting… results will appear here when complete.
+        </div>
+        <div class="card-actions">
+          <button class="abtn" type="button" aria-disabled="true" disabled>
+            <span class="spinner"></span>
+            Backtesting…
+          </button>
+          <div class="grow"></div>
+          <button class="abtn danger" type="button" title="Delete" aria-label="Delete bot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/></svg>
+          </button>
+        </div>
+      </article>
+
+      <!-- 9 · PEPE Volatility · ERROR -->
+      <article class="card is-error">
+        <div class="card-top">
+          <div class="card-id">
+            <div class="card-name">PEPE Volatility</div>
+            <div class="card-meta"><span>PEPE/USDC</span><span class="sep">·</span><span>15m</span></div>
+          </div>
+          <span class="badge error"><span class="led"></span>Error</span>
+        </div>
+        <div class="card-figures">
+          <div class="balance-block">
+            <div class="balance-label">Balance</div>
+            <div class="balance-val"><span class="amt em">—</span></div>
+            <div class="open-trades">Stopped · stake 60</div>
+          </div>
+          <div class="spark-wrap">
+            <svg class="spark" width="116" height="38" viewBox="0 0 116 38" fill="none" aria-hidden="true">
+              <line x1="2" y1="19" x2="110" y2="19" stroke="#3a2530" stroke-width="1.8" stroke-dasharray="3 4" stroke-linecap="round"/>
+            </svg>
+            <span class="demo-tag" title="No series — bot errored">demo</span>
+          </div>
+        </div>
+        <div class="card-note error">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          Exchange connection timeout (Hyperliquid agent expired).
+        </div>
+        <div class="card-actions">
+          <button class="abtn primary" type="button">Backtest</button>
+          <div class="grow"></div>
+          <button class="abtn start" type="button" title="Retry start after fixing the agent">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>
+            Start
+          </button>
+          <button class="abtn danger" type="button" title="Delete" aria-label="Delete bot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/></svg>
+          </button>
+        </div>
+      </article>
+
+    </div><!-- /.grid -->
+  </main>
+</div><!-- /.shell -->
+
+<footer class="foot">
+  <span class="demo-tag">demo</span>
+  Widgets tagged <em>demo</em> (24h change, total P&amp;L, allocation donut, sparklines) are illustrative — not yet backed by a live API.
+  Capital deployed, fleet counters, balances, open trades, and backtest summaries reflect real backend fields. Static design mockup; buttons are non-functional.
+</footer>
+
+</body>
+</html>
