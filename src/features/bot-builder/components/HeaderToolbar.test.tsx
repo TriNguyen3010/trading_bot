@@ -1,7 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { HeaderToolbar } from './HeaderToolbar';
+
+// WalletChip calls useRequireWallet() unconditionally, which throws without a
+// RequireWalletProvider. This test only asserts the header chrome, so stub it.
+vi.mock('@/features/wallet-auth/WalletChip', () => ({
+  WalletChip: () => <div data-testid="wallet-chip" />,
+}));
 
 describe('HeaderToolbar', () => {
   it('renders a "New" (reset) button', () => {

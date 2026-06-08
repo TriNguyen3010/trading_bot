@@ -1,9 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { act, render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BuilderPage } from './BuilderPage';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
+
+// BuilderPage → HeaderToolbar → WalletChip, whose useRequireWallet() throws
+// without a RequireWalletProvider. These tests only assert cypheus phase
+// transitions, so stub the wallet chip.
+vi.mock('@/features/wallet-auth/WalletChip', () => ({
+  WalletChip: () => <div data-testid="wallet-chip" />,
+}));
 
 describe('BuilderPage — dock phase trigger', () => {
   beforeEach(() => {
