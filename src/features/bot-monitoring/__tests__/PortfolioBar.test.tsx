@@ -34,4 +34,19 @@ describe('PortfolioBar', () => {
     render(<PortfolioBar stats={stats} loading onRefresh={() => {}} />);
     expect(screen.getByRole('button', { name: /refresh/i })).toBeDisabled();
   });
+
+  it('shows em-dashes (not raw zeros) for KPI counts while loading', () => {
+    const zero: PortfolioStats = {
+      capitalDeployed: 0,
+      openTrades: 0,
+      total: 0,
+      active: 0,
+      transitioning: 0,
+      idle: 0,
+      error: 0,
+    };
+    render(<PortfolioBar stats={zero} loading onRefresh={() => {}} />);
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(6);
+  });
 });
