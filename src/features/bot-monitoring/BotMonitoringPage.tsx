@@ -186,6 +186,21 @@ export function BotMonitoringPage() {
     }
   }, [safeBotId, setLiveStatus]);
 
+  // Refetch backtest history after a run finishes (BacktestDialog.onComplete)
+  // and re-select the latest run, so the result shows without a page reload.
+  const refreshBacktests = useCallback(async () => {
+    if (safeBotId == null) return;
+    try {
+      const res = await lifecycleApi.getBacktestHistory(safeBotId, 10);
+      const summaries = summarizeHistory(res.items ?? []);
+      setRuns(summaries);
+      setHistoryTotal(res.total ?? summaries.length);
+      setSelectedRunId(pickDefaultRunId(summaries));
+    } catch {
+      // best-effort refresh — keep existing state on failure
+    }
+  }, [safeBotId]);
+
   const cfgShape = config as ConfigShape | null;
   const mode = deriveMode(
     {
@@ -327,6 +342,7 @@ export function BotMonitoringPage() {
       <BacktestDialog
         open={backtestOpen}
         onOpenChange={setBacktestOpen}
+        onComplete={refreshBacktests}
         bot={
           safeBotId == null
             ? null

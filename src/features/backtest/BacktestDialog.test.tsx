@@ -149,6 +149,39 @@ describe('BacktestDialog', () => {
     expect(screen.getByText('61.7%')).toBeInTheDocument();
   });
 
+  it('fires onComplete when a run terminates (so the detail page can refetch)', () => {
+    const onComplete = vi.fn();
+    mockPoll.mockReturnValue({
+      item: {
+        id: 99,
+        bot_id: 42,
+        user_id: 7,
+        strategy_name: 'BollingerBreakout',
+        timeframe: '5m',
+        timerange: '20260514-20260521',
+        status: 'completed',
+        trade_count: 47,
+        total_profit: 12.4,
+        win_rate: 61.7,
+        started_at: '2026-05-21T00:00:00Z',
+        completed_at: '2026-05-21T00:01:00Z',
+        results: { sharpe: 1.42 },
+      },
+      done: true,
+      error: null,
+    });
+    render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        onComplete={onComplete}
+        initialBacktestId={99}
+      />,
+    );
+    expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+
   it('shows a failure message (not an empty 0-trades summary) when status=failed', () => {
     mockPoll.mockReturnValue({
       item: {
