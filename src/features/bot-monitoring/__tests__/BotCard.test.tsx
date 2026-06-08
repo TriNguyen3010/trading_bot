@@ -119,4 +119,26 @@ describe('BotCard', () => {
       screen.queryByRole('button', { name: /^start$/i }),
     ).not.toBeInTheDocument();
   });
+
+  it('shows a disabled spinner button while STARTING', () => {
+    render(
+      <BotCard
+        bot={{ ...base, mode: 'STARTING', state: 'STARTING' }}
+        {...handlers}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /starting/i })).toBeDisabled();
+  });
+
+  it('hides balance + gauge for ERROR state', () => {
+    render(
+      <BotCard
+        bot={{ ...base, mode: 'ERROR', state: 'ERROR', errorMsg: 'boom' }}
+        {...handlers}
+      />,
+    );
+    expect(screen.queryByText('967.94')).not.toBeInTheDocument();
+    expect(screen.queryByText('1/10')).not.toBeInTheDocument();
+    expect(screen.getByText(/boom/)).toBeInTheDocument();
+  });
 });

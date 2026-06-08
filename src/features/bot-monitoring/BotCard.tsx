@@ -1,5 +1,7 @@
 import { FlaskConical, Play, StopCircle, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { OpenTradesGauge } from './OpenTradesGauge';
 import type { DashboardBotMode } from './bot-list.helpers';
 import type { PresentationalState } from './presentational-state';
 
@@ -39,11 +41,11 @@ export interface BotCardProps {
 
 const badgeClass: Record<PresentationalState, string> = {
   LIVE: 'border-bullish/30 bg-bullish-subtle text-bullish',
-  'DRY-RUN': 'border-brand/30 bg-brand-subtle text-brand',
+  'DRY-RUN': 'border-info/30 bg-info/10 text-info', // D-2: blue
   PAUSED: 'border-fg-muted/30 bg-fg-muted/10 text-fg-muted',
   ERROR: 'border-bearish/40 bg-bearish-subtle text-bearish',
-  STARTING: 'border-brand/20 bg-brand/5 text-brand/70',
-  STOPPING: 'border-fg-muted/20 bg-fg-muted/5 text-fg-muted/70',
+  STARTING: 'border-brand/30 bg-brand/10 text-brand',
+  STOPPING: 'border-fg-muted/20 bg-fg-muted/5 text-fg-muted',
   NEW: 'border-dashed border-brand/35 bg-brand/5 text-brand',
   BACKTESTING: 'border-info/30 bg-info/10 text-info',
   BACKTEST_FAILED: 'border-fg-muted/30 bg-fg-muted/10 text-fg-muted',
@@ -53,13 +55,19 @@ const badgeLabel: Record<PresentationalState, string> = {
   LIVE: 'Live',
   'DRY-RUN': 'Dry-run',
   PAUSED: 'Paused',
-  ERROR: '! Error',
+  ERROR: '! Error', // keep current label; no test asserts it
   STARTING: 'Starting…',
   STOPPING: 'Stopping…',
   NEW: 'New',
   BACKTESTING: 'Backtesting',
   BACKTEST_FAILED: 'Paused',
 };
+
+const PULSE = new Set<PresentationalState>([
+  'STARTING',
+  'STOPPING',
+  'BACKTESTING',
+]);
 
 const fmt = (n: number | null, d = 2) => (n == null ? '—' : n.toFixed(d));
 
@@ -72,7 +80,10 @@ export function BotCard({
   onBacktest,
 }: BotCardProps) {
   const s = bot.state;
-  const showsBalance = s !== 'ERROR' && s !== 'STARTING' && s !== 'STOPPING';
+  const showsBalance =
+    s !== 'ERROR' && s !== 'STARTING' && s !== 'STOPPING' && s !== 'NEW';
+  const showsGauge = s !== 'ERROR' && s !== 'STARTING' && s !== 'STOPPING';
+  const showsMeta = s !== 'ERROR';
   const showsStrip =
     s !== 'NEW' &&
     s !== 'ERROR' &&
@@ -91,53 +102,85 @@ export function BotCard({
           onClick();
         }
       }}
-      className="card-coin98-flat cursor-pointer rounded-2xl p-4 transition hover:brightness-110"
+      className="card-coin98-flat flex h-full cursor-pointer flex-col rounded-2xl p-4 transition hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
     >
+      {/* Header */}
       <div className="min-w-0">
         <span
-          className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-2xs font-bold uppercase ${badgeClass[s]}`}
+          className={cn(
+            'inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-2xs font-bold uppercase',
+            badgeClass[s],
+          )}
         >
+          {PULSE.has(s) && (
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
+          )}
           {badgeLabel[s]}
         </span>
         <h3 className="mt-2 truncate text-md font-semibold text-fg">
           {bot.name}
         </h3>
-        <div className="text-xs text-fg-muted">
+        <div className="truncate text-xs text-fg-muted">
           {bot.pair} · {bot.timeframe}
-          {bot.createdAt ? ` · created ${bot.createdAt}` : ''}
         </div>
       </div>
 
+      {/* Balance */}
       {showsBalance && (
         <div className="mt-3 font-mono text-xl font-bold tabular-nums text-fg">
           {fmt(bot.balance)} <span className="text-xs text-fg-muted">USDC</span>
         </div>
       )}
 
-      {s !== 'ERROR' && (
-        <div className="mt-3 grid grid-cols-3 gap-2 text-2xs">
-          <Stat
-            label="Open"
-            value={`${bot.openTrades ?? 0}/${bot.maxOpenTrades ?? '—'}`}
-          />
-          <Stat label="Stake" value={fmt(bot.stakeAmount, 0)} />
-          <Stat label="TF" value={bot.timeframe} />
+      {/* Open-trades gauge */}
+      {showsGauge && (
+        <div className="mt-3">
+          <OpenTradesGauge open={bot.openTrades} max={bot.maxOpenTrades} />
         </div>
       )}
 
+      {/* Meta */}
+      {showsMeta && (
+        <div className="mt-2 flex gap-4 text-2xs text-fg-muted">
+          <span>
+            Stake{' '}
+            <span className="font-mono font-semibold tabular-nums text-fg-secondary">
+              {fmt(bot.stakeAmount, 0)}
+            </span>
+          </span>
+          <span>
+            TF{' '}
+            <span className="font-mono font-semibold text-fg-secondary">
+              {bot.timeframe}
+            </span>
+          </span>
+        </div>
+      )}
+
+      {/* Status hints */}
       {s === 'BACKTESTING' && (
         <div className="mt-3 flex items-center gap-2 text-2xs text-info">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           <span>Backtesting…</span>
         </div>
       )}
-
       {s === 'NEW' && (
         <p className="mt-3 text-2xs text-fg-muted">
           No backtest yet · run one before going live ↓
         </p>
       )}
+      {s === 'ERROR' && bot.errorMsg && (
+        <p className="mt-3 line-clamp-2 text-xs text-bearish/90">
+          <strong>error_message:</strong> {bot.errorMsg}
+        </p>
+      )}
+      {s === 'BACKTEST_FAILED' && (
+        <p className="mt-3 text-xs text-fg-muted">
+          <strong>Backtest failed.</strong> Retry below.
+        </p>
+      )}
 
+      {/* Backtest strip */}
       {showsStrip && bot.lastBacktest && (
         <div className="mt-3 flex items-center justify-between rounded-lg border border-border-subtle bg-black/20 px-2.5 py-2">
           <span className="text-2xs text-fg-muted">Last backtest</span>
@@ -168,36 +211,17 @@ export function BotCard({
         </div>
       )}
 
-      {s === 'ERROR' && bot.errorMsg && (
-        <p className="mt-3 text-xs text-bearish/90">
-          <strong>error_message:</strong> {bot.errorMsg}
-        </p>
-      )}
-      {s === 'BACKTEST_FAILED' && (
-        <p className="mt-3 text-xs text-fg-muted">
-          <strong>Backtest failed.</strong> Retry below.
-        </p>
-      )}
-
-      <Actions
-        bot={bot}
-        onStart={onStart}
-        onStop={onStop}
-        onRemove={onRemove}
-        onBacktest={onBacktest}
-      />
-    </article>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-fg-muted">{label}</div>
-      <div className="font-mono font-semibold tabular-nums text-fg">
-        {value}
+      {/* Actions pinned to the bottom for equal-height cards */}
+      <div className="mt-auto pt-3">
+        <Actions
+          bot={bot}
+          onStart={onStart}
+          onStop={onStop}
+          onRemove={onRemove}
+          onBacktest={onBacktest}
+        />
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -232,7 +256,7 @@ function Actions({
   const m = bot.mode;
   if (m === 'STARTING' || m === 'STOPPING') {
     return (
-      <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+      <div onClick={(e) => e.stopPropagation()}>
         <Button variant="secondary" size="sm" className="w-full" disabled>
           <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
           {m === 'STARTING' ? 'Starting…' : 'Stopping…'}
@@ -241,10 +265,7 @@ function Actions({
     );
   }
   return (
-    <div
-      className="mt-3 flex flex-col gap-1.5"
-      onClick={(e) => e.stopPropagation()}
-    >
+    <div className="flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
       <Button
         variant="ghost"
         size="sm"
