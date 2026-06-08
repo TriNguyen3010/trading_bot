@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { WalletChip } from '../WalletChip';
 
 // Mock wallet store so chip renders as connected
@@ -31,7 +32,11 @@ vi.mock('../RequireWalletProvider', () => ({
 
 describe('WalletChip — Manage agents entry', () => {
   it('renders "Manage agents" button in popover when wallet is connected', async () => {
-    render(<WalletChip />);
+    render(
+      <MemoryRouter>
+        <WalletChip />
+      </MemoryRouter>,
+    );
     // Open the wallet popover first (the trigger shows the truncated address)
     fireEvent.click(screen.getByTitle('Wallet menu'));
     await waitFor(() =>
@@ -42,7 +47,11 @@ describe('WalletChip — Manage agents entry', () => {
   });
 
   it('opens ManageAgentsModal when "Manage agents" is clicked', async () => {
-    render(<WalletChip />);
+    render(
+      <MemoryRouter>
+        <WalletChip />
+      </MemoryRouter>,
+    );
     // Open the wallet popover first
     fireEvent.click(screen.getByTitle('Wallet menu'));
     await waitFor(() =>
