@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { BotCard, type BotCardData } from '../BotCard';
 
 const base: BotCardData = {
@@ -33,81 +33,91 @@ const handlers = {
 };
 
 describe('BotCard', () => {
-  it('renders balance + micro stats for a running bot', () => {
+  it('running bot: balance, numeric gauge, integer win-rate', () => {
     render(<BotCard bot={base} {...handlers} />);
     expect(screen.getByText('967.94')).toBeInTheDocument();
     expect(screen.getByText(/1\s*\/\s*10/)).toBeInTheDocument();
-    expect(screen.getByText('44.2%')).toBeInTheDocument();
+    expect(screen.getByText('44%')).toBeInTheDocument(); // rounded, not 44.2%
   });
 
-  it('renders NEW empty hint + Run first backtest', () => {
-    render(
-      <BotCard
-        bot={{ ...base, state: 'NEW', balance: null, lastBacktest: null }}
-        {...handlers}
-      />,
-    );
-    expect(screen.getByText(/Run first backtest/i)).toBeInTheDocument();
+  it('formats a negative net in the bearish color', () => {
+    render(<BotCard bot={base} {...handlers} />);
+    const net = screen.getByText('-36.59');
+    expect(net.className).toMatch(/text-bearish/);
   });
 
-  it('renders error_message for ERROR state', () => {
+  it('NEW: "not started" gauge + Run first backtest, no lifecycle button', () => {
     render(
       <BotCard
         bot={{
           ...base,
-          state: 'ERROR',
-          errorMsg: 'Insufficient agent allowance',
+          mode: 'PAUSED',
+          state: 'NEW',
+          balance: null,
+          lastBacktest: null,
         }}
         {...handlers}
       />,
     );
+    expect(screen.getByText('not started')).toBeInTheDocument();
     expect(
-      screen.getByText(/Insufficient agent allowance/),
-    ).toBeInTheDocument();
-  });
-
-  it('shows Start (not Fix connection) for an ERROR bot', () => {
-    // ERROR offers a relaunch via Start (Launchpad mode picker), not a Sync.
-    render(
-      <BotCard
-        bot={{ ...base, mode: 'ERROR', state: 'ERROR', errorMsg: 'boom' }}
-        {...handlers}
-      />,
-    );
-    expect(
-      screen.getByRole('button', { name: /^start$/i }),
+      screen.getByRole('button', { name: /run first backtest/i }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: /fix connection/i }),
+      screen.queryByRole('button', { name: /^start$/i }),
     ).not.toBeInTheDocument();
   });
 
-  it('renders backtest-failed message', () => {
+  it('ERROR: "— stopped" gauge, Stake/TF, Status head + error message, Start', () => {
     render(
       <BotCard
         bot={{
           ...base,
+          mode: 'ERROR',
+          state: 'ERROR',
+          balance: null,
+          errorMsg: 'boom',
+        }}
+        {...handlers}
+      />,
+    );
+    expect(screen.getByText('— stopped')).toBeInTheDocument();
+    expect(screen.getByText('Stake')).toBeInTheDocument();
+    expect(screen.getByText('Status')).toBeInTheDocument();
+    expect(screen.getByText(/boom/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /^start$/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('BACKTEST_FAILED: shows the failed note', () => {
+    render(
+      <BotCard
+        bot={{
+          ...base,
+          mode: 'PAUSED',
           state: 'BACKTEST_FAILED',
           lastBacktest: { ...base.lastBacktest!, status: 'failed' },
         }}
         {...handlers}
       />,
     );
-    expect(screen.getByText(/failed/i)).toBeInTheDocument();
+    expect(screen.getByText(/Backtest failed/i)).toBeInTheDocument();
   });
 
-  it('shows a spinner + status text while BACKTESTING (no %)', () => {
+  it('BACKTESTING: spinner note (no %) + disabled Running… button', () => {
     render(
       <BotCard
         bot={{ ...base, mode: 'PAUSED', state: 'BACKTESTING' }}
         {...handlers}
       />,
     );
-    expect(screen.getByText('Backtesting…')).toBeInTheDocument();
+    expect(screen.getByText(/Backtesting…/)).toBeInTheDocument();
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /running/i })).toBeDisabled();
   });
 
-  it('a running bot in BACKTESTING overlay still shows Stop (action follows mode)', () => {
+  it('a running bot in BACKTESTING still shows Stop (action follows mode)', () => {
     render(
       <BotCard
         bot={{ ...base, mode: 'DRY-RUN', state: 'BACKTESTING' }}
@@ -120,7 +130,7 @@ describe('BotCard', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('shows a disabled spinner button while STARTING', () => {
+  it('disabled spinner button while STARTING', () => {
     render(
       <BotCard
         bot={{ ...base, mode: 'STARTING', state: 'STARTING' }}
@@ -130,15 +140,14 @@ describe('BotCard', () => {
     expect(screen.getByRole('button', { name: /starting/i })).toBeDisabled();
   });
 
-  it('hides balance + gauge for ERROR state', () => {
+  it('fires onStop and does not bubble to the card onClick', () => {
+    const onStop = vi.fn();
+    const onClick = vi.fn();
     render(
-      <BotCard
-        bot={{ ...base, mode: 'ERROR', state: 'ERROR', errorMsg: 'boom' }}
-        {...handlers}
-      />,
+      <BotCard bot={base} {...handlers} onStop={onStop} onClick={onClick} />,
     );
-    expect(screen.queryByText('967.94')).not.toBeInTheDocument();
-    expect(screen.queryByText('1/10')).not.toBeInTheDocument();
-    expect(screen.getByText(/boom/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^stop$/i }));
+    expect(onStop).toHaveBeenCalledOnce();
+    expect(onClick).not.toHaveBeenCalled();
   });
 });
