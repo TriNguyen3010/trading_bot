@@ -1,10 +1,19 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Mock sonner so we can assert the toast payload (jsdom has no Toaster).
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+
+import { toast } from 'sonner';
 import { applyTemplate } from '../apply';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { breakoutBtc15m } from '../catalog/breakout-btc-15m';
+import { strings } from '@/i18n/en';
 
 describe('applyTemplate', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     useBuilderStore.getState().resetAll();
   });
 
@@ -26,5 +35,14 @@ describe('applyTemplate', () => {
     expect(animationTimers).toEqual([]);
 
     setTimeoutSpy.mockRestore();
+  });
+
+  it('fires the "Applied" toast with the text-view hint as its description', async () => {
+    await applyTemplate(breakoutBtc15m);
+
+    expect(toast.success).toHaveBeenCalledWith(
+      strings.templates.apply.loadedToast(breakoutBtc15m.name),
+      { description: strings.templates.apply.textViewHint },
+    );
   });
 });

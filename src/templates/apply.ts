@@ -90,7 +90,12 @@ function snapApply(template: BotTemplate, snap: TemplateStateSnapshot): void {
     text: strings.templates.apply.loadedChat(template.name),
   });
   useTemplateTrackingStore.getState().setApplied(template.id);
-  toast.success(strings.templates.apply.loadedToast(template.name));
+  // The text-view hint lives ONLY here (the template-apply path) — manual
+  // SummaryModeToggle clicks and field edits never reach snapApply, so the hint
+  // can't fire on user actions.
+  toast.success(strings.templates.apply.loadedToast(template.name), {
+    description: strings.templates.apply.textViewHint,
+  });
 }
 
 function migrateTemplateSnapshot(

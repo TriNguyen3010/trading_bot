@@ -195,6 +195,8 @@ export const strings = {
       // Toast + chat copy used by snap-apply path.
       loadedToast: (name: string) => `Applied "${name}"`,
       loadedChat: (name: string) => `Loaded "${name}". Ready to export.`,
+      textViewHint:
+        'Tip: view this strategy as text — use the toggle above the summary.',
     },
 
     openPhaseAria: (label: string) => `Open ${label} phase`,
