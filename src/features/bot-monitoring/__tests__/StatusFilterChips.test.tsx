@@ -42,8 +42,9 @@ describe('StatusFilterChips', () => {
         onChange={() => {}}
       />,
     );
-    expect(
-      screen.getByRole('button', { name: /Needs attention\s*0/ }),
-    ).toBeDisabled();
+    const chip = screen.getByRole('button', { name: /Needs attention\s*0/ });
+    expect(chip).toBeDisabled();
+    // Disabled chips carry no hover utilities (don't light up on hover).
+    expect(chip.className).not.toMatch(/hover:/);
   });
 });

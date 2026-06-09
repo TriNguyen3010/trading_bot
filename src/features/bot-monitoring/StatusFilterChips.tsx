@@ -33,9 +33,11 @@ export function StatusFilterChips({
               'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-[12.5px] font-medium transition',
               isActive
                 ? 'border-brand bg-brand-subtle text-brand-hover'
-                : 'border-border bg-surface text-fg-secondary hover:border-border-strong hover:bg-surface-hover hover:text-fg',
-              disabled &&
-                'cursor-not-allowed opacity-40 hover:text-fg-secondary',
+                : disabled
+                  ? // Disabled: resting surface look, dimmed, NO hover utilities
+                    // (so the button doesn't light up on hover despite being disabled).
+                    'cursor-not-allowed border-border bg-surface text-fg-secondary opacity-40'
+                  : 'border-border bg-surface text-fg-secondary hover:border-border-strong hover:bg-surface-hover hover:text-fg',
             )}
           >
             {chip.label}
