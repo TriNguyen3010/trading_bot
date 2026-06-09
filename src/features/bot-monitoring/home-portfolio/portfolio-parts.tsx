@@ -1,4 +1,5 @@
 import { AlertCircle, Zap } from 'lucide-react';
+import { StatusBadge } from '../status-badge';
 import type { DashboardBot } from '../bot-list.helpers';
 import type { BotPerformance } from '../bot-performance';
 import type { PortfolioStats } from '../portfolio-stats';
@@ -15,15 +16,6 @@ function fmtUsd(n: number): string {
     maximumFractionDigits: 2,
   });
 }
-
-const badgeClass: Record<string, string> = {
-  LIVE: 'border-bullish/30 bg-bullish-subtle text-bullish',
-  'DRY-RUN': 'border-brand/30 bg-brand-subtle text-brand',
-  PAUSED: 'border-border-strong/40 bg-white/5 text-fg-muted',
-  ERROR: 'border-bearish/40 bg-bearish-subtle text-bearish',
-  STARTING: 'border-brand/30 bg-brand-subtle text-brand',
-  STOPPING: 'border-border-strong/40 bg-white/5 text-fg-muted',
-};
 
 function LiveTick({ label }: { label: string }) {
   return (
@@ -85,11 +77,7 @@ export function MiniBotCard({
       onClick={onClick}
       className="card-coin98-flat cursor-pointer rounded-2xl p-4 text-left transition hover:brightness-110"
     >
-      <span
-        className={`inline-flex items-center rounded-sm border px-1.5 py-0.5 text-2xs font-bold uppercase ${badgeClass[bot.mode] ?? badgeClass.PAUSED}`}
-      >
-        {bot.mode}
-      </span>
+      <StatusBadge state={bot.mode} />
       <h3 className="mt-2 text-base font-semibold text-fg">{bot.name}</h3>
       <div className="text-xs text-fg-muted">
         {bot.pair} · {bot.timeframe}
