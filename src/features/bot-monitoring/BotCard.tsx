@@ -143,7 +143,7 @@ export function BotCard({
             <span className="ml-1 text-sm font-medium text-fg-muted">USDC</span>
           </div>
         </div>
-        {running && <EquityPlaceholder />}
+        <EquityPlaceholder />
       </div>
 
       {/* Micro row */}

@@ -193,8 +193,28 @@ describe('BotCard', () => {
     expect(screen.getByRole('button', { name: /stopping/i })).toBeDisabled();
   });
 
-  it('running card shows the gray equity placeholder "No data yet"', () => {
-    render(<BotCard bot={base} {...handlers} />);
+  it('shows the gray equity placeholder "No data yet" on every state', () => {
+    const { rerender } = render(<BotCard bot={base} {...handlers} />);
+    expect(screen.getByText('No data yet')).toBeInTheDocument();
+    rerender(
+      <BotCard
+        bot={{ ...base, mode: 'PAUSED', state: 'PAUSED', balance: null }}
+        {...handlers}
+      />,
+    );
+    expect(screen.getByText('No data yet')).toBeInTheDocument();
+    rerender(
+      <BotCard
+        bot={{
+          ...base,
+          mode: 'ERROR',
+          state: 'ERROR',
+          balance: null,
+          errorMsg: 'x',
+        }}
+        {...handlers}
+      />,
+    );
     expect(screen.getByText('No data yet')).toBeInTheDocument();
   });
 
