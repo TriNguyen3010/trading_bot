@@ -122,25 +122,28 @@ export function BotCard({
         {bot.timeframe}
       </div>
 
-      {/* Balance */}
-      <div className="mt-4">
-        <div className="flex items-center text-[10.5px] font-semibold uppercase tracking-[0.6px] text-fg-muted">
-          Balance
-          {s === 'DRY-RUN' && (
-            <span className="ml-1.5 rounded-[4px] border border-border px-1 py-px text-[9px] font-bold tracking-[0.5px] text-fg-disabled">
-              paper
-            </span>
-          )}
+      {/* Balance + gray equity placeholder (real chart pending a BE history endpoint) */}
+      <div className="mt-4 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center text-[10.5px] font-semibold uppercase tracking-[0.6px] text-fg-muted">
+            Balance
+            {s === 'DRY-RUN' && (
+              <span className="ml-1.5 rounded-[4px] border border-border px-1 py-px text-[9px] font-bold tracking-[0.5px] text-fg-disabled">
+                paper
+              </span>
+            )}
+          </div>
+          <div
+            className={cn(
+              'font-mono text-[22px] font-semibold tabular-nums leading-[1.1] tracking-[-0.5px]',
+              balance ? 'text-fg' : 'text-fg-disabled',
+            )}
+          >
+            {balance ?? '—'}
+            <span className="ml-1 text-sm font-medium text-fg-muted">USDC</span>
+          </div>
         </div>
-        <div
-          className={cn(
-            'font-mono text-[22px] font-semibold tabular-nums leading-[1.1] tracking-[-0.5px]',
-            balance ? 'text-fg' : 'text-fg-disabled',
-          )}
-        >
-          {balance ?? '—'}
-          <span className="ml-1 text-sm font-medium text-fg-muted">USDC</span>
-        </div>
+        {running && <EquityPlaceholder />}
       </div>
 
       {/* Micro row */}
@@ -180,6 +183,36 @@ export function BotCard({
         onBacktest={onBacktest}
       />
     </article>
+  );
+}
+
+/** Gray, intentionally-flat equity placeholder. We have no per-bot balance
+ * history yet (/performance returns a single point) — gray + "No data yet"
+ * signals a pending chart without faking a real (green) curve. */
+function EquityPlaceholder() {
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <svg
+        width="100"
+        height="34"
+        viewBox="0 0 100 34"
+        preserveAspectRatio="none"
+        aria-hidden
+        className="text-fg-muted"
+      >
+        <path
+          d="M0,24 L16,21 L32,25 L48,17 L64,20 L80,12 L100,8"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span className="font-mono text-[9.5px] tracking-[0.3px] text-fg-disabled">
+        No data yet
+      </span>
+    </div>
   );
 }
 
@@ -328,7 +361,21 @@ function BacktestArea({ bot }: { bot: BotCardData }) {
     );
   }
 
-  // Running/paused bot with no backtest history → blank (footer still pinned).
+  // Running / transitioning bot with no backtest yet → prompt to run one.
+  // (A PAUSED bot with no backtest is NEW, handled at the top.)
+  if (STRIP_STATES.has(s)) {
+    return (
+      <div>
+        {Head}
+        <NoteRow
+          tone="text-fg-secondary"
+          icon={<Info className="h-4 w-4 shrink-0 text-brand" />}
+          text="No backtest yet — run one to see win rate & net."
+        />
+      </div>
+    );
+  }
+
   return null;
 }
 

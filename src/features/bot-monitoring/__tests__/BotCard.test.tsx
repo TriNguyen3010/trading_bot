@@ -192,4 +192,19 @@ describe('BotCard', () => {
     );
     expect(screen.getByRole('button', { name: /stopping/i })).toBeDisabled();
   });
+
+  it('running card shows the gray equity placeholder "No data yet"', () => {
+    render(<BotCard bot={base} {...handlers} />);
+    expect(screen.getByText('No data yet')).toBeInTheDocument();
+  });
+
+  it('running bot with no backtest shows a run-backtest prompt', () => {
+    render(
+      <BotCard
+        bot={{ ...base, mode: 'LIVE', state: 'LIVE', lastBacktest: null }}
+        {...handlers}
+      />,
+    );
+    expect(screen.getByText(/No backtest yet/i)).toBeInTheDocument();
+  });
 });
