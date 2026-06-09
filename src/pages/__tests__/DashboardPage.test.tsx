@@ -295,10 +295,10 @@ describe('DashboardPage', () => {
     );
   });
 
-  it('Refresh stays in the KPI bar — disabled while loading, available on error', async () => {
+  it('Refresh lives in the toolbar — disabled while loading, available on error', async () => {
     vi.mocked(botApi.list).mockReturnValue(new Promise(() => {}));
     const { unmount } = renderPage();
-    // The KPI bar (with Refresh) stays mounted during load; refresh is disabled.
+    // The toolbar (with Refresh) stays mounted during load; refresh is disabled.
     expect(screen.getByRole('button', { name: /refresh/i })).toBeDisabled();
     unmount();
 
@@ -310,7 +310,7 @@ describe('DashboardPage', () => {
     await waitFor(() =>
       expect(screen.getByText(/couldn't load your bots/i)).toBeInTheDocument(),
     );
-    // On error the bar remains, so Refresh is available (alongside Retry).
+    // On error the toolbar remains, so Refresh is available (alongside Retry).
     expect(
       screen.getByRole('button', { name: /refresh/i }),
     ).toBeInTheDocument();

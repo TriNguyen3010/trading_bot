@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Search } from 'lucide-react';
+import { ArrowRight, RefreshCw, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
@@ -31,6 +31,7 @@ import {
   type LaunchpadBot,
 } from '@/features/launchpad/LaunchpadModal';
 import { formatBackendError } from '@/lib/format-error';
+import { cn } from '@/lib/utils';
 import { AppHeader } from './AppHeader';
 
 /** Poll cadence + safety cap for status polling after a lifecycle action. */
@@ -255,11 +256,7 @@ export function DashboardPage() {
             />
           ) : (
             <>
-              <PortfolioBar
-                stats={stats}
-                loading={loading}
-                onRefresh={handleRefresh}
-              />
+              <PortfolioBar stats={stats} loading={loading} />
 
               <section className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -278,15 +275,27 @@ export function DashboardPage() {
                   <div className="flex items-center gap-2">
                     {isLoadedReal && (
                       <div className="relative">
-                        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
                         <input
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
-                          placeholder="Search bots…"
-                          className="h-9 w-44 rounded-md border border-border bg-input pl-8 pr-3 text-sm text-fg placeholder:text-fg-muted focus:border-brand focus:outline-none"
+                          placeholder="Search bots or pairs…"
+                          className="h-9 w-[220px] rounded-[10px] border border-border bg-input pl-9 pr-3 text-[13px] text-fg placeholder:text-fg-disabled focus:border-border-strong focus:outline-none"
                         />
                       </div>
                     )}
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      onClick={handleRefresh}
+                      disabled={loading}
+                      aria-label="Refresh bots"
+                      title="Refresh"
+                    >
+                      <RefreshCw
+                        className={cn('h-3.5 w-3.5', loading && 'animate-spin')}
+                      />
+                    </Button>
                     <Button
                       variant="secondary"
                       size="md"

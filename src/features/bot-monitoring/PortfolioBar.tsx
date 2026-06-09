@@ -1,104 +1,97 @@
-import { RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { PortfolioStats } from './portfolio-stats';
 
 interface PortfolioBarProps {
   stats: PortfolioStats;
   loading: boolean;
-  onRefresh: () => void;
 }
 
 function Kpi({
   label,
+  divider,
+  className,
   children,
-  tone,
-  loading,
 }: {
   label: string;
+  divider?: boolean;
+  className?: string;
   children: React.ReactNode;
-  tone?: 'brand' | 'bearish';
-  loading?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-2xs uppercase tracking-widest text-fg-muted">
+    <div
+      className={cn(
+        'relative flex min-w-0 flex-col gap-1 px-[18px] py-[14px]',
+        divider &&
+          "before:absolute before:inset-y-[18%] before:left-0 before:w-px before:bg-border-subtle before:content-['']",
+        className,
+      )}
+    >
+      <span className="flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold uppercase tracking-[0.6px] text-fg-muted">
         {label}
       </span>
-      <span
-        className={cn(
-          'font-mono text-lg font-semibold tabular-nums text-fg',
-          !loading && tone === 'brand' && 'text-brand',
-          !loading && tone === 'bearish' && 'text-bearish',
-        )}
-      >
-        {loading ? '—' : children}
-      </span>
+      {children}
     </div>
   );
 }
 
-export function PortfolioBar({ stats, loading, onRefresh }: PortfolioBarProps) {
+export function PortfolioBar({ stats, loading }: PortfolioBarProps) {
   const capital = stats.capitalDeployed.toLocaleString('en-US', {
-    maximumFractionDigits: 2,
     minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   });
+  const d = (n: number) => (loading ? '—' : n);
 
   return (
     <section
       aria-label="Portfolio summary"
-      className="card-coin98-flat relative flex flex-wrap items-center gap-x-8 gap-y-4 rounded-2xl px-6 py-5"
+      className="flex flex-wrap items-stretch overflow-hidden rounded-[18px] border border-border-subtle bg-surface p-1"
     >
-      <div className="flex flex-col gap-0.5">
-        <span className="text-2xs uppercase tracking-widest text-fg-muted">
-          Capital deployed
+      <Kpi label="Capital deployed" className="flex-[1.6]">
+        <span className="font-mono text-2xl font-semibold tabular-nums tracking-[-0.5px] text-fg">
+          {loading ? '—' : capital}
+          <span className="ml-1 text-sm font-medium text-fg-muted">USDC</span>
         </span>
-        <span
-          className="font-mono text-3xl font-bold tabular-nums text-fg"
-          style={{ textShadow: '0 0 28px rgba(240,185,11,0.18)' }}
-        >
-          {loading ? '—' : capital}{' '}
-          <span className="text-base text-fg-muted">USDC</span>
+      </Kpi>
+
+      <Kpi label="Active / Total" divider className="flex-1">
+        <span className="font-mono text-lg font-semibold tabular-nums text-fg">
+          {loading ? '—' : `${stats.active} / ${stats.total}`}
         </span>
-      </div>
-
-      <div className="h-8 w-px bg-border-subtle" aria-hidden />
-
-      <Kpi label="Active / Total" loading={loading}>
-        {stats.active} / {stats.total}
-      </Kpi>
-      <Kpi label="Open trades" loading={loading}>
-        {stats.openTrades}
-      </Kpi>
-      <Kpi label="Idle" loading={loading}>
-        {stats.idle}
-      </Kpi>
-      <Kpi
-        label="Transitioning"
-        loading={loading}
-        tone={stats.transitioning > 0 ? 'brand' : undefined}
-      >
-        {stats.transitioning}
-      </Kpi>
-      <Kpi
-        label="Errors"
-        loading={loading}
-        tone={stats.error > 0 ? 'bearish' : undefined}
-      >
-        {stats.error}
       </Kpi>
 
-      <Button
-        variant="ghost"
-        size="md"
-        className="ml-auto"
-        onClick={onRefresh}
-        disabled={loading}
-        aria-label="Refresh bots"
-        title="Refresh"
-      >
-        <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
-      </Button>
+      <Kpi label="Open trades" divider className="flex-1">
+        <span className="font-mono text-lg font-semibold tabular-nums text-fg">
+          {d(stats.openTrades)}
+        </span>
+      </Kpi>
+
+      <Kpi label="Fleet" divider className="flex-1">
+        <div className="flex gap-3.5 font-mono text-sm tabular-nums text-fg-muted">
+          <span>
+            idle{' '}
+            <b className="font-semibold text-fg-secondary">{d(stats.idle)}</b>
+          </span>
+          <span>
+            working{' '}
+            <b className="font-semibold text-fg-secondary">
+              {d(stats.transitioning)}
+            </b>
+          </span>
+          <span>
+            err{' '}
+            <b
+              className={cn(
+                'font-semibold',
+                !loading && stats.error > 0
+                  ? 'text-bearish'
+                  : 'text-fg-secondary',
+              )}
+            >
+              {d(stats.error)}
+            </b>
+          </span>
+        </div>
+      </Kpi>
     </section>
   );
 }
