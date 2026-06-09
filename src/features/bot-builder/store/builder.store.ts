@@ -11,6 +11,8 @@ import type {
   StepStatus,
 } from '@/types/builder.types';
 import { emptyConditionTree, migrateLegacyGroup } from '@/lib/condition-tree';
+import { makeDefaultNames } from '@/lib/default-names';
+import { useWalletStore } from '@/features/wallet-auth/wallet.store';
 
 /** Per user request 2026-04-30: drawer is locked at this width — the
  * adjustable min/max + DrawerResizeHandle were removed. Exported so
@@ -62,21 +64,34 @@ const defaultCloseMethod: CloseMethodForm = {
   exitConditions: emptyConditionTree(),
 };
 
-const buildInitialState = (): BuilderState => ({
-  botName: 'Bot Basic',
-  botConfig: { ...defaultBotConfig },
-  strategy: { ...defaultStrategy, candlestick: [], indicators: [] },
-  directionForm: { ...defaultDirection },
-  closeMethod: { ...defaultCloseMethod, tpLevels: [], roiSteps: [] },
-  stepStatus: {
-    'bot-config': 'pending',
-    'entry-strategy': 'pending',
-    direction: 'pending',
-    'close-method': 'pending',
-  },
-  isDirty: false,
-  lastSavedAt: null,
-});
+const buildInitialState = (): BuilderState => {
+  // Unique-ish defaults so each fresh bot (Create new bot → resetAll) gets a
+  // distinct name. Reads the connected wallet + current time at call time.
+  const { botName, strategyName } = makeDefaultNames(
+    useWalletStore.getState().address,
+    new Date(),
+  );
+  return {
+    botName,
+    botConfig: { ...defaultBotConfig },
+    strategy: {
+      ...defaultStrategy,
+      name: strategyName,
+      candlestick: [],
+      indicators: [],
+    },
+    directionForm: { ...defaultDirection },
+    closeMethod: { ...defaultCloseMethod, tpLevels: [], roiSteps: [] },
+    stepStatus: {
+      'bot-config': 'pending',
+      'entry-strategy': 'pending',
+      direction: 'pending',
+      'close-method': 'pending',
+    },
+    isDirty: false,
+    lastSavedAt: null,
+  };
+};
 
 interface BuilderUIState {
   openStep: StepId | null;
