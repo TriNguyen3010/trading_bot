@@ -103,10 +103,14 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Right col — hero video, bleed flush to right viewport edge */}
+          {/* Right col — hero video, bleed flush to right viewport edge.
+           * Hosted on Cloudinary (the local public/hero-demo.mp4 is gitignored
+           * so it never shipped to prod). poster = the Cloudinary first-frame
+           * thumbnail, shown until the video can autoplay. */}
           <div className="hidden md:block">
             <video
-              src="/hero-demo.mp4"
+              src="https://res.cloudinary.com/duoixzd6w/video/upload/v1780990510/hero-demo_yutalh.mp4"
+              poster="https://res.cloudinary.com/duoixzd6w/video/upload/so_0/v1780990510/hero-demo_yutalh.jpg"
               autoPlay
               loop
               muted
