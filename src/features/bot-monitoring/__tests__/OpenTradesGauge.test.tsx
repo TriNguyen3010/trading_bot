@@ -28,4 +28,29 @@ describe('OpenTradesGauge', () => {
       container.querySelectorAll('[data-pip="on"]').length,
     ).toBeGreaterThanOrEqual(1);
   });
+
+  it('shows a placeholder string with no lit pips', () => {
+    const { container } = render(
+      <OpenTradesGauge open={null} max={3} placeholder="— paused" />,
+    );
+    expect(screen.getByText('— paused')).toBeInTheDocument();
+    expect(container.querySelectorAll('[data-pip="on"]')).toHaveLength(0);
+    expect(screen.queryByText(/\d\/\d/)).not.toBeInTheDocument();
+  });
+
+  it('colors lit pips blue for the dry-run tone', () => {
+    const { container } = render(
+      <OpenTradesGauge open={2} max={4} tone="dryrun" />,
+    );
+    expect(container.querySelector('[data-pip="on"]')).toHaveClass('bg-info');
+  });
+
+  it('colors lit pips green for the live tone (default)', () => {
+    const { container } = render(
+      <OpenTradesGauge open={2} max={4} tone="live" />,
+    );
+    expect(container.querySelector('[data-pip="on"]')).toHaveClass(
+      'bg-bullish',
+    );
+  });
 });
