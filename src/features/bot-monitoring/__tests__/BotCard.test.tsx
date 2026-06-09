@@ -150,4 +150,46 @@ describe('BotCard', () => {
     expect(onStop).toHaveBeenCalledOnce();
     expect(onClick).not.toHaveBeenCalled();
   });
+
+  it('Enter on a footer button does not navigate the card', () => {
+    const onClick = vi.fn();
+    render(<BotCard bot={base} {...handlers} onClick={onClick} />);
+    fireEvent.keyDown(screen.getByRole('button', { name: /^stop$/i }), {
+      key: 'Enter',
+    });
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('Enter on the card itself navigates', () => {
+    const onClick = vi.fn();
+    render(<BotCard bot={base} {...handlers} onClick={onClick} />);
+    fireEvent.keyDown(screen.getByRole('link'), { key: 'Enter' });
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it('PAUSED shows Start, LIVE shows Stop', () => {
+    const { rerender } = render(
+      <BotCard
+        bot={{ ...base, mode: 'PAUSED', state: 'PAUSED' }}
+        {...handlers}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: /^start$/i }),
+    ).toBeInTheDocument();
+    rerender(
+      <BotCard bot={{ ...base, mode: 'LIVE', state: 'LIVE' }} {...handlers} />,
+    );
+    expect(screen.getByRole('button', { name: /^stop$/i })).toBeInTheDocument();
+  });
+
+  it('STOPPING shows a disabled spinner button', () => {
+    render(
+      <BotCard
+        bot={{ ...base, mode: 'STOPPING', state: 'STOPPING' }}
+        {...handlers}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /stopping/i })).toBeDisabled();
+  });
 });

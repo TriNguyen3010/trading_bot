@@ -170,6 +170,8 @@ describe('HomePortfolio state machine', () => {
     expect(hero).toBeInTheDocument();
     // Scope to the hero — the same balance also appears on the top-bot card.
     expect(within(hero).getByText(/1,284\.55/)).toBeInTheDocument();
+    // Top-bot MiniBotCard renders the shared StatusBadge (Dry-run reads blue).
+    expect(screen.getByText('Dry-run')).toBeInTheDocument();
   });
 
   it('agent still loading → no go-live banner (avoid flicker, spec §6)', () => {

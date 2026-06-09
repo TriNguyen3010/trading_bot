@@ -94,6 +94,9 @@ export function BotCard({
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => {
+        // Only the card itself navigates — a keydown bubbling up from a footer
+        // button (Enter/Space on Start/Stop/Backtest) must NOT navigate.
+        if (e.target !== e.currentTarget) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onClick();

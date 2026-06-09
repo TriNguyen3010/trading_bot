@@ -14,6 +14,11 @@ describe('StatusBadge', () => {
     expect(screen.getByText('Live')).toBeInTheDocument();
   });
 
+  it('maps DRY-RUN to the blue info palette', () => {
+    const { container } = render(<StatusBadge state="DRY-RUN" />);
+    expect(container.firstChild).toHaveClass('border-info/30');
+  });
+
   it('renders a spinner (not a dot) while BACKTESTING', () => {
     const { container } = render(<StatusBadge state="BACKTESTING" />);
     expect(screen.getByText('Backtesting')).toBeInTheDocument();
