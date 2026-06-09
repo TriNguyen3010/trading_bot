@@ -32,7 +32,7 @@ export function StatusFilterChips({
             className={cn(
               'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-[12.5px] font-medium transition',
               isActive
-                ? 'border-brand bg-brand-subtle text-brand-hover'
+                ? 'border-brand bg-surface text-brand-hover'
                 : disabled
                   ? // Disabled: resting surface look, dimmed, NO hover utilities
                     // (so the button doesn't light up on hover despite being disabled).

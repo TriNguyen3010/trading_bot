@@ -23,7 +23,7 @@ function card(
 }
 
 describe('sortCards', () => {
-  it('orders buckets: needs-attention, working, running, idle, new', () => {
+  it('orders buckets: needs-attention, working, running, new, idle', () => {
     const input = [
       card({ id: 1, state: 'NEW' }),
       card({ id: 2, state: 'PAUSED' }),
@@ -31,7 +31,8 @@ describe('sortCards', () => {
       card({ id: 4, state: 'BACKTESTING', mode: 'PAUSED', balance: 50 }),
       card({ id: 5, state: 'ERROR', mode: 'ERROR' }),
     ];
-    expect(sortCards(input).map((c) => c.id)).toEqual([5, 4, 3, 2, 1]);
+    // NEW (1) now sorts before PAUSED (2).
+    expect(sortCards(input).map((c) => c.id)).toEqual([5, 4, 3, 1, 2]);
   });
 
   it('within running: LIVE before DRY-RUN, then balance desc', () => {

@@ -10,8 +10,8 @@ const BUCKET: Record<PresentationalState, number> = {
   BACKTESTING: 1,
   LIVE: 2,
   'DRY-RUN': 2,
-  PAUSED: 3,
-  NEW: 4,
+  NEW: 3,
+  PAUSED: 4,
 };
 
 function byBalanceDesc(a: BotCardData, b: BotCardData): number {
@@ -57,7 +57,7 @@ function compareCards(a: BotCardData, b: BotCardData): number {
     }
     case 3:
     case 4: {
-      // Idle / New: newest first.
+      // New (bucket 3) then Idle/Paused (bucket 4): newest first within each.
       const c = byCreatedDesc(a, b);
       if (c !== 0) return c;
       break;
