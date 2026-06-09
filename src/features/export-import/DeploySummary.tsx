@@ -1,4 +1,3 @@
-import { Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CloseMethodSummary } from '@/features/bot-builder/components/summaries/CloseMethodSummary';
 import { DirectionSummary } from '@/features/bot-builder/components/summaries/DirectionSummary';
@@ -19,8 +18,8 @@ interface DeploySummaryProps {
 export function DeploySummary({ summary }: DeploySummaryProps) {
   return (
     <div className="flex flex-col gap-3 p-4">
-      {/* Bot identity + mode badges (DRY-RUN/LIVE + margin mode). FUTURES
-       *  is the only market type today so we don't surface it as a badge. */}
+      {/* Bot identity: pair · name · exchange · timeframe. Mode (dry-run/live)
+       *  and margin are chosen at launch, so no badges here. */}
       <div className="flex items-center gap-2.5">
         <PairTokens base={summary.pairBase} quote={summary.pairQuote} />
         <div className="min-w-0 flex-1">
@@ -36,19 +35,6 @@ export function DeploySummary({ summary }: DeploySummaryProps) {
             <span className="text-fg-disabled">·</span>
             <span className="font-mono tabular-nums">{summary.timeframe}</span>
           </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {summary.dryRun ? (
-            <Badge tone="warn">
-              <Zap className="h-3 w-3" />
-              DRY-RUN
-            </Badge>
-          ) : (
-            <Badge tone="danger">LIVE</Badge>
-          )}
-          {summary.marketType === 'futures' ? (
-            <Badge>{summary.marginMode.toUpperCase()}</Badge>
-          ) : null}
         </div>
       </div>
 
@@ -166,30 +152,5 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     <div className="mb-1.5 text-[9.5px] font-semibold uppercase tracking-[0.16em] text-fg-muted">
       {children}
     </div>
-  );
-}
-
-function Badge({
-  children,
-  tone = 'neutral',
-}: {
-  children: React.ReactNode;
-  tone?: 'neutral' | 'warn' | 'bull' | 'danger';
-}) {
-  const toneCls = {
-    neutral: 'border-border bg-white/[0.03] text-fg-secondary',
-    warn: 'border-warning/35 bg-warning/15 text-warning font-semibold',
-    bull: 'border-bullish/35 bg-bullish-subtle text-bullish',
-    danger: 'border-bearish/40 bg-bearish-subtle text-bearish font-semibold',
-  }[tone];
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1 rounded-[5px] border px-2 py-0.5 text-[10.5px] font-medium tracking-wide',
-        toneCls,
-      )}
-    >
-      {children}
-    </span>
   );
 }
