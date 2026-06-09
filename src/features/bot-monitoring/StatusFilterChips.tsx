@@ -30,10 +30,10 @@ export function StatusFilterChips({
             aria-pressed={isActive}
             onClick={() => onChange(chip.key)}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition',
+              'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-[12.5px] font-medium transition',
               isActive
-                ? 'border-brand bg-brand text-[#1a1300]'
-                : 'border-border-subtle bg-surface-elevated text-fg-secondary hover:text-fg',
+                ? 'border-brand bg-brand-subtle text-brand-hover'
+                : 'border-border text-fg-secondary hover:border-border-strong hover:text-fg',
               disabled &&
                 'cursor-not-allowed opacity-40 hover:text-fg-secondary',
             )}
@@ -41,8 +41,8 @@ export function StatusFilterChips({
             {chip.label}
             <span
               className={cn(
-                'font-mono tabular-nums',
-                isActive ? 'text-[#1a1300]/70' : 'text-fg-muted',
+                'font-mono text-xs tabular-nums',
+                isActive ? 'text-brand-hover/70' : 'text-fg-muted',
               )}
             >
               {count}
