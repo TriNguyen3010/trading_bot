@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { Toaster } from 'sonner';
 import { ArrowDown, BookOpen } from 'lucide-react';
 import { LayoutGroup, motion } from 'framer-motion';
 import { dropInItem, dropInStagger } from '@/lib/motion';
@@ -140,13 +139,7 @@ export function BuilderPage() {
           <CypheusDock />
         </LayoutGroup>
       </div>
-      <Toaster
-        theme="dark"
-        position="top-right"
-        toastOptions={{
-          className: 'rounded-2xl card-coin98 text-fg shadow-2xl',
-        }}
-      />
+      {/* Toaster lives once at the app root (main.tsx) — no per-page mount. */}
       {/* Templates gallery — page-level mount so the empty-state CTA,
        * HeaderToolbar button, and any future entry point all share state. */}
       <TemplatesDialog />

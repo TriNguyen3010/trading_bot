@@ -39,9 +39,12 @@ createRoot(document.getElementById('root')!).render(
         <RouterProvider router={router} />
       </AppBootstrap>
     </RequireWalletProvider>
+    {/* Single global Toaster for the whole app — do NOT mount another one per
+     * page (Sonner shares one store; duplicates break auto-dismiss). */}
     <Toaster
       theme="dark"
       position="top-right"
+      duration={3500}
       toastOptions={{
         className: 'rounded-2xl card-coin98 text-fg shadow-2xl',
       }}
