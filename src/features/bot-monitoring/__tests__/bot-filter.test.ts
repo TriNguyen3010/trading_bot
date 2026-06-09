@@ -38,8 +38,6 @@ describe('bot-filter', () => {
   it('matchesCategory maps states to chips', () => {
     expect(matchesCategory('LIVE', 'live')).toBe(true);
     expect(matchesCategory('DRY-RUN', 'dry-run')).toBe(true);
-    expect(matchesCategory('STARTING', 'working')).toBe(true);
-    expect(matchesCategory('BACKTESTING', 'working')).toBe(true);
     expect(matchesCategory('ERROR', 'attention')).toBe(true);
     expect(matchesCategory('NEW', 'attention')).toBe(true);
     expect(matchesCategory('BACKTEST_FAILED', 'attention')).toBe(true);
@@ -47,22 +45,30 @@ describe('bot-filter', () => {
     expect(matchesCategory('LIVE', 'attention')).toBe(false);
   });
 
+  it('transient states belong to no chip but still match "all"', () => {
+    // STARTING / STOPPING / BACKTESTING have no dedicated filter — only "all".
+    for (const s of ['STARTING', 'STOPPING', 'BACKTESTING'] as const) {
+      expect(matchesCategory(s, 'all')).toBe(true);
+      expect(matchesCategory(s, 'live')).toBe(false);
+      expect(matchesCategory(s, 'paused')).toBe(false);
+      expect(matchesCategory(s, 'attention')).toBe(false);
+    }
+  });
+
   it('filterByCategory returns matching cards', () => {
     expect(filterByCategory(cards, 'all')).toHaveLength(8);
-    expect(filterByCategory(cards, 'working').map((c) => c.id)).toEqual([4, 5]);
     expect(filterByCategory(cards, 'attention').map((c) => c.id)).toEqual([
       6, 7, 8,
     ]);
   });
 
-  it('countByCategory tallies every chip', () => {
+  it('countByCategory tallies every chip (transient states only in "all")', () => {
     const counts = countByCategory(cards);
     expect(counts).toEqual<Record<FilterCategory, number>>({
       all: 8,
       live: 1,
       'dry-run': 1,
       paused: 1,
-      working: 2,
       attention: 3,
     });
   });

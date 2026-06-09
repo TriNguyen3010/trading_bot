@@ -6,7 +6,6 @@ export type FilterCategory =
   | 'live'
   | 'dry-run'
   | 'paused'
-  | 'working'
   | 'attention';
 
 /** Non-"all" categories mapped to the presentational states they include. */
@@ -17,9 +16,12 @@ const CATEGORY_STATES: Record<
   live: ['LIVE'],
   'dry-run': ['DRY-RUN'],
   paused: ['PAUSED'],
-  working: ['STARTING', 'STOPPING', 'BACKTESTING'],
   attention: ['ERROR', 'BACKTEST_FAILED', 'NEW'],
 };
+
+// NOTE: transient states (STARTING / STOPPING / BACKTESTING) intentionally belong
+// to NO chip category — they resolve in seconds, sort to the top of "All" (see
+// bot-sort.ts), and carry animated badges, so a dedicated filter added clutter.
 
 export function matchesCategory(
   state: PresentationalState,
@@ -44,7 +46,6 @@ export function countByCategory(
     live: 0,
     'dry-run': 0,
     paused: 0,
-    working: 0,
     attention: 0,
   };
   const cats = Object.keys(CATEGORY_STATES) as Array<
@@ -61,9 +62,8 @@ export function countByCategory(
 /** Display order + labels for the chip row. */
 export const FILTER_CHIPS: Array<{ key: FilterCategory; label: string }> = [
   { key: 'all', label: 'All' },
+  { key: 'attention', label: 'Needs attention' },
   { key: 'live', label: 'Live' },
   { key: 'dry-run', label: 'Dry-run' },
   { key: 'paused', label: 'Paused' },
-  { key: 'working', label: 'Working' },
-  { key: 'attention', label: 'Needs attention' },
 ];

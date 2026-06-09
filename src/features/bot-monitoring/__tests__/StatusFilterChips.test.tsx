@@ -8,7 +8,6 @@ const counts: Record<FilterCategory, number> = {
   live: 3,
   'dry-run': 1,
   paused: 1,
-  working: 2,
   attention: 2,
 };
 
@@ -31,8 +30,8 @@ describe('StatusFilterChips', () => {
     render(
       <StatusFilterChips counts={counts} active="all" onChange={onChange} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /Working\s*2/ }));
-    expect(onChange).toHaveBeenCalledWith('working');
+    fireEvent.click(screen.getByRole('button', { name: /Live\s*3/ }));
+    expect(onChange).toHaveBeenCalledWith('live');
   });
 
   it('disables a chip with zero count (except All)', () => {
