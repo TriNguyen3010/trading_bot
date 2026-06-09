@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { DeploySummary } from './DeploySummary';
 // The summary TYPE and the COMPONENT share the name "DeploySummary" — alias the type.
 import type { DeploySummary as DeploySummaryData } from './deploy-summary';
+import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 
 const summary: DeploySummaryData = {
   botName: 'RSI Oversold ETH',
@@ -31,10 +32,27 @@ const summary: DeploySummaryData = {
 };
 
 describe('DeploySummary', () => {
+  // summaryMode is a shared persisted store; reset so test order can't leak it.
+  beforeEach(() => {
+    useLayoutPrefsStore.setState({ summaryMode: 'visual' });
+  });
+
   it('does not show DRY-RUN / LIVE / margin badges (chosen at launch, not here)', () => {
     render(<DeploySummary summary={summary} />);
     expect(screen.queryByText('DRY-RUN')).not.toBeInTheDocument();
     expect(screen.queryByText('LIVE')).not.toBeInTheDocument();
     expect(screen.queryByText(/^CROSS$/i)).not.toBeInTheDocument();
+  });
+
+  it('toggles the strategy view between conditions and text', () => {
+    useLayoutPrefsStore.setState({ summaryMode: 'visual' });
+    render(<DeploySummary summary={summary} />);
+    // SummaryModeToggle's aria-label in visual mode = "Switch to narrative summary".
+    const toggle = screen.getByRole('button', {
+      name: /switch to (narrative|visual) summary/i,
+    });
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(toggle);
+    expect(useLayoutPrefsStore.getState().summaryMode).toBe('narrative');
   });
 });

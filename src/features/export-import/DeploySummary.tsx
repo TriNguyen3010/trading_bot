@@ -2,6 +2,9 @@ import { cn } from '@/lib/utils';
 import { CloseMethodSummary } from '@/features/bot-builder/components/summaries/CloseMethodSummary';
 import { DirectionSummary } from '@/features/bot-builder/components/summaries/DirectionSummary';
 import { EntryStrategySummary } from '@/features/bot-builder/components/summaries/EntryStrategySummary';
+import { StrategyNarrativeSummary } from '@/features/bot-builder/components/summaries/StrategyNarrativeSummary';
+import { SummaryModeToggle } from '@/features/bot-builder/components/SummaryModeToggle';
+import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import type { DeploySummary as Summary } from './deploy-summary';
 
 interface DeploySummaryProps {
@@ -11,11 +14,12 @@ interface DeploySummaryProps {
 /**
  * Left pane of the deploy modal — visual snapshot of "what bot will run".
  *
- * Pair tokens · 2×2 stats grid · mode badges · strategy block.
+ * Pair tokens · stats grid · strategy block (conditions ↔ text toggle).
  * No actions live here; actions are owned by the parent ExportDialog footer
  * and the JSON action group in the header.
  */
 export function DeploySummary({ summary }: DeploySummaryProps) {
+  const summaryMode = useLayoutPrefsStore((s) => s.summaryMode);
   return (
     <div className="flex flex-col gap-3 p-4">
       {/* Bot identity: pair · name · exchange · timeframe. Mode (dry-run/live)
@@ -58,13 +62,24 @@ export function DeploySummary({ summary }: DeploySummaryProps) {
        *  canvas so what user reviews matches what they configured. Pulls
        *  from useBuilderStore() internally. */}
       <div>
-        <SectionLabel>Strategy</SectionLabel>
+        <div className="flex items-center justify-between">
+          <SectionLabel>Strategy</SectionLabel>
+          {/* SummaryModeToggle defaults to `mt-2 flex justify-end`; override the
+              top margin so it aligns with the SectionLabel in this header row. */}
+          <SummaryModeToggle className="mt-0" />
+        </div>
         <div className="flex flex-col gap-2.5 rounded-lg border border-border bg-surface-elevated p-3">
-          <EntryStrategySummary />
-          <div className="-mx-3 border-t border-border" />
-          <DirectionSummary />
-          <div className="-mx-3 border-t border-border" />
-          <CloseMethodSummary />
+          {summaryMode === 'narrative' ? (
+            <StrategyNarrativeSummary />
+          ) : (
+            <>
+              <EntryStrategySummary />
+              <div className="-mx-3 border-t border-border" />
+              <DirectionSummary />
+              <div className="-mx-3 border-t border-border" />
+              <CloseMethodSummary />
+            </>
+          )}
         </div>
       </div>
     </div>
