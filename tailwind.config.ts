@@ -21,13 +21,7 @@ const config: Config = {
           'Segoe UI',
           'sans-serif',
         ],
-        mono: [
-          'JetBrains Mono',
-          'SF Mono',
-          'Menlo',
-          'Consolas',
-          'monospace',
-        ],
+        mono: ['JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', 'monospace'],
         pixel: ['"Press Start 2P"', 'monospace'],
       },
       colors: {
@@ -153,6 +147,10 @@ const config: Config = {
           '0%': { backgroundColor: 'var(--color-bullish-subtle)' },
           '100%': { backgroundColor: 'transparent' },
         },
+        'badge-pulse': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.3' },
+        },
         'spin-once': {
           '0%': { transform: 'rotate(0deg)' },
           '100%': { transform: 'rotate(360deg)' },
@@ -165,6 +163,8 @@ const config: Config = {
         march: 'march 1.4s linear infinite',
         shimmer: 'shimmer 2s linear infinite',
         'flash-success': 'flash-success 1000ms ease-out',
+        'badge-pulse': 'badge-pulse 1.3s ease-in-out infinite',
+        'spin-fast': 'spin 0.9s linear infinite',
         // Single 360° rotation — used on hover-triggered icons so the
         // animation does NOT reverse when mouse leaves (`group:hover`
         // unsetting `animation` cleanly removes the class).
