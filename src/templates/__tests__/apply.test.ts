@@ -8,6 +8,7 @@ vi.mock('sonner', () => ({
 import { toast } from 'sonner';
 import { applyTemplate } from '../apply';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
+import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { breakoutBtc15m } from '../catalog/breakout-btc-15m';
 import { strings } from '@/i18n/en';
 
@@ -15,6 +16,7 @@ describe('applyTemplate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useBuilderStore.getState().resetAll();
+    useLayoutPrefsStore.setState({ summaryHintUnseen: false });
   });
 
   it('snap-applies the template state synchronously without invoking any animation engine', async () => {
@@ -44,5 +46,10 @@ describe('applyTemplate', () => {
       strings.templates.apply.loadedToast(breakoutBtc15m.name),
       { description: strings.templates.apply.textViewHint },
     );
+  });
+
+  it('marks the text-view hint unseen so the toggle shows a notify dot', async () => {
+    await applyTemplate(breakoutBtc15m);
+    expect(useLayoutPrefsStore.getState().summaryHintUnseen).toBe(true);
   });
 });

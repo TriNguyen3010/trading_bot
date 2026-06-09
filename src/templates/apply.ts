@@ -9,6 +9,7 @@
 import { toast } from 'sonner';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
+import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { strings } from '@/i18n/en';
 import type { StepId, StepStatus } from '@/types/builder.types';
 import { useTemplateTrackingStore } from './store';
@@ -90,9 +91,10 @@ function snapApply(template: BotTemplate, snap: TemplateStateSnapshot): void {
     text: strings.templates.apply.loadedChat(template.name),
   });
   useTemplateTrackingStore.getState().setApplied(template.id);
-  // The text-view hint lives ONLY here (the template-apply path) — manual
-  // SummaryModeToggle clicks and field edits never reach snapApply, so the hint
-  // can't fire on user actions.
+  // The text-view hint (toast + notify dot on the summary-mode toggle) is armed
+  // ONLY here (the template-apply path) — manual SummaryModeToggle clicks and
+  // field edits never reach snapApply, so the hint can't fire on user actions.
+  useLayoutPrefsStore.getState().setSummaryHintUnseen(true);
   toast.success(strings.templates.apply.loadedToast(template.name), {
     description: strings.templates.apply.textViewHint,
   });

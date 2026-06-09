@@ -7,6 +7,7 @@ describe('layout-prefs.store · summaryMode', () => {
       leftPanelCollapsed: true,
       botSummaryHidden: false,
       summaryMode: 'visual',
+      summaryHintUnseen: false,
     });
   });
 
@@ -29,5 +30,20 @@ describe('layout-prefs.store · summaryMode', () => {
   it('setSummaryMode sets explicit value', () => {
     useLayoutPrefsStore.getState().setSummaryMode('narrative');
     expect(useLayoutPrefsStore.getState().summaryMode).toBe('narrative');
+  });
+
+  it('defaults summaryHintUnseen to false', () => {
+    expect(useLayoutPrefsStore.getInitialState().summaryHintUnseen).toBe(false);
+  });
+
+  it('setSummaryHintUnseen sets the flag', () => {
+    useLayoutPrefsStore.getState().setSummaryHintUnseen(true);
+    expect(useLayoutPrefsStore.getState().summaryHintUnseen).toBe(true);
+  });
+
+  it('toggleSummaryMode clears summaryHintUnseen (user saw the toggle)', () => {
+    useLayoutPrefsStore.setState({ summaryHintUnseen: true });
+    useLayoutPrefsStore.getState().toggleSummaryMode();
+    expect(useLayoutPrefsStore.getState().summaryHintUnseen).toBe(false);
   });
 });

@@ -27,6 +27,7 @@ export function SummaryModeToggle({
 }: SummaryModeToggleProps) {
   const summaryMode = useLayoutPrefsStore((s) => s.summaryMode);
   const toggleSummaryMode = useLayoutPrefsStore((s) => s.toggleSummaryMode);
+  const summaryHintUnseen = useLayoutPrefsStore((s) => s.summaryHintUnseen);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -37,7 +38,7 @@ export function SummaryModeToggle({
               variant="ghost"
               size="icon"
               onClick={toggleSummaryMode}
-              className={cn('rounded-full', buttonClassName)}
+              className={cn('relative rounded-full', buttonClassName)}
               aria-label={
                 summaryMode === 'visual'
                   ? strings.layoutToggles.summaryModeVisualAria
@@ -49,6 +50,13 @@ export function SummaryModeToggle({
                 <Layers className="h-3.5 w-3.5" />
               ) : (
                 <AlignLeft className="h-3.5 w-3.5" />
+              )}
+              {summaryHintUnseen && (
+                <span
+                  data-testid="summary-hint-dot"
+                  aria-hidden
+                  className="absolute right-0.5 top-0.5 h-2.5 w-2.5 rounded-full border border-black bg-bearish shadow-[0_0_0_2px_rgba(246,70,93,0.18)]"
+                />
               )}
             </Button>
           </TooltipTrigger>

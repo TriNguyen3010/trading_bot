@@ -21,6 +21,9 @@ interface LayoutPrefsStore {
   leftPanelCollapsed: boolean;
   botSummaryHidden: boolean;
   summaryMode: SummaryMode;
+  /** True right after a template is applied → shows a notify dot on the
+   * summary-mode toggle (discovery hint). Cleared when the user toggles. */
+  summaryHintUnseen: boolean;
   showAdvancedClose: boolean;
   toggleLeftPanel: () => void;
   setLeftPanelCollapsed: (v: boolean) => void;
@@ -28,6 +31,7 @@ interface LayoutPrefsStore {
   setBotSummaryHidden: (v: boolean) => void;
   toggleSummaryMode: () => void;
   setSummaryMode: (m: SummaryMode) => void;
+  setSummaryHintUnseen: (v: boolean) => void;
   toggleAdvancedClose: () => void;
   setShowAdvancedClose: (v: boolean) => void;
 }
@@ -38,6 +42,7 @@ export const useLayoutPrefsStore = create<LayoutPrefsStore>()(
       leftPanelCollapsed: true,
       botSummaryHidden: false,
       summaryMode: 'visual',
+      summaryHintUnseen: false,
       showAdvancedClose: false,
       toggleLeftPanel: () =>
         set((s) => ({ leftPanelCollapsed: !s.leftPanelCollapsed })),
@@ -48,24 +53,30 @@ export const useLayoutPrefsStore = create<LayoutPrefsStore>()(
       toggleSummaryMode: () =>
         set((s) => ({
           summaryMode: s.summaryMode === 'visual' ? 'narrative' : 'visual',
+          // Interacting with the toggle counts as "seen" → clear the dot.
+          summaryHintUnseen: false,
         })),
       setSummaryMode: (m) => set({ summaryMode: m }),
+      setSummaryHintUnseen: (v) => set({ summaryHintUnseen: v }),
       toggleAdvancedClose: () =>
         set((s) => ({ showAdvancedClose: !s.showAdvancedClose })),
       setShowAdvancedClose: (v) => set({ showAdvancedClose: v }),
     }),
     {
       name: 'layout-prefs',
-      version: 4,
+      version: 5,
       // v1 → v2: introduce summaryMode (default 'visual').
       // v2 → v3: default Cypheus chat to collapsed.
       // v3 → v4: introduce showAdvancedClose (default false).
+      // v4 → v5: introduce summaryHintUnseen (default false — only a template
+      //          apply turns it on).
       migrate: (persisted: unknown, _version) => {
         const state = (persisted as Partial<LayoutPrefsStore>) ?? {};
         return {
           ...state,
           leftPanelCollapsed: true,
           summaryMode: state.summaryMode ?? 'visual',
+          summaryHintUnseen: false,
           showAdvancedClose: state.showAdvancedClose ?? false,
         };
       },
