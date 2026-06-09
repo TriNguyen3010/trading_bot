@@ -25,7 +25,10 @@ describe('applyTemplate', () => {
     await applyTemplate(breakoutBtc15m);
 
     const state = useBuilderStore.getState();
-    expect(state.botName).toBe(breakoutBtc15m.state.botName);
+    // Template name keeps its base + a uniqueness suffix appended.
+    expect(state.botName.startsWith(`${breakoutBtc15m.state.botName}_`)).toBe(
+      true,
+    );
     expect(state.botConfig).toEqual(breakoutBtc15m.state.botConfig);
 
     // Animation engine schedules setTimeout with sizeable delays (sleep/typewriter
@@ -51,5 +54,19 @@ describe('applyTemplate', () => {
   it('marks the text-view hint unseen so the toggle shows a notify dot', async () => {
     await applyTemplate(breakoutBtc15m);
     expect(useLayoutPrefsStore.getState().summaryHintUnseen).toBe(true);
+  });
+
+  it('appends a uniqueness suffix to the template bot + strategy names', async () => {
+    await applyTemplate(breakoutBtc15m);
+    const state = useBuilderStore.getState();
+    const re = /_[a-z0-9]{3}_\d{4}$/;
+    expect(state.botName).toMatch(re);
+    expect(state.botName.startsWith(`${breakoutBtc15m.state.botName}_`)).toBe(
+      true,
+    );
+    expect(state.strategy.name).toMatch(re);
+    expect(
+      state.strategy.name.startsWith(`${breakoutBtc15m.state.strategy.name}_`),
+    ).toBe(true);
   });
 });

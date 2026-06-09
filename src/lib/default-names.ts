@@ -28,12 +28,22 @@ export function defaultNameSuffix(address: string | null, now: Date): string {
   return `${w3}_${mmss}`;
 }
 
-/** Bot + strategy default names — both are exactly the `<w3>_<mmss>` suffix
- * (e.g. "b3f_3045"), no prefix. */
+/** Append the uniqueness suffix to any base name, e.g.
+ * `withUniqueSuffix('RSI Oversold ETH', 'b3f_3045')` → `'RSI Oversold ETH_b3f_3045'`.
+ * Used for template names so a template-created bot is unique too. */
+export function withUniqueSuffix(base: string, suffix: string): string {
+  return `${base}_${suffix}`;
+}
+
+/** Fresh-bot default names: the base ("Bot Basic" / "Entry Strategy") with the
+ * uniqueness suffix appended, sharing one suffix. e.g. "Bot Basic_b3f_3045". */
 export function makeDefaultNames(
   address: string | null,
   now: Date,
 ): { botName: string; strategyName: string } {
   const suffix = defaultNameSuffix(address, now);
-  return { botName: suffix, strategyName: suffix };
+  return {
+    botName: withUniqueSuffix('Bot Basic', suffix),
+    strategyName: withUniqueSuffix('Entry Strategy', suffix),
+  };
 }

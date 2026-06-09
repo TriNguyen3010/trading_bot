@@ -34,8 +34,8 @@ describe('builder store', () => {
     useBuilderStore.getState().setStepStatus('bot-config', 'configured');
     useBuilderStore.getState().resetAll();
     const state = useBuilderStore.getState();
-    // Default name is the unique suffix itself: "<w3>_<mmss>", e.g. "b3f_3045".
-    expect(state.botName).toMatch(/^[a-z0-9]{3}_\d{4}$/);
+    // Default keeps the base + a uniqueness suffix: "Bot Basic_<w3>_<mmss>".
+    expect(state.botName).toMatch(/^Bot Basic_[a-z0-9]{3}_\d{4}$/);
     expect(state.stepStatus['bot-config']).toBe('pending');
     expect(state.isDirty).toBe(false);
   });

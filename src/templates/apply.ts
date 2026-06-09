@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
+import { useWalletStore } from '@/features/wallet-auth/wallet.store';
+import { defaultNameSuffix, withUniqueSuffix } from '@/lib/default-names';
 import { strings } from '@/i18n/en';
 import type { StepId, StepStatus } from '@/types/builder.types';
 import { useTemplateTrackingStore } from './store';
@@ -67,9 +69,18 @@ export async function applyTemplate(
 function snapApply(template: BotTemplate, snap: TemplateStateSnapshot): void {
   const builder = useBuilderStore.getState();
   builder.resetAll();
-  builder.setBotName(snap.botName);
+  // Append the uniqueness suffix so a template-created bot doesn't collide
+  // either (e.g. "RSI Oversold ETH" → "RSI Oversold ETH_b3f_3045").
+  const suffix = defaultNameSuffix(
+    useWalletStore.getState().address,
+    new Date(),
+  );
+  builder.setBotName(withUniqueSuffix(snap.botName, suffix));
   builder.patchBotConfig(snap.botConfig);
-  builder.patchStrategy(snap.strategy);
+  builder.patchStrategy({
+    ...snap.strategy,
+    name: withUniqueSuffix(snap.strategy.name, suffix),
+  });
   builder.patchDirection(snap.directionForm);
   builder.patchCloseMethod(snap.closeMethod);
 

@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { defaultNameSuffix, makeDefaultNames } from '../default-names';
+import {
+  defaultNameSuffix,
+  makeDefaultNames,
+  withUniqueSuffix,
+} from '../default-names';
 
 describe('default-names', () => {
   const now = new Date(2026, 5, 9, 15, 30, 45); // minute=30, second=45
@@ -18,9 +22,15 @@ describe('default-names', () => {
     expect(s).toMatch(/^[a-z0-9]{3}_3045$/);
   });
 
-  it('makeDefaultNames uses the bare suffix for both names (no prefix)', () => {
+  it('withUniqueSuffix appends the suffix to any base name', () => {
+    expect(withUniqueSuffix('RSI Oversold ETH', 'b3f_3045')).toBe(
+      'RSI Oversold ETH_b3f_3045',
+    );
+  });
+
+  it('makeDefaultNames keeps the base and appends the shared suffix', () => {
     const { botName, strategyName } = makeDefaultNames('0xWALLETb3f', now);
-    expect(botName).toBe('b3f_3045');
-    expect(strategyName).toBe('b3f_3045');
+    expect(botName).toBe('Bot Basic_b3f_3045');
+    expect(strategyName).toBe('Entry Strategy_b3f_3045');
   });
 });
