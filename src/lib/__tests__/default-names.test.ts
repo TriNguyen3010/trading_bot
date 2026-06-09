@@ -18,9 +18,9 @@ describe('default-names', () => {
     expect(s).toMatch(/^[a-z0-9]{3}_3045$/);
   });
 
-  it('makeDefaultNames shares one suffix across bot + strategy names', () => {
+  it('makeDefaultNames uses the bare suffix for both names (no prefix)', () => {
     const { botName, strategyName } = makeDefaultNames('0xWALLETb3f', now);
-    expect(botName).toBe('Bot Basic b3f_3045');
-    expect(strategyName).toBe('Entry Strategy b3f_3045');
+    expect(botName).toBe('b3f_3045');
+    expect(strategyName).toBe('b3f_3045');
   });
 });

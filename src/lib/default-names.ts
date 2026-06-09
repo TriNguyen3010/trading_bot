@@ -28,14 +28,12 @@ export function defaultNameSuffix(address: string | null, now: Date): string {
   return `${w3}_${mmss}`;
 }
 
-/** Bot + strategy default names sharing one suffix (so the two match). */
+/** Bot + strategy default names — both are exactly the `<w3>_<mmss>` suffix
+ * (e.g. "b3f_3045"), no prefix. */
 export function makeDefaultNames(
   address: string | null,
   now: Date,
 ): { botName: string; strategyName: string } {
   const suffix = defaultNameSuffix(address, now);
-  return {
-    botName: `Bot Basic ${suffix}`,
-    strategyName: `Entry Strategy ${suffix}`,
-  };
+  return { botName: suffix, strategyName: suffix };
 }
