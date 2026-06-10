@@ -107,4 +107,25 @@ describe('tradesVisibleRange', () => {
       ]),
     ).toBeNull();
   });
+  it('skips timestamps normalized to 0 (extractTrades num() coerces missing → 0)', () => {
+    // The dialog feeds trades through extractTrades, whose num() turns a
+    // missing/null timestamp into 0 — that must not zoom the range to 1970.
+    expect(tradesVisibleRange([mk({ open_timestamp: 0 }), mk({})])).toEqual({
+      from: 900,
+      to: 2100,
+    });
+    expect(
+      tradesVisibleRange([mk({ open_timestamp: 0, close_timestamp: 0 })]),
+    ).toBeNull();
+  });
+});
+
+describe('tradesToMarkers — zero-normalized timestamps', () => {
+  it('skips the marker leg whose timestamp was normalized to 0', () => {
+    const m = tradesToMarkers([mk({ open_timestamp: 0 })], {
+      showExits: true,
+    });
+    expect(m).toHaveLength(1); // exit only — no stray B marker at epoch 0
+    expect(m[0]).toMatchObject({ time: 2000, text: 'S' });
+  });
 });

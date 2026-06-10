@@ -10,6 +10,11 @@ import type { BacktestTrade } from './backtest-results';
 const BULL = '#0ecb81';
 const BEAR = '#f6465d';
 const sec = (ms: number) => Math.floor(ms / 1000) as UTCTimestamp;
+// The dialog feeds trades through extractTrades, whose num() normalizes a
+// missing/null timestamp to 0 — a `!= null` check alone would anchor markers
+// and zoom ranges at epoch 1970. Treat non-positive (and NaN) as absent.
+const hasTs = (ms: number | null | undefined): ms is number =>
+  ms != null && ms > 0;
 
 export function candlesToSeries(candles: CandleRecord[]): {
   candles: CandlestickData[];
@@ -58,7 +63,7 @@ export function tradesToMarkers(
   });
   trades.forEach((t, i) => {
     // entry: long → Buy(B); short → Sell(S)
-    if (t.open_timestamp != null) {
+    if (hasTs(t.open_timestamp)) {
       out.push({
         time: sec(t.open_timestamp),
         id: `t${i}-in`,
@@ -67,7 +72,7 @@ export function tradesToMarkers(
       });
     }
     // exit: long → Sell(S); short → Buy(B)
-    if (showExits && t.close_timestamp != null) {
+    if (showExits && hasTs(t.close_timestamp)) {
       out.push({
         time: sec(t.close_timestamp),
         id: `t${i}-out`,
@@ -91,14 +96,19 @@ export function tradesVisibleRange(
   trades: BacktestTrade[],
   padFraction = 0.1,
 ): { from: UTCTimestamp; to: UTCTimestamp } | null {
-  const ts: number[] = [];
+  // Running min/max — spreading into Math.min/max would blow the engine's
+  // argument limit on very large trade lists.
+  let from = Infinity;
+  let to = -Infinity;
   for (const t of trades) {
-    if (t.open_timestamp != null) ts.push(sec(t.open_timestamp));
-    if (t.close_timestamp != null) ts.push(sec(t.close_timestamp));
+    for (const ms of [t.open_timestamp, t.close_timestamp]) {
+      if (!hasTs(ms)) continue;
+      const s = sec(ms);
+      if (s < from) from = s;
+      if (s > to) to = s;
+    }
   }
-  if (ts.length === 0) return null;
-  const from = Math.min(...ts);
-  const to = Math.max(...ts);
+  if (!Number.isFinite(from)) return null;
   const span = to - from;
   if (span <= 0) return null; // degenerate -> caller falls back to fitContent
   const pad = Math.round(span * padFraction);
