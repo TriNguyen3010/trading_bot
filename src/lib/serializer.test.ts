@@ -495,4 +495,78 @@ describe('serializer', () => {
       expect(toPythonClassName('MyRSIStrategy')).toBe('MyRSIStrategy');
     });
   });
+
+  describe('telegram notifications mapping', () => {
+    it('emits null when telegram is disabled (default)', () => {
+      const payload = buildUnifiedPayload(useBuilderStore.getState());
+      expect(payload.telegram).toBeNull();
+    });
+
+    it('emits a valid telegram block when enabled with token + chat ID', () => {
+      useBuilderStore.getState().setNotifications({
+        telegramEnabled: true,
+        token: 'T',
+        chatId: '123',
+      });
+      const payload = buildUnifiedPayload(useBuilderStore.getState());
+      expect(payload.telegram).toMatchObject({
+        enabled: true,
+        token: 'T',
+        chat_id: '123',
+        allow_custom_messages: false,
+      });
+      expect(payload.telegram?.notification_settings).toBeTruthy();
+    });
+
+    it('trims whitespace from token + chat ID', () => {
+      useBuilderStore.getState().setNotifications({
+        telegramEnabled: true,
+        token: '  T  ',
+        chatId: '  123  ',
+      });
+      const payload = buildUnifiedPayload(useBuilderStore.getState());
+      expect(payload.telegram).toMatchObject({ token: 'T', chat_id: '123' });
+    });
+
+    it('stays null when enabled but token or chat ID is empty (no 500 trap)', () => {
+      useBuilderStore
+        .getState()
+        .setNotifications({ telegramEnabled: true, token: 'T', chatId: '' });
+      expect(
+        buildUnifiedPayload(useBuilderStore.getState()).telegram,
+      ).toBeNull();
+
+      useBuilderStore
+        .getState()
+        .setNotifications({
+          telegramEnabled: true,
+          token: '  ',
+          chatId: '123',
+        });
+      expect(
+        buildUnifiedPayload(useBuilderStore.getState()).telegram,
+      ).toBeNull();
+    });
+
+    it('the populated telegram block passes the create schema', () => {
+      // Seed an otherwise-valid bot so the parse only exercises telegram.
+      applyBollingerLong();
+      useBuilderStore.getState().setNotifications({
+        telegramEnabled: true,
+        token: 'T',
+        chatId: '123',
+      });
+      const payload = buildUnifiedPayload(useBuilderStore.getState());
+      const result = unifiedBotStrategyCreateSchema.safeParse(payload);
+      expect(result.success).toBe(true);
+      // The schema must NOT strip the populated top-level telegram block.
+      if (result.success) {
+        expect(result.data.telegram).toMatchObject({
+          enabled: true,
+          token: 'T',
+          chat_id: '123',
+        });
+      }
+    });
+  });
 });

@@ -5,6 +5,7 @@ import type {
   CloseMethodForm,
   ConditionTree,
   IndicatorItem,
+  NotificationForm,
 } from '@/types/builder.types';
 import type { Bundle } from '@/schemas/bundle.schema';
 import { uiPairToJson, jsonPairToUi } from './pair-format';
@@ -351,6 +352,39 @@ void indicatorOutputId;
 import type { UnifiedBotStrategyCreate } from '@/schemas/unified-bot-strategy.schema';
 
 /**
+ * Map the Strategy-phase NotificationForm into the create payload's
+ * top-level `telegram` block. Returns `null` unless the toggle is on AND
+ * both token + chat_id are non-empty — shipping an enabled block with an
+ * empty/null token crashes the BE (HTTP 500 on create), so we never do.
+ *
+ * Only the TOP-LEVEL `telegram` reaches the BE; `configurations.telegram`
+ * is stripped by `unifiedBotStrategyCreateSchema.parse()` (it's not in
+ * `baseStrategyConfigurationsSchema`), so it stays as the inert default.
+ */
+function buildTelegramConfig(
+  n: NotificationForm,
+): UnifiedBotStrategyCreate['telegram'] {
+  const token = n.token.trim();
+  const chatId = n.chatId.trim();
+  if (!n.telegramEnabled || !token || !chatId) return null;
+  return {
+    enabled: true,
+    token,
+    chat_id: chatId,
+    allow_custom_messages: false,
+    notification_settings: {
+      status: 'on',
+      entry: 'on',
+      exit: 'on',
+      entry_fill: 'off',
+      exit_fill: 'on',
+      protection_trigger: 'on',
+      protection_trigger_global: 'on',
+    },
+  };
+}
+
+/**
  * UnifiedBundle = UnifiedBotStrategyCreate + 3 FE-only round-trip fields the
  * builder needs to re-hydrate state after import. BE ignores them (they're
  * stripped silently by the unified Zod schema since `z.object` defaults to
@@ -469,12 +503,11 @@ export function buildUnifiedPayload(state: BuilderState): UnifiedBundle {
     // `configurations.risk` (Tuấn) and the source-of-truth create samples omit
     // the top-level copies. (Schema still accepts them as optional.)
 
-    // The wizard collects no telegram token/chat_id yet, so we must NOT ship a
-    // telegram block: the BE merges whatever we send into the Freqtrade config,
-    // and a null/empty token there crashes it (surfaced as HTTP 500 on create).
-    // null = "no telegram", matching the proven-good create payload. Restore a
-    // populated block only once the wizard actually collects token + chat_id.
-    telegram: null,
+    // Telegram is collected in the Strategy phase (NotificationForm). The
+    // mapper returns null unless the toggle is on with a non-empty token +
+    // chat_id — a null/empty token in an enabled block crashes the BE (HTTP
+    // 500 on create), so we never ship `enabled: true` with empty creds.
+    telegram: buildTelegramConfig(state.notifications),
 
     // ── Strategy fields ─────────────────────────────────────────
     strategy_description: null,
