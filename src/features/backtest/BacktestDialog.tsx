@@ -71,7 +71,11 @@ export function BacktestDialog({
   );
   const [showExits, setShowExits] = useState(true);
 
-  const poll = useBacktestPoll(step === 'running' ? backtestId : null);
+  // Deliberately ungated: gating to null while showing results froze the
+  // hook on the PREVIOUS run's done=true, so the next run jumped straight to
+  // an empty result. The hook resets per-id; the result view keeps reading
+  // poll.item because backtestId is unchanged between running and result.
+  const poll = useBacktestPoll(backtestId);
 
   // Advance to result when the poll reports terminal.
   useEffect(() => {
@@ -116,10 +120,25 @@ export function BacktestDialog({
       setBacktestId(initialBacktestId);
       setError(null);
       setSubmitting(false);
-      setResultTab('summary');
+      setShowExits(true);
       setStep('running');
     }
   }, [open, initialBacktestId]);
+
+  // Also clear a FINISHED run on close, so re-opening never flashes the
+  // stale result for a frame (which would remount the chart and refetch the
+  // old run's candles). A run still in flight is left alone — its poll keeps
+  // going so onComplete can still refresh the caller's history; once it
+  // terminates, step leaves 'running' and this effect cleans up.
+  useEffect(() => {
+    if (!open && !initialBacktestId && step !== 'running') {
+      setStep('setup');
+      setBacktestId(null);
+      setError(null);
+      setSubmitting(false);
+      setShowExits(true);
+    }
+  }, [open, initialBacktestId, step]);
 
   const failed = poll.item ? isBacktestFailed(poll.item) : false;
 

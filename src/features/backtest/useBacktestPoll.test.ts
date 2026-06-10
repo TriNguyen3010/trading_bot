@@ -63,4 +63,42 @@ describe('useBacktestPoll', () => {
     await waitFor(() => expect(result.current.error).toBe('boom'));
     expect(result.current.done).toBe(true);
   });
+
+  it('starts fresh for a new id — the previous run never leaks into the same commit', async () => {
+    mockGet.mockResolvedValueOnce(
+      item({ status: 'completed', completed_at: '2026-05-21T00:01:00Z' }),
+    );
+    const { result, rerender } = renderHook(
+      ({ id }: { id: number }) => useBacktestPoll(id, 1000),
+      { initialProps: { id: 99 } },
+    );
+    await waitFor(() => expect(result.current.done).toBe(true));
+
+    mockGet.mockResolvedValueOnce(item({ id: 150, status: 'running' }));
+    rerender({ id: 150 });
+    // Reset must be visible synchronously after the rerender — consumer
+    // effects in that very commit act on poll.done (BacktestDialog would
+    // otherwise jump straight to an empty result for the new run).
+    expect(result.current.done).toBe(false);
+    expect(result.current.item).toBeNull();
+    expect(result.current.error).toBeNull();
+  });
+
+  it('clears to idle when the id goes null (dialog closed or reset)', async () => {
+    mockGet.mockResolvedValueOnce(
+      item({ status: 'completed', completed_at: '2026-05-21T00:01:00Z' }),
+    );
+    const { result, rerender } = renderHook(
+      ({ id }: { id: number | null }) => useBacktestPoll(id, 1000),
+      { initialProps: { id: 99 as number | null } },
+    );
+    await waitFor(() => expect(result.current.done).toBe(true));
+
+    rerender({ id: null });
+    expect(result.current).toEqual({ item: null, done: false, error: null });
+    // …and stays idle: no further fetches.
+    const calls = mockGet.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(mockGet.mock.calls.length).toBe(calls);
+  });
 });

@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BacktestDialog, type BacktestBot } from './BacktestDialog';
 import { backtestApi } from './backtest.api';
 import { useBacktestPoll } from './useBacktestPoll';
+import { BacktestChart } from '@/features/bot-monitoring/detail/BacktestChart';
 
 vi.mock('./backtest.api', () => ({
   backtestApi: { start: vi.fn(), cancel: vi.fn() },
@@ -11,27 +12,31 @@ vi.mock('./useBacktestPoll', () => ({ useBacktestPoll: vi.fn() }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 vi.mock('@/features/bot-monitoring/detail/BacktestChart', () => ({
-  BacktestChart: (props: {
-    backtestId: number;
-    trades: unknown[];
-    showExits: boolean;
-    focusTrades?: boolean;
-    height?: number;
-  }) => (
-    <div
-      data-testid="bt-chart"
-      data-show-exits={String(props.showExits)}
-      data-focus={String(props.focusTrades)}
-      data-height={String(props.height)}
-      data-trades={String(props.trades.length)}
-    >
-      chart-for-{props.backtestId}
-    </div>
+  // vi.fn wrapper so tests can count renders (stale-frame regression guard).
+  BacktestChart: vi.fn(
+    (props: {
+      backtestId: number;
+      trades: unknown[];
+      showExits: boolean;
+      focusTrades?: boolean;
+      height?: number;
+    }) => (
+      <div
+        data-testid="bt-chart"
+        data-show-exits={String(props.showExits)}
+        data-focus={String(props.focusTrades)}
+        data-height={String(props.height)}
+        data-trades={String(props.trades.length)}
+      >
+        chart-for-{props.backtestId}
+      </div>
+    ),
   ),
 }));
 
 const mockStart = vi.mocked(backtestApi.start);
 const mockPoll = vi.mocked(useBacktestPoll);
+const mockChart = vi.mocked(BacktestChart);
 
 const bot: BacktestBot = {
   id: 42,
@@ -517,6 +522,55 @@ describe('BacktestDialog', () => {
     await waitFor(() =>
       expect(screen.getByTestId('bt-chart').dataset.showExits).toBe('true'),
     );
+  });
+
+  it('keeps the poll wired to the run id in the result step (ungated arg)', () => {
+    mockPoll.mockReturnValue({
+      item: RESULT_ITEM_WITH_TRADES,
+      done: true,
+      error: null,
+    });
+    render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        initialBacktestId={99}
+      />,
+    );
+    expect(screen.getByText('Win rate')).toBeInTheDocument(); // result step
+    // Gating the arg to null while showing results made useBacktestPoll keep
+    // the PREVIOUS run's done=true forever — the next run then jumped
+    // straight to an empty result. The id must stay wired so the hook can
+    // reset per-id.
+    expect(mockPoll).toHaveBeenLastCalledWith(99);
+  });
+
+  it('re-opening after a finished run shows setup without flashing the stale result', () => {
+    mockPoll.mockReturnValue({
+      item: RESULT_ITEM_WITH_TRADES,
+      done: true,
+      error: null,
+    });
+    const { rerender } = render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        initialBacktestId={99}
+      />,
+    );
+    expect(screen.getByTestId('bt-chart')).toBeInTheDocument();
+    // Close without the test seam — the production path.
+    rerender(<BacktestDialog open={false} bot={bot} onOpenChange={() => {}} />);
+    const chartRenders = mockChart.mock.calls.length;
+    rerender(<BacktestDialog open bot={bot} onOpenChange={() => {}} />);
+    // Setup is shown, and the stale result never rendered the chart for even
+    // one frame (a stale mount would lazy-refetch candles for the old run).
+    expect(
+      screen.getByRole('button', { name: /run backtest/i }),
+    ).toBeInTheDocument();
+    expect(mockChart.mock.calls.length).toBe(chartRenders);
   });
 
   it('shows "View bot details" when onViewDetails is provided and fires it on click', () => {

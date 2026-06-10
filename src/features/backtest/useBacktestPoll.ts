@@ -10,18 +10,23 @@ export interface BacktestPollState {
   error: string | null;
 }
 
-/** Poll GET /backtest/{id} every `intervalMs` until terminal. Pass `null` to
- * disable (e.g. before a backtest is started). Self-cancels on unmount and
- * when the id changes. */
+const IDLE: BacktestPollState = { item: null, done: false, error: null };
+
+/** Poll GET /backtest/{id} every `intervalMs` until terminal. Pass `null` for
+ * idle (state clears). Self-cancels on unmount and when the id changes.
+ * State always belongs to the CURRENT id: it resets during render on id
+ * change, so consumer effects in that same commit never observe the previous
+ * run's `done`/`item` (BacktestDialog's advance effect acts on `done`). */
 export function useBacktestPoll(
   backtestId: number | null,
   intervalMs = 2000,
 ): BacktestPollState {
-  const [state, setState] = useState<BacktestPollState>({
-    item: null,
-    done: false,
-    error: null,
-  });
+  const [state, setState] = useState<BacktestPollState>(IDLE);
+  const [prevId, setPrevId] = useState(backtestId);
+  if (backtestId !== prevId) {
+    setPrevId(backtestId);
+    setState(IDLE);
+  }
 
   useEffect(() => {
     if (backtestId == null) return;
@@ -45,8 +50,9 @@ export function useBacktestPoll(
       }
     };
 
-    // reset when (re)starting for a new id
-    setState({ item: null, done: false, error: null });
+    // belt: re-runs not caused by an id change (e.g. intervalMs) start clean
+    // too; same IDLE reference, so this is a no-op right after a render reset
+    setState(IDLE);
     void tick();
 
     return () => {
