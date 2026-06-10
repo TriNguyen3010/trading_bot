@@ -17,6 +17,7 @@ import { summarizeBot } from '../summarize';
 function toBuilderState(template: BotTemplate): BuilderState {
   return {
     ...template.state,
+    notifications: { telegramEnabled: false, token: '', chatId: '' },
     stepStatus: {
       'bot-config': 'configured',
       'entry-strategy': 'configured',
@@ -103,6 +104,7 @@ describe('summarizeBot — edge cases', () => {
         roiSteps: [],
         exitConditions: { groupConnector: 'AND', groups: [] },
       },
+      notifications: { telegramEnabled: false, token: '', chatId: '' },
       stepStatus: {
         'bot-config': 'pending',
         'entry-strategy': 'pending',

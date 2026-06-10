@@ -7,6 +7,7 @@ import type {
   DirectionForm,
   DrawerTab,
   EntryStrategyForm,
+  NotificationForm,
   StepId,
   StepStatus,
 } from '@/types/builder.types';
@@ -82,6 +83,7 @@ const buildInitialState = (): BuilderState => {
     },
     directionForm: { ...defaultDirection },
     closeMethod: { ...defaultCloseMethod, tpLevels: [], roiSteps: [] },
+    notifications: { telegramEnabled: false, token: '', chatId: '' },
     stepStatus: {
       'bot-config': 'pending',
       'entry-strategy': 'pending',
@@ -109,6 +111,7 @@ interface BuilderActions {
   patchStrategy: (patch: Partial<EntryStrategyForm>) => void;
   patchDirection: (patch: Partial<DirectionForm>) => void;
   patchCloseMethod: (patch: Partial<CloseMethodForm>) => void;
+  setNotifications: (patch: Partial<NotificationForm>) => void;
   resetAll: () => void;
 }
 
@@ -172,6 +175,13 @@ export const useBuilderStore = create<BuilderStore>()(
           lastSavedAt: Date.now(),
         })),
 
+      setNotifications: (patch) =>
+        set((s) => ({
+          notifications: { ...s.notifications, ...patch },
+          isDirty: true,
+          lastSavedAt: Date.now(),
+        })),
+
       resetAll: () =>
         set({
           ...buildInitialState(),
@@ -188,6 +198,7 @@ export const useBuilderStore = create<BuilderStore>()(
         strategy: state.strategy,
         directionForm: state.directionForm,
         closeMethod: state.closeMethod,
+        notifications: state.notifications,
         stepStatus: state.stepStatus,
         drawerWidth: state.drawerWidth,
         lastSavedAt: state.lastSavedAt,

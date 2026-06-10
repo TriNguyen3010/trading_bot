@@ -39,4 +39,39 @@ describe('builder store', () => {
     expect(state.stepStatus['bot-config']).toBe('pending');
     expect(state.isDirty).toBe(false);
   });
+
+  it('starts with telegram notifications off + empty creds', () => {
+    const { notifications } = useBuilderStore.getState();
+    expect(notifications).toEqual({
+      telegramEnabled: false,
+      token: '',
+      chatId: '',
+    });
+  });
+
+  it('patches notifications and marks dirty', () => {
+    useBuilderStore
+      .getState()
+      .setNotifications({ telegramEnabled: true, token: 'abc', chatId: '123' });
+    const state = useBuilderStore.getState();
+    expect(state.notifications).toEqual({
+      telegramEnabled: true,
+      token: 'abc',
+      chatId: '123',
+    });
+    expect(state.isDirty).toBe(true);
+    expect(state.lastSavedAt).not.toBeNull();
+  });
+
+  it('reset clears notifications back to off', () => {
+    useBuilderStore
+      .getState()
+      .setNotifications({ telegramEnabled: true, token: 'abc', chatId: '123' });
+    useBuilderStore.getState().resetAll();
+    expect(useBuilderStore.getState().notifications).toEqual({
+      telegramEnabled: false,
+      token: '',
+      chatId: '',
+    });
+  });
 });

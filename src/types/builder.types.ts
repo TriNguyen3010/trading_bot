@@ -150,12 +150,22 @@ export interface DirectionForm {
   limitOffsetPct: number | null;
 }
 
+/** Telegram notification config collected in the Strategy phase. When enabled
+ * (with token + chatId), the serializer ships a populated `telegram` block in
+ * the create payload; otherwise it stays `null` (no telegram). */
+export interface NotificationForm {
+  telegramEnabled: boolean;
+  token: string;
+  chatId: string;
+}
+
 export interface BuilderState {
   botName: string;
   botConfig: BotConfigForm;
   strategy: EntryStrategyForm;
   directionForm: DirectionForm;
   closeMethod: CloseMethodForm;
+  notifications: NotificationForm;
   stepStatus: Record<StepId, StepStatus>;
   isDirty: boolean;
   lastSavedAt: number | null;
