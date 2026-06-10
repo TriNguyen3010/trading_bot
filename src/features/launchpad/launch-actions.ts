@@ -62,8 +62,10 @@ export async function launchBot(
   // enabled-but-null-token crash can no longer occur: the serializer never
   // ships an enabled block with an empty token, and enableTelegram always
   // sends one.
-  if (telegram?.token && telegram?.chat_id) {
-    await botApi.enableTelegram(botId, telegram);
+  const tgToken = telegram?.token?.trim();
+  const tgChatId = telegram?.chat_id?.trim();
+  if (tgToken && tgChatId) {
+    await botApi.enableTelegram(botId, { token: tgToken, chat_id: tgChatId });
   }
   return botApi.start(botId);
 }

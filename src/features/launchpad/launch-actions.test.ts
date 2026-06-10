@@ -139,4 +139,32 @@ describe('launchBot', () => {
     expect(mockDisableTelegram).not.toHaveBeenCalled();
     expect(mockEnableTelegram).not.toHaveBeenCalled();
   });
+
+  // The token+chat_id guard at launch is the sole net against an
+  // enabled-but-empty-token PATCH (the BE-500 shape) at this layer — the
+  // config schema accepts it. Lock both partial-creds branches + trimming.
+  it('partial creds (empty chat_id) → does NOT enable telegram, still starts', async () => {
+    await launchBot(42, 'dry-run', { token: 't', chat_id: '' });
+    expect(mockEnableTelegram).not.toHaveBeenCalled();
+    expect(mockDisableTelegram).not.toHaveBeenCalled();
+    expect(mockStart).toHaveBeenCalledWith(42);
+  });
+
+  it('partial creds (empty token) → does NOT enable telegram', async () => {
+    await launchBot(42, 'dry-run', { token: '', chat_id: 'c' });
+    expect(mockEnableTelegram).not.toHaveBeenCalled();
+  });
+
+  it('whitespace-only creds → does NOT enable telegram (trimmed away)', async () => {
+    await launchBot(42, 'dry-run', { token: '   ', chat_id: '   ' });
+    expect(mockEnableTelegram).not.toHaveBeenCalled();
+  });
+
+  it('trims creds before enabling', async () => {
+    await launchBot(42, 'dry-run', { token: '  t  ', chat_id: '  c  ' });
+    expect(mockEnableTelegram).toHaveBeenCalledWith(42, {
+      token: 't',
+      chat_id: 'c',
+    });
+  });
 });
