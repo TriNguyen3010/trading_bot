@@ -33,9 +33,10 @@ function normalizeAddress(v: string): string {
  * For live mode: checks that the user has an active Hyperliquid agent first;
  * throws AgentNotActiveError (before any mutation) if not.
  * Optional `telegram` param: when token + chat_id are supplied, enables
- * Telegram notifications; otherwise disables (Freqtrade's Updater crashes on
- * an enabled-but-null token). Config is set BEFORE start so Freqtrade reads
- * it on boot. */
+ * Telegram notifications (set BEFORE start so Freqtrade reads it on boot).
+ * When NOT supplied, the bot's existing Telegram config is left untouched —
+ * the create-time setting (from the Strategy-phase tick) is the source of
+ * truth and must not be wiped at launch. */
 export async function launchBot(
   botId: number,
   mode: LaunchMode,
@@ -54,13 +55,15 @@ export async function launchBot(
     }
   }
   await botStrategyApi.update(botId, { dry_run: mode === 'dry-run' });
-  // Telegram config must be set BEFORE start (Freqtrade reads it on boot).
-  // Enable with the supplied token; otherwise disable (Freqtrade's Updater
-  // crashes on an enabled-but-null token).
+  // Telegram is non-destructive: only override when explicit creds are given
+  // (set BEFORE start so Freqtrade reads it on boot). When none are supplied,
+  // leave the bot's stored config untouched — a blanket disable here would
+  // wipe the create-time telegram (the Strategy-phase tick). The old
+  // enabled-but-null-token crash can no longer occur: the serializer never
+  // ships an enabled block with an empty token, and enableTelegram always
+  // sends one.
   if (telegram?.token && telegram?.chat_id) {
     await botApi.enableTelegram(botId, telegram);
-  } else {
-    await botApi.disableTelegram(botId);
   }
   return botApi.start(botId);
 }

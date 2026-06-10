@@ -46,16 +46,13 @@ beforeEach(() => {
 });
 
 describe('launchBot', () => {
-  it('dry-run → PATCH dry_run=true, disable Telegram, then start', async () => {
+  it('dry-run with no telegram creds → does NOT touch telegram', async () => {
     await launchBot(42, 'dry-run');
     expect(mockUpdate).toHaveBeenCalledWith(42, { dry_run: true });
-    expect(mockDisableTelegram).toHaveBeenCalledWith(42);
+    // Launch is non-destructive: it must not wipe the create-time telegram.
+    expect(mockDisableTelegram).not.toHaveBeenCalled();
+    expect(mockEnableTelegram).not.toHaveBeenCalled();
     expect(mockStart).toHaveBeenCalledWith(42);
-    // Telegram must be disabled BEFORE start (Freqtrade Updater crashes on a
-    // null token otherwise).
-    expect(mockDisableTelegram.mock.invocationCallOrder[0]).toBeLessThan(
-      mockStart.mock.invocationCallOrder[0],
-    );
   });
 
   it('dry-run does NOT call agentApi.active', async () => {
@@ -69,11 +66,11 @@ describe('launchBot', () => {
     expect(mockStart).toHaveBeenCalledWith(42);
   });
 
-  it('live + active agent → PATCH(false) + disableTelegram + start', async () => {
+  it('live + active agent → PATCH(false) + start, telegram untouched', async () => {
     await launchBot(42, 'live');
     expect(mockActive).toHaveBeenCalled();
     expect(mockUpdate).toHaveBeenCalledWith(42, { dry_run: false });
-    expect(mockDisableTelegram).toHaveBeenCalledWith(42);
+    expect(mockDisableTelegram).not.toHaveBeenCalled();
     expect(mockStart).toHaveBeenCalledWith(42);
   });
 
@@ -110,13 +107,13 @@ describe('launchBot', () => {
     expect(mockStart).not.toHaveBeenCalled();
   });
 
-  it('does not start if disabling Telegram fails', async () => {
-    mockDisableTelegram.mockRejectedValueOnce(
+  it('does not start if enabling Telegram fails', async () => {
+    mockEnableTelegram.mockRejectedValueOnce(
       new Error('telegram patch failed'),
     );
-    await expect(launchBot(42, 'dry-run')).rejects.toThrow(
-      'telegram patch failed',
-    );
+    await expect(
+      launchBot(42, 'dry-run', { token: 't', chat_id: 'c' }),
+    ).rejects.toThrow('telegram patch failed');
     expect(mockStart).not.toHaveBeenCalled();
   });
 
@@ -137,9 +134,9 @@ describe('launchBot', () => {
     );
   });
 
-  it('no telegram arg → disableTelegram (unchanged default)', async () => {
+  it('no telegram arg → leaves telegram untouched (neither enable nor disable)', async () => {
     await launchBot(42, 'dry-run');
-    expect(mockDisableTelegram).toHaveBeenCalledWith(42);
+    expect(mockDisableTelegram).not.toHaveBeenCalled();
     expect(mockEnableTelegram).not.toHaveBeenCalled();
   });
 });
