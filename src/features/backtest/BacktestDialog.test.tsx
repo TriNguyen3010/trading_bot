@@ -485,6 +485,40 @@ describe('BacktestDialog', () => {
     expect(screen.getByTestId('bt-chart').dataset.showExits).toBe('false');
   });
 
+  it('"Show exits" resets to checked when the dialog re-opens', async () => {
+    mockPoll.mockReturnValue({
+      item: RESULT_ITEM_WITH_TRADES,
+      done: true,
+      error: null,
+    });
+    mockStart.mockResolvedValue({
+      job_id: 1,
+      backtest_id: 99,
+      status: 'queued',
+      message: 'Backtest submitted successfully',
+      poll_url: '/backtest/99',
+    });
+    const { rerender } = render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        initialBacktestId={99}
+      />,
+    );
+    // User turns exits off in the result view.
+    fireEvent.click(screen.getByLabelText(/show exits/i));
+    expect(screen.getByTestId('bt-chart').dataset.showExits).toBe('false');
+    // Close, then re-open without the test seam — the production re-open path.
+    rerender(<BacktestDialog open={false} bot={bot} onOpenChange={() => {}} />);
+    rerender(<BacktestDialog open bot={bot} onOpenChange={() => {}} />);
+    // Drive a fresh run to the result step; exits must be back on.
+    fireEvent.click(screen.getByRole('button', { name: /run backtest/i }));
+    await waitFor(() =>
+      expect(screen.getByTestId('bt-chart').dataset.showExits).toBe('true'),
+    );
+  });
+
   it('shows "View bot details" when onViewDetails is provided and fires it on click', () => {
     const onViewDetails = vi.fn();
     mockPoll.mockReturnValue({
