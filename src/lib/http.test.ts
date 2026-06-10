@@ -123,11 +123,11 @@ describe('http wrapper (wallet auth)', () => {
       ok: false,
       status: 403,
       statusText: 'Forbidden',
-      text: async () => 'Tài khoản đã bị vô hiệu hoá.',
+      text: async () => 'Account has been disabled.',
     });
 
     await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
-    expect(toast.error).toHaveBeenCalledWith('Tài khoản đã bị vô hiệu hoá.');
+    expect(toast.error).toHaveBeenCalledWith('Account has been disabled.');
   });
 
   it('on 403 with empty body: falls back to default message', async () => {
@@ -140,7 +140,7 @@ describe('http wrapper (wallet auth)', () => {
     });
 
     await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
-    expect(toast.error).toHaveBeenCalledWith('Quyền truy cập bị từ chối.');
+    expect(toast.error).toHaveBeenCalledWith('Access denied.');
   });
 
   it('does NOT toast 5xx for /bot-strategy/* (dialog handles)', async () => {
@@ -277,7 +277,7 @@ describe('http wrapper (wallet auth)', () => {
     });
 
     await expect(http('GET', '/fail')).rejects.toBeInstanceOf(HttpError);
-    expect(toast.error).toHaveBeenCalledWith('Đã có lỗi xảy ra.');
+    expect(toast.error).toHaveBeenCalledWith('Something went wrong.');
   });
 
   it('falls back to default message on HTML 403 body', async () => {
@@ -290,7 +290,7 @@ describe('http wrapper (wallet auth)', () => {
     });
 
     await expect(http('GET', '/user/status')).rejects.toBeInstanceOf(HttpError);
-    expect(toast.error).toHaveBeenCalledWith('Quyền truy cập bị từ chối.');
+    expect(toast.error).toHaveBeenCalledWith('Access denied.');
   });
 
   it('throws ValidationError on 422 with FastAPI object detail', async () => {

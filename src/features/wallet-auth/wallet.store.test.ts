@@ -244,9 +244,9 @@ describe('wallet.store', () => {
       expect(useWalletStore.getState().status).toBe('error');
     });
 
-    // Bảo vệ fix của commit f56ecaf: nếu /user/status fail sau khi sign,
-    // KHÔNG được set status='ready'. Nếu test này fail → regression của bug
-    // "user vào builder với cred xấu".
+    // Guards the fix from commit f56ecaf: if /user/status fails after signing,
+    // status must NOT become 'ready'. If this test fails → regression of the
+    // "user enters builder with bad creds" bug.
     it('clears creds and sets error when /user/status fails after sign', async () => {
       vi.mocked(detectCoin98).mockReturnValue(fakeProvider);
       vi.mocked(requestAccounts).mockResolvedValueOnce(['0xabc']);

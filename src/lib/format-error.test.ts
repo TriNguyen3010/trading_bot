@@ -46,7 +46,7 @@ describe('formatBackendError', () => {
 
   it('returns localized message for Network error', () => {
     expect(formatBackendError(new Error('Network error'))).toBe(
-      'Không thể kết nối server',
+      'Could not reach the server',
     );
   });
 

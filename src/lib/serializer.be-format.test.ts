@@ -9,7 +9,7 @@
  *
  * This is the automated version of "open the two JSONs side by side and diff
  * them by eye". Samples live in `BE/source-of-truth/` and are the documented
- * chân lý (see PAYLOAD_SOURCE_OF_TRUTH.md).
+ * ground truth (see PAYLOAD_SOURCE_OF_TRUTH.md).
  *
  * ── How it stays green while deviations still exist ──────────────────────
  * Every CURRENT, understood mismatch is listed in KNOWN_DEVIATIONS with a

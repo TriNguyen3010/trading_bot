@@ -18,7 +18,7 @@ export type BacktestJobResponse = Schemas['BacktestJobResponse'];
 export type BacktestHistoryItem = Schemas['BacktestHistoryItem'];
 export type BacktestHistoryList = Schemas['BacktestHistoryList'];
 
-// Sub-schemas (dùng nhiều)
+// Sub-schemas (widely used)
 export type StrategyConfigurations = Schemas['StrategyConfigurations'];
 export type SignalsConfig = Schemas['SignalsConfig'];
 export type IndicatorItem = Schemas['IndicatorItem'];
@@ -49,5 +49,5 @@ export type BotWalletRotationResponse = Schemas['BotWalletRotationResponse'];
 export type BotWalletRotationResultItem =
   Schemas['BotWalletRotationResultItem'];
 
-// Endpoint paths (dùng cho fetch wrapper sau này)
+// Endpoint paths (for the fetch wrapper later)
 export type Paths = paths;

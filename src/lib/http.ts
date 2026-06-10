@@ -183,7 +183,7 @@ export async function http<T>(
     });
   } catch {
     if (!silentToast) {
-      toast.error('Không thể kết nối server. Vui lòng kiểm tra mạng.');
+      toast.error('Could not reach the server. Please check your network.');
     }
     throw new Error('Network error');
   }
@@ -194,7 +194,7 @@ export async function http<T>(
   // the header chip or CTA click on Landing.
   if (res.status === 401 && !BYPASS_AUTH) {
     clearWalletAuth();
-    toast.warning('Phiên ví hết hạn, vui lòng kết nối lại.');
+    toast.warning('Wallet session expired, please reconnect.');
     // Already on the public landing → clearing creds is enough; a redirect
     // would force a needless full-page reload and lose in-page state.
     if (window.location.pathname !== '/') window.location.href = '/';
@@ -208,7 +208,7 @@ export async function http<T>(
   if (res.status === 403) {
     if (!silentToast) {
       const text = await res.text().catch(() => '');
-      let msg = 'Quyền truy cập bị từ chối.';
+      let msg = 'Access denied.';
       try {
         const data = JSON.parse(text) as { detail?: string };
         if (typeof data.detail === 'string' && data.detail.trim())
@@ -229,7 +229,7 @@ export async function http<T>(
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
     if (!silentToast) {
-      toast.error(safeErrorText(text, 'Đã có lỗi xảy ra.'));
+      toast.error(safeErrorText(text, 'Something went wrong.'));
     }
     throw new HttpError(res.status, text);
   }
