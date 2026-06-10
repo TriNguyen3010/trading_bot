@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { createChart } from 'lightweight-charts';
 import { BacktestChart } from '../BacktestChart';
 import { botApi } from '../../bot.api';
 import { HttpError } from '@/lib/http';
@@ -9,12 +10,13 @@ const volSeries = {
   setData: vi.fn(),
   priceScale: () => ({ applyOptions: vi.fn() }),
 };
+const timeScale = { fitContent: vi.fn(), setVisibleRange: vi.fn() };
 const chart = {
   addCandlestickSeries: vi.fn(() => candleSeries),
   addHistogramSeries: vi.fn(() => volSeries),
   remove: vi.fn(),
   applyOptions: vi.fn(),
-  timeScale: () => ({ fitContent: vi.fn() }),
+  timeScale: () => timeScale,
 };
 vi.mock('lightweight-charts', () => ({ createChart: vi.fn(() => chart) }));
 vi.mock('../../bot.api', () => ({ botApi: { getBacktestCandles: vi.fn() } }));
@@ -107,5 +109,57 @@ describe('BacktestChart', () => {
     await waitFor(() => expect(chart.addCandlestickSeries).toHaveBeenCalled());
     unmount();
     expect(chart.remove).toHaveBeenCalled();
+  });
+
+  it('default (no focusTrades) -> fitContent only — PerformancePanel regression guard', async () => {
+    render(<BacktestChart backtestId={200} trades={trades} showExits />);
+    await waitFor(() => expect(timeScale.fitContent).toHaveBeenCalled());
+    expect(timeScale.setVisibleRange).not.toHaveBeenCalled();
+  });
+
+  it('focusTrades -> setVisibleRange with the padded trade window, no fitContent', async () => {
+    render(
+      <BacktestChart backtestId={200} trades={trades} showExits focusTrades />,
+    );
+    await waitFor(() =>
+      expect(timeScale.setVisibleRange).toHaveBeenCalledWith({
+        from: 900,
+        to: 2100,
+      }),
+    );
+    expect(timeScale.fitContent).not.toHaveBeenCalled();
+  });
+
+  it('focusTrades with 0 trades -> falls back to fitContent', async () => {
+    render(
+      <BacktestChart
+        backtestId={200}
+        trades={[] as never}
+        showExits
+        focusTrades
+      />,
+    );
+    await waitFor(() => expect(timeScale.fitContent).toHaveBeenCalled());
+    expect(timeScale.setVisibleRange).not.toHaveBeenCalled();
+  });
+
+  it('height: default 360 applied to createChart AND container style', async () => {
+    render(<BacktestChart backtestId={200} trades={trades} showExits />);
+    await waitFor(() => expect(createChart).toHaveBeenCalled());
+    expect(vi.mocked(createChart).mock.calls[0][1]).toMatchObject({
+      height: 360,
+    });
+    expect(screen.getByRole('img').style.height).toBe('360px');
+  });
+
+  it('height={240} applied to createChart AND container style', async () => {
+    render(
+      <BacktestChart backtestId={200} trades={trades} showExits height={240} />,
+    );
+    await waitFor(() => expect(createChart).toHaveBeenCalled());
+    expect(vi.mocked(createChart).mock.calls[0][1]).toMatchObject({
+      height: 240,
+    });
+    expect(screen.getByRole('img').style.height).toBe('240px');
   });
 });
