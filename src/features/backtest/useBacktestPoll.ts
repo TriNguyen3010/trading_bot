@@ -50,9 +50,8 @@ export function useBacktestPoll(
       }
     };
 
-    // belt: re-runs not caused by an id change (e.g. intervalMs) start clean
-    // too; same IDLE reference, so this is a no-op right after a render reset
-    setState(IDLE);
+    // No reset needed here: the render-phase reset above already cleared
+    // state to IDLE on the id change that triggered this effect run.
     void tick();
 
     return () => {

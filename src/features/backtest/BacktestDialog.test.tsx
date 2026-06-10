@@ -102,6 +102,9 @@ const RESULT_ITEM_WITH_TRADES = {
 beforeEach(() => {
   mockStart.mockReset();
   mockPoll.mockReset();
+  // Without this, a previous test's cancel(99) call satisfies later
+  // toHaveBeenCalledWith(99) assertions vacuously.
+  vi.mocked(backtestApi.cancel).mockReset();
   mockPoll.mockReturnValue({ item: null, done: false, error: null });
 });
 
@@ -571,6 +574,120 @@ describe('BacktestDialog', () => {
       screen.getByRole('button', { name: /run backtest/i }),
     ).toBeInTheDocument();
     expect(mockChart.mock.calls.length).toBe(chartRenders);
+  });
+
+  it('failed-view "Try again" detaches the poll from the dead run', () => {
+    mockPoll.mockReturnValue({
+      item: {
+        ...RESULT_ITEM_WITH_TRADES,
+        status: 'failed',
+        trade_count: 0,
+        results: {},
+      },
+      done: true,
+      error: null,
+    });
+    render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        initialBacktestId={99}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+    expect(
+      screen.getByRole('button', { name: /run backtest/i }),
+    ).toBeInTheDocument();
+    // backtestId must be cleared — otherwise the hook stays subscribed to the
+    // dead run and a same-id rerun would skip the per-id reset.
+    expect(mockPoll).toHaveBeenLastCalledWith(null);
+  });
+
+  it('closing during submit abandons the started run instead of reviving a hidden running state', async () => {
+    mockPoll.mockReturnValue({ item: null, done: false, error: null });
+    type StartResult = Awaited<ReturnType<typeof backtestApi.start>>;
+    let resolveStart!: (v: StartResult) => void;
+    mockStart.mockImplementation(
+      () =>
+        new Promise<StartResult>((r) => {
+          resolveStart = r;
+        }),
+    );
+    vi.mocked(backtestApi.cancel).mockResolvedValue(undefined);
+    const { rerender } = render(
+      <BacktestDialog open bot={bot} onOpenChange={() => {}} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /run backtest/i }));
+    // User closes while the POST is still in flight…
+    rerender(<BacktestDialog open={false} bot={bot} onOpenChange={() => {}} />);
+    // …then the POST resolves: the run must be cancelled, not silently polled.
+    resolveStart({
+      job_id: 1,
+      backtest_id: 99,
+      status: 'queued',
+      message: 'Backtest submitted successfully',
+      poll_url: '/backtest/99',
+    });
+    await waitFor(() => expect(backtestApi.cancel).toHaveBeenCalledWith(99));
+    rerender(<BacktestDialog open bot={bot} onOpenChange={() => {}} />);
+    expect(
+      screen.getByRole('button', { name: /run backtest/i }),
+    ).toBeInTheDocument();
+    expect(mockPoll).toHaveBeenLastCalledWith(null);
+  });
+
+  it('re-opening while the SAME bot run is in flight returns to the running view', async () => {
+    mockPoll.mockReturnValue({ item: null, done: false, error: null });
+    mockStart.mockResolvedValue({
+      job_id: 1,
+      backtest_id: 99,
+      status: 'queued',
+      message: 'Backtest submitted successfully',
+      poll_url: '/backtest/99',
+    });
+    const { rerender } = render(
+      <BacktestDialog open bot={bot} onOpenChange={() => {}} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /run backtest/i }));
+    await waitFor(() =>
+      expect(screen.getByText(/crunching the numbers/i)).toBeInTheDocument(),
+    );
+    rerender(<BacktestDialog open={false} bot={bot} onOpenChange={() => {}} />);
+    rerender(<BacktestDialog open bot={bot} onOpenChange={() => {}} />);
+    // The in-flight run's progress view is restored, its poll still wired.
+    expect(screen.getByText(/crunching the numbers/i)).toBeInTheDocument();
+    expect(mockPoll).toHaveBeenLastCalledWith(99);
+  });
+
+  it('re-opening for a DIFFERENT bot while a run is in flight starts fresh setup', async () => {
+    mockPoll.mockReturnValue({ item: null, done: false, error: null });
+    mockStart.mockResolvedValue({
+      job_id: 1,
+      backtest_id: 99,
+      status: 'queued',
+      message: 'Backtest submitted successfully',
+      poll_url: '/backtest/99',
+    });
+    const { rerender } = render(
+      <BacktestDialog open bot={bot} onOpenChange={() => {}} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /run backtest/i }));
+    await waitFor(() =>
+      expect(screen.getByText(/crunching the numbers/i)).toBeInTheDocument(),
+    );
+    rerender(<BacktestDialog open={false} bot={bot} onOpenChange={() => {}} />);
+    rerender(
+      <BacktestDialog
+        open
+        bot={{ ...bot, id: 43, name: 'Other bot' }}
+        onOpenChange={() => {}}
+      />,
+    );
+    // The old run must not masquerade under the new bot's header.
+    expect(
+      screen.getByRole('button', { name: /run backtest/i }),
+    ).toBeInTheDocument();
   });
 
   it('shows "View bot details" when onViewDetails is provided and fires it on click', () => {
