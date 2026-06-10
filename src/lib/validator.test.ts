@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { validateBuilder } from './validator';
+import { strings } from '@/i18n/en';
 
 /**
  * Guard against the bug that returned a 500 on deploy: a USDC-quoted pair
@@ -48,5 +49,57 @@ describe('validateBuilder — stake currency vs pair quote', () => {
     expect(
       issues.filter((i) => i.message.includes('match the pair quote')),
     ).toHaveLength(0);
+  });
+});
+
+describe('validateBuilder — telegram notifications', () => {
+  beforeEach(() => {
+    useBuilderStore.getState().resetAll();
+  });
+
+  const requiredMsg = strings.notifications.required;
+
+  it('flags an enabled telegram tick with a missing token', () => {
+    useBuilderStore
+      .getState()
+      .setNotifications({ telegramEnabled: true, token: '', chatId: '123' });
+
+    const issues = validateBuilder(useBuilderStore.getState());
+
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: requiredMsg }),
+    );
+  });
+
+  it('flags an enabled telegram tick with a missing chat ID', () => {
+    useBuilderStore
+      .getState()
+      .setNotifications({ telegramEnabled: true, token: 'T', chatId: '  ' });
+
+    const issues = validateBuilder(useBuilderStore.getState());
+
+    expect(issues).toContainEqual(
+      expect.objectContaining({ message: requiredMsg }),
+    );
+  });
+
+  it('does not flag when telegram is off', () => {
+    useBuilderStore
+      .getState()
+      .setNotifications({ telegramEnabled: false, token: '', chatId: '' });
+
+    const issues = validateBuilder(useBuilderStore.getState());
+
+    expect(issues.filter((i) => i.message === requiredMsg)).toHaveLength(0);
+  });
+
+  it('does not flag when telegram is on with both creds', () => {
+    useBuilderStore
+      .getState()
+      .setNotifications({ telegramEnabled: true, token: 'T', chatId: '123' });
+
+    const issues = validateBuilder(useBuilderStore.getState());
+
+    expect(issues.filter((i) => i.message === requiredMsg)).toHaveLength(0);
   });
 });

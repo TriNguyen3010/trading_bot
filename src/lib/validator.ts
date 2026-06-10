@@ -2,6 +2,7 @@ import type { BuilderState, StepId } from '@/types/builder.types';
 import { LEVERAGE_MAX, LEVERAGE_MIN } from './constants';
 import { parseUiPair } from './pair-format';
 import { allRules, ruleCount } from './condition-tree';
+import { strings } from '@/i18n/en';
 
 export interface BuilderIssue {
   stepId: StepId;
@@ -139,6 +140,19 @@ export function validateBuilder(state: BuilderState): BuilderIssue[] {
     issues.push({
       stepId: 'close-method',
       message: 'Add at least one exit condition.',
+    });
+  }
+
+  // Notifications ----------------------------------------------------------
+  // The Telegram tick lives in the Strategy drawer (alongside close-method),
+  // so attach the issue to that step — clicking "Fix" opens the same drawer.
+  // Enforced here so the user can never produce the enabled-but-empty-token
+  // payload that crashes the BE (HTTP 500 on create).
+  const n = state.notifications;
+  if (n.telegramEnabled && (!n.token.trim() || !n.chatId.trim())) {
+    issues.push({
+      stepId: 'close-method',
+      message: strings.notifications.required,
     });
   }
 
