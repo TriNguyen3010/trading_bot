@@ -180,4 +180,15 @@ describe('BacktestChart', () => {
       ),
     );
   });
+
+  it('placeholder states reserve the same height as the chart (no layout jump)', () => {
+    // Candles never resolve — the component stays in the loading state.
+    vi.mocked(botApi.getBacktestCandles).mockImplementation(
+      () => new Promise(() => {}),
+    );
+    render(
+      <BacktestChart backtestId={200} trades={trades} showExits height={240} />,
+    );
+    expect(screen.getByText('Loading chart…').style.height).toBe('240px');
+  });
 });
