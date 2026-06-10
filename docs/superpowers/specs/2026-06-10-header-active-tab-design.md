@@ -2,7 +2,8 @@
 
 **Date:** 2026-06-10
 **Owner:** Tri Nguyen
-**Status:** Approved approach — sliding filled pill (option A, picked by Tri)
+**Status:** Approved approach — filled pill (option A, picked by Tri). Phần "slide"
+bị loại trong self-review — xem §2.
 **Component:** `src/pages/AppHeader.tsx`
 
 ## 1. Problem
@@ -13,16 +14,22 @@ này gần như không nhìn thấy — user không biết mình đang ở tab n
 
 ## 2. Decision
 
-**Sliding filled pill** (segmented-control style):
+**Filled pill** (segmented-control style, static):
 
 - Tab active có nền pill `bg-surface-active` (#2b3139, token sẵn có) bo `rounded-full`,
   chữ `text-fg` (trắng).
-- Pill **trượt** giữa các tab khi điều hướng, dùng framer-motion shared layout
-  (`layoutId="header-nav-active-pill"`).
 - Không thêm màu mới — giữ header sạch, không cạnh tranh với WalletChip.
 
 Hai phương án bị loại (đã đưa Tri chọn): chữ vàng brand + dot, và pill vàng nhạt —
 đều thêm mảng vàng cạnh WalletChip xanh, nhiều màu hơn cần thiết.
+
+**Slide animation bị loại (self-review finding):** phương án ban đầu có pill trượt
+giữa các tab bằng framer-motion `layoutId`. Nhưng AppHeader chỉ được mount ở `/`
+(landing) và `/dashboard` — trang `/builder` dùng `HeaderToolbar` riêng
+(`src/pages/BuilderPage.tsx:80`), `/bots/:id` không render AppHeader. Điều hướng
+Dashboard ↔ Builder unmount toàn bộ AppHeader nên shared-layout animation không bao
+giờ chạy được → YAGNI, bỏ. Nếu sau này các trang dùng chung AppHeader (layout route),
+có thể thêm `layoutId` lại — diff nhỏ.
 
 ## 3. Behavior
 
@@ -34,24 +41,23 @@ Hai phương án bị loại (đã đưa Tri chọn): chữ vàng brand + dot, v
 | `/` (landing)        | Không tab nào — không render pill    |
 | Docs (external link) | Không bao giờ active                 |
 
+Lưu ý thực tế: AppHeader hiện chỉ mount ở `/` và `/dashboard`, nên 2 dòng
+`/bots/:id` và `/builder` là contract của hàm `isActive` (future-proofing nếu sau
+này các trang dùng chung header) — vẫn test ở mức unit, nhưng không nhìn thấy được
+trên UI hôm nay.
+
 - **Hover inactive:** giữ nguyên hiện tại (`hover:bg-surface-hover hover:text-fg`).
-- **Hover active:** pill đã sáng sẵn, không stack thêm lớp hover bg (bỏ
-  `hover:bg-surface-hover` ở nhánh active để tránh double-layer).
-- **Chuyển từ landing vào dashboard:** pill xuất hiện (mount) — framer-motion xử lý
-  initial mount mặc định, không cần animation đặc biệt.
+- **Hover active:** giữ nguyên nền pill, hover không đổi gì thêm (override
+  `hover:bg-surface-active` để đè hover mặc định của Button ghost).
 
 ## 4. Implementation sketch
 
-Chỉ sửa `src/pages/AppHeader.tsx` (component `NavLink`):
+Chỉ sửa `src/pages/AppHeader.tsx` (component `NavLink`) — diff thuần className + attr:
 
-- Button thêm `relative`; khi `active`, render
-  `<motion.span layoutId="header-nav-active-pill" className="absolute inset-0 rounded-full bg-surface-active" />`
-  phía sau label; label bọc trong `<span className="relative z-[1]">`.
-- Hai `NavLink` (Dashboard, Builder) dùng chung `layoutId` → khi active đổi, framer-motion
-  animate pill trượt từ tab cũ sang tab mới.
-- `useReducedMotion()` từ framer-motion: nếu user bật reduce-motion, render pill tĩnh
-  (bỏ `layoutId`) — highlight vẫn hiện, chỉ không trượt.
-- A11y: button active thêm `aria-current="page"`.
+- Nhánh active của Button đổi thành
+  `bg-surface-active text-fg hover:bg-surface-active` (pill tĩnh, hover không đổi).
+- A11y: button active thêm `aria-current="page"` — đồng thời là hook cho test.
+- Không cần framer-motion mới, không cần span absolute (đã bỏ slide — xem §2).
 - Docs anchor: không đổi behavior, chỉ đảm bảo style hover đồng nhất (hiện đã khớp).
 
 ## 5. Testing
@@ -60,8 +66,9 @@ File mới `src/pages/__tests__/AppHeader.test.tsx` (Vitest + Testing Library,
 MemoryRouter + mock wallet store/RequireWalletProvider theo pattern test hiện có):
 
 1. Tại `/dashboard` → button Dashboard có `aria-current="page"`, Builder không có.
-2. Tại `/builder` → Builder active.
-3. Tại `/bots/123` → Dashboard active.
+2. Tại `/builder` → Builder active (contract `isActive` — AppHeader không thực mount
+   ở route này hôm nay).
+3. Tại `/bots/123` → Dashboard active (tương tự, contract-level).
 4. Tại `/` → không button nào có `aria-current`.
 
 ## 6. Out of scope

@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Tab đang active trong header (Dashboard / Builder) được highlight bằng pill nền sáng trượt giữa các tab — user luôn biết mình đang ở đâu.
+**Goal:** Tab đang active trong header (Dashboard / Builder) được highlight bằng pill nền sáng — user luôn biết mình đang ở đâu.
 
-**Architecture:** Chỉ sửa 1 component `NavLink` trong `src/pages/AppHeader.tsx`: khi `active`, render một `motion.span` absolute (nền `bg-surface-active`, bo full) phía sau label, dùng framer-motion `layoutId` chung để pill trượt giữa 2 tab. Thêm `aria-current="page"` làm hook cho cả accessibility lẫn test.
+**Architecture:** Chỉ sửa 1 component `NavLink` trong `src/pages/AppHeader.tsx`: nhánh active đổi className sang `bg-surface-active text-fg` (pill tĩnh) + thêm `aria-current="page"` làm hook cho cả accessibility lẫn test. Không thêm element, không thêm animation — phương án slide bằng `layoutId` đã bị loại trong self-review vì AppHeader chỉ mount ở `/` và `/dashboard` (xem spec §2), điều hướng sang Builder unmount cả header nên slide không bao giờ chạy được.
 
-**Tech Stack:** React 18, framer-motion 11 (`layoutId` + `useReducedMotion`), Tailwind token `bg-surface-active` (#2b3139, sẵn có), Vitest + Testing Library.
+**Tech Stack:** React 18, Tailwind token `bg-surface-active` (#2b3139, sẵn có), Vitest + Testing Library.
 
 **Spec:** `docs/superpowers/specs/2026-06-10-header-active-tab-design.md`
 
@@ -34,14 +34,15 @@ git checkout -b feat/header-active-tab
 **Files:**
 
 - Create: `src/pages/__tests__/AppHeader.test.tsx`
-- Modify: `src/pages/AppHeader.tsx` (import dòng 1, component `NavLink` dòng 107-131)
+- Modify: `src/pages/AppHeader.tsx` (component `NavLink` dòng 113-131)
 
 **Context cho engineer mới:**
 
-- `AppHeader` được render bởi `LandingPage` và `DashboardPage`. Nav có 3 item: Dashboard (`/dashboard`), Builder (`/builder`) là `NavLink` (button + navigate); Docs là `<a>` external — không bao giờ active, không đụng.
+- `AppHeader` chỉ được render bởi `LandingPage` (`/`) và `DashboardPage` (`/dashboard`). Trang `/builder` dùng `HeaderToolbar` riêng, `/bots/:id` không render AppHeader — nên test cho 2 route đó là contract-level của hàm `isActive`, không nhìn thấy trên UI hôm nay.
+- Nav có 3 item: Dashboard (`/dashboard`), Builder (`/builder`) là `NavLink` (button + navigate); Docs là `<a>` external — không bao giờ active, không đụng.
 - Hàm `isActive()` (dòng 35-37) đã đúng — `/bots/:id` tính là Dashboard. Giữ nguyên.
 - Hiện tại active chỉ đổi màu chữ → không nhìn ra. Sau task này: active = pill nền `bg-surface-active` + chữ trắng + `aria-current="page"`.
-- `Button` variant `ghost` (xem `src/components/ui/button.tsx:15`) có sẵn `hover:bg-surface-hover` — nhánh active phải override bằng `hover:bg-transparent` để hover không đổi gì thêm (pill đã sáng sẵn).
+- `Button` variant `ghost` (xem `src/components/ui/button.tsx:15`) có sẵn `hover:bg-surface-hover` — nhánh active phải override bằng `hover:bg-surface-active` để hover giữ nguyên nền pill (không nhạt đi). `cn()` dùng tailwind-merge nên class sau đè class trước.
 - Test không cần mock API: `WalletChip` chỉ fetch khi mở modal (gated theo `open`), còn render tĩnh thì chỉ đọc zustand store. Pattern set store + wrap provider lấy từ `src/pages/__tests__/DashboardPage.test.tsx`.
 
 - [ ] **Step 1: Viết failing test**
@@ -94,6 +95,9 @@ describe('AppHeader — active tab highlight', () => {
     );
   });
 
+  // Contract của isActive — AppHeader không thực mount ở /builder hôm nay
+  // (BuilderPage dùng HeaderToolbar riêng), nhưng rule phải đúng sẵn nếu
+  // sau này các trang dùng chung header.
   it('marks Builder active at /builder', () => {
     renderAt('/builder');
     expect(screen.getByRole('button', { name: 'Builder' })).toHaveAttribute(
@@ -105,6 +109,7 @@ describe('AppHeader — active tab highlight', () => {
     ).not.toHaveAttribute('aria-current');
   });
 
+  // Tương tự: contract-level cho route detail.
   it('marks Dashboard active on bot detail routes (/bots/:id)', () => {
     renderAt('/bots/123');
     expect(screen.getByRole('button', { name: 'Dashboard' })).toHaveAttribute(
@@ -135,19 +140,10 @@ Expected: 3 test FAIL (`/dashboard`, `/builder`, `/bots/123` — thiếu `aria-c
 
 - [ ] **Step 3: Implement NavLink**
 
-Trong `src/pages/AppHeader.tsx`:
-
-**3a.** Sửa import dòng 1:
-
-```tsx
-import { motion, useReducedMotion } from 'framer-motion';
-```
-
-**3b.** Thay toàn bộ component `NavLink` (dòng 113-131) bằng:
+Trong `src/pages/AppHeader.tsx`, thay toàn bộ component `NavLink` (dòng 113-131) bằng:
 
 ```tsx
 function NavLink({ label, active, onClick }: NavLinkProps) {
-  const reducedMotion = useReducedMotion();
   return (
     <motion.div variants={dropInItem} className="inline-flex">
       <Button
@@ -156,24 +152,13 @@ function NavLink({ label, active, onClick }: NavLinkProps) {
         onClick={onClick}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          'relative h-10 rounded-full px-3 text-sm font-medium',
+          'h-10 rounded-full px-3 text-sm font-medium',
           active
-            ? 'text-fg hover:bg-transparent'
+            ? 'bg-surface-active text-fg hover:bg-surface-active'
             : 'text-fg-secondary hover:bg-surface-hover hover:text-fg',
         )}
       >
-        {active ? (
-          reducedMotion ? (
-            <span className="absolute inset-0 rounded-full bg-surface-active" />
-          ) : (
-            <motion.span
-              layoutId="header-nav-active-pill"
-              className="absolute inset-0 rounded-full bg-surface-active"
-              transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-            />
-          )
-        ) : null}
-        <span className="relative z-[1]">{label}</span>
+        {label}
       </Button>
     </motion.div>
   );
@@ -182,11 +167,9 @@ function NavLink({ label, active, onClick }: NavLinkProps) {
 
 Giải thích các điểm dễ vấp:
 
-- `layoutId` chung giữa 2 NavLink → khi active đổi tab, framer-motion animate pill từ vị trí cũ sang mới (shared layout). Trên landing không tab nào active → pill không render.
-- `useReducedMotion()` → user bật reduce-motion thì render `<span>` tĩnh (vẫn có highlight, không trượt). App chưa có `MotionConfig` nên phải tự xử ở đây.
-- Span absolute không tham gia flex nên `gap-2` của Button không bị ảnh hưởng.
-- Label bọc `relative z-[1]` để chắc chắn nổi trên pill khi pill đang transform giữa chừng animation.
-- KHÔNG sửa hàm `isActive`, KHÔNG sửa Docs anchor.
+- Diff thực chất chỉ là: thêm `aria-current`, nhánh active thêm `bg-surface-active` + `hover:bg-surface-active` (đè hover mặc định của ghost để pill không đổi màu khi hover).
+- KHÔNG import gì thêm, KHÔNG sửa hàm `isActive`, KHÔNG sửa Docs anchor.
+- Trên landing `/` không tab nào active → không pill nào render (cả 2 NavLink đi nhánh inactive).
 
 - [ ] **Step 4: Chạy test, verify PASS**
 
@@ -208,7 +191,7 @@ Expected: tất cả pass, format không đổi gì ngoài 2 file đang sửa (n
 
 ```bash
 git add src/pages/AppHeader.tsx src/pages/__tests__/AppHeader.test.tsx
-git commit -m "feat(header): sliding pill highlight for active nav tab"
+git commit -m "feat(header): filled pill highlight for active nav tab"
 ```
 
 ---
@@ -219,10 +202,9 @@ git commit -m "feat(header): sliding pill highlight for active nav tab"
 
 - [ ] **Step 1: Báo Tri check các điểm sau trên `pnpm dev`:**
 
-1. `/dashboard` → tab Dashboard có pill nền sáng, chữ trắng; Builder/Docs xám.
-2. Click Builder → pill **trượt** mượt từ Dashboard sang Builder.
-3. Vào detail bot (`/bots/:id`) → Dashboard vẫn sáng.
-4. Về landing `/` → không tab nào sáng.
-5. Hover tab active → không đổi thêm gì; hover tab inactive → nền hover nhẹ như cũ.
+1. `/dashboard` → tab Dashboard có pill nền sáng (#2b3139), chữ trắng; Builder/Docs xám.
+2. Về landing `/` → không tab nào sáng.
+3. Hover tab active → pill giữ nguyên, không đổi gì thêm; hover tab inactive → nền hover nhẹ như cũ.
+4. Click Builder → sang trang builder (header riêng của builder, không có nav tabs — ngoài scope task này).
 
 - [ ] **Step 2: Sau khi Tri OK** — dùng skill superpowers:finishing-a-development-branch (merge ff-only vào main theo convention repo).
