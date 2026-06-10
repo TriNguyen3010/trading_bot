@@ -48,6 +48,7 @@ function toLaunchpadBot(b: DashboardBot): LaunchpadBot {
     timeframe: b.timeframe,
     mode: b.mode as LaunchpadBot['mode'],
     errorMsg: b.errorMsg,
+    stakeAmount: b.stakeAmount,
   };
 }
 
@@ -79,6 +80,9 @@ export function DashboardPage() {
     botName: string;
   }>(null);
   const [backtestBot, setBacktestBot] = useState<BacktestBot | null>(null);
+  // When the launchpad started the run itself, BacktestDialog opens straight
+  // into the running phase for this id.
+  const [backtestStartId, setBacktestStartId] = useState<number | null>(null);
   const [launchBotTarget, setLaunchBotTarget] = useState<LaunchpadBot | null>(
     null,
   );
@@ -383,7 +387,10 @@ export function DashboardPage() {
                           }
                           onBacktest={() => {
                             const rb = realById.get(card.id);
-                            if (rb)
+                            if (rb) {
+                              // Card path opens the setup phase — clear any
+                              // stale launchpad-started run id.
+                              setBacktestStartId(null);
                               setBacktestBot({
                                 id: rb.id,
                                 name: rb.name,
@@ -391,6 +398,7 @@ export function DashboardPage() {
                                 pair: rb.pair,
                                 timeframe: rb.timeframe,
                               });
+                            }
                           }}
                         />
                       ))}
@@ -452,9 +460,13 @@ export function DashboardPage() {
       <BacktestDialog
         open={backtestBot !== null}
         onOpenChange={(o) => {
-          if (!o) setBacktestBot(null);
+          if (!o) {
+            setBacktestBot(null);
+            setBacktestStartId(null);
+          }
         }}
         bot={backtestBot}
+        initialBacktestId={backtestStartId}
       />
 
       <LaunchpadModal
@@ -463,7 +475,7 @@ export function DashboardPage() {
           if (!o) setLaunchBotTarget(null);
         }}
         bot={launchBotTarget}
-        onBacktest={() => {
+        onBacktestStarted={(backtestId) => {
           if (launchBotTarget) {
             setBacktestBot({
               id: launchBotTarget.id,
@@ -472,6 +484,7 @@ export function DashboardPage() {
               pair: launchBotTarget.pair,
               timeframe: launchBotTarget.timeframe,
             });
+            setBacktestStartId(backtestId);
           }
           setLaunchBotTarget(null);
         }}
