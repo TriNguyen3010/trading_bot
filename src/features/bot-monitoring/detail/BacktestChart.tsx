@@ -113,10 +113,12 @@ export function BacktestChart({
   }, [status, series, focusRange, height]);
 
   // (Re)apply markers when the chart is built or trades/showExits change.
+  // Must also fire on every rebuild trigger (focusRange, height): a rebuild
+  // replaces the series, and markers would otherwise stay on the dead one.
   useEffect(() => {
     if (status !== 'ready' || !candleSeriesRef.current) return;
     candleSeriesRef.current.setMarkers(tradesToMarkers(trades, { showExits }));
-  }, [status, series, trades, showExits]);
+  }, [status, series, trades, showExits, focusRange, height]);
 
   if (status === 'loading')
     return (
