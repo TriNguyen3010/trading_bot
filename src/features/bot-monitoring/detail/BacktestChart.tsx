@@ -120,24 +120,26 @@ export function BacktestChart({
     candleSeriesRef.current.setMarkers(tradesToMarkers(trades, { showExits }));
   }, [status, series, trades, showExits, focusRange, height]);
 
-  if (status === 'loading')
+  // Placeholders reserve the chart's height so the embedding container (e.g.
+  // the backtest dialog) doesn't jump as the state moves loading→ready/error.
+  if (status !== 'ready') {
+    const message =
+      status === 'loading'
+        ? 'Loading chart…'
+        : status === 'empty'
+          ? 'No candle data'
+          : (error ?? "Couldn't load candles");
     return (
-      <div className="py-10 text-center text-sm text-fg-muted">
-        Loading chart…
+      <div
+        className={`grid place-items-center text-center text-sm ${
+          status === 'error' ? 'text-bearish' : 'text-fg-muted'
+        }`}
+        style={{ height }}
+      >
+        {message}
       </div>
     );
-  if (status === 'empty')
-    return (
-      <div className="py-10 text-center text-sm text-fg-muted">
-        No candle data
-      </div>
-    );
-  if (status === 'error')
-    return (
-      <div className="py-10 text-center text-sm text-bearish">
-        {error ?? "Couldn't load candles"}
-      </div>
-    );
+  }
   return (
     <div
       ref={elRef}
