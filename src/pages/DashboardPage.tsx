@@ -467,6 +467,13 @@ export function DashboardPage() {
         }}
         bot={backtestBot}
         initialBacktestId={backtestStartId}
+        onViewDetails={() => {
+          const id = backtestBot?.id;
+          // Close the dialog (clear both drivers) before leaving the page.
+          setBacktestBot(null);
+          setBacktestStartId(null);
+          if (id != null) navigate(`/bots/${id}`);
+        }}
       />
 
       <LaunchpadModal
