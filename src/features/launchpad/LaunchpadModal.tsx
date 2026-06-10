@@ -21,12 +21,8 @@ import {
 import { AgentOnboardingDialog } from '@/features/agent-wallet/AgentOnboardingDialog';
 import { ManageAgentsModal } from '@/features/agent-wallet/ManageAgentsModal';
 import { useActiveAgent } from '@/features/agent-wallet/useActiveAgent';
-import {
-  BacktestPanel,
-  DryRunPanel,
-  LivePanel,
-  shortAddress,
-} from './LaunchpadPanels';
+import { BacktestPanel, DryRunPanel, LivePanel } from './LaunchpadPanels';
+import { shortAddress } from './launchpad-helpers';
 import {
   launchBot,
   type LaunchMode,
@@ -36,7 +32,9 @@ import {
 const ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 
 /** A launchable mode, plus the backtest pseudo-mode (delegated to BacktestDialog). */
-export type LaunchpadMode = 'backtest' | LaunchMode;
+type LaunchpadMode = 'backtest' | LaunchMode;
+
+const MODE_ORDER: LaunchpadMode[] = ['backtest', 'dry-run', 'live'];
 
 export interface LaunchpadBot {
   id: number;
@@ -125,10 +123,33 @@ export function LaunchpadModal({
   const status = STATUS_META[bot.mode];
 
   const selectMode = (m: LaunchpadMode) => {
-    if (busy) return;
+    // Ignore re-clicks on the selected card — they must not wipe the risk ack.
+    if (busy || m === mode) return;
     setMode(m);
     setAck(false); // re-confirm risk every time Live is re-entered
     setError(null);
+  };
+
+  // WAI-ARIA radio pattern: arrow keys move both selection and focus
+  // (the cards use a roving tabindex — only the selected one is tabbable).
+  const handleModeKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const delta =
+      e.key === 'ArrowRight' || e.key === 'ArrowDown'
+        ? 1
+        : e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+          ? -1
+          : 0;
+    if (!delta) return;
+    e.preventDefault();
+    const next =
+      MODE_ORDER[
+        (MODE_ORDER.indexOf(mode) + delta + MODE_ORDER.length) %
+          MODE_ORDER.length
+      ];
+    selectMode(next);
+    const radios =
+      e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+    radios[MODE_ORDER.indexOf(next)]?.focus();
   };
 
   /** Both-or-none Telegram pair → arg for launchBot, or 'invalid'. */
@@ -330,6 +351,7 @@ export function LaunchpadModal({
               <div
                 role="radiogroup"
                 aria-label="Launch mode"
+                onKeyDown={handleModeKeyDown}
                 className="grid grid-cols-3 gap-3"
               >
                 <ModeCard
@@ -488,6 +510,7 @@ function ModeCard({
       // the Dry-run card's name would contain "live market" and collide with
       // the Live card in role queries.
       aria-label={title}
+      tabIndex={selected ? 0 : -1}
       disabled={disabled}
       onClick={onSelect}
       className={cn(

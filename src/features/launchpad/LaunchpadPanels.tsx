@@ -9,10 +9,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { AgentInfoResponse } from '@/types/api-helpers';
-
-export function shortAddress(addr: string): string {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
-}
+import { shortAddress } from './launchpad-helpers';
 
 const RANGE_PRESETS = [
   { label: '1 day', days: 1 },
@@ -81,7 +78,7 @@ function Disclosure({
 
 /* ── Telegram ────────────────────────────────────────────────────────── */
 
-export interface TelegramFieldValues {
+interface TelegramFieldValues {
   token: string;
   chatId: string;
   onTokenChange: (v: string) => void;
@@ -89,7 +86,7 @@ export interface TelegramFieldValues {
 }
 
 /** Bare token + chat-id inputs (no disclosure) — shared by dry-run & live. */
-export function TelegramInputs({
+function TelegramInputs({
   token,
   chatId,
   onTokenChange,
@@ -138,7 +135,7 @@ export function TelegramInputs({
 /** Disclosure-wrapped Telegram config. Auto-expands when a value is prefilled
  * (e.g. VITE_TELEGRAM_BOT_TOKEN) so a both-or-none validation error never
  * points at hidden fields. */
-export function TelegramFields(props: TelegramFieldValues) {
+function TelegramFields(props: TelegramFieldValues) {
   return (
     <Disclosure
       label="Telegram notifications"

@@ -1,11 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import {
-  BacktestPanel,
-  DryRunPanel,
-  LivePanel,
-  shortAddress,
-} from './LaunchpadPanels';
+import { BacktestPanel, DryRunPanel, LivePanel } from './LaunchpadPanels';
+import { shortAddress } from './launchpad-helpers';
 import type { AgentInfoResponse } from '@/types/api-helpers';
 
 const AGENT: AgentInfoResponse = {

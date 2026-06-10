@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import {
   LaunchpadModal,
@@ -107,7 +107,6 @@ beforeEach(() => {
     .mockReset()
     .mockReturnValue({ agent: AGENT, loading: false, refresh: vi.fn() });
 });
-afterEach(() => vi.unstubAllEnvs());
 
 describe('LaunchpadModal', () => {
   it('renders 3 mode radios with dry-run pre-selected', () => {
@@ -302,5 +301,29 @@ describe('LaunchpadModal', () => {
     expect(
       screen.getAllByText(/agent onboarding/i).length,
     ).toBeGreaterThanOrEqual(1);
+  });
+
+  it('live: re-clicking the selected Live card does not reset the acknowledgement', () => {
+    renderModal();
+    selectMode(/live/i);
+    ackRisk();
+    expect(actionButton(/go live/i)).toBeEnabled();
+    selectMode(/live/i); // accidental re-click on the already-selected card
+    expect(actionButton(/go live/i)).toBeEnabled();
+  });
+
+  it('mode radios support arrow-key navigation', () => {
+    renderModal();
+    // dry-run is selected; ArrowRight moves to live, ArrowLeft back.
+    fireEvent.keyDown(screen.getByRole('radiogroup'), { key: 'ArrowRight' });
+    expect(screen.getByRole('radio', { name: /live/i })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    fireEvent.keyDown(screen.getByRole('radiogroup'), { key: 'ArrowLeft' });
+    expect(screen.getByRole('radio', { name: /dry-run/i })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
   });
 });
