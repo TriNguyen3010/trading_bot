@@ -72,10 +72,13 @@ describe('BacktestPanel', () => {
 describe('DryRunPanel', () => {
   it('keeps Telegram fields collapsed until expanded', () => {
     render(<DryRunPanel {...telegramProps} />);
+    const toggle = screen.getByRole('button', {
+      name: /telegram notifications/i,
+    });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByLabelText(/telegram bot token/i)).toBeNull();
-    fireEvent.click(
-      screen.getByRole('button', { name: /telegram notifications/i }),
-    );
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByLabelText(/telegram bot token/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/telegram chat id/i)).toBeInTheDocument();
   });

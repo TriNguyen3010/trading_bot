@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -55,10 +55,13 @@ function Disclosure({
   children: React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const contentId = useId();
   return (
     <div className="mt-4">
       <button
         type="button"
+        aria-expanded={expanded}
+        aria-controls={contentId}
         className="flex items-center gap-2 text-xs font-semibold text-fg-secondary hover:text-fg"
         onClick={() => setExpanded((v) => !v)}
       >
@@ -71,7 +74,11 @@ function Disclosure({
         {label}
         {hint && <span className="font-normal text-fg-muted">· {hint}</span>}
       </button>
-      {expanded && <div className="mt-3">{children}</div>}
+      {expanded && (
+        <div id={contentId} className="mt-3">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

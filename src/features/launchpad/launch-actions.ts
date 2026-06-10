@@ -16,7 +16,7 @@ export class AgentNotActiveError extends Error {
 export class AgentAddressMismatchError extends Error {
   constructor(expected: string, actual: string) {
     super(
-      `API wallet address không khớp active agent. Đang active: ${actual}; bạn nhập: ${expected}.`,
+      `API wallet address does not match the active agent. Active: ${actual}; you entered: ${expected}.`,
     );
     this.name = 'AgentAddressMismatchError';
   }

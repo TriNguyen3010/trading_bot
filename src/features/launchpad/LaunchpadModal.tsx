@@ -34,6 +34,8 @@ const ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 /** A launchable mode, plus the backtest pseudo-mode (delegated to BacktestDialog). */
 type LaunchpadMode = 'backtest' | LaunchMode;
 
+// Must match the card render order — keyboard nav maps these indexes onto
+// the radiogroup's DOM order.
 const MODE_ORDER: LaunchpadMode[] = ['backtest', 'dry-run', 'live'];
 
 export interface LaunchpadBot {
@@ -87,10 +89,13 @@ export function LaunchpadModal({
   const [days, setDays] = useState(7);
   const [stake, setStake] = useState('100');
   const [wallet, setWallet] = useState('1000');
-  // Dry-run / live settings
+  // Dry-run / live settings. Both env defaults must come as a pair — a
+  // token-only prefill would trip the both-or-none check and block the
+  // one-click dry-run with a validation error on first open.
   const telegramTokenDefault = import.meta.env.VITE_TELEGRAM_BOT_TOKEN ?? '';
+  const telegramChatIdDefault = import.meta.env.VITE_TELEGRAM_CHAT_ID ?? '';
   const [tgToken, setTgToken] = useState(telegramTokenDefault);
-  const [tgChatId, setTgChatId] = useState('');
+  const [tgChatId, setTgChatId] = useState(telegramChatIdDefault);
   const [apiWalletAddress, setApiWalletAddress] = useState('');
   const [ack, setAck] = useState(false);
 
@@ -111,11 +116,11 @@ export function LaunchpadModal({
       setStake('100');
       setWallet('1000');
       setTgToken(telegramTokenDefault);
-      setTgChatId('');
+      setTgChatId(telegramChatIdDefault);
       setApiWalletAddress('');
       setAck(false);
     }
-  }, [open, telegramTokenDefault]);
+  }, [open, telegramTokenDefault, telegramChatIdDefault]);
 
   if (!bot) return null;
 
@@ -292,7 +297,10 @@ export function LaunchpadModal({
               </DialogPrimitive.Close>
             </div>
 
-            <div className="px-7 py-6">
+            {/* Scrollable body — same pattern as BacktestDialog: on short
+                viewports the centered dialog would otherwise clip the action
+                bar with no way to reach it. */}
+            <div className="max-h-[calc(100vh-160px)] overflow-y-auto px-7 py-6">
               {error && (
                 <div className="mb-5 rounded-lg border border-bearish/40 bg-bearish-subtle p-3 text-xs text-bearish">
                   {error}
