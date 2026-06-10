@@ -57,7 +57,7 @@ describe('validateBuilder — telegram notifications', () => {
     useBuilderStore.getState().resetAll();
   });
 
-  const requiredMsg = strings.notifications.required;
+  const requiredMsg = strings.notifications.requiredIssue;
 
   it('flags an enabled telegram tick with a missing token', () => {
     useBuilderStore

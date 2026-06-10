@@ -152,7 +152,7 @@ export function validateBuilder(state: BuilderState): BuilderIssue[] {
   if (n.telegramEnabled && (!n.token.trim() || !n.chatId.trim())) {
     issues.push({
       stepId: 'close-method',
-      message: strings.notifications.required,
+      message: strings.notifications.requiredIssue,
     });
   }
 

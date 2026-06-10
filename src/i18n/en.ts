@@ -306,7 +306,14 @@ export const strings = {
     tokenPlaceholder: 'Paste your bot token',
     chatIdLabel: 'Chat ID',
     chatIdPlaceholder: 'e.g. 123456789',
+    // Inline warning shown under the inputs inside the Notifications section.
     required: 'Enter bot token and chat ID to enable.',
+    // Same rule surfaced as a builder issue — shown on a step card / Cypheus
+    // list away from the Notifications section, so it needs the "Telegram:"
+    // prefix to self-explain.
+    requiredIssue: 'Telegram: enter bot token and chat ID to enable.',
+    // Deploy-modal recap line prefix (chat ID is appended in a styled span).
+    recapPrefix: 'Telegram → chat',
   },
 } as const;
 
