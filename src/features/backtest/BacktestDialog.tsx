@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { AlertTriangle, Eye, Loader2, Rocket, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -77,6 +77,24 @@ export function BacktestDialog({
   // poll.item because backtestId is unchanged between running and result.
   const poll = useBacktestPoll(backtestId);
 
+  // Render-synced mirrors so effects/async code can read the LATEST value
+  // without re-firing on it (step in the open-reset, open after the await).
+  const stepRef = useRef(step);
+  stepRef.current = step;
+  const openRef = useRef(open);
+  openRef.current = open;
+  // Which bot the in-flight run belongs to — re-opening for a DIFFERENT bot
+  // must not show the old run's progress under the new bot's header.
+  const runBotIdRef = useRef<number | null>(null);
+
+  const resetToSetup = useCallback(() => {
+    setStep('setup');
+    setBacktestId(null);
+    setError(null);
+    setSubmitting(false);
+    setShowExits(true);
+  }, []);
+
   // Advance to result when the poll reports terminal.
   useEffect(() => {
     if (step === 'running' && poll.done) {
@@ -92,16 +110,16 @@ export function BacktestDialog({
     }
   }, [step, poll.done, poll.error, onComplete]);
 
-  // Reset to a clean setup state each time the dialog re-opens.
+  // Reset to a clean setup state each time the dialog re-opens — EXCEPT when
+  // the SAME bot's run is still in flight: then restore its progress view
+  // (the poll feeding onComplete survives). A different bot's reopen resets.
   useEffect(() => {
     if (open && !initialBacktestId) {
-      setStep('setup');
-      setBacktestId(null);
-      setError(null);
-      setSubmitting(false);
-      setShowExits(true);
+      if (stepRef.current === 'running' && bot?.id === runBotIdRef.current)
+        return;
+      resetToSetup();
     }
-  }, [open, initialBacktestId]);
+  }, [open, initialBacktestId, bot?.id, resetToSetup]);
 
   // The launchpad can start the run itself and only then open this dialog —
   // initialBacktestId may arrive on any open, not just the first mount.
@@ -132,13 +150,9 @@ export function BacktestDialog({
   // terminates, step leaves 'running' and this effect cleans up.
   useEffect(() => {
     if (!open && !initialBacktestId && step !== 'running') {
-      setStep('setup');
-      setBacktestId(null);
-      setError(null);
-      setSubmitting(false);
-      setShowExits(true);
+      resetToSetup();
     }
-  }, [open, initialBacktestId, step]);
+  }, [open, initialBacktestId, step, resetToSetup]);
 
   const failed = poll.item ? isBacktestFailed(poll.item) : false;
 
@@ -165,6 +179,17 @@ export function BacktestDialog({
     const payload = buildBacktestRequest(bot, { days, stake, wallet });
     try {
       const res = await backtestApi.start(payload);
+      if (!openRef.current) {
+        // Closed while the POST was in flight — don't revive a hidden
+        // 'running' dialog; best-effort cancel the run we just started.
+        try {
+          await backtestApi.cancel(res.backtest_id);
+        } catch {
+          /* best-effort */
+        }
+        return;
+      }
+      runBotIdRef.current = bot.id;
       setBacktestId(res.backtest_id);
       setStep('running');
     } catch (err) {
@@ -332,7 +357,7 @@ export function BacktestDialog({
                 </p>
                 <button
                   type="button"
-                  onClick={() => setStep('setup')}
+                  onClick={resetToSetup}
                   className="mt-2 text-xs text-fg-muted underline-offset-4 hover:text-fg hover:underline"
                 >
                   Try again
@@ -504,11 +529,7 @@ export function BacktestDialog({
                   variant="secondary"
                   size="md"
                   className="mt-4"
-                  onClick={() => {
-                    setStep('setup');
-                    setBacktestId(null);
-                    setError(null);
-                  }}
+                  onClick={resetToSetup}
                 >
                   Try again
                 </Button>
