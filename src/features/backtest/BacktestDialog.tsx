@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { AlertTriangle, Loader2, Rocket, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,8 @@ export interface BacktestDialogProps {
   /** Fired once when a run terminates (success or fail) — the bot's backtest
    * history has changed, so callers can refetch instead of forcing a reload. */
   onComplete?: () => void;
-  /** Test-only seam: mount straight into the running/result phase. */
+  /** Open straight into the running phase for an externally-started run
+   * (LaunchpadModal starts the backtest itself). Also used as a test seam. */
   initialBacktestId?: number | null;
 }
 
@@ -89,6 +90,28 @@ export function BacktestDialog({
       setError(null);
       setSubmitting(false);
       setResultTab('summary');
+    }
+  }, [open, initialBacktestId]);
+
+  // The launchpad can start the run itself and only then open this dialog —
+  // initialBacktestId may arrive on any open, not just the first mount.
+  // Each id is consumed exactly ONCE (tracked in a ref): on a mount-time
+  // render the useState initializers already adopted it, and re-asserting
+  // 'running' later would clobber the poll-advance transition to
+  // result/setup and bounce "Run again" straight back to running.
+  const consumedInitialIdRef = useRef<number | null>(initialBacktestId);
+  useEffect(() => {
+    if (
+      open &&
+      initialBacktestId != null &&
+      initialBacktestId !== consumedInitialIdRef.current
+    ) {
+      consumedInitialIdRef.current = initialBacktestId;
+      setBacktestId(initialBacktestId);
+      setError(null);
+      setSubmitting(false);
+      setResultTab('summary');
+      setStep('running');
     }
   }, [open, initialBacktestId]);
 

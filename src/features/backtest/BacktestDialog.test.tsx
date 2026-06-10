@@ -550,4 +550,20 @@ describe('BacktestDialog', () => {
     expect(screen.getByText('Trades')).toBeInTheDocument();
     expect(screen.getByText('Win rate')).toBeInTheDocument();
   });
+
+  it('enters the running phase when reopened with initialBacktestId', () => {
+    const { rerender } = render(
+      <BacktestDialog open={false} bot={bot} onOpenChange={() => {}} />,
+    );
+    rerender(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        initialBacktestId={123}
+      />,
+    );
+    expect(screen.getByText(/Crunching the numbers/i)).toBeInTheDocument();
+    expect(screen.getByText(/Backtest #123/)).toBeInTheDocument();
+  });
 });
