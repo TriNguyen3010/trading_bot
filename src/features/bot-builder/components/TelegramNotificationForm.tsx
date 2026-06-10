@@ -62,7 +62,13 @@ export function TelegramNotificationForm() {
               onChange={(e) => setNotifications({ chatId: e.target.value })}
             />
             {missingCreds ? (
-              <p className="text-xs text-danger">{t.required}</p>
+              <p
+                className="text-xs text-danger"
+                role="alert"
+                aria-live="polite"
+              >
+                {t.required}
+              </p>
             ) : null}
           </div>
         ) : null}

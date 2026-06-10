@@ -272,7 +272,8 @@ export function LaunchpadModal({
                 <p className="mt-2 text-2xs text-fg-muted">
                   Chỉ dùng khi Go Live. API wallet address phải khớp active
                   agent mà backend đang giữ private key. Điền token + Chat ID để
-                  bot khởi động với Telegram bật; để trống cả hai = tắt.
+                  ghi đè Telegram khi khởi động; để trống cả hai = giữ nguyên
+                  cấu hình Telegram đã lưu lúc tạo bot.
                 </p>
               </div>
             </div>

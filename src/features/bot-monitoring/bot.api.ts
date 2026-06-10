@@ -26,6 +26,9 @@ const DISABLE_TELEGRAM_PATCH = {
 export const botApi = {
   list: () => http<BotOut[]>('GET', '/bot/list'),
   getConfig: (id: number) => http<BotConfigOut>('GET', `/bot/${id}/config`),
+  // Intentionally kept though `launchBot` no longer calls it (launch is now
+  // non-destructive). Backs a future per-bot "turn Telegram off" action; still
+  // unit-tested. Don't treat as accidental leftover.
   disableTelegram: (id: number) =>
     http<BotConfigOut>('PATCH', `/bot/${id}/config`, DISABLE_TELEGRAM_PATCH),
   enableTelegram: (id: number, cfg: { token: string; chat_id: string }) =>

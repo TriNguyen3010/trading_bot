@@ -22,7 +22,7 @@ describe('botApi lifecycle', () => {
     expect(res.desired_status).toBe('running');
   });
 
-  it('disableTelegram PATCHes telegram.enabled=false before lifecycle start', async () => {
+  it('disableTelegram PATCHes telegram.enabled=false', async () => {
     mockHttp.mockResolvedValueOnce({ config: {} });
     const res = await botApi.disableTelegram(42);
     expect(mockHttp).toHaveBeenCalledWith('PATCH', '/bot/42/config', {
