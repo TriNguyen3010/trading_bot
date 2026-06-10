@@ -191,7 +191,7 @@ describe('useAgentSignFlow', () => {
     expect(result.current.state.stage).toBe('error');
     if (result.current.state.stage === 'error') {
       expect(result.current.state.message).toContain(
-        'Hyperliquid yêu cầu account đã deposit',
+        'Hyperliquid requires a funded account',
       );
       expect(result.current.state.message).toContain(
         '0x718efe21485ba7a7fadd62ce49d8465b80905142',

@@ -16,7 +16,7 @@ export class WalletChainError extends Error {
   }
 }
 
-/** EIP-712 sign_payload từ BE là object opaque. Parse nonce defensively. */
+/** The EIP-712 sign_payload from BE is an opaque object. Parse nonce defensively. */
 export function extractNonceFromSignPayload(payload: unknown): number {
   if (payload !== null && typeof payload === 'object' && 'message' in payload) {
     const msg = (payload as Record<string, unknown>).message as Record<
@@ -82,8 +82,8 @@ export function formatAgentFlowError(err: unknown): string {
   if (isHyperliquidDepositRequired(err)) {
     const detail = getBackendDetail(err);
     const user = /\bUser:\s*(0x[a-fA-F0-9]{40})\b/.exec(detail)?.[1];
-    const suffix = user ? ` cho ví ${user}` : '';
-    return `Hyperliquid yêu cầu account đã deposit trước khi tạo API/agent wallet. Hãy deposit USDC vào Hyperliquid${suffix}, chờ tiền được credit vào perps/cross margin, rồi thử Generate & Sign lại.`;
+    const suffix = user ? ` for wallet ${user}` : '';
+    return `Hyperliquid requires a funded account before creating an API/agent wallet. Deposit USDC into Hyperliquid${suffix}, wait until it is credited to perps/cross margin, then try Generate & Sign again.`;
   }
   return getBackendDetail(err) || 'Unknown error';
 }
@@ -134,7 +134,7 @@ async function ensureTypedDataChain(
     });
   } catch {
     throw new WalletChainError(
-      `Ví đang ở ${formatChain(activeChainId)}, nhưng chữ ký Hyperliquid cần ${formatChain(requiredChainId)}. Vui lòng switch network sang ${formatChain(requiredChainId)} rồi thử lại.`,
+      `Your wallet is on ${formatChain(activeChainId)}, but the Hyperliquid signature requires ${formatChain(requiredChainId)}. Please switch network to ${formatChain(requiredChainId)} and try again.`,
     );
   }
 }

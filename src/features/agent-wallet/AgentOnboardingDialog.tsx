@@ -14,7 +14,7 @@ export interface AgentOnboardingDialogProps {
   suggestedLimit?: number | null;
   /** Called once Confirm succeeds — caller resumes the original action (e.g. launch live bot). */
   onSuccess: (agent: AgentCreateResponse) => void;
-  /** Called when user clicks "Quản lý agent" from the cap-full state. Optional —
+  /** Called when user clicks "Manage agents" from the cap-full state. Optional —
    *  callers that haven't wired it yet will simply not show the button for the cap-full path. */
   onManageAgents?: () => void;
 }
@@ -157,10 +157,11 @@ function IdleStep({
     <div className="space-y-5">
       <div>
         <h2 className="mb-1 text-xl font-bold text-fg">
-          Tại sao cần Agent ví?
+          Why do you need an agent wallet?
         </h2>
         <p className="text-sm text-fg-secondary">
-          Agent là sub-key cho phép bot trade thay bạn trên Hyperliquid.
+          An agent is a sub-key that lets the bot trade on your behalf on
+          Hyperliquid.
         </p>
       </div>
 
@@ -168,22 +169,22 @@ function IdleStep({
         <li className="flex items-start gap-2">
           <span className="mt-0.5 shrink-0 text-brand">•</span>
           <span>
-            <span className="font-medium text-fg">Ký 1 lần</span> — không cần
-            approve từng lệnh
+            <span className="font-medium text-fg">Sign once</span> — no need to
+            approve every order
           </span>
         </li>
         <li className="flex items-start gap-2">
           <span className="mt-0.5 shrink-0 text-brand">•</span>
           <span>
-            <span className="font-medium text-fg">Bot tự trade 24/7</span> — kể
-            cả khi bạn offline
+            <span className="font-medium text-fg">Bot trades 24/7</span> — even
+            while you are offline
           </span>
         </li>
         <li className="flex items-start gap-2">
           <span className="mt-0.5 shrink-0 text-brand">•</span>
           <span>
-            <span className="font-medium text-fg">Spending cap</span> — giới hạn
-            ngân sách hàng ngày, tự bảo vệ rủi ro
+            <span className="font-medium text-fg">Spending cap</span> — caps
+            your daily budget to limit risk
           </span>
         </li>
       </ul>
@@ -215,7 +216,7 @@ function IdleStep({
         />
         {limitInvalid ? (
           <p className="text-2xs text-bearish">
-            Spending limit phải là số ≥ 0.
+            Spending limit must be a number ≥ 0.
           </p>
         ) : (
           limitInput && (
@@ -249,10 +250,10 @@ function IdleStep({
 function BusyStep({ stage }: { stage: 'creating' | 'signing' | 'confirming' }) {
   const message =
     stage === 'creating'
-      ? 'Đang chuẩn bị ký...'
+      ? 'Preparing signature...'
       : stage === 'signing'
-        ? 'Vui lòng ký trên ví Coin98 — sẽ pop-up window'
-        : 'Đang xác nhận trên Hyperliquid...';
+        ? 'Please sign in the Coin98 wallet — a window will pop up'
+        : 'Confirming on Hyperliquid...';
 
   return (
     <div className="flex flex-col items-center gap-4 py-8">
@@ -331,11 +332,11 @@ function CapFullStep({ onManageAgents }: { onManageAgents: () => void }) {
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         <div className="space-y-1 text-sm">
           <p className="font-semibold text-fg">
-            Đã đạt giới hạn agent Hyperliquid
+            Hyperliquid agent limit reached
           </p>
           <p className="text-fg-secondary">
-            Ví của bạn đã đạt số lượng agent tối đa trên Hyperliquid. Hãy revoke
-            một agent cũ để giải phóng slot, sau đó tạo lại agent mới.
+            Your wallet has reached the maximum number of agents on Hyperliquid.
+            Revoke an old agent to free a slot, then create a new one.
           </p>
         </div>
       </div>
@@ -345,7 +346,7 @@ function CapFullStep({ onManageAgents }: { onManageAgents: () => void }) {
         className="w-full"
         onClick={() => onManageAgents()}
       >
-        Quản lý agent
+        Manage agents
       </Button>
     </div>
   );

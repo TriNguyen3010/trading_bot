@@ -197,13 +197,13 @@ describe('Hyperliquid deposit-required error helpers', () => {
     expect(isHyperliquidDepositRequired(err)).toBe(true);
   });
 
-  it('formats deposit-required errors as actionable Vietnamese copy', () => {
+  it('formats deposit-required errors as actionable English copy', () => {
     const err = new HttpError(
       400,
       '{"detail":"Hyperliquid requires a deposit before creating an agent wallet. Please deposit funds to your Hyperliquid account and try again. (Hyperliquid: Must deposit before performing actions. User: 0x718efe21485ba7a7fadd62ce49d8465b80905142)"}',
     );
     expect(formatAgentFlowError(err)).toBe(
-      'Hyperliquid yêu cầu account đã deposit trước khi tạo API/agent wallet. Hãy deposit USDC vào Hyperliquid cho ví 0x718efe21485ba7a7fadd62ce49d8465b80905142, chờ tiền được credit vào perps/cross margin, rồi thử Generate & Sign lại.',
+      'Hyperliquid requires a funded account before creating an API/agent wallet. Deposit USDC into Hyperliquid for wallet 0x718efe21485ba7a7fadd62ce49d8465b80905142, wait until it is credited to perps/cross margin, then try Generate & Sign again.',
     );
   });
 

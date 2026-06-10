@@ -79,7 +79,7 @@ describe('AgentOnboardingDialog', () => {
         onSuccess={() => {}}
       />,
     );
-    expect(screen.getByText(/ký trên ví/i)).toBeInTheDocument();
+    expect(screen.getByText(/sign in the coin98 wallet/i)).toBeInTheDocument();
   });
 
   it('calls onSuccess when state transitions to success', async () => {
@@ -179,7 +179,11 @@ describe('AgentOnboardingDialog', () => {
   it('error state shows retry + cancel', () => {
     const reset = vi.fn();
     vi.mocked(useAgentSignFlow).mockReturnValue({
-      state: { stage: 'error', message: 'Bạn đã huỷ ký', userRejected: true },
+      state: {
+        stage: 'error',
+        message: 'Signature rejected',
+        userRejected: true,
+      },
       run: vi.fn(),
       reset,
     });
@@ -190,14 +194,14 @@ describe('AgentOnboardingDialog', () => {
         onSuccess={() => {}}
       />,
     );
-    expect(screen.getByText(/huỷ ký/i)).toBeInTheDocument();
+    expect(screen.getByText(/signature rejected/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Retry/i }));
     expect(reset).toHaveBeenCalled();
   });
 });
 
 describe('AgentOnboardingDialog — cap-full state', () => {
-  it('renders CapFullStep with "Quản lý agent" button when error is cap-full', () => {
+  it('renders CapFullStep with "Manage agents" button when error is cap-full', () => {
     vi.mocked(useAgentSignFlow).mockReturnValue({
       state: {
         stage: 'error',
@@ -219,10 +223,10 @@ describe('AgentOnboardingDialog — cap-full state', () => {
     );
 
     expect(
-      screen.getByText(/Đã đạt giới hạn agent Hyperliquid/),
+      screen.getByText(/Hyperliquid agent limit reached/),
     ).toBeInTheDocument();
 
-    const manageBtn = screen.getByRole('button', { name: /Quản lý agent/i });
+    const manageBtn = screen.getByRole('button', { name: /Manage agents/i });
     fireEvent.click(manageBtn);
     expect(onManageAgents).toHaveBeenCalledTimes(1);
   });
@@ -250,7 +254,7 @@ describe('AgentOnboardingDialog — cap-full state', () => {
     // Should show generic error retry UI, NOT the cap-full text
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
     expect(
-      screen.queryByText(/Đã đạt giới hạn agent Hyperliquid/),
+      screen.queryByText(/Hyperliquid agent limit reached/),
     ).not.toBeInTheDocument();
   });
 
@@ -277,12 +281,12 @@ describe('AgentOnboardingDialog — cap-full state', () => {
       />,
     );
 
-    // No cap-full banner and no no-op "Quản lý agent" button…
+    // No cap-full banner and no no-op "Manage agents" button…
     expect(
-      screen.queryByText(/Đã đạt giới hạn agent Hyperliquid/),
+      screen.queryByText(/Hyperliquid agent limit reached/),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: /Quản lý agent/i }),
+      screen.queryByRole('button', { name: /Manage agents/i }),
     ).not.toBeInTheDocument();
     // …instead a generic error with a working Retry.
     fireEvent.click(screen.getByRole('button', { name: /Retry/i }));

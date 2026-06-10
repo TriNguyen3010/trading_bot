@@ -34,7 +34,7 @@ export function useAgentRevokeFlow(): UseAgentRevokeFlowResult {
     if (!walletAddress) {
       setState({
         stage: 'error',
-        message: 'Wallet chưa connect',
+        message: 'Wallet not connected',
         userRejected: false,
       });
       return;
@@ -43,7 +43,7 @@ export function useAgentRevokeFlow(): UseAgentRevokeFlowResult {
     if (!provider) {
       setState({
         stage: 'error',
-        message: 'Không tìm thấy ví — vui lòng cài Coin98',
+        message: 'Wallet not found — please install Coin98',
         userRejected: false,
       });
       return;
@@ -88,9 +88,9 @@ export function useAgentRevokeFlow(): UseAgentRevokeFlowResult {
       setState({
         stage: 'error',
         message: userRejected
-          ? 'Bạn đã huỷ ký — agent không bị revoke'
+          ? 'Signature rejected — agent was not revoked'
           : noProvider
-            ? 'Không tìm thấy ví — vui lòng cài Coin98'
+            ? 'Wallet not found — please install Coin98'
             : err instanceof Error
               ? err.message
               : 'Unknown error',
