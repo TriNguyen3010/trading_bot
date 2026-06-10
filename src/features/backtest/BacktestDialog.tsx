@@ -6,7 +6,7 @@ import { formatBackendError } from '@/lib/format-error';
 import { backtestApi } from './backtest.api';
 import { useBacktestPoll } from './useBacktestPoll';
 import {
-  presetToTimerange,
+  buildBacktestRequest,
   isBacktestFailed,
   extractMetrics,
   extractTrades,
@@ -15,7 +15,6 @@ import {
   formatTotalProfit,
   quoteCurrencyFromPair,
 } from './backtest-helpers';
-import type { BacktestRequest } from '@/types/api-helpers';
 
 export interface BacktestBot {
   id: number;
@@ -115,19 +114,7 @@ export function BacktestDialog({
   const runBacktest = async () => {
     setSubmitting(true);
     setError(null);
-    const payload: BacktestRequest = {
-      bot_id: bot.id,
-      strategy: bot.strategyName ?? '',
-      timeframe: bot.timeframe,
-      timerange: presetToTimerange(days),
-      stake_amount: Number(stake),
-      dry_run_wallet: Number(wallet),
-      enable_protections: true,
-      // Schema patch: generated BacktestRequest marks `backtest_cache` as
-      // required (no `?`), despite the openapi `@default day`. Pass null so
-      // BE falls back to its own `day` default. See task notes.
-      backtest_cache: null,
-    };
+    const payload = buildBacktestRequest(bot, { days, stake, wallet });
     try {
       const res = await backtestApi.start(payload);
       setBacktestId(res.backtest_id);

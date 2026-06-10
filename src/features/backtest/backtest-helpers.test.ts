@@ -10,6 +10,7 @@ import {
   extractTrades,
   formatTradeDuration,
   formatTradeTime,
+  buildBacktestRequest,
 } from './backtest-helpers';
 import type { BacktestHistoryItem } from '@/types/api-helpers';
 
@@ -288,5 +289,30 @@ describe('formatTradeTime', () => {
   it('formats close_timestamp correctly', () => {
     // 1777272900000 = 2026-04-27 06:55:00 UTC
     expect(formatTradeTime(1777272900000)).toBe('Apr 27 06:55');
+  });
+});
+
+describe('buildBacktestRequest', () => {
+  it('builds the /backtest/start payload from bot + setup values', () => {
+    const req = buildBacktestRequest(
+      { id: 42, strategyName: 'Gamma', timeframe: '5m' },
+      { days: 7, stake: '100', wallet: '1000' },
+    );
+    expect(req.bot_id).toBe(42);
+    expect(req.strategy).toBe('Gamma');
+    expect(req.timeframe).toBe('5m');
+    expect(req.timerange).toMatch(/^\d{8}-\d{8}$/);
+    expect(req.stake_amount).toBe(100);
+    expect(req.dry_run_wallet).toBe(1000);
+    expect(req.enable_protections).toBe(true);
+    expect(req.backtest_cache).toBeNull();
+  });
+
+  it('falls back to empty strategy when strategyName is null', () => {
+    const req = buildBacktestRequest(
+      { id: 1, strategyName: null, timeframe: '1h' },
+      { days: 1, stake: '50', wallet: '500' },
+    );
+    expect(req.strategy).toBe('');
   });
 });

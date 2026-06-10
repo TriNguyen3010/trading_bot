@@ -1,4 +1,4 @@
-import type { BacktestHistoryItem } from '@/types/api-helpers';
+import type { BacktestHistoryItem, BacktestRequest } from '@/types/api-helpers';
 
 /** N-day window ending `now`, as Freqtrade timerange "YYYYMMDD-YYYYMMDD" (UTC). */
 export function presetToTimerange(
@@ -223,5 +223,32 @@ export function extractMetrics(item: BacktestHistoryItem): BacktestMetrics {
         : null,
     sharpe: comp?.sharpe ?? null,
     avgTrade: comp?.duration_avg ?? null,
+  };
+}
+
+export interface BacktestSetupValues {
+  days: number;
+  stake: string;
+  wallet: string;
+}
+
+/** The /backtest/start payload — shared by BacktestDialog and LaunchpadModal
+ * so the two entry points can't drift. */
+export function buildBacktestRequest(
+  bot: { id: number; strategyName: string | null; timeframe: string },
+  values: BacktestSetupValues,
+): BacktestRequest {
+  return {
+    bot_id: bot.id,
+    strategy: bot.strategyName ?? '',
+    timeframe: bot.timeframe,
+    timerange: presetToTimerange(values.days),
+    stake_amount: Number(values.stake),
+    dry_run_wallet: Number(values.wallet),
+    enable_protections: true,
+    // Schema patch: generated BacktestRequest marks `backtest_cache` as
+    // required (no `?`), despite the openapi `@default day`. Pass null so
+    // BE falls back to its own `day` default.
+    backtest_cache: null,
   };
 }
