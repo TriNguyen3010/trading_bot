@@ -10,11 +10,23 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import { formatBackendError } from '@/lib/format-error';
 import { botApi } from '@/features/bot-monitoring/bot.api';
+import { backtestApi } from '@/features/backtest/backtest.api';
+import {
+  buildBacktestRequest,
+  quoteCurrencyFromPair,
+} from '@/features/backtest/backtest-helpers';
 import { AgentOnboardingDialog } from '@/features/agent-wallet/AgentOnboardingDialog';
 import { ManageAgentsModal } from '@/features/agent-wallet/ManageAgentsModal';
+import { useActiveAgent } from '@/features/agent-wallet/useActiveAgent';
+import {
+  BacktestPanel,
+  DryRunPanel,
+  LivePanel,
+  shortAddress,
+} from './LaunchpadPanels';
 import {
   launchBot,
   type LaunchMode,
@@ -22,6 +34,9 @@ import {
 } from './launch-actions';
 
 const ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
+
+/** A launchable mode, plus the backtest pseudo-mode (delegated to BacktestDialog). */
+export type LaunchpadMode = 'backtest' | LaunchMode;
 
 export interface LaunchpadBot {
   id: number;
@@ -31,81 +46,131 @@ export interface LaunchpadBot {
   timeframe: string;
   mode: 'LIVE' | 'DRY-RUN' | 'PAUSED' | 'ERROR';
   errorMsg: string | null;
+  /** Stake per trade from bot config — null when the config didn't load. */
+  stakeAmount: number | null;
 }
 
 export interface LaunchpadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   bot: LaunchpadBot | null;
-  onBacktest: () => void;
+  /** The launchpad already POSTed /backtest/start — the parent should open
+   * BacktestDialog straight on its running phase with this id. */
+  onBacktestStarted: (backtestId: number) => void;
   onLaunched: () => void;
 }
+
+const STATUS_META: Record<
+  LaunchpadBot['mode'],
+  { label: string; dot: string }
+> = {
+  LIVE: { label: 'Live', dot: 'bg-bullish' },
+  'DRY-RUN': { label: 'Dry-run', dot: 'bg-brand' },
+  PAUSED: { label: 'Paused', dot: 'bg-fg-muted' },
+  ERROR: { label: 'Error', dot: 'bg-bearish' },
+};
+
+const FACT_CHIP =
+  'inline-flex items-center gap-1.5 rounded-full border border-border-subtle bg-surface px-2.5 py-1 text-2xs text-fg-secondary';
 
 export function LaunchpadModal({
   open,
   onOpenChange,
   bot,
-  onBacktest,
+  onBacktestStarted,
   onLaunched,
 }: LaunchpadModalProps) {
-  const [busy, setBusy] = useState<LaunchMode | null>(null);
+  const [mode, setMode] = useState<LaunchpadMode>('dry-run');
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [manageAgentsOpen, setManageAgentsOpen] = useState(false);
+  // Backtest setup (defaults mirror BacktestDialog)
+  const [days, setDays] = useState(7);
+  const [stake, setStake] = useState('100');
+  const [wallet, setWallet] = useState('1000');
+  // Dry-run / live settings
   const telegramTokenDefault = import.meta.env.VITE_TELEGRAM_BOT_TOKEN ?? '';
-  const [apiWalletAddress, setApiWalletAddress] = useState('');
   const [tgToken, setTgToken] = useState(telegramTokenDefault);
   const [tgChatId, setTgChatId] = useState('');
+  const [apiWalletAddress, setApiWalletAddress] = useState('');
+  const [ack, setAck] = useState(false);
+
+  const {
+    agent,
+    loading: agentLoading,
+    refresh: refreshAgent,
+  } = useActiveAgent({ enabled: open && bot != null });
 
   useEffect(() => {
     if (open) {
-      setBusy(null);
+      setMode('dry-run');
+      setBusy(false);
       setError(null);
       setOnboardingOpen(false);
       setManageAgentsOpen(false);
-      setApiWalletAddress('');
+      setDays(7);
+      setStake('100');
+      setWallet('1000');
       setTgToken(telegramTokenDefault);
       setTgChatId('');
+      setApiWalletAddress('');
+      setAck(false);
     }
   }, [open, telegramTokenDefault]);
 
   if (!bot) return null;
 
-  const doLaunch = async (mode: LaunchMode) => {
-    if (busy) return; // guard against a concurrent launch (e.g. double-click / relaunch race)
-    let telegramArg: { token: string; chat_id: string } | undefined;
+  const currency = quoteCurrencyFromPair(bot.pair);
+  const status = STATUS_META[bot.mode];
+
+  const selectMode = (m: LaunchpadMode) => {
+    if (busy) return;
+    setMode(m);
+    setAck(false); // re-confirm risk every time Live is re-entered
+    setError(null);
+  };
+
+  /** Both-or-none Telegram pair → arg for launchBot, or 'invalid'. */
+  const telegramArgOrInvalid = ():
+    | { token: string; chat_id: string }
+    | undefined
+    | 'invalid' => {
+    const token = tgToken.trim();
+    const chat_id = tgChatId.trim();
+    if (Boolean(token) !== Boolean(chat_id)) return 'invalid';
+    return token && chat_id ? { token, chat_id } : undefined;
+  };
+
+  const doLaunch = async (m: LaunchMode) => {
+    if (busy) return;
+    const telegramArg = telegramArgOrInvalid();
+    if (telegramArg === 'invalid') {
+      setError('Enter both Telegram token and chat ID, or leave both empty.');
+      return;
+    }
     let expectedAgentAddress: string | undefined;
-    if (mode === 'live') {
+    if (m === 'live') {
       const address = apiWalletAddress.trim();
       if (address && !ADDRESS_RE.test(address)) {
-        setError('API wallet address phải là địa chỉ 0x hợp lệ.');
+        setError('API wallet address must be a valid 0x address.');
         return;
       }
       expectedAgentAddress = address || undefined;
-
-      const token = tgToken.trim();
-      const chat_id = tgChatId.trim();
-      if (Boolean(token) !== Boolean(chat_id)) {
-        setError(
-          'Cần nhập cả Telegram token và chat_id, hoặc để trống cả hai.',
-        );
-        return;
-      }
-      if (token && chat_id) telegramArg = { token, chat_id };
     }
-    setBusy(mode);
+    setBusy(true);
     setError(null);
     try {
       const launchOpts = expectedAgentAddress
         ? { expectedAgentAddress }
         : undefined;
       if (telegramArg || launchOpts) {
-        await launchBot(bot.id, mode, telegramArg, launchOpts);
+        await launchBot(bot.id, m, telegramArg, launchOpts);
       } else {
-        await launchBot(bot.id, mode);
+        await launchBot(bot.id, m);
       }
       toast.success(
-        `Bot #${bot.id} "${bot.name}" đang khởi động (${mode === 'live' ? 'LIVE' : 'dry-run'})`,
+        `Bot #${bot.id} "${bot.name}" is starting (${m === 'live' ? 'LIVE' : 'dry-run'})`,
       );
       onOpenChange(false);
       onLaunched();
@@ -116,7 +181,24 @@ export function LaunchpadModal({
         setError(formatBackendError(err));
       }
     } finally {
-      setBusy(null);
+      setBusy(false);
+    }
+  };
+
+  const runBacktest = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await backtestApi.start(
+        buildBacktestRequest(bot, { days, stake, wallet }),
+      );
+      onOpenChange(false);
+      onBacktestStarted(res.backtest_id);
+    } catch (err) {
+      setError(formatBackendError(err));
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -125,18 +207,51 @@ export function LaunchpadModal({
   // no active agent and re-open onboarding.
   const handleOnboardingSuccess = () => {
     setOnboardingOpen(false);
+    refreshAgent();
     void doLaunch('live');
   };
 
   const doSync = async () => {
     try {
       await botApi.sync(bot.id);
-      toast.success('Đã đồng bộ trạng thái bot.');
+      toast.success('Bot state synced.');
       onOpenChange(false);
     } catch (err) {
       setError(formatBackendError(err));
     }
   };
+
+  const action = {
+    backtest: {
+      label: 'Run backtest',
+      destructive: false,
+      disabled: !(Number(stake) > 0) || !(Number(wallet) > 0),
+      onClick: () => void runBacktest(),
+      note: <>Free · no funds touched · results in ~1–2 min</>,
+    },
+    'dry-run': {
+      label: 'Start dry-run',
+      destructive: false,
+      disabled: false,
+      onClick: () => void doLaunch('dry-run'),
+      note: <>No real funds · stop anytime from the dashboard</>,
+    },
+    live: {
+      label: 'Go Live',
+      destructive: true,
+      disabled: !ack,
+      onClick: () => void doLaunch('live'),
+      note: agent ? (
+        <>
+          Real orders via agent{' '}
+          <span className="font-mono">{shortAddress(agent.agent_address)}</span>{' '}
+          · stop anytime
+        </>
+      ) : (
+        <>Agent onboarding will open first, then the bot goes live</>
+      ),
+    },
+  }[mode];
 
   return (
     <>
@@ -178,7 +293,7 @@ export function LaunchpadModal({
                 </div>
               )}
 
-              <div className="mb-7">
+              <div className="mb-4">
                 <DialogPrimitive.Description className="mb-1.5 font-mono text-2xs uppercase tracking-wider text-fg-muted">
                   Bot #{bot.id} · {bot.pair} · {bot.timeframe}
                 </DialogPrimitive.Description>
@@ -187,94 +302,128 @@ export function LaunchpadModal({
                 </DialogPrimitive.Title>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              {/* Concrete bot identity, always visible */}
+              <div className="mb-6 flex flex-wrap gap-2">
+                <span className={FACT_CHIP}>
+                  <span
+                    className={cn('h-1.5 w-1.5 rounded-full', status.dot)}
+                  />
+                  <b className="font-semibold text-fg">{status.label}</b>
+                </span>
+                {bot.strategyName && (
+                  <span className={FACT_CHIP}>
+                    Strategy{' '}
+                    <b className="font-semibold text-fg">{bot.strategyName}</b>
+                  </span>
+                )}
+                {bot.stakeAmount != null && (
+                  <span className={FACT_CHIP}>
+                    Stake{' '}
+                    <b className="font-semibold text-fg">
+                      {bot.stakeAmount} {currency} / trade
+                    </b>
+                  </span>
+                )}
+              </div>
+
+              {/* Step 1: pick a mode */}
+              <div
+                role="radiogroup"
+                aria-label="Launch mode"
+                className="grid grid-cols-3 gap-3"
+              >
                 <ModeCard
                   icon={<ChartLine className="h-5 w-5" />}
                   title="Backtest"
-                  desc="Test on past data · no risk"
-                  cta="Run backtest"
-                  onClick={() => {
-                    onOpenChange(false);
-                    onBacktest();
-                  }}
+                  desc="Replay on past data — no risk."
+                  selected={mode === 'backtest'}
+                  disabled={busy}
+                  onSelect={() => selectMode('backtest')}
                 />
                 <ModeCard
                   icon={<Play className="h-5 w-5" />}
                   title="Dry-run"
-                  desc="Paper trade live market · sim wallet"
-                  cta="Start dry-run"
-                  tone="recommended"
-                  busy={busy === 'dry-run'}
-                  onClick={() => doLaunch('dry-run')}
+                  desc="Paper-trade the live market with a sim wallet."
+                  badge="Recommended"
+                  selected={mode === 'dry-run'}
+                  disabled={busy}
+                  onSelect={() => selectMode('dry-run')}
                 />
                 <ModeCard
                   icon={<Rocket className="h-5 w-5" />}
                   title="Live"
-                  desc="Real money on Hyperliquid · agent wallet required"
-                  cta="Go Live"
-                  tone="danger"
-                  busy={busy === 'live'}
-                  onClick={() => doLaunch('live')}
+                  desc="Real USDC on Hyperliquid via agent wallet."
+                  badge="Real funds"
+                  badgeTone="bearish"
+                  danger
+                  selected={mode === 'live'}
+                  disabled={busy}
+                  onSelect={() => selectMode('live')}
                 />
               </div>
 
-              <div className="mt-5 rounded-2xl border border-bearish/30 bg-bearish/5 p-4">
-                <p className="mb-3 font-mono text-2xs uppercase tracking-wider text-fg-muted">
-                  Live settings
-                </p>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <div className="space-y-1.5 md:col-span-3">
-                    <label
-                      htmlFor="api-wallet-address"
-                      className="block text-xs font-medium text-fg-muted"
-                    >
-                      API wallet address
-                    </label>
-                    <Input
-                      id="api-wallet-address"
-                      value={apiWalletAddress}
-                      onChange={(e) => setApiWalletAddress(e.target.value)}
-                      placeholder="0x..."
-                      autoComplete="off"
+              {/* Step 2: contextual detail + the one action */}
+              <div
+                className={cn(
+                  'mt-4 overflow-hidden rounded-2xl border transition-colors',
+                  mode === 'live'
+                    ? 'border-bearish/40'
+                    : 'border-border-subtle',
+                )}
+              >
+                <div className="bg-canvas/40 p-5">
+                  {mode === 'backtest' && (
+                    <BacktestPanel
+                      pair={bot.pair}
+                      timeframe={bot.timeframe}
+                      currency={currency}
+                      strategyMissing={!bot.strategyName}
+                      days={days}
+                      stake={stake}
+                      wallet={wallet}
+                      onDaysChange={setDays}
+                      onStakeChange={setStake}
+                      onWalletChange={setWallet}
                     />
-                  </div>
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label
-                      htmlFor="tg-token"
-                      className="block text-xs font-medium text-fg-muted"
-                    >
-                      Telegram bot token
-                    </label>
-                    <Input
-                      id="tg-token"
-                      value={tgToken}
-                      onChange={(e) => setTgToken(e.target.value)}
-                      placeholder="123456:ABC-xyz"
-                      autoComplete="off"
+                  )}
+                  {mode === 'dry-run' && (
+                    <DryRunPanel
+                      token={tgToken}
+                      chatId={tgChatId}
+                      onTokenChange={setTgToken}
+                      onChatIdChange={setTgChatId}
                     />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor="tg-chat"
-                      className="block text-xs font-medium text-fg-muted"
-                    >
-                      Telegram Chat ID
-                    </label>
-                    <Input
-                      id="tg-chat"
-                      value={tgChatId}
-                      onChange={(e) => setTgChatId(e.target.value)}
-                      placeholder="e.g. 6041589302"
-                      autoComplete="off"
+                  )}
+                  {mode === 'live' && (
+                    <LivePanel
+                      agent={agent}
+                      agentLoading={agentLoading}
+                      stakeAmount={bot.stakeAmount}
+                      currency={currency}
+                      apiWalletAddress={apiWalletAddress}
+                      onApiWalletAddressChange={setApiWalletAddress}
+                      token={tgToken}
+                      chatId={tgChatId}
+                      onTokenChange={setTgToken}
+                      onChatIdChange={setTgChatId}
+                      ack={ack}
+                      onAckChange={setAck}
+                      onManageAgents={() => setManageAgentsOpen(true)}
                     />
-                  </div>
+                  )}
                 </div>
-                <p className="mt-2 text-2xs text-fg-muted">
-                  Chỉ dùng khi Go Live. API wallet address phải khớp active
-                  agent mà backend đang giữ private key. Điền token + Chat ID để
-                  ghi đè Telegram khi khởi động; để trống cả hai = giữ nguyên
-                  cấu hình Telegram đã lưu lúc tạo bot.
-                </p>
+                <div className="flex items-center justify-between gap-4 border-t border-border-subtle bg-surface/40 px-5 py-3.5">
+                  <p className="text-xs text-fg-muted">{action.note}</p>
+                  <Button
+                    variant={action.destructive ? 'destructive' : 'primary'}
+                    size="md"
+                    disabled={busy || action.disabled}
+                    onClick={action.onClick}
+                  >
+                    {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {action.label}
+                  </Button>
+                </div>
               </div>
             </div>
           </DialogPrimitive.Content>
@@ -299,7 +448,7 @@ export function LaunchpadModal({
         onRotateErrors={(results) => {
           results.forEach((r) =>
             toast.warning(
-              `Bot "${r.bot_name}" rotate lỗi: ${r.error ?? 'unknown'}`,
+              `Bot "${r.bot_name}" agent rotate failed: ${r.error ?? 'unknown'}`,
             ),
           );
         }}
@@ -308,50 +457,87 @@ export function LaunchpadModal({
   );
 }
 
+/** Selectable mode card — a radio, not a button-with-CTA. */
 function ModeCard({
   icon,
   title,
   desc,
-  cta,
-  onClick,
-  tone = 'neutral',
-  busy = false,
+  badge,
+  badgeTone = 'brand',
+  danger = false,
+  selected,
   disabled = false,
+  onSelect,
 }: {
   icon: React.ReactNode;
   title: string;
   desc: string;
-  cta: string;
-  onClick: () => void;
-  tone?: 'neutral' | 'recommended' | 'danger';
-  busy?: boolean;
+  badge?: string;
+  badgeTone?: 'brand' | 'bearish';
+  danger?: boolean;
+  selected: boolean;
   disabled?: boolean;
+  onSelect: () => void;
 }) {
-  const ring =
-    tone === 'recommended'
-      ? 'border-brand/50'
-      : tone === 'danger'
-        ? 'border-bearish/40'
-        : 'border-border';
   return (
-    <div
-      className={`flex flex-col rounded-2xl border ${ring} bg-surface/40 p-5`}
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      // aria-label keeps the accessible name to just the title — without it,
+      // the Dry-run card's name would contain "live market" and collide with
+      // the Live card in role queries.
+      aria-label={title}
+      disabled={disabled}
+      onClick={onSelect}
+      className={cn(
+        'relative flex flex-col rounded-2xl border bg-surface/40 p-5 text-left transition-all duration-200',
+        !disabled && 'hover:-translate-y-px hover:bg-surface-hover/60',
+        selected
+          ? danger
+            ? 'border-bearish shadow-[0_0_0_1px_rgb(var(--color-bearish-rgb)),0_0_24px_rgba(246,70,93,0.12)]'
+            : 'border-brand shadow-[0_0_0_1px_rgb(var(--brand-primary-rgb)),0_0_24px_rgba(240,185,11,0.12)]'
+          : 'border-border',
+        disabled && 'cursor-not-allowed opacity-60',
+      )}
     >
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-brand-subtle text-brand">
-        {icon}
+      {badge && (
+        <span
+          className={cn(
+            'absolute right-3 top-3 rounded-full px-2 py-0.5 font-mono text-2xs uppercase tracking-wider',
+            badgeTone === 'bearish'
+              ? 'bg-bearish-subtle text-bearish'
+              : 'bg-brand-subtle text-brand',
+          )}
+        >
+          {badge}
+        </span>
+      )}
+      <div className="mb-2.5 flex items-center gap-2.5">
+        <span
+          className={cn(
+            'flex h-9 w-9 items-center justify-center rounded-full',
+            danger
+              ? 'bg-bearish-subtle text-bearish'
+              : 'bg-brand-subtle text-brand',
+          )}
+        >
+          {icon}
+        </span>
+        <h3 className="text-base font-semibold text-fg">{title}</h3>
       </div>
-      <h3 className="text-base font-semibold text-fg">{title}</h3>
-      <p className="mt-1 flex-1 text-xs text-fg-secondary">{desc}</p>
-      <Button
-        variant={tone === 'danger' ? 'destructive' : 'primary'}
-        size="sm"
-        className="mt-4"
-        disabled={busy || disabled}
-        onClick={onClick}
-      >
-        {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-        {cta}
-      </Button>
-    </div>
+      <p className="pr-5 text-xs text-fg-secondary">{desc}</p>
+      <span
+        aria-hidden
+        className={cn(
+          'absolute bottom-3.5 right-3.5 h-4 w-4 rounded-full transition-all',
+          selected
+            ? danger
+              ? 'border-[5px] border-bearish'
+              : 'border-[5px] border-brand'
+            : 'border-2 border-border-strong',
+        )}
+      />
+    </button>
   );
 }
