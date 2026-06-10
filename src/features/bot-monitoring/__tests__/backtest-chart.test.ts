@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { candlesToSeries, tradesToMarkers } from '../backtest-chart';
+import {
+  candlesToSeries,
+  tradesToMarkers,
+  tradesVisibleRange,
+} from '../backtest-chart';
 
 const candles = [
   { timestamp: 2_000_000, open: 10, high: 12, low: 9, close: 11, volume: 100 },
@@ -69,5 +73,38 @@ describe('tradesToMarkers', () => {
   });
   it('empty → []', () => {
     expect(tradesToMarkers([], { showExits: true })).toEqual([]);
+  });
+  it('marks every marker with size 0.5 (smaller dots, shared dialog+detail)', () => {
+    const m = tradesToMarkers([mk({}), mk({ is_short: true })], {
+      showExits: true,
+    });
+    expect(m).toHaveLength(4);
+    expect(m.every((x) => x.size === 0.5)).toBe(true);
+  });
+});
+
+describe('tradesVisibleRange', () => {
+  it('min open -> max close in seconds with 10% padding each side', () => {
+    // open 1_000_000ms / close 2_000_000ms -> 1000s..2000s, span 1000, pad 100
+    expect(tradesVisibleRange([mk({})])).toEqual({ from: 900, to: 2100 });
+  });
+  it('spans multiple trades (min of all, max of all)', () => {
+    const a = mk({});
+    const b = mk({ open_timestamp: 2_000_000, close_timestamp: 3_000_000 });
+    // 1000..3000, span 2000, pad 200
+    expect(tradesVisibleRange([a, b])).toEqual({ from: 800, to: 3200 });
+  });
+  it('skips missing timestamps instead of producing NaN', () => {
+    const a = mk({ open_timestamp: undefined }); // only close=2000s remains
+    const b = mk({});
+    expect(tradesVisibleRange([a, b])).toEqual({ from: 900, to: 2100 });
+  });
+  it('returns null when not computable ([] or degenerate single point)', () => {
+    expect(tradesVisibleRange([])).toBeNull();
+    expect(
+      tradesVisibleRange([
+        mk({ open_timestamp: 2_000_000, close_timestamp: 2_000_000 }),
+      ]),
+    ).toBeNull();
   });
 });

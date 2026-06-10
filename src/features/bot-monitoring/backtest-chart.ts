@@ -53,6 +53,7 @@ export function tradesToMarkers(
     position: isBuy ? 'belowBar' : 'aboveBar',
     color: isBuy ? BULL : BEAR,
     shape: 'circle',
+    size: 0.5,
     text,
   });
   trades.forEach((t, i) => {
@@ -84,4 +85,22 @@ export function tradesToMarkers(
     void _leg;
     return m;
   });
+}
+
+export function tradesVisibleRange(
+  trades: BacktestTrade[],
+  padFraction = 0.1,
+): { from: UTCTimestamp; to: UTCTimestamp } | null {
+  const ts: number[] = [];
+  for (const t of trades) {
+    if (t.open_timestamp != null) ts.push(sec(t.open_timestamp));
+    if (t.close_timestamp != null) ts.push(sec(t.close_timestamp));
+  }
+  if (ts.length === 0) return null;
+  const from = Math.min(...ts);
+  const to = Math.max(...ts);
+  const span = to - from;
+  if (span <= 0) return null; // degenerate -> caller falls back to fitContent
+  const pad = Math.round(span * padFraction);
+  return { from: (from - pad) as UTCTimestamp, to: (to + pad) as UTCTimestamp };
 }
