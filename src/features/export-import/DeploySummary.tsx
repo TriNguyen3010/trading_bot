@@ -1,4 +1,6 @@
+import { Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { strings } from '@/i18n/en';
 import { CloseMethodSummary } from '@/features/bot-builder/components/summaries/CloseMethodSummary';
 import { DirectionSummary } from '@/features/bot-builder/components/summaries/DirectionSummary';
 import { EntryStrategySummary } from '@/features/bot-builder/components/summaries/EntryStrategySummary';
@@ -82,6 +84,24 @@ export function DeploySummary({ summary }: DeploySummaryProps) {
           )}
         </div>
       </div>
+
+      {/* Notifications — only when the Strategy-phase Telegram tick is on.
+       *  Shows the destination chat; the token is intentionally never
+       *  surfaced here (it's in the JSON tab, not this recap). */}
+      {summary.telegram ? (
+        <div>
+          <SectionLabel>{strings.notifications.sectionTitle}</SectionLabel>
+          <div className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-3 py-2 text-xs text-fg-secondary">
+            <Send className="h-3.5 w-3.5 text-brand" aria-hidden="true" />
+            <span>
+              Telegram → chat{' '}
+              <span className="font-mono tabular-nums text-fg">
+                {summary.telegram.chatId}
+              </span>
+            </span>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

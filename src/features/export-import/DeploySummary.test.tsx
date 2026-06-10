@@ -29,6 +29,7 @@ const summary: DeploySummaryData = {
   strategyDisplayName: 'RSI Oversold ETH',
   strategyClassName: 'RsiOversoldEth',
   strategyMeta: '1 indicator · 1 entry condition · TP/SL',
+  telegram: null,
 };
 
 describe('DeploySummary', () => {
@@ -54,5 +55,20 @@ describe('DeploySummary', () => {
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(toggle);
     expect(useLayoutPrefsStore.getState().summaryMode).toBe('narrative');
+  });
+
+  it('omits the Notifications row when telegram is null', () => {
+    render(<DeploySummary summary={summary} />);
+    expect(screen.queryByText('Notifications')).not.toBeInTheDocument();
+  });
+
+  it('shows the destination chat ID when telegram is enabled', () => {
+    render(
+      <DeploySummary
+        summary={{ ...summary, telegram: { chatId: '987654' } }}
+      />,
+    );
+    expect(screen.getByText('Notifications')).toBeInTheDocument();
+    expect(screen.getByText('987654')).toBeInTheDocument();
   });
 });

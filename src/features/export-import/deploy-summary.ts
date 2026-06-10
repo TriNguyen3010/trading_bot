@@ -33,6 +33,10 @@ export interface DeploySummary {
   /** Short auto-generated description: counts of indicators, entry/exit
    * conditions, close-method type. Stays honest about what's configured. */
   strategyMeta: string;
+  /** Telegram notification recap. Null unless the Strategy-phase tick is on
+   * with both creds. Carries ONLY the chat ID — the token is never surfaced
+   * in the review pane (it lives in the JSON, but not in this summary). */
+  telegram: { chatId: string } | null;
 }
 
 const EXCHANGE_LABELS: Record<string, string> = {
@@ -91,6 +95,12 @@ export function getDeploySummary(state: BuilderState): DeploySummary {
   }
   metaParts.push(`${describeCloseMethod(closeType)} exit`);
 
+  const n = state.notifications;
+  const telegram =
+    n.telegramEnabled && n.token.trim() && n.chatId.trim()
+      ? { chatId: n.chatId.trim() }
+      : null;
+
   return {
     botName: state.botName,
     pair: c.pair,
@@ -115,5 +125,6 @@ export function getDeploySummary(state: BuilderState): DeploySummary {
     strategyDisplayName: state.strategy.name || state.botName,
     strategyClassName: toPythonClassName(state.strategy.name || state.botName),
     strategyMeta: metaParts.join(' · '),
+    telegram,
   };
 }
