@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createChart,
   type IChartApi,
@@ -6,17 +6,26 @@ import {
 } from 'lightweight-charts';
 import { botApi } from '../bot.api';
 import type { BacktestTrade } from '../backtest-results';
-import { candlesToSeries, tradesToMarkers } from '../backtest-chart';
+import {
+  candlesToSeries,
+  tradesToMarkers,
+  tradesVisibleRange,
+} from '../backtest-chart';
 import { formatBackendError } from '@/lib/format-error';
 
 export function BacktestChart({
   backtestId,
   trades,
   showExits,
+  focusTrades = false,
+  height = 360,
 }: {
   backtestId: number;
   trades: BacktestTrade[];
   showExits: boolean;
+  /** Zoom the time scale to the trades' padded window instead of fitContent. */
+  focusTrades?: boolean;
+  height?: number;
 }) {
   const elRef = useRef<HTMLDivElement | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -27,6 +36,14 @@ export function BacktestChart({
   const [series, setSeries] = useState<ReturnType<
     typeof candlesToSeries
   > | null>(null);
+
+  // Memoized so a fresh `trades` array identity per render (e.g. the detail
+  // page's block.trades) can never retrigger the chart-build effect: when
+  // focusTrades is off (detail page) this is always null.
+  const focusRange = useMemo(
+    () => (focusTrades ? tradesVisibleRange(trades) : null),
+    [focusTrades, trades],
+  );
 
   // Lazy-fetch candles for the run (component only mounts on the Price tab).
   useEffect(() => {
@@ -60,7 +77,7 @@ export function BacktestChart({
     if (status !== 'ready' || !series || !elRef.current) return;
     const chart: IChartApi = createChart(elRef.current, {
       autoSize: true, // track container width (no manual ResizeObserver)
-      height: 360,
+      height,
       layout: { background: { color: 'transparent' }, textColor: '#848e9c' },
       grid: {
         vertLines: { color: '#1e2329' },
@@ -86,13 +103,14 @@ export function BacktestChart({
       .priceScale()
       .applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
     volSeries.setData(series.volumes);
-    chart.timeScale().fitContent();
+    if (focusRange) chart.timeScale().setVisibleRange(focusRange);
+    else chart.timeScale().fitContent();
 
     return () => {
       chart.remove();
       candleSeriesRef.current = null;
     };
-  }, [status, series]);
+  }, [status, series, focusRange, height]);
 
   // (Re)apply markers when the chart is built or trades/showExits change.
   useEffect(() => {
@@ -122,6 +140,9 @@ export function BacktestChart({
     <div
       ref={elRef}
       className="w-full"
+      // autoSize only seeds the initial size from the option; an explicit
+      // container height keeps the ResizeObserver reporting the right box.
+      style={{ height }}
       role="img"
       aria-label="Backtest price chart with trade entry (B) and exit (S) markers"
     />
