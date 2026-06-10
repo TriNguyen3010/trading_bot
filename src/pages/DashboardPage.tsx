@@ -467,6 +467,8 @@ export function DashboardPage() {
         }}
         bot={backtestBot}
         initialBacktestId={backtestStartId}
+        // A run finished in the dialog updates the bot's last-backtest chip.
+        onComplete={handleRefresh}
         onViewDetails={() => {
           const id = backtestBot?.id;
           // Close the dialog (clear both drivers) before leaving the page.
