@@ -294,6 +294,20 @@ export const strings = {
       'Reveal the Indicator tab — exit when a custom indicator condition fires (trend-follow, mean-reversion). Hidden by default to keep the picker compact.',
     newBadge: 'NEW',
   },
+  // Telegram notifications section in the Strategy drawer. Ticking the
+  // toggle + filling token/chat ID makes the create payload ship a valid
+  // `telegram` block (instead of null). Test-flow feature.
+  notifications: {
+    sectionTitle: 'Notifications',
+    telegramToggle: 'Send Telegram notifications',
+    telegramHelp:
+      'When on, the created bot reports entries, exits and errors to your Telegram chat. Token + chat ID are baked into the bot on create.',
+    tokenLabel: 'Bot token',
+    tokenPlaceholder: 'Paste your bot token',
+    chatIdLabel: 'Chat ID',
+    chatIdPlaceholder: 'e.g. 123456789',
+    required: 'Enter bot token and chat ID to enable.',
+  },
 } as const;
 
 export type Strings = typeof strings;

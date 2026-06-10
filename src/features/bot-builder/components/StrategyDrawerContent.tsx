@@ -17,6 +17,7 @@ import { useBuilderStore } from '@/features/bot-builder/store/builder.store';
 import { isPhaseSetupComplete } from '@/lib/phase-helpers';
 import { strings } from '@/i18n/en';
 import { StrategySection } from './StrategySection';
+import { TelegramNotificationForm } from './TelegramNotificationForm';
 import { DrawerProgressGlow } from './DrawerProgressGlow';
 
 export interface StrategyDrawerContentProps {
@@ -68,6 +69,12 @@ export function StrategyDrawerContent({
               <DirectionSetup />
               <CloseMethodSetup />
               <CloseMethodConfigure />
+            </StrategySection>
+          </div>
+
+          <div data-cy-anchor="strategy:notifications">
+            <StrategySection title={strings.notifications.sectionTitle}>
+              <TelegramNotificationForm />
             </StrategySection>
           </div>
         </div>
