@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { AlertTriangle, Loader2, Rocket, X } from 'lucide-react';
+import { AlertTriangle, Eye, Loader2, Rocket, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BacktestChart } from '@/features/bot-monitoring/detail/BacktestChart';
 import { formatBackendError } from '@/lib/format-error';
 import { backtestApi } from './backtest.api';
 import { useBacktestPoll } from './useBacktestPoll';
@@ -34,6 +35,10 @@ export interface BacktestDialogProps {
   /** Open straight into the running phase for an externally-started run
    * (LaunchpadModal starts the backtest itself). Also used as a test seam. */
   initialBacktestId?: number | null;
+  /** Fired when the user clicks View bot details — the caller closes the
+   * dialog and navigates. Omit it when already on the detail page (button
+   * hidden). */
+  onViewDetails?: () => void;
 }
 
 type Step = 'setup' | 'running' | 'result';
@@ -51,6 +56,7 @@ export function BacktestDialog({
   bot,
   onComplete,
   initialBacktestId = null,
+  onViewDetails,
 }: BacktestDialogProps) {
   const [days, setDays] = useState<number>(7);
   const [stake, setStake] = useState<string>('100');
@@ -63,7 +69,7 @@ export function BacktestDialog({
   const [step, setStep] = useState<Step>(
     initialBacktestId ? 'running' : 'setup',
   );
-  const [resultTab, setResultTab] = useState<'summary' | 'trades'>('summary');
+  const [showExits, setShowExits] = useState(true);
 
   const poll = useBacktestPoll(step === 'running' ? backtestId : null);
 
@@ -89,7 +95,7 @@ export function BacktestDialog({
       setBacktestId(null);
       setError(null);
       setSubmitting(false);
-      setResultTab('summary');
+      setShowExits(true);
     }
   }, [open, initialBacktestId]);
 
@@ -164,7 +170,7 @@ export function BacktestDialog({
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px] data-[state=open]:animate-fade-in" />
-        <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[640px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-border-strong bg-surface-elevated shadow-lg data-[state=open]:animate-fade-in">
+        <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[680px] max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-border-strong bg-surface-elevated shadow-lg data-[state=open]:animate-fade-in">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border bg-canvas/40 px-5 py-3">
             <div className="min-w-0">
@@ -193,8 +199,8 @@ export function BacktestDialog({
                 )}
                 {!bot.strategyName && (
                   <div className="border-annotation/40 bg-annotation/10 text-annotation rounded-lg border p-3 text-xs">
-                    Bot này chưa có strategy name từ BE — backtest có thể bị từ
-                    chối.
+                    This bot has no strategy name from the backend — the
+                    backtest may be rejected.
                   </div>
                 )}
 
@@ -298,186 +304,167 @@ export function BacktestDialog({
             {step === 'result' && failed && (
               <div className="flex flex-col items-center gap-3 py-10 text-center">
                 <AlertTriangle className="h-10 w-10 text-bearish" />
-                <h3 className="text-lg font-bold text-fg">Backtest thất bại</h3>
+                <h3 className="text-lg font-bold text-fg">Backtest failed</h3>
                 <p className="max-w-sm text-sm text-fg-secondary">
-                  BE không trả về kết quả cho {bot.pair} · {bot.timeframe} trong
-                  khoảng này. Thường do BE chưa có dữ liệu lịch sử cho cặp/khung
-                  này, hoặc chiến lược không vào lệnh nào. Thử cặp / khung /
-                  khoảng thời gian khác.
+                  The backend returned no result for {bot.pair} ·{' '}
+                  {bot.timeframe} in this range. Usually the backend has no
+                  historical data for this pair/timeframe, or the strategy made
+                  no trades. Try another pair, timeframe or range.
                 </p>
                 <button
                   type="button"
                   onClick={() => setStep('setup')}
                   className="mt-2 text-xs text-fg-muted underline-offset-4 hover:text-fg hover:underline"
                 >
-                  Thử lại
+                  Try again
                 </button>
               </div>
             )}
 
             {step === 'result' && !failed && metrics && (
               <div className="space-y-4">
-                {/* Tab toggle */}
-                <div className="flex gap-1 rounded-lg bg-surface p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setResultTab('summary')}
-                    className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                      resultTab === 'summary'
-                        ? 'bg-surface-elevated text-fg shadow-sm'
-                        : 'text-fg-muted hover:text-fg'
-                    }`}
-                  >
-                    Tổng quan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setResultTab('trades')}
-                    className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                      resultTab === 'trades'
-                        ? 'bg-surface-elevated text-fg shadow-sm'
-                        : 'text-fg-muted hover:text-fg'
-                    }`}
-                  >
-                    {`Lệnh (${trades.length})`}
-                  </button>
-                </div>
+                <label className="flex w-fit items-center gap-1.5 text-2xs text-fg-muted">
+                  <input
+                    type="checkbox"
+                    checked={showExits}
+                    onChange={(e) => setShowExits(e.target.checked)}
+                  />
+                  Show exits
+                </label>
 
-                {resultTab === 'summary' && (
-                  <>
-                    <div className="grid grid-cols-3 gap-3">
-                      <ResultMetric
-                        label="Trades"
-                        value={metrics.trades?.toString() ?? '—'}
-                      />
-                      <ResultMetric
-                        label="Net profit"
-                        value={formatTotalProfit(metrics.totalProfit, currency)}
-                        tone={
-                          (metrics.totalProfit ?? 0) >= 0
-                            ? 'bullish'
-                            : 'bearish'
-                        }
-                      />
-                      <ResultMetric
-                        label="Win rate"
-                        value={formatWinRate(metrics.winRate)}
-                      />
-                      <ResultMetric
-                        label="Max drawdown"
-                        value={
-                          metrics.maxDrawdownPct != null
-                            ? `${metrics.maxDrawdownPct.toFixed(1)}%`
-                            : '—'
-                        }
-                        tone="bearish"
-                      />
-                      <ResultMetric
-                        label="Sharpe"
-                        value={
-                          metrics.sharpe != null
-                            ? metrics.sharpe.toFixed(2)
-                            : '—'
-                        }
-                      />
-                      <ResultMetric
-                        label="Avg trade"
-                        value={metrics.avgTrade ?? '—'}
-                      />
-                    </div>
-                    <p className="text-2xs text-fg-muted">
-                      Drawdown / Sharpe / avg-trade đến từ <code>results</code>{' '}
-                      — sẽ là "—" nếu BE chưa trả các field đó.
-                    </p>
-                  </>
+                {backtestId != null && (
+                  <BacktestChart
+                    backtestId={backtestId}
+                    trades={trades}
+                    showExits={showExits}
+                    focusTrades
+                    height={240}
+                  />
                 )}
 
-                {resultTab === 'trades' && (
-                  <>
-                    {trades.length === 0 ? (
-                      <p className="py-10 text-center text-sm text-fg-muted">
-                        Không có lệnh nào trong khoảng thời gian này.
-                      </p>
-                    ) : (
-                      <div className="max-h-[320px] overflow-y-auto rounded-xl border border-border-subtle">
-                        <table className="w-full text-xs">
-                          <thead className="sticky top-0 bg-surface-elevated">
-                            <tr className="border-b border-border-subtle text-left text-fg-muted">
-                              <th className="px-3 py-2 font-medium">Open</th>
-                              <th className="px-3 py-2 font-medium">Close</th>
-                              <th className="px-3 py-2 font-medium">Dir</th>
-                              <th className="px-3 py-2 text-right font-medium">{`P/L (${currency})`}</th>
-                              <th className="px-3 py-2 text-right font-medium">
-                                P/L %
-                              </th>
-                              <th className="px-3 py-2 font-medium">Exit</th>
+                <div className="grid grid-cols-3 gap-3">
+                  <ResultMetric
+                    label="Trades"
+                    value={metrics.trades?.toString() ?? '—'}
+                  />
+                  <ResultMetric
+                    label="Net profit"
+                    value={formatTotalProfit(metrics.totalProfit, currency)}
+                    tone={
+                      (metrics.totalProfit ?? 0) >= 0 ? 'bullish' : 'bearish'
+                    }
+                  />
+                  <ResultMetric
+                    label="Win rate"
+                    value={formatWinRate(metrics.winRate)}
+                  />
+                  <ResultMetric
+                    label="Max drawdown"
+                    value={
+                      metrics.maxDrawdownPct != null
+                        ? `${metrics.maxDrawdownPct.toFixed(1)}%`
+                        : '—'
+                    }
+                    tone="bearish"
+                  />
+                  <ResultMetric
+                    label="Sharpe"
+                    value={
+                      metrics.sharpe != null ? metrics.sharpe.toFixed(2) : '—'
+                    }
+                  />
+                  <ResultMetric
+                    label="Avg trade"
+                    value={metrics.avgTrade ?? '—'}
+                  />
+                </div>
+                <p className="text-2xs text-fg-muted">
+                  Drawdown / Sharpe / avg trade come from <code>results</code> —
+                  shown as "—" if the backend hasn't returned those fields yet.
+                </p>
+
+                <div className="text-2xs uppercase tracking-widest text-fg-muted">
+                  Trades ({trades.length})
+                </div>
+                {trades.length === 0 ? (
+                  <p className="py-10 text-center text-sm text-fg-muted">
+                    No trades in this time range.
+                  </p>
+                ) : (
+                  <div className="max-h-[320px] overflow-y-auto rounded-xl border border-border-subtle">
+                    <table className="w-full text-xs">
+                      <thead className="sticky top-0 bg-surface-elevated">
+                        <tr className="border-b border-border-subtle text-left text-fg-muted">
+                          <th className="px-3 py-2 font-medium">Open</th>
+                          <th className="px-3 py-2 font-medium">Close</th>
+                          <th className="px-3 py-2 font-medium">Dir</th>
+                          <th className="px-3 py-2 text-right font-medium">{`P/L (${currency})`}</th>
+                          <th className="px-3 py-2 text-right font-medium">
+                            P/L %
+                          </th>
+                          <th className="px-3 py-2 font-medium">Exit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {trades.map((t, i) => {
+                          const plSign = t.profit_abs >= 0 ? '+' : '';
+                          const plCls =
+                            t.profit_abs >= 0 ? 'text-bullish' : 'text-bearish';
+                          const pctSign = t.profit_ratio >= 0 ? '+' : '';
+                          return (
+                            <tr
+                              key={i}
+                              className="border-b border-border-subtle/50 last:border-0 hover:bg-surface-hover/40"
+                            >
+                              <td className="px-3 py-2 tabular-nums text-fg-secondary">
+                                {formatTradeTime(t.open_timestamp)}
+                              </td>
+                              <td className="px-3 py-2 tabular-nums text-fg-secondary">
+                                {formatTradeTime(t.close_timestamp)}
+                              </td>
+                              <td className="px-3 py-2">
+                                {t.is_short ? (
+                                  <span className="rounded bg-bearish/15 px-1.5 py-0.5 text-2xs font-semibold text-bearish">
+                                    SHORT
+                                  </span>
+                                ) : (
+                                  <span className="rounded bg-bullish/15 px-1.5 py-0.5 text-2xs font-semibold text-bullish">
+                                    LONG
+                                  </span>
+                                )}
+                              </td>
+                              <td
+                                className={`px-3 py-2 text-right font-mono tabular-nums ${plCls}`}
+                              >
+                                {`${plSign}${t.profit_abs.toFixed(2)}`}
+                              </td>
+                              <td
+                                className={`px-3 py-2 text-right font-mono tabular-nums ${plCls}`}
+                              >
+                                {`${pctSign}${(t.profit_ratio * 100).toFixed(2)}%`}
+                              </td>
+                              <td className="px-3 py-2 text-fg-muted">
+                                {t.exit_reason}
+                              </td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {trades.map((t, i) => {
-                              const plSign = t.profit_abs >= 0 ? '+' : '';
-                              const plCls =
-                                t.profit_abs >= 0
-                                  ? 'text-bullish'
-                                  : 'text-bearish';
-                              const pctSign = t.profit_ratio >= 0 ? '+' : '';
-                              return (
-                                <tr
-                                  key={i}
-                                  className="border-b border-border-subtle/50 last:border-0 hover:bg-surface-hover/40"
-                                >
-                                  <td className="px-3 py-2 tabular-nums text-fg-secondary">
-                                    {formatTradeTime(t.open_timestamp)}
-                                  </td>
-                                  <td className="px-3 py-2 tabular-nums text-fg-secondary">
-                                    {formatTradeTime(t.close_timestamp)}
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    {t.is_short ? (
-                                      <span className="rounded bg-bearish/15 px-1.5 py-0.5 text-2xs font-semibold text-bearish">
-                                        SHORT
-                                      </span>
-                                    ) : (
-                                      <span className="rounded bg-bullish/15 px-1.5 py-0.5 text-2xs font-semibold text-bullish">
-                                        LONG
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td
-                                    className={`px-3 py-2 text-right font-mono tabular-nums ${plCls}`}
-                                  >
-                                    {`${plSign}${t.profit_abs.toFixed(2)}`}
-                                  </td>
-                                  <td
-                                    className={`px-3 py-2 text-right font-mono tabular-nums ${plCls}`}
-                                  >
-                                    {`${pctSign}${(t.profit_ratio * 100).toFixed(2)}%`}
-                                  </td>
-                                  <td className="px-3 py-2 text-fg-muted">
-                                    {t.exit_reason}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
 
                 <div className="flex justify-end gap-2 border-t border-border pt-4">
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    onClick={() => {
-                      setStep('setup');
-                      setBacktestId(null);
-                      setError(null);
-                    }}
-                  >
-                    Run again
-                  </Button>
+                  {onViewDetails && (
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      onClick={onViewDetails}
+                    >
+                      <Eye className="h-4 w-4" />
+                      View bot details
+                    </Button>
+                  )}
                   <Button
                     variant="primary"
                     size="md"
@@ -504,7 +491,7 @@ export function BacktestDialog({
                     setError(null);
                   }}
                 >
-                  Run again
+                  Try again
                 </Button>
               </div>
             )}

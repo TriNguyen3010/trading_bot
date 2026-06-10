@@ -10,6 +10,26 @@ vi.mock('./backtest.api', () => ({
 vi.mock('./useBacktestPoll', () => ({ useBacktestPoll: vi.fn() }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
+vi.mock('@/features/bot-monitoring/detail/BacktestChart', () => ({
+  BacktestChart: (props: {
+    backtestId: number;
+    trades: unknown[];
+    showExits: boolean;
+    focusTrades?: boolean;
+    height?: number;
+  }) => (
+    <div
+      data-testid="bt-chart"
+      data-show-exits={String(props.showExits)}
+      data-focus={String(props.focusTrades)}
+      data-height={String(props.height)}
+      data-trades={String(props.trades.length)}
+    >
+      chart-for-{props.backtestId}
+    </div>
+  ),
+}));
+
 const mockStart = vi.mocked(backtestApi.start);
 const mockPoll = vi.mocked(useBacktestPoll);
 
@@ -210,9 +230,9 @@ describe('BacktestDialog', () => {
         initialBacktestId={99}
       />,
     );
-    // Clear failure callout, not the misleading metric tabs.
-    expect(screen.getByText(/thất bại/i)).toBeInTheDocument();
-    expect(screen.queryByText('Tổng quan')).not.toBeInTheDocument();
+    // Clear failure callout, no misleading metric cards.
+    expect(screen.getByText(/backtest failed/i)).toBeInTheDocument();
+    expect(screen.queryByText('Net profit')).not.toBeInTheDocument();
   });
 
   it('cancel during running calls backtestApi.cancel + closes dialog', async () => {
@@ -248,7 +268,7 @@ describe('BacktestDialog', () => {
         onOpenChange={() => {}}
       />,
     );
-    expect(screen.getByText(/chưa có strategy name/i)).toBeInTheDocument();
+    expect(screen.getByText(/no strategy name/i)).toBeInTheDocument();
   });
 
   it('reverts to setup with error banner when poll reports error', async () => {
@@ -291,119 +311,12 @@ describe('BacktestDialog', () => {
     // Without an item, extractMetrics returns null and the result step
     // falls back to the "No metrics returned" view.
     expect(screen.getByText(/No metrics returned/i)).toBeInTheDocument();
-  });
-
-  it('"Run again" resets the dialog to setup from the result step', () => {
-    mockPoll.mockReturnValue({
-      item: {
-        id: 99,
-        bot_id: 42,
-        user_id: 7,
-        strategy_name: 'BollingerBreakout',
-        timeframe: '5m',
-        timerange: '20260514-20260521',
-        status: 'completed',
-        trade_count: 47,
-        total_profit: 12.4,
-        win_rate: 61.7,
-        started_at: '2026-05-21T00:00:00Z',
-        completed_at: '2026-05-21T00:01:00Z',
-        results: { sharpe: 1.42 },
-      },
-      done: true,
-      error: null,
-    });
-    render(
-      <BacktestDialog
-        open
-        bot={bot}
-        onOpenChange={() => {}}
-        initialBacktestId={99}
-      />,
-    );
-    // First we're in the result step.
-    expect(screen.getByText('47')).toBeInTheDocument();
-    // Click Run again.
-    fireEvent.click(screen.getByRole('button', { name: /run again/i }));
-    // Setup-step controls reappear (Run button is visible again).
     expect(
-      screen.getByRole('button', { name: /run backtest/i }),
+      screen.getByRole('button', { name: /try again/i }),
     ).toBeInTheDocument();
   });
 
-  it('shows "Tổng quan" and "Lệnh (N)" tabs in the result step', () => {
-    mockPoll.mockReturnValue({
-      item: {
-        id: 99,
-        bot_id: 42,
-        user_id: 7,
-        strategy_name: 'Gamma',
-        timeframe: '5m',
-        timerange: '20260514-20260521',
-        status: 'completed',
-        trade_count: 2,
-        total_profit: 1.0,
-        win_rate: 50.0,
-        started_at: '2026-05-21T00:00:00Z',
-        completed_at: '2026-05-21T00:01:00Z',
-        results: {
-          strategy: {
-            Gamma: {
-              trades: [
-                {
-                  pair: 'BTC/USDC:USDC',
-                  open_timestamp: 1777251300000,
-                  close_timestamp: 1777272900000,
-                  open_rate: 78938,
-                  close_rate: 79088,
-                  profit_abs: 0.97,
-                  profit_ratio: 0.0097,
-                  exit_reason: 'duration_6.0_hours',
-                  enter_tag: 'ui_enter_long',
-                  trade_duration: 360,
-                  is_short: false,
-                  leverage: 10,
-                },
-                {
-                  pair: 'BTC/USDC:USDC',
-                  open_timestamp: 1777288200000,
-                  close_timestamp: 1777309800000,
-                  open_rate: 77716,
-                  close_rate: 76662,
-                  profit_abs: 12.7,
-                  profit_ratio: 0.127,
-                  exit_reason: 'duration_6.0_hours',
-                  enter_tag: 'ui_enter_short',
-                  trade_duration: 360,
-                  is_short: true,
-                  leverage: 10,
-                },
-              ],
-            },
-          },
-          strategy_comparison: [],
-        },
-      },
-      done: true,
-      error: null,
-    });
-    render(
-      <BacktestDialog
-        open
-        bot={bot}
-        onOpenChange={() => {}}
-        initialBacktestId={99}
-      />,
-    );
-    expect(
-      screen.getByRole('button', { name: /Tổng quan/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /Lệnh \(2\)/i }),
-    ).toBeInTheDocument();
-  });
-
-  it('defaults to summary tab — ResultMetric cards visible', () => {
+  it('metric cards render directly in the merged view', () => {
     mockPoll.mockReturnValue({
       item: {
         id: 99,
@@ -434,24 +347,12 @@ describe('BacktestDialog', () => {
         initialBacktestId={99}
       />,
     );
-    // Summary metrics are visible by default.
+    // Summary metrics are visible without any tab click.
     expect(screen.getByText('Trades')).toBeInTheDocument();
     expect(screen.getByText('Win rate')).toBeInTheDocument();
   });
 
-  it('resultTab resets to summary when dialog re-opens', async () => {
-    const { rerender } = render(
-      <BacktestDialog open={false} bot={bot} onOpenChange={() => {}} />,
-    );
-    // Re-open — should land on summary.
-    rerender(<BacktestDialog open bot={bot} onOpenChange={() => {}} />);
-    // setup step visible (no initialBacktestId) — toggle not present yet, but no crash.
-    expect(
-      screen.getByRole('button', { name: /run backtest/i }),
-    ).toBeInTheDocument();
-  });
-
-  it('clicking "Lệnh (N)" tab renders the trades table headers', () => {
+  it('renders the trades table headers in the merged view', () => {
     mockPoll.mockReturnValue({
       item: RESULT_ITEM_WITH_TRADES,
       done: true,
@@ -465,7 +366,6 @@ describe('BacktestDialog', () => {
         initialBacktestId={99}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /Lệnh \(2\)/i }));
     expect(screen.getByText('Open')).toBeInTheDocument();
     expect(screen.getByText('Close')).toBeInTheDocument();
     expect(screen.getByText('Dir')).toBeInTheDocument();
@@ -489,7 +389,6 @@ describe('BacktestDialog', () => {
         initialBacktestId={99}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /Lệnh \(2\)/i }));
     // Trade 1: is_short=false → LONG badge
     expect(screen.getByText('LONG')).toBeInTheDocument();
     // Trade 2: is_short=true → SHORT badge
@@ -522,13 +421,12 @@ describe('BacktestDialog', () => {
         initialBacktestId={99}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /Lệnh \(0\)/i }));
     expect(
-      screen.getByText(/Không có lệnh nào trong khoảng thời gian này\./i),
+      screen.getByText(/No trades in this time range\./i),
     ).toBeInTheDocument();
   });
 
-  it('summary tab is still accessible and shows metric cards', () => {
+  it('merged view renders chart + metric cards + trades table together', () => {
     mockPoll.mockReturnValue({
       item: RESULT_ITEM_WITH_TRADES,
       done: true,
@@ -542,13 +440,108 @@ describe('BacktestDialog', () => {
         initialBacktestId={99}
       />,
     );
-    // Switch to trades.
-    fireEvent.click(screen.getByRole('button', { name: /Lệnh \(2\)/i }));
-    // Switch back to summary.
-    fireEvent.click(screen.getByRole('button', { name: /Tổng quan/i }));
-    // Metric cards reappear.
-    expect(screen.getByText('Trades')).toBeInTheDocument();
-    expect(screen.getByText('Win rate')).toBeInTheDocument();
+    expect(screen.getByText('chart-for-99')).toBeInTheDocument();
+    expect(screen.getByText('Win rate')).toBeInTheDocument(); // metric card
+    expect(screen.getByText('Trades (2)')).toBeInTheDocument(); // section label
+    expect(screen.getByText('Open')).toBeInTheDocument(); // table header, no tab click
+  });
+
+  it('passes zoom + sizing props to the chart (focusTrades, height 240, trades, showExits)', () => {
+    mockPoll.mockReturnValue({
+      item: RESULT_ITEM_WITH_TRADES,
+      done: true,
+      error: null,
+    });
+    render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        initialBacktestId={99}
+      />,
+    );
+    const el = screen.getByTestId('bt-chart');
+    expect(el.dataset.focus).toBe('true');
+    expect(el.dataset.height).toBe('240');
+    expect(el.dataset.showExits).toBe('true'); // default checked
+    expect(el.dataset.trades).toBe('2');
+  });
+
+  it('"Show exits" checkbox toggles the chart prop', () => {
+    mockPoll.mockReturnValue({
+      item: RESULT_ITEM_WITH_TRADES,
+      done: true,
+      error: null,
+    });
+    render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        initialBacktestId={99}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText(/show exits/i));
+    expect(screen.getByTestId('bt-chart').dataset.showExits).toBe('false');
+  });
+
+  it('shows "View bot details" when onViewDetails is provided and fires it on click', () => {
+    const onViewDetails = vi.fn();
+    mockPoll.mockReturnValue({
+      item: RESULT_ITEM_WITH_TRADES,
+      done: true,
+      error: null,
+    });
+    render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        onViewDetails={onViewDetails}
+        initialBacktestId={99}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /view bot details/i }));
+    expect(onViewDetails).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides "View bot details" when onViewDetails is not provided', () => {
+    mockPoll.mockReturnValue({
+      item: RESULT_ITEM_WITH_TRADES,
+      done: true,
+      error: null,
+    });
+    render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        initialBacktestId={99}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', { name: /view bot details/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('success footer no longer offers "Run again"', () => {
+    mockPoll.mockReturnValue({
+      item: RESULT_ITEM_WITH_TRADES,
+      done: true,
+      error: null,
+    });
+    render(
+      <BacktestDialog
+        open
+        bot={bot}
+        onOpenChange={() => {}}
+        initialBacktestId={99}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', { name: /run again/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /done/i })).toBeInTheDocument();
   });
 
   it('enters the running phase when reopened with initialBacktestId', () => {
