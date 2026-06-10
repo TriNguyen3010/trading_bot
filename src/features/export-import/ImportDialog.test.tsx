@@ -91,6 +91,25 @@ describe('ImportDialog', () => {
     expect(useBuilderStore.getState().botName).toBe('Imported Bot');
   });
 
+  it('round-trips the telegram tick through import (hydrates notifications)', () => {
+    seedValidBot(true);
+    useBuilderStore
+      .getState()
+      .setNotifications({ telegramEnabled: true, token: 'tok', chatId: '999' });
+    const json = JSON.stringify(
+      buildUnifiedPayload(useBuilderStore.getState()),
+    );
+    useBuilderStore.getState().resetAll();
+
+    applyJson(json);
+
+    expect(useBuilderStore.getState().notifications).toEqual({
+      telegramEnabled: true,
+      token: 'tok',
+      chatId: '999',
+    });
+  });
+
   // E-3: a hand-edited file decoding to short+spot must be refused, not hydrated.
   it('refuses an inconsistent short+spot file and leaves the builder untouched', () => {
     // Build a valid futures bot, then force the inconsistency: short conditions

@@ -235,6 +235,23 @@ interface DeserializedState {
   strategy: EntryStrategyForm;
   directionForm: BuilderState['directionForm'];
   closeMethod: CloseMethodForm;
+  notifications: NotificationForm;
+}
+
+/** Reconstruct the Strategy-phase NotificationForm from a payload's top-level
+ * telegram block. Inverse of buildTelegramConfig — keeps export→import
+ * round-trips lossless for the telegram tick. */
+function deserializeTelegram(
+  telegram: UnifiedBotStrategyCreate['telegram'] | undefined,
+): NotificationForm {
+  if (telegram && telegram.enabled && telegram.token && telegram.chat_id) {
+    return {
+      telegramEnabled: true,
+      token: telegram.token,
+      chatId: telegram.chat_id,
+    };
+  }
+  return { telegramEnabled: false, token: '', chatId: '' };
 }
 
 function deserializeGroup(g: SignalGroup): ConditionTree {
@@ -333,6 +350,9 @@ export function deserializeBundle(bundle: Bundle): DeserializedState {
       roiSteps,
       exitConditions: deserializeGroup(exitGroup),
     },
+    // Legacy bundle format predates the Strategy-phase telegram tick — nothing
+    // to restore, so notifications start off.
+    notifications: { telegramEnabled: false, token: '', chatId: '' },
   };
 }
 
@@ -713,5 +733,6 @@ export function deserializeUnifiedPayload(
         ? deserializeGroup(coerceUnifiedSignalGroup(exitGroup))
         : EMPTY_DESERIALIZED_GROUP,
     },
+    notifications: deserializeTelegram(payload.telegram),
   };
 }

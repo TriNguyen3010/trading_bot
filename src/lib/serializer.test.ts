@@ -536,16 +536,46 @@ describe('serializer', () => {
         buildUnifiedPayload(useBuilderStore.getState()).telegram,
       ).toBeNull();
 
-      useBuilderStore
-        .getState()
-        .setNotifications({
-          telegramEnabled: true,
-          token: '  ',
-          chatId: '123',
-        });
+      useBuilderStore.getState().setNotifications({
+        telegramEnabled: true,
+        token: '  ',
+        chatId: '123',
+      });
       expect(
         buildUnifiedPayload(useBuilderStore.getState()).telegram,
       ).toBeNull();
+
+      // Whitespace-only chatId (with a real token) must also be null — locks
+      // the independent chatId trim branch in buildTelegramConfig.
+      useBuilderStore
+        .getState()
+        .setNotifications({ telegramEnabled: true, token: 'T', chatId: '  ' });
+      expect(
+        buildUnifiedPayload(useBuilderStore.getState()).telegram,
+      ).toBeNull();
+    });
+
+    it('round-trips telegram ON through deserializeUnifiedPayload', () => {
+      useBuilderStore
+        .getState()
+        .setNotifications({ telegramEnabled: true, token: 'T', chatId: '123' });
+      const payload = buildUnifiedPayload(useBuilderStore.getState());
+      const back = deserializeUnifiedPayload(payload);
+      expect(back.notifications).toEqual({
+        telegramEnabled: true,
+        token: 'T',
+        chatId: '123',
+      });
+    });
+
+    it('round-trips telegram OFF as disabled notifications', () => {
+      const payload = buildUnifiedPayload(useBuilderStore.getState());
+      const back = deserializeUnifiedPayload(payload);
+      expect(back.notifications).toEqual({
+        telegramEnabled: false,
+        token: '',
+        chatId: '',
+      });
     });
 
     it('the populated telegram block passes the create schema', () => {

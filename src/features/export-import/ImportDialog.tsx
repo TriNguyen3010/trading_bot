@@ -93,6 +93,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       store.patchStrategy(next.strategy);
       store.patchDirection(next.directionForm);
       store.patchCloseMethod(next.closeMethod);
+      store.setNotifications(next.notifications);
       store.setStepStatus('bot-config', 'configured');
       store.setStepStatus('entry-strategy', 'configured');
       store.setStepStatus('direction', 'configured');
