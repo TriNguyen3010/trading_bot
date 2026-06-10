@@ -296,7 +296,7 @@ function AgentRow({
   const shortAddr = `${addr.slice(0, 6)}…${addr.slice(-4)}`;
   const validUntil =
     agent.onchain.valid_until != null
-      ? new Date(agent.onchain.valid_until).toLocaleDateString('vi-VN')
+      ? new Date(agent.onchain.valid_until).toLocaleDateString('en-US')
       : '–';
 
   const isConfirming = confirmState?.phase === 'confirm';
