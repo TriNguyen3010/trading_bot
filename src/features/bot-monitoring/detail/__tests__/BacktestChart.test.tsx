@@ -162,4 +162,22 @@ describe('BacktestChart', () => {
     });
     expect(screen.getByRole('img').style.height).toBe('240px');
   });
+
+  it('re-applies markers when a prop-only change (height) rebuilds the chart', async () => {
+    const { rerender } = render(
+      <BacktestChart backtestId={200} trades={trades} showExits />,
+    );
+    await waitFor(() => expect(candleSeries.setMarkers).toHaveBeenCalled());
+    const applied = candleSeries.setMarkers.mock.calls.length;
+    // height is in the build-effect deps: the chart (and its series) are
+    // recreated — markers must land on the NEW series, not stay orphaned.
+    rerender(
+      <BacktestChart backtestId={200} trades={trades} showExits height={240} />,
+    );
+    await waitFor(() =>
+      expect(candleSeries.setMarkers.mock.calls.length).toBeGreaterThan(
+        applied,
+      ),
+    );
+  });
 });
