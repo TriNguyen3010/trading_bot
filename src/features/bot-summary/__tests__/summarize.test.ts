@@ -1,5 +1,5 @@
 /**
- * End-to-end summary tests on the 8 built-in templates. Each template
+ * End-to-end summary tests on the built-in templates. Each template
  * snapshot is rendered to a flat text shape, asserted as a snapshot.
  *
  * When you add a new template, run vitest with `-u` to update
@@ -48,7 +48,7 @@ function renderBlocks(
     .join('\n\n');
 }
 
-describe('summarizeBot — 8 built-in templates', () => {
+describe('summarizeBot — built-in templates', () => {
   it.each(BUILT_IN_TEMPLATES.map((t) => [t.id, t]))(
     'summarizes %s with no translation gaps',
     (_id, template) => {
