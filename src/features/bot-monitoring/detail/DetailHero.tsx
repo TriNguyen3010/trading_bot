@@ -169,7 +169,7 @@ function Kpi({
     <div>
       <div className="flex items-center gap-1 text-2xs uppercase tracking-widest text-fg-muted">
         {label}
-        {hint ? <InfoHint text={hint} /> : null}
+        {hint ? <InfoHint text={hint} label={`More info: ${label}`} /> : null}
       </div>
       <div className={`mt-1 font-mono text-2xl font-bold tabular-nums ${cls}`}>
         {value}
