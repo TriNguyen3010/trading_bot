@@ -361,8 +361,9 @@ export function BotMonitoringPage() {
                   selectedRun?.strategyName ??
                   latestRun?.strategyName ??
                   backtest?.strategy_name ??
-                  (config?.strategy as string | undefined) ??
-                  null,
+                  // `|| null` (not `??`): coerce an empty-string strategy to
+                  // null so the dialog still warns / doesn't POST strategy="".
+                  ((config?.strategy as string | undefined) || null),
                 pair: derivePair(cfgShape),
                 timeframe: deriveTimeframe(cfgShape),
               } satisfies BacktestBot)
