@@ -44,7 +44,7 @@ createRoot(document.getElementById('root')!).render(
     <Toaster
       theme="dark"
       position="top-right"
-      duration={3500}
+      duration={1000}
       toastOptions={{
         className: 'rounded-2xl card-coin98 text-fg shadow-2xl',
       }}
