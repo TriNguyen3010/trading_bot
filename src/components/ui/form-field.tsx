@@ -1,12 +1,6 @@
 import { type ReactNode } from 'react';
-import { HelpCircle } from 'lucide-react';
 import { Label } from './label';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from './tooltip';
+import { InfoHint } from './info-hint';
 import { cn } from '@/lib/utils';
 
 export interface FormFieldProps {
@@ -49,27 +43,7 @@ export function FormField({
           {label}
           {required ? <span className="ml-0.5 text-danger">*</span> : null}
         </Label>
-        {help ? (
-          <TooltipProvider delayDuration={150}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="More info"
-                  className="inline-flex h-4 w-4 items-center justify-center rounded-full text-fg-muted transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-                >
-                  <HelpCircle className="h-3.5 w-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent
-                side="top"
-                className="max-w-xs text-xs leading-snug"
-              >
-                {help}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : null}
+        {help ? <InfoHint text={help} /> : null}
         {trailing ? <div className="ml-auto">{trailing}</div> : null}
       </div>
       {children}
