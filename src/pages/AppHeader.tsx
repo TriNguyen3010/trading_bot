@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
+import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useRequireWallet } from '@/features/wallet-auth/RequireWalletProvider';
@@ -18,7 +19,7 @@ import { cn } from '@/lib/utils';
 // then routes after sign success.
 // =============================================================================
 
-export function AppHeader() {
+export function AppHeader({ actions }: { actions?: ReactNode } = {}) {
   const navigate = useNavigate();
   const location = useLocation();
   const isConnected = useIsWalletConnected();
@@ -90,8 +91,12 @@ export function AppHeader() {
             </nav>
           </div>
 
-          {/* Right cluster — wallet */}
-          <motion.div variants={dropInItem} className="flex items-center pr-1">
+          {/* Right cluster — builder actions (when provided) + wallet */}
+          <motion.div
+            variants={dropInItem}
+            className="flex items-center gap-2 pr-1"
+          >
+            {actions}
             <WalletChip />
           </motion.div>
         </motion.div>
@@ -111,20 +116,33 @@ interface NavLinkProps {
 }
 
 function NavLink({ label, active, onClick }: NavLinkProps) {
+  const reduceMotion = useReducedMotion();
   return (
     <motion.div variants={dropInItem} className="inline-flex">
       <Button
         variant="ghost"
         size="sm"
         onClick={onClick}
+        aria-current={active ? 'page' : undefined}
         className={cn(
-          'h-10 rounded-full px-3 text-sm font-medium',
+          'relative h-10 rounded-full px-3 text-sm font-medium',
           active
-            ? 'text-fg hover:bg-surface-hover'
+            ? 'text-fg hover:bg-transparent'
             : 'text-fg-secondary hover:bg-surface-hover hover:text-fg',
         )}
       >
-        {label}
+        {active ? (
+          reduceMotion ? (
+            <span className="absolute inset-0 rounded-full bg-surface-active" />
+          ) : (
+            <motion.span
+              layoutId="header-nav-pill"
+              className="absolute inset-0 rounded-full bg-surface-active"
+              transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+            />
+          )
+        ) : null}
+        <span className="relative z-[1]">{label}</span>
       </Button>
     </motion.div>
   );
