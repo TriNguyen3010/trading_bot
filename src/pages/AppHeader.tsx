@@ -125,24 +125,22 @@ function NavLink({ label, active, onClick }: NavLinkProps) {
         onClick={onClick}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          'relative h-10 rounded-full px-3 text-sm font-medium',
-          active
-            ? 'text-fg hover:bg-transparent'
-            : 'text-fg-secondary hover:bg-surface-hover hover:text-fg',
+          'relative h-10 rounded-none px-3 text-sm font-medium hover:bg-transparent',
+          active ? 'text-fg' : 'text-fg-secondary hover:text-fg',
         )}
       >
+        <span className="relative z-[1]">{label}</span>
         {active ? (
           reduceMotion ? (
-            <span className="absolute inset-0 rounded-full bg-surface-active" />
+            <span className="absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-brand" />
           ) : (
             <motion.span
-              layoutId="header-nav-pill"
-              className="absolute inset-0 rounded-full bg-surface-active"
+              layoutId="header-nav-underline"
+              className="absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-brand"
               transition={{ type: 'spring', stiffness: 400, damping: 32 }}
             />
           )
         ) : null}
-        <span className="relative z-[1]">{label}</span>
       </Button>
     </motion.div>
   );
