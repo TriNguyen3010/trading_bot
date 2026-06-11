@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { InfoHint } from '@/components/ui/info-hint';
 
 /** Compact relative time ("12s ago" / "3h ago"); falls back to the raw
  * string on parse failure. Shared by StatusPanel + ActivityLogPanel. */
@@ -38,10 +39,12 @@ export function KV({
   k,
   v,
   accent,
+  hint,
 }: {
   k: string;
   v: string;
   accent?: 'bull' | 'bear';
+  hint?: ReactNode;
 }) {
   const cls =
     accent === 'bull'
@@ -51,7 +54,10 @@ export function KV({
         : 'text-fg';
   return (
     <div className="flex items-center justify-between border-b border-border-subtle py-2 text-xs last:border-0">
-      <span className="text-fg-secondary">{k}</span>
+      <span className="flex items-center gap-1 text-fg-secondary">
+        {k}
+        {hint ? <InfoHint text={hint} /> : null}
+      </span>
       <span className={`font-mono font-semibold ${cls}`}>{v}</span>
     </div>
   );
