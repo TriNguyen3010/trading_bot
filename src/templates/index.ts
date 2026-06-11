@@ -14,13 +14,16 @@ import { conservativeDcaBtc } from './catalog/conservative-dca-btc';
 import { scalpingBtc1m } from './catalog/scalping-btc-1m';
 import { testAlwaysOnBtc1m } from './catalog/test-always-on-btc-1m';
 
-/** Built-in starter templates shipped with the bundle. Order = display
- * order in the gallery — currently grouped beginner → advanced so the
- * most approachable picks land in the first row of the grid. */
-export const BUILT_IN_TEMPLATES: readonly BotTemplate[] = [
-  // QA / testing — fires constantly to verify the live/dry-run pipeline.
-  // Surfaced first so it's easy to find; remove before a real launch.
-  testAlwaysOnBtc1m,
+/** QA-only templates — exist purely to exercise the live/dry-run pipeline and
+ * deliberately churn trades / lose fees. They must NEVER reach a production
+ * build where a real user could pick one and Go Live (see PR #42 review), so
+ * they are gated behind the dev flag below. */
+const TEST_ONLY_TEMPLATES: readonly BotTemplate[] = [testAlwaysOnBtc1m];
+
+/** Real starter templates shipped to every build. Order = display order in
+ * the gallery — grouped beginner → advanced so the most approachable picks
+ * land in the first row of the grid. */
+const PRODUCTION_TEMPLATES: readonly BotTemplate[] = [
   // Beginner
   rsiOversoldEth1h,
   conservativeDcaBtc,
@@ -32,7 +35,23 @@ export const BUILT_IN_TEMPLATES: readonly BotTemplate[] = [
   // Advanced
   multiTfTrendAlts,
   scalpingBtc1m,
-] as const;
+];
+
+/** Assemble the gallery list. In dev the QA test template is prepended so it's
+ * easy to find; production builds strip it entirely. Pure function of the flag
+ * so it's unit-testable without rebuilding for prod mode. */
+export function buildBuiltInTemplates(
+  includeTestOnly: boolean,
+): readonly BotTemplate[] {
+  return includeTestOnly
+    ? [...TEST_ONLY_TEMPLATES, ...PRODUCTION_TEMPLATES]
+    : PRODUCTION_TEMPLATES;
+}
+
+/** Built-in starter templates shipped with the bundle. */
+export const BUILT_IN_TEMPLATES: readonly BotTemplate[] = buildBuiltInTemplates(
+  import.meta.env.DEV,
+);
 
 export function getTemplateById(id: string): BotTemplate | undefined {
   return BUILT_IN_TEMPLATES.find((t) => t.id === id);

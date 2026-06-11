@@ -19,7 +19,11 @@ import {
   INDICATOR_REGISTRY,
   indicatorOutputId,
 } from '@/features/indicators/indicator-registry';
-import { BUILT_IN_TEMPLATES, TEMPLATE_SCHEMA_VERSION } from '@/templates';
+import {
+  BUILT_IN_TEMPLATES,
+  TEMPLATE_SCHEMA_VERSION,
+  buildBuiltInTemplates,
+} from '@/templates';
 import type { BotTemplate } from '@/templates';
 import type { StepId, StepStatus } from '@/types/builder.types';
 
@@ -84,6 +88,22 @@ describe('built-in templates', () => {
 
   it('catalog is non-empty (PR-T1 ships at least cypheus-default)', () => {
     expect(BUILT_IN_TEMPLATES.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // The QA "Always-On" template churns trades and loses fees by design — it
+  // exists only to prove the live/dry-run pipeline opens positions. It must
+  // never reach the production gallery where a real user could pick it and
+  // Go Live. See PR #42 review.
+  const QA_TEST_ID = 'test-always-on-btc-1m';
+
+  it('strips the QA test template from production builds', () => {
+    const prod = buildBuiltInTemplates(false);
+    expect(prod.some((t) => t.id === QA_TEST_ID)).toBe(false);
+  });
+
+  it('surfaces the QA test template first in dev builds', () => {
+    const dev = buildBuiltInTemplates(true);
+    expect(dev[0]?.id).toBe(QA_TEST_ID);
   });
 
   it('every template id is unique', () => {

@@ -7,7 +7,10 @@
  * tight 0.5% take-profit + 2% stop-loss churns the position fast, so a new
  * trade opens right after each close → a steady stream of entries to confirm
  * the feature works. BTC/USDC is the most liquid Hyperliquid perp so fills
- * are reliable. Delete this template once testing is done.
+ * are reliable.
+ *
+ * Gated to dev builds only via `buildBuiltInTemplates()` in ../index.ts —
+ * production builds strip it so a real user can never pick + Go Live on it.
  */
 import type { BotTemplate } from '../types';
 import { TEMPLATE_SCHEMA_VERSION } from '../types';
