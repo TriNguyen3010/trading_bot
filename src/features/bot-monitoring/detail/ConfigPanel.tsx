@@ -1,4 +1,15 @@
 import { Panel, KV } from './panel-kit';
+import { strings } from '@/i18n/en';
+
+const HINTS: Record<string, string> = {
+  'Stake amount': strings.helpText.botConfig.stakeAmount,
+  'Max open trades': strings.helpText.botConfig.maxOpenTrades,
+  'Trading mode': strings.helpText.monitoring.tradingMode,
+  'Margin mode': strings.helpText.botConfig.marginMode,
+  Mode: strings.helpText.monitoring.mode,
+  Leverage: strings.helpText.botConfig.leverage,
+  'Dry-run wallet': strings.helpText.botConfig.dryRunWallet,
+};
 
 type Cfg = Record<string, unknown> | null | undefined;
 
@@ -34,7 +45,7 @@ export function ConfigPanel({ config }: { config: Cfg }) {
           No configuration returned
         </p>
       ) : (
-        rows.map((r) => <KV key={r.k} k={r.k} v={r.v} />)
+        rows.map((r) => <KV key={r.k} k={r.k} v={r.v} hint={HINTS[r.k]} />)
       )}
     </Panel>
   );
