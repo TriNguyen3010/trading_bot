@@ -41,6 +41,7 @@ describe('bot-filter', () => {
     expect(matchesCategory('ERROR', 'attention')).toBe(true);
     expect(matchesCategory('NEW', 'attention')).toBe(true);
     expect(matchesCategory('BACKTEST_FAILED', 'attention')).toBe(true);
+    expect(matchesCategory('PAUSED', 'attention')).toBe(true);
     expect(matchesCategory('LIVE', 'all')).toBe(true);
     expect(matchesCategory('LIVE', 'attention')).toBe(false);
   });
@@ -50,7 +51,6 @@ describe('bot-filter', () => {
     for (const s of ['STARTING', 'STOPPING', 'BACKTESTING'] as const) {
       expect(matchesCategory(s, 'all')).toBe(true);
       expect(matchesCategory(s, 'live')).toBe(false);
-      expect(matchesCategory(s, 'paused')).toBe(false);
       expect(matchesCategory(s, 'attention')).toBe(false);
     }
   });
@@ -58,7 +58,7 @@ describe('bot-filter', () => {
   it('filterByCategory returns matching cards', () => {
     expect(filterByCategory(cards, 'all')).toHaveLength(8);
     expect(filterByCategory(cards, 'attention').map((c) => c.id)).toEqual([
-      6, 7, 8,
+      3, 6, 7, 8,
     ]);
   });
 
@@ -68,8 +68,7 @@ describe('bot-filter', () => {
       all: 8,
       live: 1,
       'dry-run': 1,
-      paused: 1,
-      attention: 3,
+      attention: 4,
     });
   });
 });

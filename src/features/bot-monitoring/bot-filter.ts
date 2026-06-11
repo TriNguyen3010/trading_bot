@@ -1,12 +1,7 @@
 import type { BotCardData } from './BotCard';
 import type { PresentationalState } from './presentational-state';
 
-export type FilterCategory =
-  | 'all'
-  | 'live'
-  | 'dry-run'
-  | 'paused'
-  | 'attention';
+export type FilterCategory = 'all' | 'live' | 'dry-run' | 'attention';
 
 /** Non-"all" categories mapped to the presentational states they include. */
 const CATEGORY_STATES: Record<
@@ -15,8 +10,10 @@ const CATEGORY_STATES: Record<
 > = {
   live: ['LIVE'],
   'dry-run': ['DRY-RUN'],
-  paused: ['PAUSED'],
-  attention: ['ERROR', 'BACKTEST_FAILED', 'NEW'],
+  // PAUSED folds in here: an idle bot is capital the user should act on (resume),
+  // same "needs your action" framing as ERROR / BACKTEST_FAILED / NEW. It sorts to
+  // the bottom of the group though — see bot-sort.ts (PAUSED stays the lowest bucket).
+  attention: ['ERROR', 'BACKTEST_FAILED', 'NEW', 'PAUSED'],
 };
 
 // NOTE: transient states (STARTING / STOPPING / BACKTESTING) intentionally belong
@@ -45,7 +42,6 @@ export function countByCategory(
     all: cards.length,
     live: 0,
     'dry-run': 0,
-    paused: 0,
     attention: 0,
   };
   const cats = Object.keys(CATEGORY_STATES) as Array<
@@ -65,5 +61,4 @@ export const FILTER_CHIPS: Array<{ key: FilterCategory; label: string }> = [
   { key: 'attention', label: 'Needs attention' },
   { key: 'live', label: 'Live' },
   { key: 'dry-run', label: 'Dry-run' },
-  { key: 'paused', label: 'Paused' },
 ];

@@ -7,7 +7,6 @@ const counts: Record<FilterCategory, number> = {
   all: 9,
   live: 3,
   'dry-run': 1,
-  paused: 1,
   attention: 2,
 };
 
@@ -23,6 +22,15 @@ describe('StatusFilterChips', () => {
     expect(
       screen.getByRole('button', { name: /Needs attention\s*2/ }),
     ).toBeInTheDocument();
+  });
+
+  it('no longer renders a standalone Paused chip', () => {
+    render(
+      <StatusFilterChips counts={counts} active="all" onChange={() => {}} />,
+    );
+    expect(
+      screen.queryByRole('button', { name: /^Paused/ }),
+    ).not.toBeInTheDocument();
   });
 
   it('fires onChange with the clicked category', () => {
