@@ -101,6 +101,11 @@ export function tradesToMarkers(
  * opened that trade". `candles` are the as-plotted series points (seconds);
  * `total` counts only trades with a usable entry timestamp. No candles → 0
  * outside (the chart already shows its own "No candle data" state).
+ *
+ * Only ENTRIES are counted — an exit outside the window also vanishes, but the
+ * banner's job is the "did the bot open this trade?" signal, so exits are
+ * intentionally excluded. (An entry inside [lo,hi] but in a candle gap is also
+ * uncounted; Freqtrade opens on bar boundaries so this is negligible.)
  */
 export function tradesOutsideCandleRange(
   trades: BacktestTrade[],
