@@ -9,6 +9,7 @@ import type { BacktestTrade } from '../backtest-results';
 import {
   candlesToSeries,
   tradesToMarkers,
+  tradesOutsideCandleRange,
   tradesVisibleRange,
 } from '../backtest-chart';
 import { formatBackendError } from '@/lib/format-error';
@@ -43,6 +44,19 @@ export function BacktestChart({
   const focusRange = useMemo(
     () => (focusTrades ? tradesVisibleRange(trades) : null),
     [focusTrades, trades],
+  );
+
+  // BE's /candles can return a window narrower than the trades' span (e.g. a
+  // multi-day 1m run), so entries before the first candle have no bar to pin a
+  // marker to and silently vanish. Surface a count so a missing entry marker
+  // isn't misread as "the bot never opened that trade".
+  const outside = useMemo(
+    () =>
+      tradesOutsideCandleRange(
+        trades,
+        (series?.candles ?? []).map((c) => ({ time: Number(c.time) })),
+      ),
+    [trades, series],
   );
 
   // Lazy-fetch candles for the run (component only mounts on the Price tab).
@@ -141,14 +155,23 @@ export function BacktestChart({
     );
   }
   return (
-    <div
-      ref={elRef}
-      className="w-full"
-      // autoSize only seeds the initial size from the option; an explicit
-      // container height keeps the ResizeObserver reporting the right box.
-      style={{ height }}
-      role="img"
-      aria-label="Backtest price chart with trade entry (B) and exit (S) markers"
-    />
+    <>
+      {outside.entriesOutside > 0 && (
+        <p className="mb-2 text-2xs text-fg-muted" role="note">
+          ⚠️ {outside.entriesOutside}/{outside.total} trade
+          {outside.total === 1 ? '' : 's'} fall outside the loaded price range —
+          their entry markers aren't shown on the chart.
+        </p>
+      )}
+      <div
+        ref={elRef}
+        className="w-full"
+        // autoSize only seeds the initial size from the option; an explicit
+        // container height keeps the ResizeObserver reporting the right box.
+        style={{ height }}
+        role="img"
+        aria-label="Backtest price chart with trade entry (B) and exit (S) markers"
+      />
+    </>
   );
 }
