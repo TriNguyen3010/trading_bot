@@ -32,7 +32,6 @@ import {
 } from '@/features/launchpad/LaunchpadModal';
 import { formatBackendError } from '@/lib/format-error';
 import { cn } from '@/lib/utils';
-import { AppHeader } from './AppHeader';
 
 /** Poll cadence + safety cap for status polling after a lifecycle action. */
 const POLL_INTERVAL_MS = 1_500;
@@ -234,7 +233,7 @@ export function DashboardPage() {
   }, [cards, filter, search]);
 
   return (
-    <div className="flex h-screen w-screen flex-col bg-black text-fg">
+    <>
       <div
         className="pointer-events-none fixed -top-20 left-1/2 z-0 h-[420px] w-[700px] -translate-x-1/2 rounded-full opacity-50 blur-3xl"
         style={{
@@ -248,8 +247,6 @@ export function DashboardPage() {
         style={{ top: 0, left: 0, right: 0, bottom: 0 }}
         dimmed={false}
       />
-
-      <AppHeader />
 
       <main className="relative z-10 flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-8 py-7">
@@ -503,6 +500,6 @@ export function DashboardPage() {
           if (id != null) navigate(`/bots/${id}`);
         }}
       />
-    </div>
+    </>
   );
 }

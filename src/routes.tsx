@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { BuilderPage } from './pages/BuilderPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LandingPage } from './pages/LandingPage';
+import { AppLayout } from './pages/AppLayout';
 import { BotMonitoringPage } from './features/bot-monitoring/BotMonitoringPage';
 import { ProtectedRoute } from './features/wallet-auth/ProtectedRoute';
 
@@ -11,28 +12,17 @@ export const router = createBrowserRouter([
     element: <LandingPage />,
   },
   {
-    path: '/dashboard',
+    // Shared-chrome layout: AppHeader mounts once, child routes render in Outlet.
     element: (
       <ProtectedRoute>
-        <DashboardPage />
+        <AppLayout />
       </ProtectedRoute>
     ),
-  },
-  {
-    path: '/builder',
-    element: (
-      <ProtectedRoute>
-        <BuilderPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/bots/:id',
-    element: (
-      <ProtectedRoute>
-        <BotMonitoringPage />
-      </ProtectedRoute>
-    ),
+    children: [
+      { path: '/dashboard', element: <DashboardPage /> },
+      { path: '/builder', element: <BuilderPage /> },
+      { path: '/bots/:id', element: <BotMonitoringPage /> },
+    ],
   },
   {
     path: '*',

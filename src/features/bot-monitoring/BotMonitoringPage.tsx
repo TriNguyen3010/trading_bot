@@ -233,14 +233,14 @@ export function BotMonitoringPage() {
     config === null && liveStatus === null && !loadError && statusLoading;
   if (notLoaded) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-black text-fg-muted">
+      <main className="relative z-10 flex flex-1 items-center justify-center text-fg-muted">
         <span className="text-sm">Loading bot…</span>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="flex min-h-screen w-screen flex-col bg-black text-fg">
+    <>
       <div
         className="pointer-events-none fixed -top-20 left-1/2 z-0 h-[420px] w-[700px] -translate-x-1/2 rounded-full opacity-50 blur-3xl"
         style={{
@@ -362,6 +362,6 @@ export function BotMonitoringPage() {
               } satisfies BacktestBot)
         }
       />
-    </div>
+    </>
   );
 }

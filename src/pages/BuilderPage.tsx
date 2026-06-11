@@ -3,7 +3,7 @@ import { ArrowDown, BookOpen } from 'lucide-react';
 import { LayoutGroup, motion } from 'framer-motion';
 import { dropInItem, dropInStagger } from '@/lib/motion';
 import { CypheusPanel } from '@/features/cypheus/CypheusPanel';
-import { HeaderToolbar } from '@/features/bot-builder/components/HeaderToolbar';
+import { BuilderHeaderActions } from '@/features/bot-builder/components/BuilderHeaderActions';
 import { CypheusDock } from '@/features/cypheus/CypheusDock';
 import { BotBuilderCanvas } from '@/features/bot-builder/BotBuilderCanvas';
 import { DotGridSpotlight } from '@/features/fx/DotGridSpotlight';
@@ -18,9 +18,20 @@ import {
 import { useCypheusStore } from '@/features/cypheus/store/cypheus.store';
 import { useLayoutPrefsStore } from '@/features/layout-prefs/layout-prefs.store';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useHeaderActions } from './header-actions-context';
 
 export function BuilderPage() {
   useKeyboardShortcuts();
+
+  // Push the Builder-only action cluster into the shared AppHeader (mounted by
+  // AppLayout). Cleared on unmount so it disappears — with its dialogs +
+  // keyboard listener — when the user leaves /builder.
+  const setHeaderActions = useHeaderActions();
+  useEffect(() => {
+    setHeaderActions(<BuilderHeaderActions />);
+    return () => setHeaderActions(null);
+  }, [setHeaderActions]);
+
   const allPending = useBuilderStore((s) =>
     Object.values(s.stepStatus).every((status) => status === 'pending'),
   );
@@ -67,7 +78,7 @@ export function BuilderPage() {
   // its own measured height. The canvas just reads the CSS var below.
 
   return (
-    <div className="flex h-screen w-screen flex-col bg-black text-fg">
+    <>
       {/* Page-level yellow halo (Coin98 brand glow) */}
       <div
         className="pointer-events-none fixed -top-20 left-1/2 z-0 h-[420px] w-[700px] -translate-x-1/2 rounded-full opacity-50 blur-3xl"
@@ -77,7 +88,6 @@ export function BuilderPage() {
         }}
         aria-hidden="true"
       />
-      <HeaderToolbar />
       <div className="flex flex-1 overflow-hidden">
         <CypheusPanel />
         <DotGridSpotlight
@@ -143,6 +153,6 @@ export function BuilderPage() {
       {/* Templates gallery — page-level mount so the empty-state CTA,
        * HeaderToolbar button, and any future entry point all share state. */}
       <TemplatesDialog />
-    </div>
+    </>
   );
 }
