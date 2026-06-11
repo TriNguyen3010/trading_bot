@@ -1,5 +1,8 @@
+import type { ReactNode } from 'react';
 import { Loader2, Play, RefreshCcw, RefreshCw, StopCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { InfoHint } from '@/components/ui/info-hint';
+import { strings } from '@/i18n/en';
 import type { DashboardBotMode } from '../bot-list.helpers';
 import type { PresentationalState } from '../presentational-state';
 
@@ -119,10 +122,12 @@ export function DetailHero({
               ? `/ ${bot.maxOpenTrades}`
               : undefined
           }
+          hint={strings.helpText.monitoring.openTrades}
         />
         <Kpi
           label="Win rate (bt)"
           value={bt?.winRate == null ? '—' : `${bt.winRate.toFixed(1)}%`}
+          hint={strings.helpText.monitoring.winRateBt}
         />
         <Kpi
           label="Net (bt)"
@@ -134,6 +139,7 @@ export function DetailHero({
           tone={
             bt?.netAbs == null ? undefined : bt.netAbs >= 0 ? 'bull' : 'bear'
           }
+          hint={strings.helpText.monitoring.netBt}
         />
       </div>
     </section>
@@ -145,11 +151,13 @@ function Kpi({
   value,
   unit,
   tone,
+  hint,
 }: {
   label: string;
   value: string;
   unit?: string;
   tone?: 'bull' | 'bear';
+  hint?: ReactNode;
 }) {
   const cls =
     tone === 'bull'
@@ -159,8 +167,9 @@ function Kpi({
         : 'text-fg';
   return (
     <div>
-      <div className="text-2xs uppercase tracking-widest text-fg-muted">
+      <div className="flex items-center gap-1 text-2xs uppercase tracking-widest text-fg-muted">
         {label}
+        {hint ? <InfoHint text={hint} /> : null}
       </div>
       <div className={`mt-1 font-mono text-2xl font-bold tabular-nums ${cls}`}>
         {value}
