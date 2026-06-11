@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   candlesToSeries,
   tradesToMarkers,
+  tradesOutsideCandleRange,
   tradesVisibleRange,
 } from '../backtest-chart';
 
@@ -117,6 +118,49 @@ describe('tradesVisibleRange', () => {
     expect(
       tradesVisibleRange([mk({ open_timestamp: 0, close_timestamp: 0 })]),
     ).toBeNull();
+  });
+});
+
+describe('tradesOutsideCandleRange', () => {
+  // series candles are in seconds (output of candlesToSeries), sorted ascending.
+  const win = [{ time: 1000 }, { time: 1500 }, { time: 2000 }];
+  it('counts entries that fall before the first / after the last candle', () => {
+    const before = mk({ open_timestamp: 500_000 }); // 500s < 1000s → outside
+    const inside = mk({ open_timestamp: 1_500_000 }); // 1500s → inside
+    const after = mk({ open_timestamp: 9_000_000 }); // 9000s > 2000s → outside
+    expect(tradesOutsideCandleRange([before, inside, after], win)).toEqual({
+      entriesOutside: 2,
+      total: 3,
+    });
+  });
+  it('all entries inside the window → 0 outside', () => {
+    const a = mk({ open_timestamp: 1_000_000 }); // 1000s, on the edge → inside
+    const b = mk({ open_timestamp: 2_000_000 }); // 2000s, on the edge → inside
+    expect(tradesOutsideCandleRange([a, b], win)).toEqual({
+      entriesOutside: 0,
+      total: 2,
+    });
+  });
+  it('ignores trades whose entry timestamp is missing/zero (not in total)', () => {
+    const missing = mk({ open_timestamp: undefined });
+    const zero = mk({ open_timestamp: 0 });
+    const real = mk({ open_timestamp: 500_000 });
+    expect(tradesOutsideCandleRange([missing, zero, real], win)).toEqual({
+      entriesOutside: 1,
+      total: 1,
+    });
+  });
+  it('no candles → nothing counted as outside (chart shows its own empty state)', () => {
+    expect(tradesOutsideCandleRange([mk({})], [])).toEqual({
+      entriesOutside: 0,
+      total: 1,
+    });
+  });
+  it('no trades → zeros', () => {
+    expect(tradesOutsideCandleRange([], win)).toEqual({
+      entriesOutside: 0,
+      total: 0,
+    });
   });
 });
 

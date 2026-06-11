@@ -92,6 +92,41 @@ export function tradesToMarkers(
   });
 }
 
+/**
+ * How many trades' ENTRY lands outside the loaded candle window. lightweight-
+ * charts can only draw a marker where a candle exists, so an entry before the
+ * first / after the last candle silently vanishes. The backtest dialog reads
+ * this to warn the user ("N trades fall outside the loaded price range")
+ * instead of leaving a missing entry marker to be misread as "the bot never
+ * opened that trade". `candles` are the as-plotted series points (seconds);
+ * `total` counts only trades with a usable entry timestamp. No candles → 0
+ * outside (the chart already shows its own "No candle data" state).
+ */
+export function tradesOutsideCandleRange(
+  trades: BacktestTrade[],
+  candles: { time: number }[],
+): { entriesOutside: number; total: number } {
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const c of candles) {
+    if (c.time < lo) lo = c.time;
+    if (c.time > hi) hi = c.time;
+  }
+  const haveWindow = Number.isFinite(lo) && Number.isFinite(hi);
+  let total = 0;
+  let entriesOutside = 0;
+  for (const t of trades) {
+    if (!hasTs(t.open_timestamp)) continue;
+    total++;
+    if (
+      haveWindow &&
+      (sec(t.open_timestamp) < lo || sec(t.open_timestamp) > hi)
+    )
+      entriesOutside++;
+  }
+  return { entriesOutside, total };
+}
+
 export function tradesVisibleRange(
   trades: BacktestTrade[],
   padFraction = 0.1,
