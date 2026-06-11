@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`summarizeBot — 8 built-in templates > summarizes breakout-btc-15m with no translation gaps 1`] = `
+exports[`summarizeBot — built-in templates > summarizes breakout-btc-15m with no translation gaps 1`] = `
 "## Market
 BTC/USDC perpetual futures on Hyperliquid, 15-minute candles.
 
@@ -25,7 +25,7 @@ Stop loss at -2%.
 Telegram notifications disabled."
 `;
 
-exports[`summarizeBot — 8 built-in templates > summarizes conservative-dca-btc with no translation gaps 1`] = `
+exports[`summarizeBot — built-in templates > summarizes conservative-dca-btc with no translation gaps 1`] = `
 "## Market
 BTC/USDC perpetual futures on Hyperliquid, 1-hour candles.
 
@@ -48,7 +48,7 @@ Stop loss at -10%.
 Telegram notifications disabled."
 `;
 
-exports[`summarizeBot — 8 built-in templates > summarizes cypheus-default with no translation gaps 1`] = `
+exports[`summarizeBot — built-in templates > summarizes cypheus-default with no translation gaps 1`] = `
 "## Market
 BTC/USDC perpetual futures on Hyperliquid, 5-minute candles.
 
@@ -71,29 +71,7 @@ Stop loss at -3%.
 Telegram notifications disabled."
 `;
 
-exports[`summarizeBot — 8 built-in templates > summarizes grid-stable-usdt-pairs with no translation gaps 1`] = `
-"## Market
-USDC/USDT perpetual futures on Hyperliquid, 5-minute candles.
-
-## Risk
-Dry-run with a $1,000 USDT simulated wallet.
-$100 USDT stake per trade, up to 10 concurrent positions.
-No leverage (1×), cross-margin futures.
-
-## Entry
-Buys long when RSI(14) is below 55.
-
-## Action
-Goes Long with Limit orders, placed 0.05% below market.
-
-## Exit
-Time-based ROI: 0.50% target immediately, 0.30% target after 30 min, 0.10% target after 1 hour, break-even after 2 hours.
-
-## Notifications
-Telegram notifications disabled."
-`;
-
-exports[`summarizeBot — 8 built-in templates > summarizes macd-momentum-bnb with no translation gaps 1`] = `
+exports[`summarizeBot — built-in templates > summarizes macd-momentum-bnb with no translation gaps 1`] = `
 "## Market
 BNB/USDC perpetual futures on Hyperliquid, 30-minute candles.
 
@@ -116,7 +94,7 @@ Stop loss at -3%.
 Telegram notifications disabled."
 `;
 
-exports[`summarizeBot — 8 built-in templates > summarizes multi-tf-trend-alts with no translation gaps 1`] = `
+exports[`summarizeBot — built-in templates > summarizes multi-tf-trend-alts with no translation gaps 1`] = `
 "## Market
 SOL/USDC perpetual futures on Hyperliquid, 4-hour candles.
 
@@ -142,7 +120,29 @@ Trailing stop: activates after +2% profit, follows 3% behind.
 Telegram notifications disabled."
 `;
 
-exports[`summarizeBot — 8 built-in templates > summarizes rsi-oversold-eth-1h with no translation gaps 1`] = `
+exports[`summarizeBot — built-in templates > summarizes roi-scalp-eth-5m with no translation gaps 1`] = `
+"## Market
+ETH/USDC perpetual futures on Hyperliquid, 5-minute candles.
+
+## Risk
+Dry-run with a $1,000 USDC simulated wallet.
+$100 USDC stake per trade, up to 5 concurrent positions.
+No leverage (1×), cross-margin futures.
+
+## Entry
+Buys long when RSI(14) is below 55.
+
+## Action
+Goes Long with Limit orders, placed 0.05% below market.
+
+## Exit
+Time-based ROI: 0.50% target immediately, 0.30% target after 30 min, 0.10% target after 1 hour, break-even after 2 hours.
+
+## Notifications
+Telegram notifications disabled."
+`;
+
+exports[`summarizeBot — built-in templates > summarizes rsi-oversold-eth-1h with no translation gaps 1`] = `
 "## Market
 ETH/USDC perpetual futures on Hyperliquid, 1-hour candles.
 
@@ -165,7 +165,7 @@ Stop loss at -2%.
 Telegram notifications disabled."
 `;
 
-exports[`summarizeBot — 8 built-in templates > summarizes scalping-btc-1m with no translation gaps 1`] = `
+exports[`summarizeBot — built-in templates > summarizes scalping-btc-1m with no translation gaps 1`] = `
 "## Market
 BTC/USDC perpetual futures on Hyperliquid, 1-minute candles.
 
@@ -185,6 +185,29 @@ Goes Long with Market orders (fills immediately at best price).
 ## Exit
 Take profit: +0.5% closes 70%, +1% closes 30%.
 Stop loss at -0.3%.
+
+## Notifications
+Telegram notifications disabled."
+`;
+
+exports[`summarizeBot — built-in templates > summarizes test-always-on-btc-1m with no translation gaps 1`] = `
+"## Market
+BTC/USDC perpetual futures on Hyperliquid, 1-minute candles.
+
+## Risk
+Dry-run with a $1,000 USDC simulated wallet.
+$100 USDC stake per trade, 1 position at a time.
+Leverage 2× cross-margin.
+
+## Entry
+Buys long when RSI(14) is below 90.
+
+## Action
+Goes Long with Market orders (fills immediately at best price).
+
+## Exit
+Take profit at +0.5% (closes the full position).
+Stop loss at -2%.
 
 ## Notifications
 Telegram notifications disabled."
