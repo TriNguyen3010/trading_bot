@@ -1,4 +1,4 @@
-import { AlertCircle, Zap } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { StatusBadge } from '../status-badge';
 import type { DashboardBot } from '../bot-list.helpers';
 import type { BotPerformance } from '../bot-performance';
@@ -23,31 +23,6 @@ function LiveTick({ label }: { label: string }) {
       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bullish" />
       {label}
     </span>
-  );
-}
-
-export function GoLiveBanner({ onCreate }: { onCreate: () => void }) {
-  return (
-    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand/25 bg-brand-subtle px-4 py-3">
-      <div className="flex items-center gap-2.5">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand/15 text-brand">
-          <Zap className="h-3.5 w-3.5" />
-        </span>
-        <div className="text-sm">
-          <span className="font-semibold text-fg">Dry-run only.</span>{' '}
-          <span className="text-fg-secondary">
-            Create a Hyperliquid trading wallet to run bots live.
-          </span>
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={onCreate}
-        className="rounded-lg border border-brand/40 bg-brand/10 px-3 py-1.5 text-2xs font-bold uppercase tracking-wider text-brand transition hover:bg-brand/20"
-      >
-        Create trading wallet →
-      </button>
-    </div>
   );
 }
 
@@ -135,21 +110,13 @@ export function PortfolioError({ onRetry }: { onRetry: () => void }) {
 }
 
 export function PortfolioEmpty({
-  agent,
-  agentLoading,
   walletAddress,
   onBuild,
   onImport,
-  onCreateAgent,
 }: {
-  agent: AgentInfoResponse | null;
-  /** While the agent status is still loading, suppress the nudge to avoid a
-   * flash for users who DO have an agent (spec §6). */
-  agentLoading: boolean;
   walletAddress: string | null;
   onBuild: () => void;
   onImport: () => void;
-  onCreateAgent: () => void;
 }) {
   return (
     <section className="mt-8" data-testid="portfolio-empty">
@@ -161,7 +128,6 @@ export function PortfolioEmpty({
           {truncateAddr(walletAddress)}
         </span>
       </div>
-      {!agentLoading && !agent && <GoLiveBanner onCreate={onCreateAgent} />}
       <section className="card-coin98 relative overflow-hidden rounded-3xl p-10 text-center">
         <div
           aria-hidden
@@ -207,16 +173,11 @@ export function PortfolioEmpty({
 export function PortfolioHero({
   stats,
   agent,
-  agentLoading,
   walletAddress,
-  onCreateAgent,
 }: {
   stats: PortfolioStats;
   agent: AgentInfoResponse | null;
-  /** Suppress the nudge while agent status is still loading (spec §6). */
-  agentLoading: boolean;
   walletAddress: string | null;
-  onCreateAgent: () => void;
 }) {
   const zeroDeployed = stats.capitalDeployed === 0;
   return (
@@ -226,7 +187,6 @@ export function PortfolioHero({
           Your portfolio
         </h2>
       </div>
-      {!agentLoading && !agent && <GoLiveBanner onCreate={onCreateAgent} />}
       <section className="card-coin98 relative grid grid-cols-1 gap-6 overflow-hidden rounded-3xl p-8 md:grid-cols-[1fr_auto]">
         <div
           aria-hidden
