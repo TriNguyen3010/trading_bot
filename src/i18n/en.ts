@@ -287,6 +287,45 @@ export const strings = {
       closeMethod:
         'How the bot exits a position. Manual = you close it; TP / SL = take-profit & stop-loss; ROI = time-based ROI table. Toggle Advanced to enable Indicator-based exits.',
     },
+    monitoring: {
+      // Status & process
+      state:
+        'The bot’s live process state as last reported by the backend (running, stopped, error, …).',
+      desiredStatus:
+        'The state you asked for. The bot converges to this — a mismatch with State means it’s still transitioning.',
+      process:
+        'Whether the backend Freqtrade process is actually up. "down" while State is running means the process died.',
+      lastHeartbeat:
+        'Time since the bot last reported in. Stale heartbeats suggest the process is stuck or dead.',
+      // Mode / config not covered by builder copy
+      mode: 'Dry-run trades on a virtual wallet (no real funds). Live places real orders on the exchange.',
+      tradingMode:
+        'Spot trades the asset directly; Futures trades perpetual contracts with leverage.',
+      // Backtest performance metrics
+      netProfit:
+        'Total profit/loss across all backtest trades, in stake currency. Negative = the strategy lost money.',
+      trades:
+        'Total number of trades the strategy opened and closed during the backtest window.',
+      winRate:
+        'Share of backtest trades that closed in profit. High win rate alone doesn’t guarantee net profit.',
+      profitFactor:
+        'Gross profit ÷ gross loss. Above 1 means winners outweigh losers; below 1 is a losing strategy.',
+      sharpe:
+        'Risk-adjusted return — return per unit of total volatility. Higher is better; below 0 is poor.',
+      sortino:
+        'Like Sharpe but only penalises downside volatility. Higher is better.',
+      maxDrawdown:
+        'Largest peak-to-trough drop in equity during the backtest. Lower is safer.',
+      tradesPerDay:
+        'Average number of trades opened per day over the backtest window.',
+      // Hero KPIs
+      openTrades:
+        'Positions the bot holds right now, against its max-open-trades cap.',
+      winRateBt:
+        'Win rate from the selected backtest run — historical, not live performance.',
+      netBt:
+        'Net profit from the selected backtest run — historical, not live performance.',
+    },
   },
   closeMethod: {
     advancedLabel: 'Advanced',
