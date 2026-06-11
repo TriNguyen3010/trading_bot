@@ -352,10 +352,16 @@ export function BotMonitoringPage() {
                   liveStatus?.bot_name ??
                   (config?.bot_name as string | undefined) ??
                   `Bot #${safeBotId}`,
+                // Run history is empty for a never-backtested bot, and the
+                // status endpoint carries no strategy_name — fall back to the
+                // generated config.json's `strategy` (the real class name) so
+                // the dialog doesn't false-warn "no strategy name" and sends
+                // the correct strategy to /backtest/start.
                 strategyName:
                   selectedRun?.strategyName ??
                   latestRun?.strategyName ??
                   backtest?.strategy_name ??
+                  (config?.strategy as string | undefined) ??
                   null,
                 pair: derivePair(cfgShape),
                 timeframe: deriveTimeframe(cfgShape),
