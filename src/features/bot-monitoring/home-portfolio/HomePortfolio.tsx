@@ -1,10 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import {
   useIsWalletConnected,
   useWalletStore,
 } from '@/features/wallet-auth/wallet.store';
 import { useActiveAgent } from '@/features/agent-wallet/useActiveAgent';
-import { AgentOnboardingDialog } from '@/features/agent-wallet/AgentOnboardingDialog';
 import { usePortfolioOverview } from '../usePortfolioOverview';
 import { pickTopBots } from './pick-top-bots';
 import {
@@ -38,14 +37,9 @@ export function HomePortfolio({
   const walletAddress = useWalletStore((s) => s.address);
   const { bots, perfById, stats, loading, error, refresh } =
     usePortfolioOverview({ enabled: isConnected });
-  const {
-    agent,
-    loading: agentLoading,
-    refresh: refreshAgent,
-  } = useActiveAgent({ enabled: isConnected });
-  const [onboardOpen, setOnboardOpen] = useState(false);
-
-  const openOnboard = () => setOnboardOpen(true);
+  // `agent` still feeds the hero's "Trading wallet active" chip; the loading
+  // flag / refresh were only used by the removed go-live banner + onboarding.
+  const { agent } = useActiveAgent({ enabled: isConnected });
 
   // Not connected → render nothing; LandingPage shows the "What you get"
   // marketing cards instead. The `enabled: isConnected` flags above mean the
@@ -68,12 +62,9 @@ export function HomePortfolio({
   } else if (bots.length === 0) {
     body = (
       <PortfolioEmpty
-        agent={agent}
-        agentLoading={agentLoading}
         walletAddress={walletAddress}
         onBuild={onBuild}
         onImport={onImport}
-        onCreateAgent={openOnboard}
       />
     );
   } else {
@@ -83,9 +74,7 @@ export function HomePortfolio({
         <PortfolioHero
           stats={stats}
           agent={agent}
-          agentLoading={agentLoading}
           walletAddress={walletAddress}
-          onCreateAgent={openOnboard}
         />
         <section className="mt-8">
           <div className="mb-3 flex items-baseline justify-between">
@@ -129,18 +118,5 @@ export function HomePortfolio({
     );
   }
 
-  return (
-    <>
-      {body}
-      <AgentOnboardingDialog
-        open={onboardOpen}
-        onOpenChange={setOnboardOpen}
-        onSuccess={() => {
-          setOnboardOpen(false);
-          refresh();
-          refreshAgent();
-        }}
-      />
-    </>
-  );
+  return body;
 }

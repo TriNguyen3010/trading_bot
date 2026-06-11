@@ -15,10 +15,6 @@ vi.mock('@/features/wallet-auth/wallet.store', () => ({
     sel({ address: '0x1234567890abcdef' }),
   ),
 }));
-// AgentOnboardingDialog is heavy (radix + sign flow) — stub it.
-vi.mock('@/features/agent-wallet/AgentOnboardingDialog', () => ({
-  AgentOnboardingDialog: () => null,
-}));
 
 import { HomePortfolio } from './HomePortfolio';
 import {
@@ -138,13 +134,14 @@ describe('HomePortfolio state machine', () => {
     expect(screen.getByTestId('portfolio-error')).toBeInTheDocument();
   });
 
-  it('C · connected no bots → empty + go-live banner (no agent)', () => {
+  it('C · connected no bots → empty state, no go-live banner', () => {
     mockOverview.mockReturnValue(baseOverview({ bots: [] }));
     render(<HomePortfolio {...props} />);
     expect(screen.getByTestId('portfolio-empty')).toBeInTheDocument();
+    // The dry-run go-live banner was removed from Home.
     expect(
-      screen.getByText(/Create a Hyperliquid trading wallet/i),
-    ).toBeInTheDocument();
+      screen.queryByText(/Create a Hyperliquid trading wallet/i),
+    ).not.toBeInTheDocument();
   });
 
   it('D · running bots → hero shows capital deployed = Σ balance', () => {
@@ -172,15 +169,6 @@ describe('HomePortfolio state machine', () => {
     expect(within(hero).getByText(/1,284\.55/)).toBeInTheDocument();
     // Top-bot MiniBotCard renders the shared StatusBadge (Dry-run reads blue).
     expect(screen.getByText('Dry-run')).toBeInTheDocument();
-  });
-
-  it('agent still loading → no go-live banner (avoid flicker, spec §6)', () => {
-    mockAgent.mockReturnValue({ agent: null, loading: true, refresh: vi.fn() });
-    mockOverview.mockReturnValue(baseOverview({ bots: [] }));
-    render(<HomePortfolio {...props} />);
-    expect(
-      screen.queryByText(/Create a Hyperliquid trading wallet/i),
-    ).not.toBeInTheDocument();
   });
 
   it('F · bots paused (idle>0), zero deployed → shows resume nudge', () => {
@@ -222,7 +210,7 @@ describe('HomePortfolio state machine', () => {
     expect(screen.queryByText(/bots? paused/i)).not.toBeInTheDocument();
   });
 
-  it('E · agent active → no go-live banner', () => {
+  it('E · agent active → hero shows the active trading-wallet chip', () => {
     mockAgent.mockReturnValue({
       agent: ACTIVE_AGENT,
       loading: false,
@@ -246,8 +234,6 @@ describe('HomePortfolio state machine', () => {
       }),
     );
     render(<HomePortfolio {...props} />);
-    expect(
-      screen.queryByText(/Create a Hyperliquid trading wallet/i),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText(/Trading wallet active/i)).toBeInTheDocument();
   });
 });
