@@ -44,7 +44,7 @@ describe('formatBackendError', () => {
     expect(formatBackendError(err)).toBe('502: HTTP 502');
   });
 
-  it('returns localized message for Network error', () => {
+  it('returns friendly message for Network error', () => {
     expect(formatBackendError(new Error('Network error'))).toBe(
       'Could not reach the server',
     );
