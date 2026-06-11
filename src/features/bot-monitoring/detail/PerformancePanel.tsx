@@ -131,7 +131,9 @@ export function PerformancePanel({
             >
               <div className="flex items-center gap-1 text-2xs text-fg-muted">
                 {l}
-                {hint ? <InfoHint text={hint} /> : null}
+                {hint ? (
+                  <InfoHint text={hint} label={`More info: ${l}`} />
+                ) : null}
               </div>
               <div
                 className={`mt-1 font-mono text-lg font-bold ${neg ? 'text-bearish' : 'text-fg'}`}

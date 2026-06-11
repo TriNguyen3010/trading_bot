@@ -56,7 +56,7 @@ export function KV({
     <div className="flex items-center justify-between border-b border-border-subtle py-2 text-xs last:border-0">
       <span className="flex items-center gap-1 text-fg-secondary">
         {k}
-        {hint ? <InfoHint text={hint} /> : null}
+        {hint ? <InfoHint text={hint} label={`More info: ${k}`} /> : null}
       </span>
       <span className={`font-mono font-semibold ${cls}`}>{v}</span>
     </div>
