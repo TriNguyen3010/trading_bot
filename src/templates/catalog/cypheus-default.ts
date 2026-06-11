@@ -1,5 +1,5 @@
 /**
- * Cypheus's default starter template — Bollinger Breakout BTC.
+ * Cypheus's default starter template — RSI Dip BTC.
  * The canonical starting point surfaced in the gallery.
  */
 import type { BotTemplate } from '../types';
@@ -7,19 +7,20 @@ import { TEMPLATE_SCHEMA_VERSION } from '../types';
 
 export const cypheusDefault: BotTemplate = {
   id: 'cypheus-default',
-  name: 'Bollinger Breakout — BTC/USDC 5m',
+  name: 'RSI Dip — BTC/USDC 5m',
   description:
-    "Cypheus's starter bot: BTC/USDC scalping with RSI<30 entry on 5m.",
+    "Cypheus's starter bot: goes long on BTC when RSI dips below 30 on the 5m chart.",
   longDescription:
-    'A balanced demo strategy. Goes long when RSI dips below 30 (oversold) and ' +
-    'candle volume is rising. Exits via two-tier take-profit (5% / 10%) and a ' +
-    "−3% stop-loss. Cypheus's recommended starting point.",
-  tags: ['btc', 'futures', 'breakout', 'rsi'],
+    'A balanced demo strategy. Goes long when RSI dips below 30 (oversold) on the ' +
+    '5-minute chart, then exits via a two-tier take-profit (5% / 10%) and a −3% ' +
+    "stop-loss. Cypheus's recommended starting point — simple enough to read " +
+    'end-to-end before you start customising.',
+  tags: ['btc', 'futures', 'rsi', 'mean-reversion'],
   difficulty: 'intermediate',
   riskLevel: 'balanced',
 
   state: {
-    botName: 'Bollinger Breakout',
+    botName: 'RSI Dip BTC',
     botConfig: {
       pair: 'BTC-USDC',
       timeframe: '5m',
@@ -35,7 +36,9 @@ export const cypheusDefault: BotTemplate = {
     },
     strategy: {
       id: 'strategy-1',
-      name: 'Bollinger Breakout',
+      name: 'RSI Dip',
+      // 'volume' is exposed as a price channel but unused by the RSI-only
+      // entry below — kept so the summary still lists it as available data.
       candlestick: ['close', 'volume'],
       indicators: [
         {
