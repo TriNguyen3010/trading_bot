@@ -9,6 +9,8 @@ import {
 } from '../backtest-results';
 import { BacktestEquityChart } from './BacktestEquityChart';
 import { BacktestChart } from './BacktestChart';
+import { strings } from '@/i18n/en';
+import { InfoHint } from '@/components/ui/info-hint';
 
 const f = (n: number | null, d = 2, suffix = '') =>
   n == null ? '—' : `${n.toFixed(d)}${suffix}`;
@@ -49,19 +51,26 @@ export function PerformancePanel({
   const exits = extractExitReasons(block);
   const maxExitAbs = Math.max(...exits.map((e) => Math.abs(e.profitAbs)), 1);
 
-  const cells: Array<[string, string, boolean?]> = [
-    ['Net profit', f(m.netAbs), (m.netAbs ?? 0) < 0],
-    ['Win rate', f(m.winRatePct, 1, '%')],
-    ['Trades', String(m.trades ?? '—')],
-    ['Profit factor', f(m.profitFactor), (m.profitFactor ?? 1) < 1],
-    ['Sharpe', f(m.sharpe), (m.sharpe ?? 0) < 0],
-    ['Sortino', f(m.sortino), (m.sortino ?? 0) < 0],
+  const H = strings.helpText.monitoring;
+  const cells: Array<[string, string, boolean?, string?]> = [
+    ['Net profit', f(m.netAbs), (m.netAbs ?? 0) < 0, H.netProfit],
+    ['Win rate', f(m.winRatePct, 1, '%'), false, H.winRate],
+    ['Trades', String(m.trades ?? '—'), false, H.trades],
+    [
+      'Profit factor',
+      f(m.profitFactor),
+      (m.profitFactor ?? 1) < 1,
+      H.profitFactor,
+    ],
+    ['Sharpe', f(m.sharpe), (m.sharpe ?? 0) < 0, H.sharpe],
+    ['Sortino', f(m.sortino), (m.sortino ?? 0) < 0, H.sortino],
     [
       'Max drawdown',
       `${f(m.maxDrawdownAbs)} (${f(m.maxDrawdownPct, 1)}%)`,
       true,
+      H.maxDrawdown,
     ],
-    ['Trades/day', f(m.tradesPerDay)],
+    ['Trades/day', f(m.tradesPerDay), false, H.tradesPerDay],
   ];
 
   return (
@@ -115,12 +124,15 @@ export function PerformancePanel({
         )}
 
         <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          {cells.map(([l, v, neg]) => (
+          {cells.map(([l, v, neg, hint]) => (
             <div
               key={l}
               className="rounded-lg border border-border-subtle bg-black/20 p-3"
             >
-              <div className="text-2xs text-fg-muted">{l}</div>
+              <div className="flex items-center gap-1 text-2xs text-fg-muted">
+                {l}
+                {hint ? <InfoHint text={hint} /> : null}
+              </div>
               <div
                 className={`mt-1 font-mono text-lg font-bold ${neg ? 'text-bearish' : 'text-fg'}`}
               >
