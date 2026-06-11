@@ -1,5 +1,10 @@
 # Header active-tab highlight — Design
 
+> ⚠️ **SUPERSEDED (2026-06-11)** bởi `2026-06-11-unified-header-design.md`. Tri
+> duyệt phương án gộp header Builder + Dashboard dùng chung (layout route) qua
+> demo `public/unified-header-demo.html` → slide animation giờ chạy thật được,
+> không còn bị giới hạn "pill tĩnh" như spec này. Giữ file làm lịch sử.
+
 **Date:** 2026-06-10
 **Owner:** Tri Nguyen
 **Status:** Approved approach — filled pill (option A, picked by Tri). Phần "slide"

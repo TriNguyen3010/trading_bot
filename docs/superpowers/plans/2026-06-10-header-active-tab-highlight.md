@@ -1,5 +1,10 @@
 # Header Active-Tab Highlight Implementation Plan
 
+> ⚠️ **SUPERSEDED (2026-06-11)** bởi `2026-06-11-unified-header.md`. Plan này chỉ
+> làm pill tĩnh trên AppHeader hiện tại. Tri đã duyệt phương án lớn hơn: gộp header
+> Builder vào AppHeader dùng chung qua layout route → pill slide chạy thật. Dùng
+> plan mới. Giữ file làm lịch sử.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Tab đang active trong header (Dashboard / Builder) được highlight bằng pill nền sáng — user luôn biết mình đang ở đâu.
