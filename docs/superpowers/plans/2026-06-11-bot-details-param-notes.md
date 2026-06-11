@@ -153,13 +153,9 @@ import { cn } from '@/lib/utils';
 
 (Delete the old `import { HelpCircle } from 'lucide-react';` and the `import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';` lines.)
 
-Then replace the entire `help ? ( ... ) : null` block (currently `form-field.tsx:52-72`) with:
+Then replace the entire `help ? ( ... ) : null` block (currently `form-field.tsx:52-72`) with this single JSX expression (it sits inside the label-row `<div>`, between the `<Label>` and the `trailing` block — keep the surrounding JSX, no trailing semicolon):
 
-```tsx
-{
-  help ? <InfoHint text={help} /> : null;
-}
-```
+    {help ? <InfoHint text={help} /> : null}
 
 - [ ] **Step 2: Typecheck**
 
