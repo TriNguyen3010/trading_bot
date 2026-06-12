@@ -1,7 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { AlertTriangle, Eye, Loader2, Rocket, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { InfoHint } from '@/components/ui/info-hint';
+import { strings } from '@/i18n/en';
 import { BacktestChart } from '@/features/bot-monitoring/detail/BacktestChart';
 import { formatBackendError } from '@/lib/format-error';
 import { backtestApi } from './backtest.api';
@@ -390,6 +399,7 @@ export function BacktestDialog({
                   <ResultMetric
                     label="Trades"
                     value={metrics.trades?.toString() ?? '—'}
+                    hint={strings.helpText.monitoring.trades}
                   />
                   <ResultMetric
                     label="Net profit"
@@ -397,10 +407,12 @@ export function BacktestDialog({
                     tone={
                       (metrics.totalProfit ?? 0) >= 0 ? 'bullish' : 'bearish'
                     }
+                    hint={strings.helpText.monitoring.netProfit}
                   />
                   <ResultMetric
                     label="Win rate"
                     value={formatWinRate(metrics.winRate)}
+                    hint={strings.helpText.monitoring.winRate}
                   />
                   <ResultMetric
                     label="Max drawdown"
@@ -410,16 +422,19 @@ export function BacktestDialog({
                         : '—'
                     }
                     tone="bearish"
+                    hint={strings.helpText.monitoring.maxDrawdown}
                   />
                   <ResultMetric
                     label="Sharpe"
                     value={
                       metrics.sharpe != null ? metrics.sharpe.toFixed(2) : '—'
                     }
+                    hint={strings.helpText.monitoring.sharpe}
                   />
                   <ResultMetric
                     label="Avg trade"
                     value={metrics.avgTrade ?? '—'}
+                    hint={strings.helpText.monitoring.avgTrade}
                   />
                 </div>
                 <p className="text-2xs text-fg-muted">
@@ -446,7 +461,15 @@ export function BacktestDialog({
                           <th className="px-3 py-2 text-right font-medium">
                             P/L %
                           </th>
-                          <th className="px-3 py-2 font-medium">Exit</th>
+                          <th className="px-3 py-2 font-medium">
+                            <span className="inline-flex items-center gap-1">
+                              Exit
+                              <InfoHint
+                                text={strings.helpText.monitoring.exitReason}
+                                label="More info: Exit reason"
+                              />
+                            </span>
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -546,10 +569,12 @@ function ResultMetric({
   label,
   value,
   tone = 'default',
+  hint,
 }: {
   label: string;
   value: string;
   tone?: 'default' | 'bullish' | 'bearish';
+  hint?: ReactNode;
 }) {
   const toneCls =
     tone === 'bullish'
@@ -559,8 +584,9 @@ function ResultMetric({
         : 'text-fg';
   return (
     <div className="rounded-xl border border-border-subtle bg-surface/40 p-3">
-      <div className="text-2xs uppercase tracking-wider text-fg-muted">
+      <div className="flex items-center gap-1 text-2xs uppercase tracking-wider text-fg-muted">
         {label}
+        {hint ? <InfoHint text={hint} label={`More info: ${label}`} /> : null}
       </div>
       <div
         className={`mt-1 font-mono text-lg font-bold tabular-nums ${toneCls}`}
