@@ -318,6 +318,10 @@ export const strings = {
         'Largest peak-to-trough drop in equity during the backtest. Lower is safer.',
       tradesPerDay:
         'Average number of trades opened per day over the backtest window.',
+      avgTrade:
+        'Average time a position stays open, from entry to exit, across all backtest trades.',
+      exitReason:
+        'Why each trade closed — e.g. force_exit (cut off at the backtest window end), roi, stop_loss, trailing stop, or exit_signal.',
       // Hero KPIs
       openTrades:
         'Positions the bot holds right now, against its max-open-trades cap.',
