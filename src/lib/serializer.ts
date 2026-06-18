@@ -21,10 +21,11 @@ import {
 
 const APP_VERSION = '0.1.0';
 
-// BE codegen Python file → `strategy_name` phải là valid Python class name
-// (PascalCase identifier, ví dụ `MyRSIStrategy`). User có thể đặt bot name
-// có dấu cách, ký tự đặc biệt, tiếng Việt — sanitize về PascalCase trước
-// khi gửi BE. NFD normalize để strip diacritics ("tăng" → "tang").
+// BE codegen produces a Python file → `strategy_name` must be a valid Python
+// class name (PascalCase identifier, e.g. `MyRSIStrategy`). Users may enter a
+// bot name with spaces, special characters, or Vietnamese — sanitize it to
+// PascalCase before sending to the BE. NFD normalize strips diacritics
+// ("tăng" → "tang").
 export function toPythonClassName(input: string): string {
   const stripped = input.normalize('NFD').replace(/[̀-ͯ]/g, '');
   const parts = stripped.split(/[^A-Za-z0-9]+/).filter(Boolean);

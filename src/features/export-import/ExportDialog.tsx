@@ -105,7 +105,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         backendPayload as unknown as CreatePayload,
       );
       toast.success(
-        `Bot #${response.bot.id} "${response.bot.bot_name ?? ''}" đã được tạo thành công`,
+        `Bot #${response.bot.id} "${response.bot.bot_name ?? ''}" created successfully`,
       );
       onOpenChange(false);
       setTimeout(() => {

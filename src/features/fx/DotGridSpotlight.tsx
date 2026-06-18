@@ -29,7 +29,7 @@ const SPACING = 10;
 // Sizes (diameter → radius). Three tiers per spec:
 //   dim background dot:    size 4   → radius 2
 //   beacon cardinal (×4):  size 8   → radius 4
-//   beacon centre (nhuỵ):  size 12  → radius 6
+//   beacon centre (pistil): size 12 → radius 6
 const DOT_RADIUS = 2;
 
 // Sprite for dim background dots — pre-rendered once with TWO shadow
@@ -79,10 +79,10 @@ const BEACON_ROTATION_MS = 3200;
 // atmospheric outer halo behind. The halo dot-field corona (handled in
 // the main dot loop) provides ambient corona instead.
 const BEACON_PLUS_CARDINAL_RADIUS = 4; // diameter 8 (at scale 1)
-const BEACON_PLUS_CENTER_RADIUS = 5; // diameter 10 (nhuỵ)
+const BEACON_PLUS_CENTER_RADIUS = 5; // diameter 10 (pistil)
 // Both cardinals and the centre render in 3 passes (outer bloom + crisp
 // core + inner highlight). Cardinals stay slightly bigger / blurrier
-// than the centre — keeps them "rực" — but both share the soft fuzzy
+// than the centre — keeps them vivid — but both share the soft fuzzy
 // glow profile from the reference.
 const BEACON_CENTER_SHADOW_BLUR = 32; // up from 24
 const BEACON_CARDINAL_SHADOW_BLUR = 38; // up from 32
@@ -1154,7 +1154,7 @@ export function DotGridSpotlight({
       //   B: crisp core
       //   C: tight near-white inner highlight
       // Cardinals get a slightly bigger blur than the centre but the
-      // structure is identical so both petals + nhuỵ feel cohesive.
+      // structure is identical so both petals + pistil feel cohesive.
       if (plusDots.length > 0) {
         ctx.save();
         for (const pd of plusDots) {

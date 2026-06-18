@@ -188,7 +188,7 @@ export function WalletChip({
           onRotateErrors={(results) => {
             results.forEach((r) => {
               toast.warning(
-                `Bot "${r.bot_name}" rotate lỗi: ${r.error ?? 'unknown'}`,
+                `Bot "${r.bot_name}" agent rotate failed: ${r.error ?? 'unknown'}`,
               );
             });
           }}

@@ -133,7 +133,7 @@ export function ManageAgentsModal({
     try {
       const result = await botApi.rotateWallet();
       toast.success(
-        `Đã cập nhật agent: ${result.updated_count}/${result.total_bots} bot, ${result.restarted_count} khởi động lại.`,
+        `Agent updated: ${result.updated_count}/${result.total_bots} bots, ${result.restarted_count} restarted.`,
       );
       if (result.error_count > 0) {
         onRotateErrors(result.results.filter((r) => r.error != null));
@@ -158,7 +158,7 @@ export function ManageAgentsModal({
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border-subtle px-6 py-3">
             <DialogPrimitive.Title className="text-sm font-semibold text-fg">
-              Quản lý Agent
+              Manage Agents
             </DialogPrimitive.Title>
             <DialogPrimitive.Close
               className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-fg-muted transition-colors hover:border-border-strong hover:text-fg"
@@ -174,8 +174,8 @@ export function ManageAgentsModal({
               <div className="bg-warning-subtle mb-4 flex items-start gap-3 rounded-lg border border-warning/40 px-4 py-3">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
                 <div className="text-sm text-warning">
-                  Agent đang active đã bị xoá trên Hyperliquid — tạo agent mới
-                  và cập nhật bot.
+                  The active agent has been removed on Hyperliquid — create a
+                  new agent and update your bots.
                   <button
                     className="ml-2 underline"
                     onClick={() => {
@@ -183,7 +183,7 @@ export function ManageAgentsModal({
                       onRequestOnboarding();
                     }}
                   >
-                    Tạo agent ngay
+                    Create agent now
                   </button>
                 </div>
               </div>
@@ -206,7 +206,7 @@ export function ManageAgentsModal({
             {/* Empty state */}
             {!loading && agents.length === 0 && !loadError && (
               <p className="py-8 text-center text-sm text-fg-muted">
-                Không có agent nào trên Hyperliquid. Tạo agent khi Go Live.
+                No agents on Hyperliquid. An agent is created when you Go Live.
               </p>
             )}
 
@@ -216,10 +216,10 @@ export function ManageAgentsModal({
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border-subtle text-left text-xs font-medium text-fg-muted">
-                      <th className="pb-2 pr-4">Tên</th>
-                      <th className="pb-2 pr-4">Địa chỉ</th>
-                      <th className="pb-2 pr-4">Hết hạn</th>
-                      <th className="pb-2 pr-4">Nguồn</th>
+                      <th className="pb-2 pr-4">Name</th>
+                      <th className="pb-2 pr-4">Address</th>
+                      <th className="pb-2 pr-4">Expires</th>
+                      <th className="pb-2 pr-4">Source</th>
                       <th className="pb-2" />
                     </tr>
                   </thead>
@@ -261,10 +261,10 @@ export function ManageAgentsModal({
                 >
                   {rotating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   <RefreshCw className="h-3.5 w-3.5" />
-                  Cập nhật agent cho các bot
+                  Update agent for your bots
                 </Button>
                 <p className="mt-1.5 text-2xs text-fg-muted">
-                  Áp dụng agent đang active vào tất cả bot của bạn.
+                  Applies the active agent to all of your bots.
                 </p>
               </div>
             )}
@@ -296,7 +296,7 @@ function AgentRow({
   const shortAddr = `${addr.slice(0, 6)}…${addr.slice(-4)}`;
   const validUntil =
     agent.onchain.valid_until != null
-      ? new Date(agent.onchain.valid_until).toLocaleDateString('vi-VN')
+      ? new Date(agent.onchain.valid_until).toLocaleDateString('en-US')
       : '–';
 
   const isConfirming = confirmState?.phase === 'confirm';
@@ -349,16 +349,16 @@ function AgentRow({
               {agent.isDbActive ? (
                 <p className="mb-2.5 text-xs text-fg-secondary">
                   <span className="font-semibold text-fg">
-                    Agent này đang được các bot sử dụng.
+                    This agent is in use by your bots.
                   </span>{' '}
-                  Revoke sẽ ký 1 tx và xoá agent khỏi Hyperliquid — các bot dùng
-                  agent này sẽ lỗi/dừng giao dịch cho đến khi tạo agent mới và
-                  cập nhật agent cho bot.
+                  Revoking signs 1 tx and removes the agent from Hyperliquid —
+                  bots using this agent will fail/stop trading until you create
+                  a new agent and update them.
                 </p>
               ) : (
                 <p className="mb-2.5 text-xs text-fg-secondary">
-                  Revoke &quot;{agent.onchain.name || '(unnamed)'}&quot; sẽ ký 1
-                  tx và xoá agent khỏi Hyperliquid.
+                  Revoking &quot;{agent.onchain.name || '(unnamed)'}&quot; signs
+                  1 tx and removes the agent from Hyperliquid.
                 </p>
               )}
               <div className="flex gap-2">

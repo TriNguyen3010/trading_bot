@@ -111,9 +111,7 @@ describe('ManageAgentsModal — list rendering', () => {
     render(<ManageAgentsModal {...defaultProps} />);
 
     await waitFor(() =>
-      expect(
-        screen.getByText(/Không có agent nào trên Hyperliquid/),
-      ).toBeInTheDocument(),
+      expect(screen.getByText(/No agents on Hyperliquid/)).toBeInTheDocument(),
     );
   });
 });
@@ -132,7 +130,7 @@ describe('ManageAgentsModal — sync-mismatch banner', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(/Agent đang active đã bị xoá trên Hyperliquid/),
+        screen.getByText(/The active agent has been removed on Hyperliquid/),
       ).toBeInTheDocument(),
     );
   });
@@ -164,7 +162,7 @@ describe('ManageAgentsModal — active-agent revoke warning', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(/Agent này đang được các bot sử dụng/),
+        screen.getByText(/This agent is in use by your bots/),
       ).toBeInTheDocument(),
     );
   });
@@ -221,7 +219,7 @@ describe('ManageAgentsModal — rotate-wallet', () => {
     render(<ManageAgentsModal {...defaultProps} />);
     await waitFor(() =>
       expect(
-        screen.getByRole('button', { name: /cập nhật agent/i }),
+        screen.getByRole('button', { name: /update agent/i }),
       ).toBeInTheDocument(),
     );
   });
@@ -262,12 +260,10 @@ describe('ManageAgentsModal — rotate-wallet', () => {
     });
 
     render(<ManageAgentsModal {...defaultProps} />);
-    await waitFor(() =>
-      screen.getByRole('button', { name: /cập nhật agent/i }),
-    );
+    await waitFor(() => screen.getByRole('button', { name: /update agent/i }));
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /cập nhật agent/i }));
+      fireEvent.click(screen.getByRole('button', { name: /update agent/i }));
     });
 
     await waitFor(() => expect(botApi.rotateWallet).toHaveBeenCalled());

@@ -7,7 +7,7 @@ export function formatBackendError(err: unknown): string {
       .join('\n');
   }
   if (err instanceof HttpError) {
-    // Body từ BE thường là JSON `{detail: "..."}` hoặc text. Cố parse JSON trước.
+    // BE body is usually JSON `{detail: "..."}` or plain text. Try JSON first.
     try {
       const parsed = JSON.parse(err.body) as { detail?: unknown };
       if (typeof parsed.detail === 'string')
@@ -20,7 +20,7 @@ export function formatBackendError(err: unknown): string {
     }
   }
   if (err instanceof Error && err.message === 'Network error') {
-    return 'Không thể kết nối server';
+    return 'Could not reach the server';
   }
   return err instanceof Error ? err.message : String(err);
 }

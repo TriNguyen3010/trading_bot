@@ -39,7 +39,7 @@ export function useAgentSignFlow(): UseAgentSignFlowResult {
       if (!walletAddress) {
         setState({
           stage: 'error',
-          message: 'Wallet chưa connect',
+          message: 'Wallet not connected',
           userRejected: false,
         });
         return;
@@ -48,7 +48,7 @@ export function useAgentSignFlow(): UseAgentSignFlowResult {
       if (!provider) {
         setState({
           stage: 'error',
-          message: 'Không tìm thấy ví — vui lòng cài Coin98',
+          message: 'Wallet not found — please install Coin98',
           userRejected: false,
         });
         return;
@@ -83,12 +83,12 @@ export function useAgentSignFlow(): UseAgentSignFlowResult {
         setState({
           stage: 'error',
           message: userRejected
-            ? 'Bạn đã huỷ ký — agent không được tạo'
+            ? 'Signature rejected — agent was not created'
             : // Belt-and-suspenders: unreachable on current path — run() already guards
               // non-null provider before calling eip712Sign, which only throws
               // NoProviderError on a falsy provider argument.
               noProvider
-              ? 'Không tìm thấy ví — vui lòng cài Coin98'
+              ? 'Wallet not found — please install Coin98'
               : formatAgentFlowError(err),
           userRejected,
         });
